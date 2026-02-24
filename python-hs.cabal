@@ -1,0 +1,88 @@
+cabal-version:      2.4
+name:               python-hs
+version:            0.1.0.0
+build-type:         Simple
+
+library
+  hs-source-dirs:      src
+  exposed-modules:
+      PythonHS.Lexer.TokenType
+    , PythonHS.Lexer.Token
+    , PythonHS.Lexer.LexerError
+    , PythonHS.Lexer.ScanTokens
+    , PythonHS.AST.BinaryOperator
+    , PythonHS.AST.Expr
+    , PythonHS.AST.Stmt
+    , PythonHS.AST.Program
+    , PythonHS.Lexer.Position
+    , PythonHS.Parser.ParseError
+    , PythonHS.Parser.ParseProgram
+    , PythonHS.RunSource
+    , PythonHS.Runner
+    , PythonHS.EvalProgram
+    , PythonHS.CLI
+    , PythonHS.Evaluator
+    , PythonHS.Evaluator.EvalStatements
+    , PythonHS.Evaluator.ShowPos
+    , PythonHS.Evaluator.Env
+    , PythonHS.Evaluator.Value
+    , PythonHS.Evaluator.FuncEnv
+    , PythonHS.Structure.CheckStructure
+    , PythonHS.Structure.CheckStructureViolations
+  other-modules:
+      PythonHS.CLI.ProcessSubmission
+    , PythonHS.CLI.ReplEvalLines
+    , PythonHS.CLI.RunFile
+    , PythonHS.CLI.StartRepl
+  build-depends:
+      base >=4.14 && <5
+    , containers >=0.6 && <0.9
+    , directory
+    , filepath
+  default-language:    Haskell2010
+  ghc-options:         -Wall
+
+executable python-hs
+  hs-source-dirs:      app
+  main-is:             Main.hs
+  build-depends:
+      base >=4.14 && <5
+    , python-hs
+  default-language:    Haskell2010
+  ghc-options:         -Wall
+
+executable check-structure
+  hs-source-dirs:      app/check-structure
+  main-is:             Main.hs
+  build-depends:
+      base >=4.14 && <5
+    , python-hs
+  default-language:    Haskell2010
+  ghc-options:         -Wall
+
+test-suite python-hs-test
+  type:                exitcode-stdio-1.0
+  hs-source-dirs:      test
+  main-is:             Spec.hs
+  other-modules:
+      Test.Acceptance.MvpScenarioSpec
+    , Test.Lexer.ScanTokensSpec
+    , Test.Parser.ParseProgramSpec
+    , Test.Parser.ParserErrorSpec
+    , Test.Eval.EvalSpec
+    , Test.Eval.FunctionEvalSpec
+    , Test.Eval.RuntimeErrorSpec
+    , Test.Runner.RunnerSpec
+    , Test.CLI.CLISpec
+    , Test.Structure.CheckStructureSpec
+  build-depends:
+      base >=4.14 && <5
+    , hspec >=2.7 && <3
+    , directory
+    , temporary
+    , python-hs
+  -- prefer modern field to avoid deprecation warning
+  build-tool-depends:
+    hspec-discover:hspec-discover
+  default-language:    Haskell2010
+  ghc-options:         -Wall

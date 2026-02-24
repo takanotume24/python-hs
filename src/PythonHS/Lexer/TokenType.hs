@@ -1,0 +1,56 @@
+module PythonHS.Lexer.TokenType (TokenType (..)) where
+
+data TokenType
+  = IdentifierToken
+  | IntegerToken
+  | StringToken
+  | AssignToken
+  | PlusAssignToken
+  | MinusAssignToken
+  | StarAssignToken
+  | SlashAssignToken
+  | PercentAssignToken
+  | DoubleSlashAssignToken
+  | PlusToken
+  | MinusToken
+  | StarToken
+  | SlashToken
+  | PercentToken
+  | LParenToken
+  | RParenToken
+  | LBracketToken
+  | RBracketToken
+  | LBraceToken
+  | RBraceToken
+  | ColonToken
+  | CommaToken
+  | NewlineToken
+  | IndentToken
+  | DedentToken
+  | PrintToken
+  | IfToken
+  | ElifToken
+  | TrueToken
+  | FalseToken
+  | NoneToken
+  | ElseToken
+  | WhileToken
+  | ForToken
+  | InToken
+  | DefToken
+  | ReturnToken
+  | BreakToken
+  | ContinueToken
+  | GlobalToken
+  | PassToken
+  | EqToken
+  | NotEqToken
+  | LtToken
+  | GtToken
+  | LteToken
+  | GteToken
+  | AndToken
+  | OrToken
+  | NotToken
+  | EOFToken
+  deriving (Eq, Show)
