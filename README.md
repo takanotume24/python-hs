@@ -3,6 +3,8 @@
 Haskellで実装した、Python 3 サブセットのインタプリタです。  
 TDD（`hspec`）で機能を拡張し、`Lexer -> Parser -> Evaluator -> Runner/CLI` を段階的に実装しています。
 
+このプログラムは、GitHub Copilotによって生成されたコード、及びtakanotume24が手動で修正したコードを含みます。
+
 ## 現在の実装状況（2026-02-24）
 
 ### 実行基盤
