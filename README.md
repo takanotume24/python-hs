@@ -47,15 +47,20 @@ TDD（`hspec`）で機能を拡張し、`Lexer -> Parser -> Evaluator -> Runner/
 - [x] `bool(x)`（int/None/string/list/dictのtruthiness）
 - [x] `range(stop)` / `range(start, stop)` / `range(start, stop, step)`
 - [x] `append(list, value)`
-- [x] `pop(list)`
+- [x] `remove(list, value)`
+- [x] `sort(list)`（int要素のみ対応）
+- [x] `insert(list, index, value)`
+- [x] `pop(list)` / `pop(dict, key)` / `pop(dict, key, default)`
+- [x] `clear(x)`（list/dict）
 - [x] `keys(dict)` / `values(dict)` / `items(dict)`（挿入順維持）
 - [x] `get(dict, key)` / `get(dict, key, default)`
 - [x] `update(dict, key, value)`
+- [x] `setdefault(dict, key, default)`
 
 ## MVP外・未対応（明示）
 - [ ] Python完全互換（あくまでサブセット）
 - [ ] メソッド呼び出し構文（例: `x.append(3)`）
-- [ ] 未実装組み込み（例: `clear`）
+- [ ] 一部組み込みは未実装（例: `reverse`）
 - [ ] 例外処理、クラス、import など高度機能
 
 ## 使い方

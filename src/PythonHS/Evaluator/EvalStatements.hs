@@ -1,5 +1,6 @@
 module PythonHS.Evaluator.EvalStatements (evalStatements) where
 
+import Data.List (sort)
 import qualified Data.Map.Strict as Map
 import PythonHS.AST.Stmt (Stmt (..))
 import PythonHS.AST.Expr (Expr (..))
@@ -356,13 +357,57 @@ evalStatements env fenv outputs (stmt : rest) = case stmt of
           [ListValue vals, value] -> Right (ListValue (vals ++ [value]), argOuts)
           [_, _] -> Left $ "Type error: append expects list as first argument at " ++ showPos pos
           _ -> Left $ "Argument count mismatch when calling append at " ++ showPos pos
+      _ | fname == "sort" -> do
+        (argVals, argOuts) <- evalArgs env' fenv' args
+        case argVals of
+          [ListValue vals] ->
+            case intValues vals of
+              Just ns -> Right (ListValue (map IntValue (sort ns)), argOuts)
+              Nothing -> Left $ "Type error: sort expects list of int at " ++ showPos pos
+          [_] -> Left $ "Type error: sort expects list as first argument at " ++ showPos pos
+          _ -> Left $ "Argument count mismatch when calling sort at " ++ showPos pos
+      _ | fname == "remove" -> do
+        (argVals, argOuts) <- evalArgs env' fenv' args
+        case argVals of
+          [ListValue vals, target] ->
+            case removeFirstValue vals target of
+              Just newVals -> Right (ListValue newVals, argOuts)
+              Nothing -> Left $ "Value error: remove value not found at " ++ showPos pos
+          [_, _] -> Left $ "Type error: remove expects list as first argument at " ++ showPos pos
+          _ -> Left $ "Argument count mismatch when calling remove at " ++ showPos pos
+      _ | fname == "insert" -> do
+        (argVals, argOuts) <- evalArgs env' fenv' args
+        case argVals of
+          [ListValue vals, IntValue index, value] -> Right (ListValue (insertAtIndex vals index value), argOuts)
+          [ListValue _, _, _] -> Left $ "Type error: insert expects int index at " ++ showPos pos
+          [_, _, _] -> Left $ "Type error: insert expects list as first argument at " ++ showPos pos
+          _ -> Left $ "Argument count mismatch when calling insert at " ++ showPos pos
       _ | fname == "pop" -> do
         (argVals, argOuts) <- evalArgs env' fenv' args
         case argVals of
           [ListValue []] -> Left $ "Value error: pop from empty list at " ++ showPos pos
           [ListValue vals] -> Right (last vals, argOuts)
+          [DictValue pairs, key] ->
+            case lookupDictValue pairs key of
+              Just value -> Right (value, argOuts)
+              Nothing -> Left $ "Key not found in pop at " ++ showPos pos
+          [DictValue pairs, key, defaultValue] ->
+            case lookupDictValue pairs key of
+              Just value -> Right (value, argOuts)
+              Nothing -> Right (defaultValue, argOuts)
           [_] -> Left $ "Type error: pop expects list at " ++ showPos pos
+          [ListValue _, _] -> Left $ "Argument count mismatch when calling pop at " ++ showPos pos
+          [ListValue _, _, _] -> Left $ "Argument count mismatch when calling pop at " ++ showPos pos
+          [_, _] -> Left $ "Type error: pop expects dict as first argument at " ++ showPos pos
+          [_, _, _] -> Left $ "Type error: pop expects dict as first argument at " ++ showPos pos
           _ -> Left $ "Argument count mismatch when calling pop at " ++ showPos pos
+      _ | fname == "clear" -> do
+        (argVals, argOuts) <- evalArgs env' fenv' args
+        case argVals of
+          [ListValue _] -> Right (ListValue [], argOuts)
+          [DictValue _] -> Right (DictValue [], argOuts)
+          [_] -> Left $ "Type error: clear expects list or dict at " ++ showPos pos
+          _ -> Left $ "Argument count mismatch when calling clear at " ++ showPos pos
       _ | fname == "keys" -> do
         (argVals, argOuts) <- evalArgs env' fenv' args
         case argVals of
@@ -389,6 +434,12 @@ evalStatements env fenv outputs (stmt : rest) = case stmt of
           [DictValue pairs, key, value] -> Right (DictValue (updateDictValue pairs key value), argOuts)
           [_, _, _] -> Left $ "Type error: update expects dict as first argument at " ++ showPos pos
           _ -> Left $ "Argument count mismatch when calling update at " ++ showPos pos
+      _ | fname == "setdefault" -> do
+        (argVals, argOuts) <- evalArgs env' fenv' args
+        case argVals of
+          [DictValue pairs, key, defaultValue] -> Right (DictValue (setDefaultDictValue pairs key defaultValue), argOuts)
+          [_, _, _] -> Left $ "Type error: setdefault expects dict as first argument at " ++ showPos pos
+          _ -> Left $ "Argument count mismatch when calling setdefault at " ++ showPos pos
       _ | fname == "values" -> do
         (argVals, argOuts) <- evalArgs env' fenv' args
         case argVals of
@@ -457,6 +508,29 @@ evalStatements env fenv outputs (stmt : rest) = case stmt of
     updateDictValue ((k, v) : restPairs) key value
       | k == key = (k, value) : restPairs
       | otherwise = (k, v) : updateDictValue restPairs key value
+
+    setDefaultDictValue :: [(Value, Value)] -> Value -> Value -> [(Value, Value)]
+    setDefaultDictValue pairs key defaultValue =
+      case lookupDictValue pairs key of
+        Just _ -> pairs
+        Nothing -> pairs ++ [(key, defaultValue)]
+
+    removeFirstValue :: [Value] -> Value -> Maybe [Value]
+    removeFirstValue [] _ = Nothing
+    removeFirstValue (v : restVals) target
+      | v == target = Just restVals
+      | otherwise = fmap (v :) (removeFirstValue restVals target)
+
+    intValues :: [Value] -> Maybe [Int]
+    intValues [] = Just []
+    intValues (IntValue n : restVals) = fmap (n :) (intValues restVals)
+    intValues (_ : _) = Nothing
+
+    insertAtIndex :: [Value] -> Int -> Value -> [Value]
+    insertAtIndex values index value =
+      let clampedIndex = max 0 (min index (length values))
+          (leftValues, rightValues) = splitAt clampedIndex values
+       in leftValues ++ (value : rightValues)
 
     pairToList :: (Value, Value) -> Value
     pairToList (k, v) = ListValue [k, v]

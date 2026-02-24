@@ -83,8 +83,47 @@ spec = describe "evalProgram" $ do
   it "evaluates append builtin for list" $ do
     evalProgram (Program [PrintStmt (CallExpr "append" [ListExpr [IntegerExpr 1 (Position 0 0), IntegerExpr 2 (Position 0 0)] (Position 0 0), IntegerExpr 3 (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["[1, 2, 3]"]
 
+  it "evaluates sort builtin for integer list" $ do
+    evalProgram (Program [PrintStmt (CallExpr "sort" [ListExpr [IntegerExpr 3 (Position 0 0), IntegerExpr 1 (Position 0 0), IntegerExpr 2 (Position 0 0)] (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["[1, 2, 3]"]
+    evalProgram (Program [PrintStmt (CallExpr "sort" [ListExpr [] (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["[]"]
+
+  it "reports sort builtin type and argument errors" $ do
+    evalProgram (Program [PrintStmt (CallExpr "sort" [IntegerExpr 1 (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Left "Type error: sort expects list as first argument at 0:0"
+    evalProgram (Program [PrintStmt (CallExpr "sort" [ListExpr [StringExpr "x" (Position 0 0)] (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Left "Type error: sort expects list of int at 0:0"
+    evalProgram (Program [PrintStmt (CallExpr "sort" [ListExpr [] (Position 0 0), IntegerExpr 1 (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Left "Argument count mismatch when calling sort at 0:0"
+
+  it "evaluates remove builtin for list" $ do
+    evalProgram (Program [PrintStmt (CallExpr "remove" [ListExpr [IntegerExpr 1 (Position 0 0), IntegerExpr 2 (Position 0 0), IntegerExpr 2 (Position 0 0)] (Position 0 0), IntegerExpr 2 (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["[1, 2]"]
+
+  it "reports remove builtin type/value/argument errors" $ do
+    evalProgram (Program [PrintStmt (CallExpr "remove" [IntegerExpr 1 (Position 0 0), IntegerExpr 2 (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Left "Type error: remove expects list as first argument at 0:0"
+    evalProgram (Program [PrintStmt (CallExpr "remove" [ListExpr [IntegerExpr 1 (Position 0 0)] (Position 0 0), IntegerExpr 9 (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Left "Value error: remove value not found at 0:0"
+    evalProgram (Program [PrintStmt (CallExpr "remove" [ListExpr [] (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Left "Argument count mismatch when calling remove at 0:0"
+
+  it "evaluates insert builtin for list" $ do
+    evalProgram (Program [PrintStmt (CallExpr "insert" [ListExpr [IntegerExpr 1 (Position 0 0), IntegerExpr 3 (Position 0 0)] (Position 0 0), IntegerExpr 1 (Position 0 0), IntegerExpr 2 (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["[1, 2, 3]"]
+    evalProgram (Program [PrintStmt (CallExpr "insert" [ListExpr [IntegerExpr 1 (Position 0 0)] (Position 0 0), IntegerExpr (-1) (Position 0 0), IntegerExpr 0 (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["[0, 1]"]
+    evalProgram (Program [PrintStmt (CallExpr "insert" [ListExpr [IntegerExpr 1 (Position 0 0)] (Position 0 0), IntegerExpr 9 (Position 0 0), IntegerExpr 2 (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["[1, 2]"]
+
+  it "reports insert builtin type and argument errors" $ do
+    evalProgram (Program [PrintStmt (CallExpr "insert" [IntegerExpr 1 (Position 0 0), IntegerExpr 0 (Position 0 0), IntegerExpr 2 (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Left "Type error: insert expects list as first argument at 0:0"
+    evalProgram (Program [PrintStmt (CallExpr "insert" [ListExpr [] (Position 0 0), StringExpr "x" (Position 0 0), IntegerExpr 2 (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Left "Type error: insert expects int index at 0:0"
+    evalProgram (Program [PrintStmt (CallExpr "insert" [ListExpr [] (Position 0 0), IntegerExpr 0 (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Left "Argument count mismatch when calling insert at 0:0"
+
   it "evaluates pop builtin for list" $ do
     evalProgram (Program [PrintStmt (CallExpr "pop" [ListExpr [IntegerExpr 1 (Position 0 0), IntegerExpr 2 (Position 0 0)] (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["2"]
+
+  it "evaluates pop builtin for dictionary with optional default" $ do
+    evalProgram (Program [PrintStmt (CallExpr "pop" [DictExpr [(IntegerExpr 1 (Position 0 0), IntegerExpr 2 (Position 0 0)), (IntegerExpr 3 (Position 0 0), IntegerExpr 4 (Position 0 0))] (Position 0 0), IntegerExpr 3 (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["4"]
+    evalProgram (Program [PrintStmt (CallExpr "pop" [DictExpr [(IntegerExpr 1 (Position 0 0), IntegerExpr 2 (Position 0 0))] (Position 0 0), IntegerExpr 9 (Position 0 0), IntegerExpr 99 (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["99"]
+
+  it "evaluates clear builtin for list and dictionary" $ do
+    evalProgram (Program [PrintStmt (CallExpr "clear" [ListExpr [IntegerExpr 1 (Position 0 0), IntegerExpr 2 (Position 0 0)] (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["[]"]
+    evalProgram (Program [PrintStmt (CallExpr "clear" [DictExpr [(IntegerExpr 1 (Position 0 0), IntegerExpr 2 (Position 0 0))] (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["{}"]
+
+  it "reports clear builtin type and argument errors" $ do
+    evalProgram (Program [PrintStmt (CallExpr "clear" [IntegerExpr 1 (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Left "Type error: clear expects list or dict at 0:0"
+    evalProgram (Program [PrintStmt (CallExpr "clear" [ListExpr [] (Position 0 0), IntegerExpr 1 (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Left "Argument count mismatch when calling clear at 0:0"
 
   it "evaluates keys builtin for dictionary" $ do
     evalProgram
@@ -122,6 +161,14 @@ spec = describe "evalProgram" $ do
   it "evaluates update builtin for dictionary" $ do
     evalProgram (Program [PrintStmt (CallExpr "update" [DictExpr [(IntegerExpr 1 (Position 0 0), IntegerExpr 2 (Position 0 0))] (Position 0 0), IntegerExpr 1 (Position 0 0), IntegerExpr 9 (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["{1: 9}"]
     evalProgram (Program [PrintStmt (CallExpr "update" [DictExpr [(IntegerExpr 1 (Position 0 0), IntegerExpr 2 (Position 0 0))] (Position 0 0), IntegerExpr 3 (Position 0 0), IntegerExpr 4 (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["{1: 2, 3: 4}"]
+
+  it "evaluates setdefault builtin for dictionary" $ do
+    evalProgram (Program [PrintStmt (CallExpr "setdefault" [DictExpr [(IntegerExpr 1 (Position 0 0), IntegerExpr 2 (Position 0 0))] (Position 0 0), IntegerExpr 1 (Position 0 0), IntegerExpr 9 (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["{1: 2}"]
+    evalProgram (Program [PrintStmt (CallExpr "setdefault" [DictExpr [(IntegerExpr 1 (Position 0 0), IntegerExpr 2 (Position 0 0))] (Position 0 0), IntegerExpr 3 (Position 0 0), IntegerExpr 4 (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["{1: 2, 3: 4}"]
+
+  it "reports setdefault builtin type and argument errors" $ do
+    evalProgram (Program [PrintStmt (CallExpr "setdefault" [IntegerExpr 1 (Position 0 0), IntegerExpr 2 (Position 0 0), IntegerExpr 3 (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Left "Type error: setdefault expects dict as first argument at 0:0"
+    evalProgram (Program [PrintStmt (CallExpr "setdefault" [DictExpr [] (Position 0 0), IntegerExpr 1 (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Left "Argument count mismatch when calling setdefault at 0:0"
 
   it "evaluates range builtin with start/stop and step" $ do
     evalProgram (Program [PrintStmt (CallExpr "range" [IntegerExpr 2 (Position 0 0), IntegerExpr 5 (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["[2, 3, 4]"]

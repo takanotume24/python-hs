@@ -87,6 +87,11 @@
 - [x] 複文ブロック対応の第15段階: ブロックヘッダのコロン欠落時 parse エラー位置をテストで固定
 - [x] データ構造拡張の第1段階: `update(dict, key, value)` を導入（eval/runner）
 - [x] データ構造拡張の第2段階: `pop(list)` を導入（末尾要素返却、空リストは Value error）
+- [x] データ構造拡張の第3段階: `clear(list|dict)` を導入（eval/runner）
+- [x] データ構造拡張の第4段階: `setdefault(dict, key, default)` を導入（eval/runner）
+- [x] データ構造拡張の第5段階: `pop(dict, key[, default])` を導入（eval/runner）
+- [x] データ構造拡張の第6段階: `remove(list, value)` を導入（eval/runner）
+- [x] データ構造拡張の第7段階: `sort(list)` を導入（int要素のみ, eval/runner）
 
 ### ブロック構文 仕様メモ（2026-02-24 時点）
 - lexer は行頭スペースで `INDENT` / `DEDENT` を生成し、EOF 時に必要な `DEDENT` を flush する。
@@ -177,5 +182,10 @@
   - [x] P3継続: `if/while/for/def` ヘッダのコロン欠落時 parse エラー位置を parser/runner テストで固定
   - [x] P3継続: `update(dict, key, value)` を追加（既存キー更新/新規キー追加を eval/runner で固定）
   - [x] P3継続: `pop(list)` を追加（末尾要素返却、空リスト/型/引数個数エラーを eval/runner で固定）
-  - [x] 最新品質ゲート: `cabal test`（254 examples） / `cabal run check-structure` 成功
+  - [x] P3継続: `clear(list|dict)` を追加（空コレクション返却、型/引数個数エラーを eval/runner で固定）
+  - [x] P3継続: `setdefault(dict, key, default)` を追加（既存キーは不変、未存在キーは追加、型/引数個数エラーを eval/runner で固定）
+  - [x] P3継続: `pop(dict, key[, default])` を追加（キー存在時は値返却、未存在時はdefault返却/エラーを eval/runner で固定）
+  - [x] P3継続: `remove(list, value)` を追加（先頭一致1件削除、未検出/型/引数個数エラーを eval/runner で固定）
+  - [x] P3継続: `sort(list)` を追加（int要素のみソート、型/引数個数エラーを eval/runner で固定）
+  - [x] 最新品質ゲート: `cabal test`（286 examples） / `cabal run check-structure` 成功
   - [x] CI改善: GitHub Actions に Cabal キャッシュ（`~/.cabal/packages`, `~/.cabal/store`, `dist-newstyle`）を追加

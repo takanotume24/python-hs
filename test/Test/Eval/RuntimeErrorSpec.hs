@@ -307,13 +307,115 @@ spec = describe "runtime error reporting" $ do
       )
       `shouldBe` Left "Argument count mismatch when calling pop at 26:7"
 
-  it "reports unsupported builtin function outside MVP" $ do
     evalProgram
       ( Program
-          [ PrintStmt (CallExpr "clear" [ListExpr [IntegerExpr 1 (Position 27 11)] (Position 27 10)] (Position 27 7)) (Position 27 1)
+          [ PrintStmt (CallExpr "pop" [DictExpr [(IntegerExpr 1 (Position 27 11), IntegerExpr 2 (Position 27 14))] (Position 27 10), IntegerExpr 9 (Position 27 18)] (Position 27 7)) (Position 27 1)
           ]
       )
-      `shouldBe` Left "Name error: undefined function clear at 27:7"
+      `shouldBe` Left "Key not found in pop at 27:7"
+
+    evalProgram
+      ( Program
+          [ PrintStmt (CallExpr "pop" [IntegerExpr 1 (Position 28 11), IntegerExpr 2 (Position 28 14)] (Position 28 7)) (Position 28 1)
+          ]
+      )
+      `shouldBe` Left "Type error: pop expects dict as first argument at 28:7"
+
+  it "reports clear builtin errors" $ do
+    evalProgram
+      ( Program
+          [ PrintStmt (CallExpr "clear" [IntegerExpr 1 (Position 27 11)] (Position 27 7)) (Position 27 1)
+          ]
+      )
+      `shouldBe` Left "Type error: clear expects list or dict at 27:7"
+
+    evalProgram
+      ( Program
+          [ PrintStmt (CallExpr "clear" [ListExpr [IntegerExpr 1 (Position 28 11)] (Position 28 10), IntegerExpr 0 (Position 28 14)] (Position 28 7)) (Position 28 1)
+          ]
+      )
+      `shouldBe` Left "Argument count mismatch when calling clear at 28:7"
+
+  it "reports setdefault builtin errors" $ do
+    evalProgram
+      ( Program
+          [ PrintStmt (CallExpr "setdefault" [IntegerExpr 1 (Position 29 11), IntegerExpr 2 (Position 29 14), IntegerExpr 3 (Position 29 17)] (Position 29 7)) (Position 29 1)
+          ]
+      )
+      `shouldBe` Left "Type error: setdefault expects dict as first argument at 29:7"
+
+    evalProgram
+      ( Program
+          [ PrintStmt (CallExpr "setdefault" [DictExpr [] (Position 30 10), IntegerExpr 1 (Position 30 14)] (Position 30 7)) (Position 30 1)
+          ]
+      )
+      `shouldBe` Left "Argument count mismatch when calling setdefault at 30:7"
+
+  it "reports insert builtin errors" $ do
+    evalProgram
+      ( Program
+          [ PrintStmt (CallExpr "insert" [IntegerExpr 1 (Position 31 11), IntegerExpr 0 (Position 31 14), IntegerExpr 2 (Position 31 17)] (Position 31 7)) (Position 31 1)
+          ]
+      )
+      `shouldBe` Left "Type error: insert expects list as first argument at 31:7"
+
+    evalProgram
+      ( Program
+          [ PrintStmt (CallExpr "insert" [ListExpr [] (Position 32 10), StringExpr "x" (Position 32 14), IntegerExpr 2 (Position 32 19)] (Position 32 7)) (Position 32 1)
+          ]
+      )
+      `shouldBe` Left "Type error: insert expects int index at 32:7"
+
+    evalProgram
+      ( Program
+          [ PrintStmt (CallExpr "insert" [ListExpr [] (Position 33 10), IntegerExpr 0 (Position 33 14)] (Position 33 7)) (Position 33 1)
+          ]
+      )
+      `shouldBe` Left "Argument count mismatch when calling insert at 33:7"
+
+  it "reports remove builtin errors" $ do
+    evalProgram
+      ( Program
+          [ PrintStmt (CallExpr "remove" [IntegerExpr 1 (Position 34 11), IntegerExpr 2 (Position 34 14)] (Position 34 7)) (Position 34 1)
+          ]
+      )
+      `shouldBe` Left "Type error: remove expects list as first argument at 34:7"
+
+    evalProgram
+      ( Program
+          [ PrintStmt (CallExpr "remove" [ListExpr [IntegerExpr 1 (Position 35 11)] (Position 35 10), IntegerExpr 9 (Position 35 14)] (Position 35 7)) (Position 35 1)
+          ]
+      )
+      `shouldBe` Left "Value error: remove value not found at 35:7"
+
+    evalProgram
+      ( Program
+          [ PrintStmt (CallExpr "remove" [ListExpr [] (Position 36 10)] (Position 36 7)) (Position 36 1)
+          ]
+      )
+      `shouldBe` Left "Argument count mismatch when calling remove at 36:7"
+
+  it "reports sort builtin errors" $ do
+    evalProgram
+      ( Program
+          [ PrintStmt (CallExpr "sort" [IntegerExpr 1 (Position 37 11)] (Position 37 7)) (Position 37 1)
+          ]
+      )
+      `shouldBe` Left "Type error: sort expects list as first argument at 37:7"
+
+    evalProgram
+      ( Program
+          [ PrintStmt (CallExpr "sort" [ListExpr [StringExpr "x" (Position 38 11)] (Position 38 10)] (Position 38 7)) (Position 38 1)
+          ]
+      )
+      `shouldBe` Left "Type error: sort expects list of int at 38:7"
+
+    evalProgram
+      ( Program
+          [ PrintStmt (CallExpr "sort" [ListExpr [] (Position 39 10), IntegerExpr 1 (Position 39 14)] (Position 39 7)) (Position 39 1)
+          ]
+      )
+      `shouldBe` Left "Argument count mismatch when calling sort at 39:7"
 
   it "reports plus-assign errors" $ do
     evalProgram

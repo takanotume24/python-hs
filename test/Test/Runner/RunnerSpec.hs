@@ -111,8 +111,42 @@ spec = describe "runSource (integration)" $ do
   it "evaluates append builtin for list" $ do
     runSource "print append([1, 2], 3)\n" `shouldBe` Right ["[1, 2, 3]"]
 
+  it "evaluates sort builtin for integer list" $ do
+    runSource "print sort([3, 1, 2])\nprint sort([])\n" `shouldBe` Right ["[1, 2, 3]", "[]"]
+
+  it "reports sort builtin type and argument errors" $ do
+    runSource "print sort(1)\n" `shouldBe` Left "Type error: sort expects list as first argument at 1:7"
+    runSource "print sort([\"x\"])\n" `shouldBe` Left "Type error: sort expects list of int at 1:7"
+    runSource "print sort([], 1)\n" `shouldBe` Left "Argument count mismatch when calling sort at 1:7"
+
+  it "evaluates remove builtin for list" $ do
+    runSource "print remove([1, 2, 2], 2)\n" `shouldBe` Right ["[1, 2]"]
+
+  it "reports remove builtin type/value/argument errors" $ do
+    runSource "print remove(1, 2)\n" `shouldBe` Left "Type error: remove expects list as first argument at 1:7"
+    runSource "print remove([1], 9)\n" `shouldBe` Left "Value error: remove value not found at 1:7"
+    runSource "print remove([])\n" `shouldBe` Left "Argument count mismatch when calling remove at 1:7"
+
+  it "evaluates insert builtin for list" $ do
+    runSource "print insert([1, 3], 1, 2)\nprint insert([1], -1, 0)\nprint insert([1], 9, 2)\n" `shouldBe` Right ["[1, 2, 3]", "[0, 1]", "[1, 2]"]
+
+  it "reports insert builtin type and argument errors" $ do
+    runSource "print insert(1, 0, 2)\n" `shouldBe` Left "Type error: insert expects list as first argument at 1:7"
+    runSource "print insert([], \"x\", 2)\n" `shouldBe` Left "Type error: insert expects int index at 1:7"
+    runSource "print insert([], 0)\n" `shouldBe` Left "Argument count mismatch when calling insert at 1:7"
+
   it "evaluates pop builtin for list" $ do
     runSource "print pop([1, 2])\n" `shouldBe` Right ["2"]
+
+  it "evaluates pop builtin for dictionary with optional default" $ do
+    runSource "print pop({1: 2, 3: 4}, 3)\nprint pop({1: 2}, 9, 99)\n" `shouldBe` Right ["4", "99"]
+
+  it "evaluates clear builtin for list and dictionary" $ do
+    runSource "print clear([1, 2])\nprint clear({1: 2})\n" `shouldBe` Right ["[]", "{}"]
+
+  it "reports clear builtin type and argument errors" $ do
+    runSource "print clear(1)\n" `shouldBe` Left "Type error: clear expects list or dict at 1:7"
+    runSource "print clear([], 1)\n" `shouldBe` Left "Argument count mismatch when calling clear at 1:7"
 
   it "evaluates keys builtin for dictionary" $ do
     runSource "print keys({1: 2, 3: 4})\n" `shouldBe` Right ["[1, 3]"]
@@ -125,6 +159,13 @@ spec = describe "runSource (integration)" $ do
 
   it "evaluates update builtin for dictionary" $ do
     runSource "print update({1: 2}, 1, 9)\nprint update({1: 2}, 3, 4)\n" `shouldBe` Right ["{1: 9}", "{1: 2, 3: 4}"]
+
+  it "evaluates setdefault builtin for dictionary" $ do
+    runSource "print setdefault({1: 2}, 1, 9)\nprint setdefault({1: 2}, 3, 4)\n" `shouldBe` Right ["{1: 2}", "{1: 2, 3: 4}"]
+
+  it "reports setdefault builtin type and argument errors" $ do
+    runSource "print setdefault(1, 2, 3)\n" `shouldBe` Left "Type error: setdefault expects dict as first argument at 1:7"
+    runSource "print setdefault({}, 1)\n" `shouldBe` Left "Argument count mismatch when calling setdefault at 1:7"
 
   it "evaluates range builtin with start/stop and step" $ do
     runSource "print range(2, 5)\n" `shouldBe` Right ["[2, 3, 4]"]
@@ -144,9 +185,6 @@ spec = describe "runSource (integration)" $ do
 
   it "preserves insertion order for dictionary builtins" $ do
     runSource "print keys({3: 30, 1: 10})\nprint values({3: 30, 1: 10})\nprint items({3: 30, 1: 10})\n" `shouldBe` Right ["[3, 1]", "[30, 10]", "[[3, 30], [1, 10]]"]
-
-  it "reports unsupported builtins outside MVP" $ do
-    runSource "print clear([1])\n" `shouldBe` Left "Name error: undefined function clear at 1:7"
 
   it "keeps builtin call style as function form" $ do
     runSource "x = [1, 2]\nprint x.append(3)\n" `shouldBe` Left "UnexpectedCharacter '.'"
