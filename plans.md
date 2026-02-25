@@ -110,8 +110,12 @@
 
 ## メンテナンス記録（要約）
 - 2026-02-25
+  - [x] `RunnerSpec` を `RunnerCoreSpec` / `RunnerEdgeSpec` に分割し、200行制限に適合
+  - [x] Lexer の分割（`ScanTokenStep` 導入、`ScanTokensCoreSpec` / `ScanTokensIndentSpec` 分割）を反映
+  - [x] 品質ゲート確認: `cabal test`（286 examples） / `cabal run check-structure` 成功
   - [x] devcontainer を Dockerfile 構成へ移行し、`ghcup` 経由で `ghc` / `cabal` / `haskell-language-server` を導入
   - [x] devcontainer の Haskell ツール指定を `latest` 参照へ更新（`ghc` / `cabal` / `haskell-language-server`）
+  - [x] devcontainer 起動時の `.bashrc` 追記処理を `postStartCommand` 直書きから `.devcontainer/post-start.sh` 呼び出しへ変更
 - 2026-02-24
   - [x] READMEを新規作成し、実装済みPythonサブセット機能とMVP境界（未対応範囲）を明文化
 - 2026-02-19

@@ -10,6 +10,7 @@
 		"ghcr.io/devcontainers/features/copilot-cli:1": {}
 	},
 	"postCreateCommand": "cabal update",
+	"postStartCommand": "bash .devcontainer/post-start.sh",
 	"remoteUser": "vscode",
 	"customizations": {
 		"vscode": {
