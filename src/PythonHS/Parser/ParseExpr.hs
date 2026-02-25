@@ -118,8 +118,11 @@ parseExpr = parseOr
       parseListTail listPos [firstExpr] afterFirst
 
     parseListTail listPos exprs (Token CommaToken _ _ : rest) = do
-      (nextExpr, afterNext) <- parseExpr rest
-      parseListTail listPos (exprs ++ [nextExpr]) afterNext
+      case rest of
+        Token RBracketToken _ _ : afterBracket -> Right (ListExpr exprs listPos, afterBracket)
+        _ -> do
+          (nextExpr, afterNext) <- parseExpr rest
+          parseListTail listPos (exprs ++ [nextExpr]) afterNext
     parseListTail listPos exprs (Token RBracketToken _ _ : rest) =
       Right (ListExpr exprs listPos, rest)
     parseListTail _ _ (tok : _) = Left (ExpectedExpression (position tok))
@@ -137,13 +140,16 @@ parseExpr = parseOr
         _ -> Left (ExpectedExpression (Position 0 0))
 
     parseDictTail dictPos pairs (Token CommaToken _ _ : rest) = do
-      (nextKey, afterKey) <- parseExpr rest
-      case afterKey of
-        Token ColonToken _ _ : afterColon -> do
-          (nextValue, afterValue) <- parseExpr afterColon
-          parseDictTail dictPos (pairs ++ [(nextKey, nextValue)]) afterValue
-        tok : _ -> Left (ExpectedExpression (position tok))
-        _ -> Left (ExpectedExpression (Position 0 0))
+      case rest of
+        Token RBraceToken _ _ : afterBrace -> Right (DictExpr pairs dictPos, afterBrace)
+        _ -> do
+          (nextKey, afterKey) <- parseExpr rest
+          case afterKey of
+            Token ColonToken _ _ : afterColon -> do
+              (nextValue, afterValue) <- parseExpr afterColon
+              parseDictTail dictPos (pairs ++ [(nextKey, nextValue)]) afterValue
+            tok : _ -> Left (ExpectedExpression (position tok))
+            _ -> Left (ExpectedExpression (Position 0 0))
     parseDictTail dictPos pairs (Token RBraceToken _ _ : rest) =
       Right (DictExpr pairs dictPos, rest)
     parseDictTail _ _ (tok : _) = Left (ExpectedExpression (position tok))

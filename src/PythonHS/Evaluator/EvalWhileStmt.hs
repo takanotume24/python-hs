@@ -57,4 +57,4 @@ evalWhileStmt evalStatementsFn evalExprFn env fenv outputs cond body whilePos re
     expectTruthy _ _ (DictValue pairs) = Right (if null pairs then 0 else 1)
     expectTruthy context pos _ = Left $ "Type error: expected int in " ++ context ++ " at " ++ showPos pos
 
-    maxLoopIterations = 10000
+    maxLoopIterations = 2000

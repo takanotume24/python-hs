@@ -643,6 +643,38 @@ spec = describe "parseProgram" $ do
             ]
         )
 
+  it "parses function definition and call with trailing commas" $ do
+    parseProgram
+      [ Token DefToken "def" (Position 1 1),
+        Token IdentifierToken "add" (Position 1 1),
+        Token LParenToken "(" (Position 1 1),
+        Token IdentifierToken "a" (Position 1 1),
+        Token CommaToken "," (Position 1 1),
+        Token IdentifierToken "b" (Position 1 1),
+        Token CommaToken "," (Position 1 1),
+        Token RParenToken ")" (Position 1 1),
+        Token ColonToken ":" (Position 1 1),
+        Token PrintToken "print" (Position 1 1),
+        Token IdentifierToken "a" (Position 1 1),
+        Token NewlineToken "\\n" (Position 1 1),
+        Token PrintToken "print" (Position 1 1),
+        Token IdentifierToken "add" (Position 1 1),
+        Token LParenToken "(" (Position 1 1),
+        Token IntegerToken "1" (Position 1 1),
+        Token CommaToken "," (Position 1 1),
+        Token IntegerToken "2" (Position 1 1),
+        Token CommaToken "," (Position 1 1),
+        Token RParenToken ")" (Position 1 1),
+        Token NewlineToken "\\n" (Position 1 1),
+        Token EOFToken "" (Position 1 1)
+      ]
+      `shouldBe` Right
+        ( Program
+            [ FunctionDefStmt "add" ["a", "b"] [PrintStmt (IdentifierExpr "a" (Position 1 1)) (Position 1 1)] (Position 1 1),
+              PrintStmt (CallExpr "add" [IntegerExpr 1 (Position 1 1), IntegerExpr 2 (Position 1 1)] (Position 1 1)) (Position 1 1)
+            ]
+        )
+
   it "parses return inside function body" $ do
     parseProgram
       [ Token DefToken "def" (Position 1 1),
@@ -657,6 +689,20 @@ spec = describe "parseProgram" $ do
         Token EOFToken "" (Position 1 1)
       ]
       `shouldBe` Right (Program [FunctionDefStmt "id" ["x"] [ReturnStmt (IdentifierExpr "x" (Position 1 1)) (Position 1 1)] (Position 1 1)])
+
+  it "parses bare return inside function body as None" $ do
+    parseProgram
+      [ Token DefToken "def" (Position 1 1),
+        Token IdentifierToken "id" (Position 1 1),
+        Token LParenToken "(" (Position 1 1),
+        Token IdentifierToken "x" (Position 1 1),
+        Token RParenToken ")" (Position 1 1),
+        Token ColonToken ":" (Position 1 1),
+        Token ReturnToken "return" (Position 1 1),
+        Token NewlineToken "\\n" (Position 1 1),
+        Token EOFToken "" (Position 1 1)
+      ]
+      `shouldBe` Right (Program [FunctionDefStmt "id" ["x"] [ReturnStmt (NoneExpr (Position 1 1)) (Position 1 1)] (Position 1 1)])
 
   it "parses an indented function suite with multiple statements" $ do
     parseProgram
@@ -870,6 +916,20 @@ spec = describe "parseProgram" $ do
       ]
       `shouldBe` Right (Program [PrintStmt (ListExpr [IntegerExpr 1 (Position 1 8), IntegerExpr 2 (Position 1 11)] (Position 1 7)) (Position 1 1)])
 
+  it "parses list literal expression with trailing comma" $ do
+    parseProgram
+      [ Token PrintToken "print" (Position 1 1),
+        Token LBracketToken "[" (Position 1 7),
+        Token IntegerToken "1" (Position 1 8),
+        Token CommaToken "," (Position 1 9),
+        Token IntegerToken "2" (Position 1 11),
+        Token CommaToken "," (Position 1 12),
+        Token RBracketToken "]" (Position 1 13),
+        Token NewlineToken "\\n" (Position 1 14),
+        Token EOFToken "" (Position 2 1)
+      ]
+      `shouldBe` Right (Program [PrintStmt (ListExpr [IntegerExpr 1 (Position 1 8), IntegerExpr 2 (Position 1 11)] (Position 1 7)) (Position 1 1)])
+
   it "parses dictionary literal expression" $ do
     parseProgram
       [ Token PrintToken "print" (Position 1 1),
@@ -889,6 +949,26 @@ spec = describe "parseProgram" $ do
         ( Program
             [ PrintStmt
                 (DictExpr [(IntegerExpr 1 (Position 1 8), IntegerExpr 2 (Position 1 11)), (IntegerExpr 3 (Position 1 14), IntegerExpr 4 (Position 1 17))] (Position 1 7))
+                (Position 1 1)
+            ]
+        )
+
+  it "parses dictionary literal expression with trailing comma" $ do
+    parseProgram
+      [ Token PrintToken "print" (Position 1 1),
+        Token LBraceToken "{" (Position 1 7),
+        Token IntegerToken "1" (Position 1 8),
+        Token ColonToken ":" (Position 1 9),
+        Token IntegerToken "2" (Position 1 11),
+        Token CommaToken "," (Position 1 12),
+        Token RBraceToken "}" (Position 1 13),
+        Token NewlineToken "\\n" (Position 1 14),
+        Token EOFToken "" (Position 2 1)
+      ]
+      `shouldBe` Right
+        ( Program
+            [ PrintStmt
+                (DictExpr [(IntegerExpr 1 (Position 1 8), IntegerExpr 2 (Position 1 11))] (Position 1 7))
                 (Position 1 1)
             ]
         )

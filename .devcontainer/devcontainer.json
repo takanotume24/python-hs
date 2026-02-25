@@ -16,8 +16,6 @@
 		"vscode": {
 			"extensions": [
 				"haskell.haskell",
-				"charliermarsh.ruff",
-				"ms-python.python"
 			]
 		}
 	}

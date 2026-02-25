@@ -72,4 +72,4 @@ evalForStmt evalStatementsFn evalExprFn env fenv outputs name iterExpr body forP
     exprPos (BinaryExpr _ _ _ pos) = pos
     exprPos (CallExpr _ _ pos) = pos
 
-    maxLoopIterations = 10000
+    maxLoopIterations = 2000

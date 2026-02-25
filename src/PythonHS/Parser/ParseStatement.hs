@@ -1,5 +1,6 @@
 module PythonHS.Parser.ParseStatement (parseStatement) where
 
+import PythonHS.AST.Expr (Expr (NoneExpr))
 import PythonHS.AST.Stmt (Stmt (AddAssignStmt, AssignStmt, BreakStmt, ContinueStmt, DivAssignStmt, FloorDivAssignStmt, ForStmt, FunctionDefStmt, GlobalStmt, IfStmt, ModAssignStmt, MulAssignStmt, PassStmt, PrintStmt, ReturnStmt, SubAssignStmt, WhileStmt))
 import PythonHS.Lexer.Position (Position (Position))
 import PythonHS.Lexer.Token (Token (Token), position)
@@ -44,6 +45,8 @@ parseStatement tokenStream =
     Token PrintToken _ pos : rest -> do
       (valueExpr, remaining) <- parseExpr rest
       Right (PrintStmt valueExpr pos, remaining)
+    Token ReturnToken _ pos : rest@(Token NewlineToken _ _ : _) ->
+      Right (ReturnStmt (NoneExpr pos) pos, rest)
     Token ReturnToken _ pos : rest -> do
       (valueExpr, remaining) <- parseExpr rest
       Right (ReturnStmt valueExpr pos, remaining)

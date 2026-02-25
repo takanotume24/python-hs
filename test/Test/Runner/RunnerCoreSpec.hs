@@ -8,6 +8,12 @@ spec = describe "runSource (integration core)" $ do
   it "runs a simple script (assignment + print)" $ do
     runSource "x = 1\nprint x\n" `shouldBe` Right ["1"]
 
+  it "accepts trailing commas in function definition and call" $ do
+    runSource "def add(a, b,):\n  return a + b\nprint add(1, 2,)\n" `shouldBe` Right ["3"]
+
+  it "returns None for bare return in function" $ do
+    runSource "def f():\n  return\nprint f()\n" `shouldBe` Right ["None"]
+
   it "prints a string literal" $ do
     runSource "print \"hello\"\n" `shouldBe` Right ["hello"]
 
@@ -67,6 +73,9 @@ spec = describe "runSource (integration core)" $ do
 
   it "assigns string and prints identifier" $ do
     runSource "x = \"hello\"\nprint x\n" `shouldBe` Right ["hello"]
+
+  it "accepts trailing commas in list and dict literals" $ do
+    runSource "print [1, 2,]\nprint {1: 2,}\n" `shouldBe` Right ["[1, 2]", "{1: 2}"]
 
   it "concatenates strings and prints result" $ do
     runSource "print \"a\" + \"b\"\n" `shouldBe` Right ["ab"]
