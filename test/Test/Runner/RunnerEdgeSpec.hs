@@ -28,7 +28,9 @@ spec = describe "runSource (integration edge/error)" $ do
 
   it "reports dictionary method-call style errors with method position" $ do
     runSource "print 1.get(1)\n" `shouldBe` Left "Type error: get expects dict as first argument at 1:9"
-    runSource "print {}.setdefault(1)\n" `shouldBe` Left "Argument count mismatch when calling setdefault at 1:10"
+    runSource "print {}.setdefault(1)\n" `shouldBe` Right ["{1: None}"]
+    runSource "print 1.setdefault(1)\n" `shouldBe` Left "Type error: setdefault expects dict as first argument at 1:9"
+    runSource "print {}.update(1)\n" `shouldBe` Left "Type error: update expects dict as second argument at 1:10"
 
   it "evaluates string equality and inequality" $ do
     runSource "print \"a\" == \"a\"\nprint \"a\" != \"b\"\n" `shouldBe` Right ["1", "1"]
@@ -121,6 +123,9 @@ spec = describe "runSource (integration edge/error)" $ do
 
   it "executes function and collects prints from body and call" $ do
     runSource "def add(a, b):\nprint a\nprint add(1, 2)\n" `shouldBe` Right ["1", "0"]
+
+  it "reports update merge type error for non-dict second argument" $ do
+    runSource "print update({}, 1)\n" `shouldBe` Left "Type error: update expects dict as second argument at 1:7"
 
   it "allows function to read global variable" $ do
     runSource "x = 7\ndef readGlobal():\nreturn x\nprint readGlobal()\n" `shouldBe` Right ["7"]

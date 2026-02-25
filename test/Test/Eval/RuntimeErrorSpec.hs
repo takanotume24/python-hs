@@ -229,7 +229,7 @@ spec = describe "runtime error reporting" $ do
           [ PrintStmt (CallExpr "update" [DictExpr [] (Position 28 14), IntegerExpr 2 (Position 28 17)] (Position 28 7)) (Position 28 1)
           ]
       )
-      `shouldBe` Left "Argument count mismatch when calling update at 28:7"
+      `shouldBe` Left "Type error: update expects dict as second argument at 28:7"
 
   it "reports extended range builtin errors" $ do
     evalProgram
@@ -346,10 +346,10 @@ spec = describe "runtime error reporting" $ do
 
     evalProgram
       ( Program
-          [ PrintStmt (CallExpr "setdefault" [DictExpr [] (Position 30 10), IntegerExpr 1 (Position 30 14)] (Position 30 7)) (Position 30 1)
+          [ PrintStmt (CallExpr "setdefault" [IntegerExpr 1 (Position 30 11), IntegerExpr 2 (Position 30 14)] (Position 30 7)) (Position 30 1)
           ]
       )
-      `shouldBe` Left "Argument count mismatch when calling setdefault at 30:7"
+      `shouldBe` Left "Type error: setdefault expects dict as first argument at 30:7"
 
   it "reports insert builtin errors" $ do
     evalProgram

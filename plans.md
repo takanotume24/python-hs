@@ -91,6 +91,8 @@
 - [x] データ構造拡張の第4段階: `setdefault(dict, key, default)` を導入（eval/runner）
 - [x] データ構造拡張の第5段階: `pop(dict, key[, default])` を導入（eval/runner）
 - [x] データ構造拡張の第6段階: `remove(list, value)` を導入（eval/runner）
+- [x] データ構造拡張の第7段階: `update(dict, otherDict)` を導入（辞書マージ, eval/runner）
+- [x] データ構造拡張の第8段階: `setdefault(dict, key)` を導入（default省略時は `None`, eval/runner）
 - [x] 呼び出し構文拡張の第1段階: 組み込みメソッド呼び出し（`x.append(3)`）を導入（lex/parse/runner）
 
 ### ブロック構文 仕様メモ（2026-02-24 時点）
@@ -110,6 +112,8 @@
 
 ## メンテナンス記録（要約）
 - 2026-02-26
+  - [x] P3継続: `setdefault(dict, key)` を追加（default省略時に `None` を補完、関数/メソッド形式を eval/runner で固定）
+  - [x] P3継続: `update(dict, otherDict)` を追加（既存キー上書き+新規キー追加の辞書マージを eval/runner で固定）
   - [x] CI調整: GitHub Actions に `libncurses-dev` インストール手順を追加し、`haskeline` の `-ltinfo` リンク依存を満たすよう修正
   - [x] 非Nix再確認: `cabal test`（332 examples）/ `cabal run check-structure` 成功（`libncurses-dev` 導入後）
   - [x] REPL拡張: 入力処理を `haskeline` に移行し、矢印キーでの編集・履歴操作を有効化

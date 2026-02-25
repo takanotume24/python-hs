@@ -135,6 +135,9 @@ spec = describe "runSource (integration core)" $ do
   it "evaluates update/pop/clear with method-call style" $ do
     runSource "d = {1: 2}\nprint d.update(1, 9)\nprint d.pop(1)\nprint d.clear()\n" `shouldBe` Right ["{1: 9}", "2", "{}"]
 
+  it "evaluates dictionary merge update with method-call style" $ do
+    runSource "d = {1: 2, 3: 4}\nprint d.update({3: 9, 5: 6})\n" `shouldBe` Right ["{1: 2, 3: 9, 5: 6}"]
+
   it "evaluates list pop/clear with method-call style" $ do
     runSource "x = [1, 2, 3]\nprint x.pop()\nprint x.clear()\n" `shouldBe` Right ["3", "[]"]
 
@@ -199,12 +202,18 @@ spec = describe "runSource (integration core)" $ do
   it "evaluates update builtin for dictionary" $ do
     runSource "print update({1: 2}, 1, 9)\nprint update({1: 2}, 3, 4)\n" `shouldBe` Right ["{1: 9}", "{1: 2, 3: 4}"]
 
+  it "evaluates update builtin for dictionary merge" $ do
+    runSource "print update({1: 2, 3: 4}, {3: 9, 5: 6})\n" `shouldBe` Right ["{1: 2, 3: 9, 5: 6}"]
+
   it "evaluates setdefault builtin for dictionary" $ do
     runSource "print setdefault({1: 2}, 1, 9)\nprint setdefault({1: 2}, 3, 4)\n" `shouldBe` Right ["{1: 2}", "{1: 2, 3: 4}"]
 
+  it "evaluates setdefault builtin with omitted default as None" $ do
+    runSource "print setdefault({1: 2}, 1)\nprint setdefault({1: 2}, 3)\n" `shouldBe` Right ["{1: 2}", "{1: 2, 3: None}"]
+
   it "reports setdefault builtin type and argument errors" $ do
     runSource "print setdefault(1, 2, 3)\n" `shouldBe` Left "Type error: setdefault expects dict as first argument at 1:7"
-    runSource "print setdefault({}, 1)\n" `shouldBe` Left "Argument count mismatch when calling setdefault at 1:7"
+    runSource "print setdefault(1, 2)\n" `shouldBe` Left "Type error: setdefault expects dict as first argument at 1:7"
 
   it "evaluates range builtin with start/stop and step" $ do
     runSource "print range(2, 5)\n" `shouldBe` Right ["[2, 3, 4]"]

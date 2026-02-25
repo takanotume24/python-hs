@@ -126,13 +126,18 @@ evalBuiltinExpr evalExprFn env fenv fname args pos =
     "update" -> Just $ do
       (argVals, argOuts, envAfterArgs) <- evalArgs env fenv args
       case argVals of
+        [DictValue pairs, DictValue otherPairs] -> Right (DictValue (mergeDictValues pairs otherPairs), argOuts, envAfterArgs)
+        [DictValue _, _] -> Left $ "Type error: update expects dict as second argument at " ++ showPos pos
         [DictValue pairs, key, value] -> Right (DictValue (updateDictValue pairs key value), argOuts, envAfterArgs)
         [_, _, _] -> Left $ "Type error: update expects dict as first argument at " ++ showPos pos
+        [_, _] -> Left $ "Type error: update expects dict as first argument at " ++ showPos pos
         _ -> Left $ "Argument count mismatch when calling update at " ++ showPos pos
     "setdefault" -> Just $ do
       (argVals, argOuts, envAfterArgs) <- evalArgs env fenv args
       case argVals of
+        [DictValue pairs, key] -> Right (DictValue (setDefaultDictValue pairs key NoneValue), argOuts, envAfterArgs)
         [DictValue pairs, key, defaultValue] -> Right (DictValue (setDefaultDictValue pairs key defaultValue), argOuts, envAfterArgs)
+        [_, _] -> Left $ "Type error: setdefault expects dict as first argument at " ++ showPos pos
         [_, _, _] -> Left $ "Type error: setdefault expects dict as first argument at " ++ showPos pos
         _ -> Left $ "Argument count mismatch when calling setdefault at " ++ showPos pos
     "values" -> Just $ do
@@ -159,17 +164,18 @@ evalBuiltinExpr evalExprFn env fenv fname args pos =
     lookupDictValue ((k, v) : restPairs) target
       | k == target = Just v
       | otherwise = lookupDictValue restPairs target
-
     updateDictValue [] key value = [(key, value)]
     updateDictValue ((k, v) : restPairs) key value
       | k == key = (k, value) : restPairs
       | otherwise = (k, v) : updateDictValue restPairs key value
+    mergeDictValues pairs [] = pairs
+    mergeDictValues pairs ((key, value) : restPairs) =
+      mergeDictValues (updateDictValue pairs key value) restPairs
 
     setDefaultDictValue pairs key defaultValue =
       case lookupDictValue pairs key of
         Just _ -> pairs
         Nothing -> pairs ++ [(key, defaultValue)]
-
     removeFirstValue [] _ = Nothing
     removeFirstValue (v : restVals) target
       | v == target = Just restVals
@@ -178,6 +184,7 @@ evalBuiltinExpr evalExprFn env fenv fname args pos =
     intValues [] = Just []
     intValues (IntValue n : restVals) = fmap (n :) (intValues restVals)
     intValues (_ : _) = Nothing
+
     insertAtIndex values index value =
       let clampedIndex = max 0 (min index (length values))
           (leftValues, rightValues) = splitAt clampedIndex values
@@ -187,7 +194,6 @@ evalBuiltinExpr evalExprFn env fenv fname args pos =
     rangeOne n
       | n <= 0 = []
       | otherwise = [0 .. n - 1]
-
     rangeWithStep start stop step
       | step > 0 = takeWhile (< stop) [start, start + step ..]
       | step < 0 = takeWhile (> stop) [start, start + step ..]

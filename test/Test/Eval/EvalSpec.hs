@@ -176,9 +176,12 @@ spec = describe "evalProgram" $ do
     evalProgram (Program [PrintStmt (CallExpr "setdefault" [DictExpr [(IntegerExpr 1 (Position 0 0), IntegerExpr 2 (Position 0 0))] (Position 0 0), IntegerExpr 1 (Position 0 0), IntegerExpr 9 (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["{1: 2}"]
     evalProgram (Program [PrintStmt (CallExpr "setdefault" [DictExpr [(IntegerExpr 1 (Position 0 0), IntegerExpr 2 (Position 0 0))] (Position 0 0), IntegerExpr 3 (Position 0 0), IntegerExpr 4 (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["{1: 2, 3: 4}"]
 
+  it "evaluates setdefault builtin with omitted default as None" $ do
+    evalProgram (Program [PrintStmt (CallExpr "setdefault" [DictExpr [(IntegerExpr 1 (Position 0 0), IntegerExpr 2 (Position 0 0))] (Position 0 0), IntegerExpr 3 (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["{1: 2, 3: None}"]
+
   it "reports setdefault builtin type and argument errors" $ do
     evalProgram (Program [PrintStmt (CallExpr "setdefault" [IntegerExpr 1 (Position 0 0), IntegerExpr 2 (Position 0 0), IntegerExpr 3 (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Left "Type error: setdefault expects dict as first argument at 0:0"
-    evalProgram (Program [PrintStmt (CallExpr "setdefault" [DictExpr [] (Position 0 0), IntegerExpr 1 (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Left "Argument count mismatch when calling setdefault at 0:0"
+    evalProgram (Program [PrintStmt (CallExpr "setdefault" [IntegerExpr 1 (Position 0 0), IntegerExpr 2 (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Left "Type error: setdefault expects dict as first argument at 0:0"
 
   it "evaluates range builtin with start/stop and step" $ do
     evalProgram (Program [PrintStmt (CallExpr "range" [IntegerExpr 2 (Position 0 0), IntegerExpr 5 (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["[2, 3, 4]"]

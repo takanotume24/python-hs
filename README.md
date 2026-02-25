@@ -56,8 +56,8 @@ TDD（`hspec`）で機能を拡張し、`Lexer -> Parser -> Evaluator -> Runner/
 - [x] `clear(x)`（list/dict）
 - [x] `keys(dict)` / `values(dict)` / `items(dict)`（挿入順維持）
 - [x] `get(dict, key)` / `get(dict, key, default)`
-- [x] `update(dict, key, value)`
-- [x] `setdefault(dict, key, default)`
+- [x] `update(dict, key, value)` / `update(dict, otherDict)`
+- [x] `setdefault(dict, key)` / `setdefault(dict, key, default)`
 
 ## MVP外・未対応（明示）
 - [ ] Python完全互換（あくまでサブセット）
