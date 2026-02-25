@@ -110,6 +110,9 @@
 ## メンテナンス記録（要約）
 - 2026-02-26
   - [x] 開発環境の再現性向上のため `flake.nix` を追加（`nix develop` で GHC/Cabal/HLS/整形・Lint ツールを提供）
+  - [x] `flake.nix` に `checks` を追加し、`nix flake check` でテストと `check-structure` を実行可能化
+  - [x] `checks.cabal-test` を `runCommand` ラッパー化し、`nix flake check -L` 時にテスト実行済みログを明示
+  - [x] `README` に `nix flake check -L path:.`（ログ表示あり）手順を追記
 - 2026-02-24
   - [x] READMEを新規作成し、実装済みPythonサブセット機能とMVP境界（未対応範囲）を明文化
 - 2026-02-19

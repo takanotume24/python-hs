@@ -79,6 +79,18 @@ cabal test
 cabal run check-structure
 ```
 
+Flake check でも同等の検証（テスト + 構造チェック）を実行できます。
+
+```bash
+nix flake check path:.
+```
+
+テストや構造チェックのログを表示したい場合は `-L` を付けてください。
+
+```bash
+nix flake check -L path:.
+```
+
 ## 使い方
 
 ### 1. テスト

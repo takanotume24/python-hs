@@ -12,7 +12,25 @@
         pkgs = import nixpkgs {
           inherit system;
         };
+        haskellLib = pkgs.haskell.lib;
+        pythonHs = pkgs.haskellPackages.callCabal2nix "python-hs" ./. { };
+        pythonHsWithChecks = haskellLib.doCheck pythonHs;
       in {
+        checks = {
+          cabal-test = pkgs.runCommand "python-hs-cabal-test" {
+            nativeBuildInputs = [ pythonHsWithChecks ];
+          } ''
+            echo "cabal-test passed via doCheck: ${pythonHsWithChecks.name}"
+            touch $out
+          '';
+          check-structure = pkgs.runCommand "python-hs-check-structure" {
+            nativeBuildInputs = [ pythonHs ];
+          } ''
+            check-structure
+            touch $out
+          '';
+        };
+
         devShells.default = pkgs.mkShell {
           packages = with pkgs; [
             ghc
