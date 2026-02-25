@@ -95,7 +95,7 @@
 - [x] 関数スコープ拡張の第2段階: `global` 宣言の有効範囲を回帰テストで固定（新規グローバル作成／分岐内宣言）
 - [x] 式拡張の第1段階: 二項 `//`（床除算）を導入（lexer/parser/eval/runner）
 - [x] 式拡張の第2段階: 二項 `-`（減算）を導入（parser/eval/runner）
-- [x] 品質基盤強化の第1段階: `check-structure` に 200行制限を導入（`src`/`app` のみ対象、`test` は対象外）
+- [x] 品質基盤強化の第1段階: `check-structure` に 200行制限を導入（`src`/`app` のみ対象、`test` は対象外、暫定除外なし）
 
 ### ブロック構文 仕様メモ（2026-02-24 時点）
 - lexer は行頭スペースで `INDENT` / `DEDENT` を生成し、EOF 時に必要な `DEDENT` を flush する。
@@ -128,6 +128,8 @@
   - [x] 暫定除外を `src` 側のみへ整理（現時点の暫定除外は `EvalStatements` の1ファイル）
   - [x] `EvalStatements` 分割の第1段階として `valueToOutput` を専用モジュールへ切り出し（暫定除外解消へ向けた段階的縮小を開始）
   - [x] `EvalStatements` 分割の第2段階として `while` / `for` 実行処理を専用モジュールへ切り出し（`EvalStatements` を 612→557 行へ縮小）
+  - [x] `EvalStatements` 分割の第3段階として `evalExpr` / 二項演算 / 関数呼び出し / 組み込み評価を専用モジュールへ分離し、`EvalStatements` を 126 行へ縮小
+  - [x] 200行制限の暫定除外を撤廃（`check-structure` は警告なしで通過）
 - 2026-02-24
   - [x] READMEを新規作成し、実装済みPythonサブセット機能とMVP境界（未対応範囲）を明文化
 - 2026-02-19

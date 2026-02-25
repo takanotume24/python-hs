@@ -22,4 +22,4 @@ checkStructureWarnings root = do
   where
     formatWarning (relPath, lineCount) = "temporary line-limit exemption: " ++ relPath ++ " (" ++ show lineCount ++ " lines)"
 
-    legacyLineCountExemptions = ["src/PythonHS/Evaluator/EvalStatements.hs"]
+    legacyLineCountExemptions = []

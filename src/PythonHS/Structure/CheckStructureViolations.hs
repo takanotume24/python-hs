@@ -191,4 +191,4 @@ checkStructureViolations root = do
           | startsWith needle rest = []
           | otherwise = x : go xs
 
-    legacyLineCountExemptions = ["src/PythonHS/Evaluator/EvalStatements.hs"]
+    legacyLineCountExemptions = []

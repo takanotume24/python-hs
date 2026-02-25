@@ -1,6 +1,6 @@
 module Test.Structure.CheckStructureSpec (spec) where
 
-import Data.List (isInfixOf, isPrefixOf)
+import Data.List (isInfixOf)
 import System.Directory (createDirectoryIfMissing)
 import System.IO.Temp (withSystemTempDirectory)
 import PythonHS.Structure.CheckStructure (checkStructureViolations, checkStructureWarnings)
@@ -76,7 +76,7 @@ spec = describe "checkStructureViolations" $ do
       violations <- checkStructureViolations root
       violations `shouldBe` []
 
-  it "skips temporary line-limit exemptions for legacy files" $
+  it "does not skip line-limit checks for legacy files anymore" $
     withSystemTempDirectory "check-structure-lines-exempt" $ \root -> do
       createDirectoryIfMissing True (root ++ "/src/PythonHS/Evaluator")
       let bodyLines = replicate 198 ""
@@ -85,7 +85,7 @@ spec = describe "checkStructureViolations" $ do
         (root ++ "/src/PythonHS/Evaluator/EvalStatements.hs")
         content
       violations <- checkStructureViolations root
-      violations `shouldBe` []
+      violations `shouldSatisfy` any (isInfixOf "file exceeds 200 lines")
 
   it "does not exempt ParseProgram from line-limit checks" $
     withSystemTempDirectory "check-structure-lines-parse-program" $ \root -> do
@@ -109,30 +109,26 @@ spec = describe "checkStructureViolations" $ do
       violations <- checkStructureViolations root
       violations `shouldSatisfy` any (isInfixOf "file exceeds 200 lines")
 
-  it "reports temporary line-limit exemptions as warnings" $
+  it "does not report temporary line-limit warnings when exemptions are empty" $
     withSystemTempDirectory "check-structure-warnings" $ \root -> do
       createDirectoryIfMissing True (root ++ "/src/PythonHS/Evaluator")
       writeFile
         (root ++ "/src/PythonHS/Evaluator/EvalStatements.hs")
         "module PythonHS.Evaluator.EvalStatements (evalStatements) where\n\nevalStatements :: Int\nevalStatements = 1\n"
       warnings <- checkStructureWarnings root
-      warnings `shouldSatisfy` any (isInfixOf "temporary line-limit exemption")
-      warnings `shouldSatisfy` any (isInfixOf "lines)")
+      warnings `shouldBe` []
 
   it "does not report warning when exempt file is absent" $
     withSystemTempDirectory "check-structure-no-warnings" $ \root -> do
       warnings <- checkStructureWarnings root
       warnings `shouldBe` []
 
-  it "sorts temporary exemptions by line count descending" $
+  it "returns empty warnings when no temporary exemptions exist" $
     withSystemTempDirectory "check-structure-warning-order" $ \root -> do
       createDirectoryIfMissing True (root ++ "/src/PythonHS/Evaluator")
       writeFile
         (root ++ "/src/PythonHS/Evaluator/EvalStatements.hs")
         (unlines (["module PythonHS.Evaluator.EvalStatements (evalStatements) where", "", "evalStatements :: Int", "evalStatements = 1"] ++ replicate 10 ""))
       warnings <- checkStructureWarnings root
-      warnings `shouldSatisfy` (not . null)
-      case warnings of
-        firstWarning : _ -> firstWarning `shouldSatisfy` isPrefixOf "temporary line-limit exemption: src/PythonHS/Evaluator/EvalStatements.hs"
-        [] -> warnings `shouldSatisfy` (not . null)
+      warnings `shouldBe` []
 
