@@ -39,6 +39,7 @@
             hlint
             ormolu
             pkg-config
+            ncurses
             gmp
             zlib
             libffi

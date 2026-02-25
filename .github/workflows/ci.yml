@@ -23,6 +23,10 @@ jobs:
           key: ${{ runner.os }}-ghc-${{ steps.setup-haskell.outputs.ghc-version }}-cabal-${{ hashFiles('cabal.project', '*.cabal') }}
           restore-keys: |
             ${{ runner.os }}-ghc-${{ steps.setup-haskell.outputs.ghc-version }}-cabal-
+      - name: Install system libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libncurses-dev
       - name: Build and test
         run: cabal test
       - name: Check structure rules

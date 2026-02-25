@@ -110,6 +110,18 @@
 
 ## メンテナンス記録（要約）
 - 2026-02-26
+  - [x] CI調整: GitHub Actions に `libncurses-dev` インストール手順を追加し、`haskeline` の `-ltinfo` リンク依存を満たすよう修正
+  - [x] 非Nix再確認: `cabal test`（332 examples）/ `cabal run check-structure` 成功（`libncurses-dev` 導入後）
+  - [x] REPL拡張: 入力処理を `haskeline` に移行し、矢印キーでの編集・履歴操作を有効化
+  - [x] 依存調整: `python-hs.cabal` の library 依存に `haskeline` を追加
+  - [x] 環境調整: `cabal.project` に `constraints: haskeline -terminfo` を追加（非Nix環境でのリンク回避を試行）
+  - [x] Nix調整: `flake.nix` の dev shell に `ncurses` を追加し、REPL依存ライブラリを提供
+  - [x] 品質ゲート（Nix）: `nix develop -c cabal test`（332 examples）/ `nix develop -c cabal run check-structure` 成功
+  - [x] REPL調査: 初回/エラー後にプロンプトが出ない問題を修正（`isEOF` 先行判定を廃止し、入力待ちを `getLine` のEOF処理へ変更）
+  - [x] REPL調査: 対話実行でのプロンプト回帰テストを追加（先頭 `>>>` 表示とエラー後の再表示を固定）
+  - [x] REPL調査: EOF時に未送信バッファを評価して終了するよう `startRepl` を修正（ブロック入力終端の取りこぼしを解消）
+  - [x] REPL調査: `CLISpec` を拡張（空行扱い、EOF送信、実行時エラー後継続、失敗後の環境維持、対話実行のEOFフラッシュ）
+  - [x] 品質ゲート再確認: `cabal test`（331 examples）/ `cabal run check-structure` 成功
   - [x] P3継続: 辞書メソッド構文の回帰面を補完（`values/items/get(default)/pop(default)` と代表負系を固定）
   - [x] P3継続: 組み込みメソッド呼び出しを拡張（`remove` / `insert` / `sort` / `reverse` を受け入れテストで固定）
   - [x] P3継続: メソッド呼び出し時の型エラー位置互換を固定（`print 1.append(2)` で `at 1:9`）

@@ -1,9 +1,12 @@
 module Test.CLI.CLISpec (spec) where
 
+import Data.List (isInfixOf, isPrefixOf)
+import System.Exit (ExitCode (ExitSuccess))
 import System.IO.Temp (withSystemTempFile)
 import System.IO (hPutStr, hClose)
+import System.Process (proc, readCreateProcessWithExitCode)
 import PythonHS.CLI (runFile, replEvalLines)
-import Test.Hspec (Spec, describe, it, shouldBe)
+import Test.Hspec (Spec, describe, it, shouldBe, shouldSatisfy)
 
 spec :: Spec
 spec = describe "runFile / replEvalLines" $ do
@@ -48,3 +51,33 @@ spec = describe "runFile / replEvalLines" $ do
   it "executes while loop block in REPL and keeps updated value" $ do
     outs <- replEvalLines ["x = 0", "while x < 3:", "x = x + 1", "", "print x", ""]
     outs `shouldBe` ["3"]
+
+  it "ignores leading and interstitial blank lines in REPL" $ do
+    outs <- replEvalLines ["", "", "x = 2", "", "print x", "", ""]
+    outs `shouldBe` ["2"]
+
+  it "submits a block on EOF even without trailing blank line (replEvalLines)" $ do
+    outs <- replEvalLines ["def id(v):", "  return v", "print id(7)"]
+    outs `shouldBe` ["7"]
+
+  it "continues evaluating later lines after a runtime error in REPL" $ do
+    outs <- replEvalLines ["print 1 / 0", "print 9", ""]
+    outs `shouldBe` ["Error: Value error: division by zero at 1:9", "9"]
+
+  it "keeps environment after a failed block submission in REPL" $ do
+    outs <- replEvalLines ["x = 10", "if x:", "", "print x", ""]
+    outs `shouldSatisfy` \xs ->
+      case xs of
+        [err, out] -> "Error: " `isInfixOf` err && out == "10"
+        _ -> False
+
+  it "flushes pending block on EOF in interactive REPL executable" $ do
+    (code, out, _err) <- readCreateProcessWithExitCode (proc "cabal" ["run", "-v0", "exe:python-hs"]) "def id(v):\n  return v\nprint id(3)\n"
+    code `shouldBe` ExitSuccess
+    ("3" `isInfixOf` out) `shouldBe` True
+
+  it "shows initial prompt and re-shows prompt after an error in interactive REPL executable" $ do
+    (code, out, _err) <- readCreateProcessWithExitCode (proc "cabal" ["run", "-v0", "exe:python-hs"]) "x @ 1\nprint 2\n"
+    code `shouldBe` ExitSuccess
+    (">>> " `isPrefixOf` out) `shouldBe` True
+    ("Error: UnexpectedCharacter '@'\n>>> 2" `isInfixOf` out) `shouldBe` True
