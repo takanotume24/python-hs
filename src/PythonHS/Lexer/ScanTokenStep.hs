@@ -51,6 +51,7 @@ import PythonHS.Lexer.TokenType
         LBraceToken,
         RBraceToken,
         SlashToken,
+        DoubleSlashToken,
         PercentToken,
         StarToken,
         WhileToken
@@ -93,6 +94,7 @@ scanTokenStep src ln col =
       | c == '/' ->
           case rest of
             ('/' : '=' : rest') -> Right (Token DoubleSlashAssignToken "//=" (Position ln col), rest', col + 3)
+            ('/' : rest') -> Right (Token DoubleSlashToken "//" (Position ln col), rest', col + 2)
             ('=' : rest') -> Right (Token SlashAssignToken "/=" (Position ln col), rest', col + 2)
             _ -> Right (Token SlashToken "/" (Position ln col), rest, col + 1)
       | c == '%' ->

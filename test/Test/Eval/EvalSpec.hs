@@ -61,7 +61,9 @@ spec = describe "evalProgram" $ do
   it "evaluates multiplicative operators" $ do
     evalProgram (Program [PrintStmt (BinaryExpr MultiplyOperator (IntegerExpr 6 (Position 0 0)) (IntegerExpr 7 (Position 0 0)) (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["42"]
     evalProgram (Program [PrintStmt (BinaryExpr DivideOperator (IntegerExpr 7 (Position 0 0)) (IntegerExpr 2 (Position 0 0)) (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["3"]
+    evalProgram (Program [PrintStmt (BinaryExpr FloorDivideOperator (IntegerExpr 7 (Position 0 0)) (IntegerExpr 2 (Position 0 0)) (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["3"]
     evalProgram (Program [PrintStmt (BinaryExpr ModuloOperator (IntegerExpr 7 (Position 0 0)) (IntegerExpr 4 (Position 0 0)) (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["3"]
+    evalProgram (Program [PrintStmt (BinaryExpr SubtractOperator (IntegerExpr 7 (Position 0 0)) (IntegerExpr 4 (Position 0 0)) (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["3"]
 
   it "evaluates len builtin for string" $ do
     evalProgram (Program [PrintStmt (CallExpr "len" [StringExpr "abc" (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["3"]
@@ -86,6 +88,14 @@ spec = describe "evalProgram" $ do
   it "evaluates sort builtin for integer list" $ do
     evalProgram (Program [PrintStmt (CallExpr "sort" [ListExpr [IntegerExpr 3 (Position 0 0), IntegerExpr 1 (Position 0 0), IntegerExpr 2 (Position 0 0)] (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["[1, 2, 3]"]
     evalProgram (Program [PrintStmt (CallExpr "sort" [ListExpr [] (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["[]"]
+
+  it "evaluates reverse builtin for list" $ do
+    evalProgram (Program [PrintStmt (CallExpr "reverse" [ListExpr [IntegerExpr 1 (Position 0 0), IntegerExpr 2 (Position 0 0), IntegerExpr 3 (Position 0 0)] (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["[3, 2, 1]"]
+    evalProgram (Program [PrintStmt (CallExpr "reverse" [ListExpr [] (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["[]"]
+
+  it "reports reverse builtin type and argument errors" $ do
+    evalProgram (Program [PrintStmt (CallExpr "reverse" [IntegerExpr 1 (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Left "Type error: reverse expects list as first argument at 0:0"
+    evalProgram (Program [PrintStmt (CallExpr "reverse" [ListExpr [] (Position 0 0), IntegerExpr 1 (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Left "Argument count mismatch when calling reverse at 0:0"
 
   it "reports sort builtin type and argument errors" $ do
     evalProgram (Program [PrintStmt (CallExpr "sort" [IntegerExpr 1 (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Left "Type error: sort expects list as first argument at 0:0"

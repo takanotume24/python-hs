@@ -3,7 +3,7 @@ module Test.Lexer.ScanTokensCoreSpec (spec) where
 import PythonHS.Lexer.Position (Position (Position))
 import PythonHS.Lexer.ScanTokens (scanTokens)
 import PythonHS.Lexer.Token (Token (Token))
-import PythonHS.Lexer.TokenType (TokenType (AssignToken, BreakToken, ContinueToken, DoubleSlashAssignToken, EOFToken, ElifToken, FalseToken, ForToken, GlobalToken, IdentifierToken, IfToken, InToken, IntegerToken, MinusAssignToken, NewlineToken, NoneToken, PassToken, PercentAssignToken, PercentToken, PlusAssignToken, PlusToken, PrintToken, ReturnToken, SlashAssignToken, SlashToken, StarAssignToken, StarToken, TrueToken))
+import PythonHS.Lexer.TokenType (TokenType (AssignToken, BreakToken, ContinueToken, DoubleSlashAssignToken, DoubleSlashToken, EOFToken, ElifToken, FalseToken, ForToken, GlobalToken, IdentifierToken, IfToken, InToken, IntegerToken, MinusAssignToken, NewlineToken, NoneToken, PassToken, PercentAssignToken, PercentToken, PlusAssignToken, PlusToken, PrintToken, ReturnToken, SlashAssignToken, SlashToken, StarAssignToken, StarToken, TrueToken))
 import Test.Hspec (Spec, describe, it, shouldBe)
 
 spec :: Spec
@@ -116,8 +116,19 @@ spec = describe "scanTokens core tokens" $ do
           Token EOFToken "" (Position 4 1)
         ]
 
+  it "recognizes double-slash operator" $ do
+    scanTokens "print 7 // 2\n" `shouldBe`
+      Right
+        [ Token PrintToken "print" (Position 1 1),
+          Token IntegerToken "7" (Position 1 7),
+          Token DoubleSlashToken "//" (Position 1 9),
+          Token IntegerToken "2" (Position 1 12),
+          Token NewlineToken "\\n" (Position 1 13),
+          Token EOFToken "" (Position 2 1)
+        ]
+
   it "recognizes multiplicative operators" $ do
-    scanTokens "print 6 * 2 / 3 % 2\n" `shouldBe`
+    scanTokens "print 6 * 2 / 3 // 2 % 2\n" `shouldBe`
       Right
         [ Token PrintToken "print" (Position 1 1),
           Token IntegerToken "6" (Position 1 7),
@@ -125,9 +136,11 @@ spec = describe "scanTokens core tokens" $ do
           Token IntegerToken "2" (Position 1 11),
           Token SlashToken "/" (Position 1 13),
           Token IntegerToken "3" (Position 1 15),
-          Token PercentToken "%" (Position 1 17),
-          Token IntegerToken "2" (Position 1 19),
-          Token NewlineToken "\\n" (Position 1 20),
+          Token DoubleSlashToken "//" (Position 1 17),
+          Token IntegerToken "2" (Position 1 20),
+          Token PercentToken "%" (Position 1 22),
+          Token IntegerToken "2" (Position 1 24),
+          Token NewlineToken "\\n" (Position 1 25),
           Token EOFToken "" (Position 2 1)
         ]
 

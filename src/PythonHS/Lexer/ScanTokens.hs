@@ -1,63 +1,16 @@
 module PythonHS.Lexer.ScanTokens (scanTokens) where
 
-import Data.Char (isAlpha, isAlphaNum, isDigit, isSpace)
+import Data.Char (isSpace)
 import PythonHS.Lexer.LexerError (LexerError (UnexpectedCharacter))
-import PythonHS.Lexer.Token (Token (Token))
 import PythonHS.Lexer.Position (Position (Position))
+import PythonHS.Lexer.ScanTokenStep (scanTokenStep)
+import PythonHS.Lexer.Token (Token (Token))
 import PythonHS.Lexer.TokenType
   ( TokenType
-      ( AssignToken,
-        PlusAssignToken,
-        MinusAssignToken,
-        StarAssignToken,
-        SlashAssignToken,
-        PercentAssignToken,
-        DoubleSlashAssignToken,
-        ColonToken,
-        CommaToken,
-        DefToken,
-        EOFToken,
-        ElseToken,
-        ElifToken,
-        TrueToken,
-        FalseToken,
-        NoneToken,
-        ForToken,
-        IdentifierToken,
-        IfToken,
-        InToken,
-        IntegerToken,
-        StringToken,
-        LParenToken,
-        MinusToken,
+      ( EOFToken,
         NewlineToken,
         IndentToken,
-        DedentToken,
-        PlusToken,
-        PrintToken,
-        RParenToken,
-        ReturnToken,
-        BreakToken,
-        ContinueToken,
-        GlobalToken,
-        PassToken,
-        EqToken,
-        NotEqToken,
-        LtToken,
-        GtToken,
-        LteToken,
-        GteToken,
-        AndToken,
-        OrToken,
-        NotToken,
-        LBracketToken,
-        RBracketToken,
-        LBraceToken,
-        RBraceToken,
-        SlashToken,
-        PercentToken,
-        StarToken,
-        WhileToken
+        DedentToken
       )
   )
 
@@ -90,124 +43,13 @@ scanTokens input = go input 1 1 True [0] []
       let tok = Token NewlineToken "\\n" (Position ln col)
        in go rest (ln + 1) 1 True indentStack (tok : acc)
 
-    go (c : rest) ln col False indentStack acc
-      | isSpace c = go rest ln (col + 1) False indentStack acc
-      | c == '=' =
-          case rest of
-            ('=' : rest') ->
-              let tok = Token EqToken "==" (Position ln col)
-               in go rest' ln (col + 2) False indentStack (tok : acc)
-            _ ->
-              let tok = Token AssignToken "=" (Position ln col)
-               in go rest ln (col + 1) False indentStack (tok : acc)
-      | c == '!' =
-          case rest of
-            ('=' : rest') ->
-              let tok = Token NotEqToken "!=" (Position ln col)
-               in go rest' ln (col + 2) False indentStack (tok : acc)
-            _ -> Left (UnexpectedCharacter '!')
-      | c == '<' =
-          case rest of
-            ('=' : rest') ->
-              let tok = Token LteToken "<=" (Position ln col)
-               in go rest' ln (col + 2) False indentStack (tok : acc)
-            _ ->
-              let tok = Token LtToken "<" (Position ln col)
-               in go rest ln (col + 1) False indentStack (tok : acc)
-      | c == '>' =
-          case rest of
-            ('=' : rest') ->
-              let tok = Token GteToken ">=" (Position ln col)
-               in go rest' ln (col + 2) False indentStack (tok : acc)
-            _ ->
-              let tok = Token GtToken ">" (Position ln col)
-               in go rest ln (col + 1) False indentStack (tok : acc)
-      | c == '+' =
-          case rest of
-            ('=' : rest') ->
-              let tok = Token PlusAssignToken "+=" (Position ln col)
-               in go rest' ln (col + 2) False indentStack (tok : acc)
-            _ ->
-              let tok = Token PlusToken "+" (Position ln col)
-               in go rest ln (col + 1) False indentStack (tok : acc)
-      | c == '-' =
-          case rest of
-            ('=' : rest') ->
-              let tok = Token MinusAssignToken "-=" (Position ln col)
-               in go rest' ln (col + 2) False indentStack (tok : acc)
-            _ ->
-              let tok = Token MinusToken "-" (Position ln col)
-               in go rest ln (col + 1) False indentStack (tok : acc)
-      | c == '*' =
-          case rest of
-            ('=' : rest') ->
-              let tok = Token StarAssignToken "*=" (Position ln col)
-               in go rest' ln (col + 2) False indentStack (tok : acc)
-            _ ->
-              let tok = Token StarToken "*" (Position ln col)
-               in go rest ln (col + 1) False indentStack (tok : acc)
-      | c == '/' =
-          case rest of
-            ('/' : '=' : rest') ->
-              let tok = Token DoubleSlashAssignToken "//=" (Position ln col)
-               in go rest' ln (col + 3) False indentStack (tok : acc)
-            ('=' : rest') ->
-              let tok = Token SlashAssignToken "/=" (Position ln col)
-               in go rest' ln (col + 2) False indentStack (tok : acc)
-            _ ->
-              let tok = Token SlashToken "/" (Position ln col)
-               in go rest ln (col + 1) False indentStack (tok : acc)
-      | c == '%' =
-          case rest of
-            ('=' : rest') ->
-              let tok = Token PercentAssignToken "%=" (Position ln col)
-               in go rest' ln (col + 2) False indentStack (tok : acc)
-            _ ->
-              let tok = Token PercentToken "%" (Position ln col)
-               in go rest ln (col + 1) False indentStack (tok : acc)
-      | c == '(' =
-          let tok = Token LParenToken "(" (Position ln col)
-           in go rest ln (col + 1) False indentStack (tok : acc)
-      | c == ')' =
-          let tok = Token RParenToken ")" (Position ln col)
-           in go rest ln (col + 1) False indentStack (tok : acc)
-      | c == '[' =
-          let tok = Token LBracketToken "[" (Position ln col)
-           in go rest ln (col + 1) False indentStack (tok : acc)
-      | c == ']' =
-          let tok = Token RBracketToken "]" (Position ln col)
-           in go rest ln (col + 1) False indentStack (tok : acc)
-      | c == '{' =
-          let tok = Token LBraceToken "{" (Position ln col)
-           in go rest ln (col + 1) False indentStack (tok : acc)
-      | c == '}' =
-          let tok = Token RBraceToken "}" (Position ln col)
-           in go rest ln (col + 1) False indentStack (tok : acc)
-      | c == ':' =
-          let tok = Token ColonToken ":" (Position ln col)
-           in go rest ln (col + 1) False indentStack (tok : acc)
-      | c == ',' =
-          let tok = Token CommaToken "," (Position ln col)
-           in go rest ln (col + 1) False indentStack (tok : acc)
-      | c == '"' =
-          let (strContent, tailInput) = span (\x -> x /= '"' && x /= '\n') rest
-              len = length strContent
-           in case tailInput of
-                ('"' : rest') ->
-                  let tok = Token StringToken strContent (Position ln col)
-                   in go rest' ln (col + len + 2) False indentStack (tok : acc)
-                _ -> Left (UnexpectedCharacter '"')
-      | isDigit c =
-          let (digits, tailInput) = span isDigit (c : rest)
-              len = length digits
-              tok = Token IntegerToken digits (Position ln col)
-           in go tailInput ln (col + len) False indentStack (tok : acc)
-      | isAlpha c || c == '_' =
-          let (word, tailInput) = span (\x -> isAlphaNum x || x == '_') (c : rest)
-              len = length word
-              tok = Token (keywordOrIdentifier word) word (Position ln col)
-           in go tailInput ln (col + len) False indentStack (tok : acc)
-      | otherwise = Left (UnexpectedCharacter c)
+    go src ln col False indentStack acc =
+      case src of
+        (c : rest)
+          | isSpace c -> go rest ln (col + 1) False indentStack acc
+          | otherwise -> do
+              (tok, restAfterToken, nextCol) <- scanTokenStep src ln col
+              go restAfterToken ln nextCol False indentStack (tok : acc)
 
     adjustIndent :: Int -> [Int] -> Int -> Either LexerError ([Int], [Token])
     adjustIndent ln indentStack indent =
@@ -224,26 +66,3 @@ scanTokens input = go input 1 1 True [0] []
       | target == current = Right (current : restStack, reverse emitted)
       | target < current = dedentTo ln target restStack (Token DedentToken "<DEDENT>" (Position ln 1) : emitted)
       | otherwise = Left (UnexpectedCharacter ' ')
-
-    keywordOrIdentifier :: String -> TokenType
-    keywordOrIdentifier value
-      | value == "print" = PrintToken
-      | value == "if" = IfToken
-      | value == "elif" = ElifToken
-      | value == "True" = TrueToken
-      | value == "False" = FalseToken
-      | value == "None" = NoneToken
-      | value == "else" = ElseToken
-      | value == "while" = WhileToken
-      | value == "for" = ForToken
-      | value == "in" = InToken
-      | value == "def" = DefToken
-      | value == "return" = ReturnToken
-      | value == "break" = BreakToken
-      | value == "continue" = ContinueToken
-      | value == "global" = GlobalToken
-      | value == "pass" = PassToken
-      | value == "and" = AndToken
-      | value == "or" = OrToken
-      | value == "not" = NotToken
-      | otherwise = IdentifierToken

@@ -2,8 +2,10 @@ module PythonHS.AST.BinaryOperator (BinaryOperator (..)) where
 
 data BinaryOperator
   = AddOperator
+  | SubtractOperator
   | MultiplyOperator
   | DivideOperator
+  | FloorDivideOperator
   | ModuloOperator
   | EqOperator
   | NotEqOperator

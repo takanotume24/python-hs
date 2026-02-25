@@ -72,7 +72,7 @@ spec = describe "runSource (integration core)" $ do
     runSource "print \"a\" + \"b\"\n" `shouldBe` Right ["ab"]
 
   it "evaluates multiplicative operators" $ do
-    runSource "print 6 * 7\nprint 7 / 2\nprint 7 % 4\n" `shouldBe` Right ["42", "3", "3"]
+    runSource "print 6 * 7\nprint 7 / 2\nprint 7 // 2\nprint 7 % 4\nprint 7 - 4\n" `shouldBe` Right ["42", "3", "3", "3", "3"]
 
   it "evaluates plus-assign statement" $ do
     runSource "x = 1\nx += 2\nprint x\n" `shouldBe` Right ["3"]
@@ -113,6 +113,13 @@ spec = describe "runSource (integration core)" $ do
 
   it "evaluates sort builtin for integer list" $ do
     runSource "print sort([3, 1, 2])\nprint sort([])\n" `shouldBe` Right ["[1, 2, 3]", "[]"]
+
+  it "evaluates reverse builtin for list" $ do
+    runSource "print reverse([1, 2, 3])\nprint reverse([])\n" `shouldBe` Right ["[3, 2, 1]", "[]"]
+
+  it "reports reverse builtin type and argument errors" $ do
+    runSource "print reverse(1)\n" `shouldBe` Left "Type error: reverse expects list as first argument at 1:7"
+    runSource "print reverse([], 1)\n" `shouldBe` Left "Argument count mismatch when calling reverse at 1:7"
 
   it "reports sort builtin type and argument errors" $ do
     runSource "print sort(1)\n" `shouldBe` Left "Type error: sort expects list as first argument at 1:7"

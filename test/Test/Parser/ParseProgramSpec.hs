@@ -36,6 +36,7 @@ import PythonHS.Lexer.TokenType
         StarToken,
         SlashToken,
         PercentToken,
+        DoubleSlashToken,
         PrintToken,
         RParenToken,
         ReturnToken,
@@ -551,6 +552,47 @@ spec = describe "parseProgram" $ do
                 ]
                 (Position 1 1),
               PrintStmt (IntegerExpr 9 (Position 7 7)) (Position 7 1)
+            ]
+        )
+
+  it "parses binary subtraction with precedence" $ do
+    parseProgram
+      [ Token PrintToken "print" (Position 1 1),
+        Token IntegerToken "5" (Position 1 7),
+        Token MinusToken "-" (Position 1 9),
+        Token IntegerToken "2" (Position 1 11),
+        Token StarToken "*" (Position 1 13),
+        Token IntegerToken "3" (Position 1 15),
+        Token NewlineToken "\\n" (Position 1 16),
+        Token EOFToken "" (Position 2 1)
+      ]
+      `shouldBe` Right
+        ( Program
+            [ PrintStmt
+                ( BinaryExpr
+                    SubtractOperator
+                    (IntegerExpr 5 (Position 1 7))
+                    (BinaryExpr MultiplyOperator (IntegerExpr 2 (Position 1 11)) (IntegerExpr 3 (Position 1 15)) (Position 1 13))
+                    (Position 1 9)
+                )
+                (Position 1 1)
+            ]
+        )
+
+  it "parses floor-division operator" $ do
+    parseProgram
+      [ Token PrintToken "print" (Position 1 1),
+        Token IntegerToken "7" (Position 1 7),
+        Token DoubleSlashToken "//" (Position 1 9),
+        Token IntegerToken "2" (Position 1 12),
+        Token NewlineToken "\\n" (Position 1 13),
+        Token EOFToken "" (Position 2 1)
+      ]
+      `shouldBe` Right
+        ( Program
+            [ PrintStmt
+                (BinaryExpr FloorDivideOperator (IntegerExpr 7 (Position 1 7)) (IntegerExpr 2 (Position 1 12)) (Position 1 9))
+                (Position 1 1)
             ]
         )
 

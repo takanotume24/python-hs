@@ -37,7 +37,7 @@ TDD（`hspec`）で機能を拡張し、`Lexer -> Parser -> Evaluator -> Runner/
 - [x] `break` / `continue` の制御伝播
 - [x] 関数呼び出し（再帰を含む）
 - [x] 関数スコープ（引数優先・グローバル参照可）
-- [x] `global` / `pass` は no-op として評価
+- [x] `global` は関数内代入をグローバルへ反映、`pass` は no-op として評価
 - [x] truthiness（`None`、空文字、空リスト、空辞書）
 - [x] 反復回数ガード（10000超で `Value error`）
 - [x] 位置情報つきエラー報告（Name/Type/Value/Argument count など）
@@ -49,6 +49,7 @@ TDD（`hspec`）で機能を拡張し、`Lexer -> Parser -> Evaluator -> Runner/
 - [x] `append(list, value)`
 - [x] `remove(list, value)`
 - [x] `sort(list)`（int要素のみ対応）
+- [x] `reverse(list)`
 - [x] `insert(list, index, value)`
 - [x] `pop(list)` / `pop(dict, key)` / `pop(dict, key, default)`
 - [x] `clear(x)`（list/dict）
@@ -60,7 +61,6 @@ TDD（`hspec`）で機能を拡張し、`Lexer -> Parser -> Evaluator -> Runner/
 ## MVP外・未対応（明示）
 - [ ] Python完全互換（あくまでサブセット）
 - [ ] メソッド呼び出し構文（例: `x.append(3)`）
-- [ ] 一部組み込みは未実装（例: `reverse`）
 - [ ] 例外処理、クラス、import など高度機能
 
 ## 使い方

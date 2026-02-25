@@ -4,5 +4,10 @@
         "cabal": true
     },
     "terminal.integrated.defaultProfile.linux": "bash",
-    "terminal.integrated.shellIntegration.enabled": false
+    "terminal.integrated.shellIntegration.enabled": false,
+    "terminal.integrated.gpuAcceleration": "off",
+    "terminal.integrated.scrollback": 2000,
+    "files.watcherExclude": {
+        "**/dist-newstyle/**": true
+    }
 }

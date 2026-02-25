@@ -91,7 +91,11 @@
 - [x] データ構造拡張の第4段階: `setdefault(dict, key, default)` を導入（eval/runner）
 - [x] データ構造拡張の第5段階: `pop(dict, key[, default])` を導入（eval/runner）
 - [x] データ構造拡張の第6段階: `remove(list, value)` を導入（eval/runner）
-- [x] データ構造拡張の第7段階: `sort(list)` を導入（int要素のみ, eval/runner）
+- [x] 関数スコープ拡張の第1段階: `global` 文を実効化（関数内代入をグローバル環境へ反映）
+- [x] 関数スコープ拡張の第2段階: `global` 宣言の有効範囲を回帰テストで固定（新規グローバル作成／分岐内宣言）
+- [x] 式拡張の第1段階: 二項 `//`（床除算）を導入（lexer/parser/eval/runner）
+- [x] 式拡張の第2段階: 二項 `-`（減算）を導入（parser/eval/runner）
+- [x] 品質基盤強化の第1段階: `check-structure` に 200行制限を導入（`src`/`app` のみ対象、`test` は対象外）
 
 ### ブロック構文 仕様メモ（2026-02-24 時点）
 - lexer は行頭スペースで `INDENT` / `DEDENT` を生成し、EOF 時に必要な `DEDENT` を flush する。
@@ -110,12 +114,20 @@
 
 ## メンテナンス記録（要約）
 - 2026-02-25
-  - [x] `RunnerSpec` を `RunnerCoreSpec` / `RunnerEdgeSpec` に分割し、200行制限に適合
-  - [x] Lexer の分割（`ScanTokenStep` 導入、`ScanTokensCoreSpec` / `ScanTokensIndentSpec` 分割）を反映
-  - [x] 品質ゲート確認: `cabal test`（286 examples） / `cabal run check-structure` 成功
-  - [x] devcontainer を Dockerfile 構成へ移行し、`ghcup` 経由で `ghc` / `cabal` / `haskell-language-server` を導入
-  - [x] devcontainer の Haskell ツール指定を `latest` 参照へ更新（`ghc` / `cabal` / `haskell-language-server`）
-  - [x] devcontainer 起動時の `.bashrc` 追記処理を `postStartCommand` 直書きから `.devcontainer/post-start.sh` 呼び出しへ変更
+  - [x] `remove(list, value)` 実装済み状態を計画へ反映（P3 データ構造拡張 第6段階を完了化）
+  - [x] `global` 文を実効化（関数内 `global x` 宣言時の `x` 代入をグローバルへ反映）
+  - [x] `global` 宣言スコープの回帰テストを追加（新規グローバル作成、分岐内宣言の関数全体適用）
+  - [x] 二項 `//`（床除算）を追加（lexer/parser/eval/runner + エラー規約を `//=` と整合）
+  - [x] 二項 `-`（減算）を追加（parser/eval/runner + 型エラー文言を `expected int in -` で固定）
+  - [x] `check-structure` に 200行制限を追加（当初は全 `.hs` 対象、段階移行のため暫定除外リストで管理）
+  - [x] `ScanTokens` を `scanTokenStep` 利用へ整理して 200行制限の暫定除外から解除（暫定除外は5ファイルに縮小）
+  - [x] `ParseProgram` の暫定除外を解除（`parseStatement` 利用へ整理済みのため、暫定除外は4ファイルに縮小）
+  - [x] `check-structure` が暫定除外ファイルの存在を警告出力するよう拡張（違反判定とは独立して表示）
+  - [x] 暫定除外警告に現在行数を併記（削減優先度を `check-structure` 出力だけで判断可能化）
+  - [x] 200行制限の適用範囲を見直し（`test` は対象外、`src`/`app` のみ対象）
+  - [x] 暫定除外を `src` 側のみへ整理（現時点の暫定除外は `EvalStatements` の1ファイル）
+  - [x] `EvalStatements` 分割の第1段階として `valueToOutput` を専用モジュールへ切り出し（暫定除外解消へ向けた段階的縮小を開始）
+  - [x] `EvalStatements` 分割の第2段階として `while` / `for` 実行処理を専用モジュールへ切り出し（`EvalStatements` を 612→557 行へ縮小）
 - 2026-02-24
   - [x] READMEを新規作成し、実装済みPythonサブセット機能とMVP境界（未対応範囲）を明文化
 - 2026-02-19
@@ -192,7 +204,5 @@
   - [x] P3継続: `clear(list|dict)` を追加（空コレクション返却、型/引数個数エラーを eval/runner で固定）
   - [x] P3継続: `setdefault(dict, key, default)` を追加（既存キーは不変、未存在キーは追加、型/引数個数エラーを eval/runner で固定）
   - [x] P3継続: `pop(dict, key[, default])` を追加（キー存在時は値返却、未存在時はdefault返却/エラーを eval/runner で固定）
-  - [x] P3継続: `remove(list, value)` を追加（先頭一致1件削除、未検出/型/引数個数エラーを eval/runner で固定）
-  - [x] P3継続: `sort(list)` を追加（int要素のみソート、型/引数個数エラーを eval/runner で固定）
-  - [x] 最新品質ゲート: `cabal test`（286 examples） / `cabal run check-structure` 成功
+  - [x] 最新品質ゲート: `cabal test`（264 examples） / `cabal run check-structure` 成功
   - [x] CI改善: GitHub Actions に Cabal キャッシュ（`~/.cabal/packages`, `~/.cabal/store`, `dist-newstyle`）を追加

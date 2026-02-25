@@ -1,10 +1,10 @@
 module PythonHS.Parser.ParseExpr (parseExpr) where
 
-import PythonHS.AST.BinaryOperator (BinaryOperator (AddOperator, AndOperator, DivideOperator, EqOperator, GtOperator, GteOperator, LtOperator, LteOperator, ModuloOperator, MultiplyOperator, NotEqOperator, OrOperator))
+import PythonHS.AST.BinaryOperator (BinaryOperator (AddOperator, AndOperator, DivideOperator, EqOperator, FloorDivideOperator, GtOperator, GteOperator, LtOperator, LteOperator, ModuloOperator, MultiplyOperator, NotEqOperator, OrOperator, SubtractOperator))
 import PythonHS.AST.Expr (Expr (BinaryExpr, CallExpr, DictExpr, IdentifierExpr, IntegerExpr, ListExpr, NoneExpr, NotExpr, StringExpr, UnaryMinusExpr))
 import PythonHS.Lexer.Position (Position (Position))
 import PythonHS.Lexer.Token (Token (Token), position)
-import PythonHS.Lexer.TokenType (TokenType (AndToken, ColonToken, CommaToken, EqToken, FalseToken, GtToken, GteToken, IdentifierToken, IntegerToken, LBraceToken, LBracketToken, LParenToken, LtToken, LteToken, MinusToken, NoneToken, NotEqToken, NotToken, OrToken, PercentToken, PlusToken, RBraceToken, RBracketToken, RParenToken, SlashToken, StarToken, StringToken, TrueToken))
+import PythonHS.Lexer.TokenType (TokenType (AndToken, ColonToken, CommaToken, DoubleSlashToken, EqToken, FalseToken, GtToken, GteToken, IdentifierToken, IntegerToken, LBraceToken, LBracketToken, LParenToken, LtToken, LteToken, MinusToken, NoneToken, NotEqToken, NotToken, OrToken, PercentToken, PlusToken, RBraceToken, RBracketToken, RParenToken, SlashToken, StarToken, StringToken, TrueToken))
 import PythonHS.Parser.ParseError (ParseError (ExpectedExpression))
 
 parseExpr :: [Token] -> Either ParseError (Expr, [Token])
@@ -64,6 +64,9 @@ parseExpr = parseOr
     parseAddTail left (Token PlusToken _ pos : rest) = do
       (rightExpr, remaining) <- parseMul rest
       parseAddTail (BinaryExpr AddOperator left rightExpr pos) remaining
+    parseAddTail left (Token MinusToken _ pos : rest) = do
+      (rightExpr, remaining) <- parseMul rest
+      parseAddTail (BinaryExpr SubtractOperator left rightExpr pos) remaining
     parseAddTail left remaining = Right (left, remaining)
 
     parseMul tokenStream = do
@@ -76,6 +79,9 @@ parseExpr = parseOr
     parseMulTail left (Token SlashToken _ pos : rest) = do
       (rightExpr, remaining) <- parsePrimary rest
       parseMulTail (BinaryExpr DivideOperator left rightExpr pos) remaining
+    parseMulTail left (Token DoubleSlashToken _ pos : rest) = do
+      (rightExpr, remaining) <- parsePrimary rest
+      parseMulTail (BinaryExpr FloorDivideOperator left rightExpr pos) remaining
     parseMulTail left (Token PercentToken _ pos : rest) = do
       (rightExpr, remaining) <- parsePrimary rest
       parseMulTail (BinaryExpr ModuloOperator left rightExpr pos) remaining

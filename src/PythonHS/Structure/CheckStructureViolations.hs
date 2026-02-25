@@ -78,7 +78,9 @@ checkStructureViolations root = do
             if null expectedNames || baseName `elem` expectedNames || isTestFile
               then []
               else [relPath ++ ": file name mismatch (expected one of " ++ intercalate ", " expectedNames ++ ", got " ++ baseName ++ ")"]
-      return (moduleViolations ++ testNamingViolations ++ functionViolations ++ functionNameViolations ++ typeViolations ++ typeNameViolations ++ fileNameViolations)
+          lineCountViolations =
+            [relPath ++ ": file exceeds 200 lines (" ++ show (length linesInFile) ++ ")" | not isTestFile, length linesInFile > 200, relPath `notElem` legacyLineCountExemptions]
+      return (moduleViolations ++ testNamingViolations ++ functionViolations ++ functionNameViolations ++ typeViolations ++ typeNameViolations ++ fileNameViolations ++ lineCountViolations)
 
     isSignificantTopLevel line =
       not (null trimmed)
@@ -188,3 +190,5 @@ checkStructureViolations root = do
         go rest@(x : xs)
           | startsWith needle rest = []
           | otherwise = x : go xs
+
+    legacyLineCountExemptions = ["src/PythonHS/Evaluator/EvalStatements.hs"]

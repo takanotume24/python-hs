@@ -1,6 +1,6 @@
 module Test.Eval.RuntimeErrorSpec (spec) where
 
-import PythonHS.AST.BinaryOperator (BinaryOperator (AddOperator, MultiplyOperator, DivideOperator, ModuloOperator, LtOperator))
+import PythonHS.AST.BinaryOperator (BinaryOperator (AddOperator, MultiplyOperator, DivideOperator, FloorDivideOperator, ModuloOperator, SubtractOperator, LtOperator))
 import PythonHS.AST.Expr (Expr (BinaryExpr, CallExpr, DictExpr, IdentifierExpr, IntegerExpr, ListExpr, NoneExpr, StringExpr, UnaryMinusExpr))
 import PythonHS.AST.Program (Program (Program))
 import PythonHS.AST.Stmt (Stmt (AddAssignStmt, AssignStmt, BreakStmt, ContinueStmt, DivAssignStmt, FloorDivAssignStmt, ForStmt, FunctionDefStmt, IfStmt, ModAssignStmt, MulAssignStmt, PassStmt, PrintStmt, ReturnStmt, SubAssignStmt, WhileStmt))
@@ -87,6 +87,27 @@ spec = describe "runtime error reporting" $ do
           ]
       )
       `shouldBe` Left "Value error: division by zero at 13:10"
+
+    evalProgram
+      ( Program
+          [ PrintStmt (BinaryExpr FloorDivideOperator (StringExpr "x" (Position 13 8)) (IntegerExpr 2 (Position 13 13)) (Position 13 10)) (Position 13 1)
+          ]
+      )
+      `shouldBe` Left "Type error: expected int in // at 13:10"
+
+    evalProgram
+      ( Program
+          [ PrintStmt (BinaryExpr FloorDivideOperator (IntegerExpr 8 (Position 13 8)) (IntegerExpr 0 (Position 13 13)) (Position 13 10)) (Position 13 1)
+          ]
+      )
+      `shouldBe` Left "Value error: division by zero at 13:10"
+
+    evalProgram
+      ( Program
+          [ PrintStmt (BinaryExpr SubtractOperator (StringExpr "x" (Position 13 8)) (IntegerExpr 2 (Position 13 12)) (Position 13 10)) (Position 13 1)
+          ]
+      )
+      `shouldBe` Left "Type error: expected int in - at 13:10"
 
     evalProgram
       ( Program
@@ -383,39 +404,17 @@ spec = describe "runtime error reporting" $ do
 
     evalProgram
       ( Program
-          [ PrintStmt (CallExpr "remove" [ListExpr [IntegerExpr 1 (Position 35 11)] (Position 35 10), IntegerExpr 9 (Position 35 14)] (Position 35 7)) (Position 35 1)
+          [ PrintStmt (CallExpr "remove" [ListExpr [IntegerExpr 1 (Position 35 11)] (Position 35 10), IntegerExpr 2 (Position 35 14)] (Position 35 7)) (Position 35 1)
           ]
       )
       `shouldBe` Left "Value error: remove value not found at 35:7"
 
     evalProgram
       ( Program
-          [ PrintStmt (CallExpr "remove" [ListExpr [] (Position 36 10)] (Position 36 7)) (Position 36 1)
+          [ PrintStmt (CallExpr "remove" [ListExpr [IntegerExpr 1 (Position 36 11)] (Position 36 10)] (Position 36 7)) (Position 36 1)
           ]
       )
       `shouldBe` Left "Argument count mismatch when calling remove at 36:7"
-
-  it "reports sort builtin errors" $ do
-    evalProgram
-      ( Program
-          [ PrintStmt (CallExpr "sort" [IntegerExpr 1 (Position 37 11)] (Position 37 7)) (Position 37 1)
-          ]
-      )
-      `shouldBe` Left "Type error: sort expects list as first argument at 37:7"
-
-    evalProgram
-      ( Program
-          [ PrintStmt (CallExpr "sort" [ListExpr [StringExpr "x" (Position 38 11)] (Position 38 10)] (Position 38 7)) (Position 38 1)
-          ]
-      )
-      `shouldBe` Left "Type error: sort expects list of int at 38:7"
-
-    evalProgram
-      ( Program
-          [ PrintStmt (CallExpr "sort" [ListExpr [] (Position 39 10), IntegerExpr 1 (Position 39 14)] (Position 39 7)) (Position 39 1)
-          ]
-      )
-      `shouldBe` Left "Argument count mismatch when calling sort at 39:7"
 
   it "reports plus-assign errors" $ do
     evalProgram

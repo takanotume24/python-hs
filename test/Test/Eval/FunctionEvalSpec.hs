@@ -3,7 +3,7 @@ module Test.Eval.FunctionEvalSpec (spec) where
 import PythonHS.AST.BinaryOperator (BinaryOperator (AddOperator, EqOperator))
 import PythonHS.AST.Expr (Expr (BinaryExpr, CallExpr, IdentifierExpr, IntegerExpr))
 import PythonHS.AST.Program (Program (Program))
-import PythonHS.AST.Stmt (Stmt (AssignStmt, FunctionDefStmt, IfStmt, PrintStmt, ReturnStmt))
+import PythonHS.AST.Stmt (Stmt (AssignStmt, FunctionDefStmt, GlobalStmt, IfStmt, PrintStmt, ReturnStmt))
 import PythonHS.Evaluator (evalProgram)
 import PythonHS.Lexer.Position (Position (Position))
 import Test.Hspec (Spec, describe, it, shouldBe)
@@ -85,3 +85,58 @@ spec = describe "function runtime" $ do
           ]
       )
       `shouldBe` Right ["99"]
+
+  it "updates global variable when declared with global inside function" $ do
+    evalProgram
+      ( Program
+          [ AssignStmt "x" (IntegerExpr 10 (Position 12 1)) (Position 12 1),
+            FunctionDefStmt
+              "setGlobal"
+              []
+              [ GlobalStmt "x" (Position 13 3),
+                AssignStmt "x" (IntegerExpr 99 (Position 14 3)) (Position 14 3),
+                ReturnStmt (IdentifierExpr "x" (Position 15 10)) (Position 15 10)
+              ]
+              (Position 13 1),
+            PrintStmt (CallExpr "setGlobal" [] (Position 16 1)) (Position 16 1),
+            PrintStmt (IdentifierExpr "x" (Position 17 1)) (Position 17 1)
+          ]
+      )
+      `shouldBe` Right ["99", "99"]
+
+  it "creates a new global variable when declared in function" $ do
+    evalProgram
+      ( Program
+          [ FunctionDefStmt
+              "makeGlobal"
+              []
+              [ GlobalStmt "y" (Position 18 3),
+                AssignStmt "y" (IntegerExpr 5 (Position 19 3)) (Position 19 3)
+              ]
+              (Position 18 1),
+            PrintStmt (CallExpr "makeGlobal" [] (Position 20 1)) (Position 20 1),
+            PrintStmt (IdentifierExpr "y" (Position 21 1)) (Position 21 1)
+          ]
+      )
+      `shouldBe` Right ["0", "5"]
+
+  it "treats global declaration in conditional branch as function-wide" $ do
+    evalProgram
+      ( Program
+          [ AssignStmt "x" (IntegerExpr 1 (Position 22 1)) (Position 22 1),
+            FunctionDefStmt
+              "setViaBranch"
+              []
+              [ IfStmt
+                  (IntegerExpr 0 (Position 23 6))
+                  [GlobalStmt "x" (Position 24 5)]
+                  Nothing
+                  (Position 23 3),
+                AssignStmt "x" (IntegerExpr 2 (Position 25 3)) (Position 25 3)
+              ]
+              (Position 23 1),
+            PrintStmt (CallExpr "setViaBranch" [] (Position 26 1)) (Position 26 1),
+            PrintStmt (IdentifierExpr "x" (Position 27 1)) (Position 27 1)
+          ]
+      )
+      `shouldBe` Right ["0", "2"]

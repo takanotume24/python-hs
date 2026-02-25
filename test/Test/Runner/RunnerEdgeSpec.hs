@@ -121,6 +121,15 @@ spec = describe "runSource (integration edge/error)" $ do
   it "prefers function parameter over global variable" $ do
     runSource "x = 7\ndef echo(x):\nreturn x\nprint echo(99)\n" `shouldBe` Right ["99"]
 
+  it "updates global variable when declared with global inside function" $ do
+    runSource "x = 10\ndef setGlobal():\n  global x\n  x = 99\n  return x\nprint setGlobal()\nprint x\n" `shouldBe` Right ["99", "99"]
+
+  it "creates a new global variable when declared in function" $ do
+    runSource "def makeGlobal():\n  global y\n  y = 5\nprint makeGlobal()\nprint y\n" `shouldBe` Right ["0", "5"]
+
+  it "treats global declaration in conditional branch as function-wide" $ do
+    runSource "x = 1\ndef setViaBranch():\n  if 0:\n    global x\n  x = 2\nprint setViaBranch()\nprint x\n" `shouldBe` Right ["0", "2"]
+
   it "runs if/else and function return in one script" $ do
     runSource "x = 0\nif x:\nprint 1\nelse:\nprint 2\ndef id(v):\nreturn v\nprint id(7)\n" `shouldBe` Right ["2", "7"]
 

@@ -37,6 +37,10 @@ library
     , PythonHS.Lexer.ScanTokenStep
     , PythonHS.Parser.ParseExpr
     , PythonHS.Parser.ParseStatement
+    , PythonHS.Structure.CheckStructureWarnings
+    , PythonHS.Evaluator.ValueToOutput
+    , PythonHS.Evaluator.EvalWhileStmt
+    , PythonHS.Evaluator.EvalForStmt
   build-depends:
       base >=4.14 && <5
     , containers >=0.6 && <0.9

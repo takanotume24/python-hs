@@ -1,3 +1,4 @@
-module PythonHS.Structure.CheckStructure (checkStructureViolations) where
+module PythonHS.Structure.CheckStructure (checkStructureViolations, checkStructureWarnings) where
 
 import PythonHS.Structure.CheckStructureViolations (checkStructureViolations)
+import PythonHS.Structure.CheckStructureWarnings (checkStructureWarnings)
