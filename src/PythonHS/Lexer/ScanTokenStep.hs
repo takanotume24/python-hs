@@ -16,6 +16,7 @@ import PythonHS.Lexer.TokenType
         ColonToken,
         CommaToken,
         DefToken,
+        DotToken,
         ElseToken,
         ElifToken,
         TrueToken,
@@ -109,6 +110,7 @@ scanTokenStep src ln col =
       | c == '}' -> Right (Token RBraceToken "}" (Position ln col), rest, col + 1)
       | c == ':' -> Right (Token ColonToken ":" (Position ln col), rest, col + 1)
       | c == ',' -> Right (Token CommaToken "," (Position ln col), rest, col + 1)
+      | c == '.' -> Right (Token DotToken "." (Position ln col), rest, col + 1)
       | c == '"' ->
           let (strContent, tailInput) = span (\x -> x /= '"' && x /= '\n') rest
               len = length strContent

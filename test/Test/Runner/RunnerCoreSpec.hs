@@ -120,6 +120,29 @@ spec = describe "runSource (integration core)" $ do
   it "evaluates append builtin for list" $ do
     runSource "print append([1, 2], 3)\n" `shouldBe` Right ["[1, 2, 3]"]
 
+  it "evaluates append builtin with method-call style" $ do
+    runSource "x = [1, 2]\nprint x.append(3)\n" `shouldBe` Right ["[1, 2, 3]"]
+
+  it "evaluates chained method-call style for list builtin" $ do
+    runSource "x = [1]\nprint x.append(2).append(3)\n" `shouldBe` Right ["[1, 2, 3]"]
+
+  it "evaluates dictionary builtins with method-call style" $ do
+    runSource "d = {1: 2, 3: 4}\nprint d.get(3)\nprint d.keys()\nprint d.setdefault(9, 10)\n" `shouldBe` Right ["4", "[1, 3]", "{1: 2, 3: 4, 9: 10}"]
+
+  it "evaluates remaining dictionary method-call style variants" $ do
+    runSource "d = {1: 2, 3: 4}\nprint d.values()\nprint d.items()\nprint d.get(9, 99)\nprint d.pop(9, 77)\n" `shouldBe` Right ["[2, 4]", "[[1, 2], [3, 4]]", "99", "77"]
+
+  it "evaluates update/pop/clear with method-call style" $ do
+    runSource "d = {1: 2}\nprint d.update(1, 9)\nprint d.pop(1)\nprint d.clear()\n" `shouldBe` Right ["{1: 9}", "2", "{}"]
+
+  it "evaluates list pop/clear with method-call style" $ do
+    runSource "x = [1, 2, 3]\nprint x.pop()\nprint x.clear()\n" `shouldBe` Right ["3", "[]"]
+
+  it "evaluates remove/insert/sort/reverse with method-call style" $ do
+    runSource
+      "x = [3, 1, 2, 2]\nprint x.remove(2)\nprint x.insert(1, 9)\nprint x.sort()\nprint x.reverse()\n"
+      `shouldBe` Right ["[3, 1, 2]", "[3, 9, 1, 2, 2]", "[1, 2, 2, 3]", "[2, 2, 1, 3]"]
+
   it "evaluates sort builtin for integer list" $ do
     runSource "print sort([3, 1, 2])\nprint sort([])\n" `shouldBe` Right ["[1, 2, 3]", "[]"]
 

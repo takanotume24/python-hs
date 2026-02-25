@@ -3,7 +3,7 @@ module Test.Lexer.ScanTokensCoreSpec (spec) where
 import PythonHS.Lexer.Position (Position (Position))
 import PythonHS.Lexer.ScanTokens (scanTokens)
 import PythonHS.Lexer.Token (Token (Token))
-import PythonHS.Lexer.TokenType (TokenType (AssignToken, BreakToken, ContinueToken, DoubleSlashAssignToken, DoubleSlashToken, EOFToken, ElifToken, FalseToken, ForToken, GlobalToken, IdentifierToken, IfToken, InToken, IntegerToken, MinusAssignToken, NewlineToken, NoneToken, PassToken, PercentAssignToken, PercentToken, PlusAssignToken, PlusToken, PrintToken, ReturnToken, SlashAssignToken, SlashToken, StarAssignToken, StarToken, TrueToken))
+import PythonHS.Lexer.TokenType (TokenType (AssignToken, BreakToken, ContinueToken, DotToken, DoubleSlashAssignToken, DoubleSlashToken, EOFToken, ElifToken, FalseToken, ForToken, GlobalToken, IdentifierToken, IfToken, InToken, IntegerToken, LParenToken, MinusAssignToken, NewlineToken, NoneToken, PassToken, PercentAssignToken, PercentToken, PlusAssignToken, PlusToken, PrintToken, ReturnToken, RParenToken, SlashAssignToken, SlashToken, StarAssignToken, StarToken, TrueToken))
 import Test.Hspec (Spec, describe, it, shouldBe)
 
 spec :: Spec
@@ -182,5 +182,18 @@ spec = describe "scanTokens core tokens" $ do
       Right
         [ Token PassToken "pass" (Position 1 1),
           Token NewlineToken "\\n" (Position 1 5),
+          Token EOFToken "" (Position 2 1)
+        ]
+
+  it "recognizes dot token for method-call syntax" $ do
+    scanTokens "x.append(1)\n" `shouldBe`
+      Right
+        [ Token IdentifierToken "x" (Position 1 1),
+          Token DotToken "." (Position 1 2),
+          Token IdentifierToken "append" (Position 1 3),
+          Token LParenToken "(" (Position 1 9),
+          Token IntegerToken "1" (Position 1 10),
+          Token RParenToken ")" (Position 1 11),
+          Token NewlineToken "\\n" (Position 1 12),
           Token EOFToken "" (Position 2 1)
         ]

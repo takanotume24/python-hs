@@ -4,7 +4,7 @@ import PythonHS.AST.BinaryOperator (BinaryOperator (AddOperator, AndOperator, Di
 import PythonHS.AST.Expr (Expr (BinaryExpr, CallExpr, DictExpr, IdentifierExpr, IntegerExpr, ListExpr, NoneExpr, NotExpr, StringExpr, UnaryMinusExpr))
 import PythonHS.Lexer.Position (Position (Position))
 import PythonHS.Lexer.Token (Token (Token), position)
-import PythonHS.Lexer.TokenType (TokenType (AndToken, ColonToken, CommaToken, DoubleSlashToken, EqToken, FalseToken, GtToken, GteToken, IdentifierToken, IntegerToken, LBraceToken, LBracketToken, LParenToken, LtToken, LteToken, MinusToken, NoneToken, NotEqToken, NotToken, OrToken, PercentToken, PlusToken, RBraceToken, RBracketToken, RParenToken, SlashToken, StarToken, StringToken, TrueToken))
+import PythonHS.Lexer.TokenType (TokenType (AndToken, ColonToken, CommaToken, DotToken, DoubleSlashToken, EqToken, FalseToken, GtToken, GteToken, IdentifierToken, IntegerToken, LBraceToken, LBracketToken, LParenToken, LtToken, LteToken, MinusToken, NoneToken, NotEqToken, NotToken, OrToken, PercentToken, PlusToken, RBraceToken, RBracketToken, RParenToken, SlashToken, StarToken, StringToken, TrueToken))
 import PythonHS.Parser.ParseError (ParseError (ExpectedExpression))
 
 parseExpr :: [Token] -> Either ParseError (Expr, [Token])
@@ -87,29 +87,38 @@ parseExpr = parseOr
       parseMulTail (BinaryExpr ModuloOperator left rightExpr pos) remaining
     parseMulTail left remaining = Right (left, remaining)
 
-    parsePrimary (Token IntegerToken value pos : rest) = Right (IntegerExpr (read value) pos, rest)
-    parsePrimary (Token TrueToken _ pos : rest) = Right (IntegerExpr 1 pos, rest)
-    parsePrimary (Token FalseToken _ pos : rest) = Right (IntegerExpr 0 pos, rest)
-    parsePrimary (Token NoneToken _ pos : rest) = Right (NoneExpr pos, rest)
-    parsePrimary (Token MinusToken _ pos : Token IntegerToken value _ : rest) = Right (IntegerExpr (negate (read value)) pos, rest)
-    parsePrimary (Token MinusToken _ pos : rest) = do
+    parsePrimary tokenStream = do
+      (baseExpr, remaining) <- parseAtom tokenStream
+      parsePostfix baseExpr remaining
+
+    parseAtom (Token IntegerToken value pos : rest) = Right (IntegerExpr (read value) pos, rest)
+    parseAtom (Token TrueToken _ pos : rest) = Right (IntegerExpr 1 pos, rest)
+    parseAtom (Token FalseToken _ pos : rest) = Right (IntegerExpr 0 pos, rest)
+    parseAtom (Token NoneToken _ pos : rest) = Right (NoneExpr pos, rest)
+    parseAtom (Token MinusToken _ pos : Token IntegerToken value _ : rest) = Right (IntegerExpr (negate (read value)) pos, rest)
+    parseAtom (Token MinusToken _ pos : rest) = do
       (expr, remaining) <- parsePrimary rest
       Right (UnaryMinusExpr expr pos, remaining)
-    parsePrimary (Token StringToken value pos : rest) = Right (StringExpr value pos, rest)
-    parsePrimary (Token LBracketToken _ pos : rest) = parseListElements pos rest
-    parsePrimary (Token LBraceToken _ pos : rest) = parseDictEntries pos rest
-    parsePrimary (Token LParenToken _ _ : rest) = do
+    parseAtom (Token StringToken value pos : rest) = Right (StringExpr value pos, rest)
+    parseAtom (Token LBracketToken _ pos : rest) = parseListElements pos rest
+    parseAtom (Token LBraceToken _ pos : rest) = parseDictEntries pos rest
+    parseAtom (Token LParenToken _ _ : rest) = do
       (expr, afterExpr) <- parseExpr rest
       case afterExpr of
         Token RParenToken _ _ : rest' -> Right (expr, rest')
         Token _ _ pos : _ -> Left (ExpectedExpression pos)
         _ -> Left (ExpectedExpression (Position 0 0))
-    parsePrimary (Token IdentifierToken name pos : Token LParenToken _ _ : rest) = do
+    parseAtom (Token IdentifierToken value pos : rest) = Right (IdentifierExpr value pos, rest)
+    parseAtom (tok : _) = Left (ExpectedExpression (position tok))
+    parseAtom _ = Left (ExpectedExpression (Position 0 0))
+
+    parsePostfix (IdentifierExpr name pos) (Token LParenToken _ _ : rest) = do
       (args, afterArgs) <- parseArguments rest
-      Right (CallExpr name args pos, afterArgs)
-    parsePrimary (Token IdentifierToken value pos : rest) = Right (IdentifierExpr value pos, rest)
-    parsePrimary (tok : _) = Left (ExpectedExpression (position tok))
-    parsePrimary _ = Left (ExpectedExpression (Position 0 0))
+      parsePostfix (CallExpr name args pos) afterArgs
+    parsePostfix receiverExpr (Token DotToken _ _ : Token IdentifierToken methodName methodPos : Token LParenToken _ _ : rest) = do
+      (args, afterArgs) <- parseArguments rest
+      parsePostfix (CallExpr methodName (receiverExpr : args) methodPos) afterArgs
+    parsePostfix expr rest = Right (expr, rest)
 
     parseListElements listPos (Token RBracketToken _ _ : rest) =
       Right (ListExpr [] listPos, rest)

@@ -27,6 +27,7 @@ TDD（`hspec`）で機能を拡張し、`Lexer -> Parser -> Evaluator -> Runner/
 - [x] 制御構文: `if/elif/else`, `while`, `for`
 - [x] 関数定義: `def name(args): ...`
 - [x] 式: 四則演算（`+ - * / % //`）, 比較, `not`, 関数呼び出し
+- [x] 組み込みのメソッド呼び出し構文（例: `x.append(3)` を関数呼び出しへデシュガー）
 - [x] リテラル: int/string/list/dict/None
 - [x] インラインsuiteとインデントsuiteの両対応
 
@@ -60,7 +61,7 @@ TDD（`hspec`）で機能を拡張し、`Lexer -> Parser -> Evaluator -> Runner/
 
 ## MVP外・未対応（明示）
 - [ ] Python完全互換（あくまでサブセット）
-- [ ] メソッド呼び出し構文（例: `x.append(3)`）
+- [ ] 任意オブジェクトの一般メソッド解決（現状は組み込み相当の構文糖衣のみ）
 - [ ] 例外処理、クラス、import など高度機能
 
 ## 開発環境（Nix Flakes）

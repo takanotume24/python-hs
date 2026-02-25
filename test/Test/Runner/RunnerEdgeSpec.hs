@@ -20,8 +20,15 @@ spec = describe "runSource (integration edge/error)" $ do
   it "preserves insertion order for dictionary builtins" $ do
     runSource "print keys({3: 30, 1: 10})\nprint values({3: 30, 1: 10})\nprint items({3: 30, 1: 10})\n" `shouldBe` Right ["[3, 1]", "[30, 10]", "[[3, 30], [1, 10]]"]
 
-  it "keeps builtin call style as function form" $ do
-    runSource "x = [1, 2]\nprint x.append(3)\n" `shouldBe` Left "UnexpectedCharacter '.'"
+  it "supports method-call style for builtins" $ do
+    runSource "x = [1, 2]\nprint x.append(3)\n" `shouldBe` Right ["[1, 2, 3]"]
+
+  it "reports method-call style builtin type error with method position" $ do
+    runSource "print 1.append(2)\n" `shouldBe` Left "Type error: append expects list as first argument at 1:9"
+
+  it "reports dictionary method-call style errors with method position" $ do
+    runSource "print 1.get(1)\n" `shouldBe` Left "Type error: get expects dict as first argument at 1:9"
+    runSource "print {}.setdefault(1)\n" `shouldBe` Left "Argument count mismatch when calling setdefault at 1:10"
 
   it "evaluates string equality and inequality" $ do
     runSource "print \"a\" == \"a\"\nprint \"a\" != \"b\"\n" `shouldBe` Right ["1", "1"]

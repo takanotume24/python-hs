@@ -17,6 +17,7 @@ import PythonHS.Lexer.TokenType
         DoubleSlashAssignToken,
         ColonToken,
         CommaToken,
+        DotToken,
         DefToken,
         EOFToken,
         ElseToken,
@@ -672,6 +673,79 @@ spec = describe "parseProgram" $ do
         ( Program
             [ FunctionDefStmt "add" ["a", "b"] [PrintStmt (IdentifierExpr "a" (Position 1 1)) (Position 1 1)] (Position 1 1),
               PrintStmt (CallExpr "add" [IntegerExpr 1 (Position 1 1), IntegerExpr 2 (Position 1 1)] (Position 1 1)) (Position 1 1)
+            ]
+        )
+
+  it "parses method-call syntax as function-style call" $ do
+    parseProgram
+      [ Token PrintToken "print" (Position 1 1),
+        Token IdentifierToken "x" (Position 1 7),
+        Token DotToken "." (Position 1 8),
+        Token IdentifierToken "append" (Position 1 9),
+        Token LParenToken "(" (Position 1 15),
+        Token IntegerToken "3" (Position 1 16),
+        Token RParenToken ")" (Position 1 17),
+        Token NewlineToken "\\n" (Position 1 18),
+        Token EOFToken "" (Position 2 1)
+      ]
+      `shouldBe` Right
+        ( Program
+            [ PrintStmt
+                (CallExpr "append" [IdentifierExpr "x" (Position 1 7), IntegerExpr 3 (Position 1 16)] (Position 1 9))
+                (Position 1 1)
+            ]
+        )
+
+  it "parses chained method-call syntax" $ do
+    parseProgram
+      [ Token PrintToken "print" (Position 1 1),
+        Token IdentifierToken "x" (Position 1 7),
+        Token DotToken "." (Position 1 8),
+        Token IdentifierToken "append" (Position 1 9),
+        Token LParenToken "(" (Position 1 15),
+        Token IntegerToken "3" (Position 1 16),
+        Token RParenToken ")" (Position 1 17),
+        Token DotToken "." (Position 1 18),
+        Token IdentifierToken "append" (Position 1 19),
+        Token LParenToken "(" (Position 1 25),
+        Token IntegerToken "4" (Position 1 26),
+        Token RParenToken ")" (Position 1 27),
+        Token NewlineToken "\\n" (Position 1 28),
+        Token EOFToken "" (Position 2 1)
+      ]
+      `shouldBe` Right
+        ( Program
+            [ PrintStmt
+                ( CallExpr
+                    "append"
+                    [ CallExpr "append" [IdentifierExpr "x" (Position 1 7), IntegerExpr 3 (Position 1 16)] (Position 1 9),
+                      IntegerExpr 4 (Position 1 26)
+                    ]
+                    (Position 1 19)
+                )
+                (Position 1 1)
+            ]
+        )
+
+  it "parses method-call syntax with multiple arguments" $ do
+    parseProgram
+      [ Token PrintToken "print" (Position 1 1),
+        Token IdentifierToken "d" (Position 1 7),
+        Token DotToken "." (Position 1 8),
+        Token IdentifierToken "update" (Position 1 9),
+        Token LParenToken "(" (Position 1 15),
+        Token IntegerToken "1" (Position 1 16),
+        Token CommaToken "," (Position 1 17),
+        Token IntegerToken "9" (Position 1 19),
+        Token RParenToken ")" (Position 1 20),
+        Token NewlineToken "\\n" (Position 1 21),
+        Token EOFToken "" (Position 2 1)
+      ]
+      `shouldBe` Right
+        ( Program
+            [ PrintStmt
+                (CallExpr "update" [IdentifierExpr "d" (Position 1 7), IntegerExpr 1 (Position 1 16), IntegerExpr 9 (Position 1 19)] (Position 1 9))
+                (Position 1 1)
             ]
         )
 

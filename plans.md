@@ -29,7 +29,7 @@
 ## 短期TODO（次スプリント）
 1. [x] 仕様明文化: `range` / `items` / `values` の順序保証（現状: 入力順, テストで固定済み）
 2. [x] 仕様明文化: リスト・辞書組み込みのMVP境界（`pop` はMVP外, テストで固定済み）
-3. [x] 仕様明文化: 関数呼び出し形式の方針（組み込みは関数形式を維持, メソッド構文は未対応）
+3. [x] 仕様明文化: 呼び出し形式の方針（当初は関数形式のみ、後続で組み込みメソッド構文を導入）
 4. [x] 回帰防止: 上記仕様を受け入れテスト（Runner）へ反映
 
 ---
@@ -90,7 +90,8 @@
 - [x] データ構造拡張の第3段階: `clear(list|dict)` を導入（eval/runner）
 - [x] データ構造拡張の第4段階: `setdefault(dict, key, default)` を導入（eval/runner）
 - [x] データ構造拡張の第5段階: `pop(dict, key[, default])` を導入（eval/runner）
-- [ ] データ構造拡張の第6段階: `remove(list, value)` を導入（eval/runner）
+- [x] データ構造拡張の第6段階: `remove(list, value)` を導入（eval/runner）
+- [x] 呼び出し構文拡張の第1段階: 組み込みメソッド呼び出し（`x.append(3)`）を導入（lex/parse/runner）
 
 ### ブロック構文 仕様メモ（2026-02-24 時点）
 - lexer は行頭スペースで `INDENT` / `DEDENT` を生成し、EOF 時に必要な `DEDENT` を flush する。
@@ -109,6 +110,13 @@
 
 ## メンテナンス記録（要約）
 - 2026-02-26
+  - [x] P3継続: 辞書メソッド構文の回帰面を補完（`values/items/get(default)/pop(default)` と代表負系を固定）
+  - [x] P3継続: 組み込みメソッド呼び出しを拡張（`remove` / `insert` / `sort` / `reverse` を受け入れテストで固定）
+  - [x] P3継続: メソッド呼び出し時の型エラー位置互換を固定（`print 1.append(2)` で `at 1:9`）
+  - [x] P3継続: 組み込みメソッド呼び出しを拡張（`update` / `pop` / `clear` の list/dict ケースを受け入れテストで固定）
+  - [x] P3継続: 組み込みメソッド呼び出しの適用範囲を拡張（連鎖呼び出し・辞書組み込みの受け入れテストを追加）
+  - [x] P3継続: 組み込みメソッド呼び出しの最小導入（`x.append(3)` を `append(x, 3)` と等価に評価）
+  - [x] P3継続: `remove(list, value)` を追加（先頭一致要素のみ削除、未発見は Value error を eval/runner で固定）
   - [x] 開発環境の再現性向上のため `flake.nix` を追加（`nix develop` で GHC/Cabal/HLS/整形・Lint ツールを提供）
   - [x] `flake.nix` に `checks` を追加し、`nix flake check` でテストと `check-structure` を実行可能化
   - [x] `checks.cabal-test` を `runCommand` ラッパー化し、`nix flake check -L` 時にテスト実行済みログを明示
