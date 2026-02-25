@@ -63,6 +63,22 @@ TDD（`hspec`）で機能を拡張し、`Lexer -> Parser -> Evaluator -> Runner/
 - [ ] メソッド呼び出し構文（例: `x.append(3)`）
 - [ ] 例外処理、クラス、import など高度機能
 
+## 開発環境（Nix Flakes）
+
+Nix が使える環境では、以下で開発シェルに入れます。
+
+```bash
+nix develop
+```
+
+初回は依存のインデックス更新後にテストを実行してください。
+
+```bash
+cabal update
+cabal test
+cabal run check-structure
+```
+
 ## 使い方
 
 ### 1. テスト

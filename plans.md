@@ -90,14 +90,7 @@
 - [x] データ構造拡張の第3段階: `clear(list|dict)` を導入（eval/runner）
 - [x] データ構造拡張の第4段階: `setdefault(dict, key, default)` を導入（eval/runner）
 - [x] データ構造拡張の第5段階: `pop(dict, key[, default])` を導入（eval/runner）
-- [x] データ構造拡張の第6段階: `remove(list, value)` を導入（eval/runner）
-- [x] 関数スコープ拡張の第1段階: `global` 文を実効化（関数内代入をグローバル環境へ反映）
-- [x] 関数スコープ拡張の第2段階: `global` 宣言の有効範囲を回帰テストで固定（新規グローバル作成／分岐内宣言）
-- [x] 式拡張の第1段階: 二項 `//`（床除算）を導入（lexer/parser/eval/runner）
-- [x] 式拡張の第2段階: 二項 `-`（減算）を導入（parser/eval/runner）
-- [x] 引数・リテラル構文拡張の第1段階: 末尾カンマを許可（`def/call/list/dict`）
-- [x] 関数機能拡張の第3段階: `return` 式省略を導入（`return` 単独は `None` を返す）
-- [x] 品質基盤強化の第1段階: `check-structure` に 200行制限を導入（`src`/`app` のみ対象、`test` は対象外、暫定除外なし）
+- [ ] データ構造拡張の第6段階: `remove(list, value)` を導入（eval/runner）
 
 ### ブロック構文 仕様メモ（2026-02-24 時点）
 - lexer は行頭スペースで `INDENT` / `DEDENT` を生成し、EOF 時に必要な `DEDENT` を flush する。
@@ -115,27 +108,8 @@
 ---
 
 ## メンテナンス記録（要約）
-- 2026-02-25
-  - [x] `remove(list, value)` 実装済み状態を計画へ反映（P3 データ構造拡張 第6段階を完了化）
-  - [x] `global` 文を実効化（関数内 `global x` 宣言時の `x` 代入をグローバルへ反映）
-  - [x] `global` 宣言スコープの回帰テストを追加（新規グローバル作成、分岐内宣言の関数全体適用）
-  - [x] 二項 `//`（床除算）を追加（lexer/parser/eval/runner + エラー規約を `//=` と整合）
-  - [x] 二項 `-`（減算）を追加（parser/eval/runner + 型エラー文言を `expected int in -` で固定）
-  - [x] `check-structure` に 200行制限を追加（当初は全 `.hs` 対象、段階移行のため暫定除外リストで管理）
-  - [x] `ScanTokens` を `scanTokenStep` 利用へ整理して 200行制限の暫定除外から解除（暫定除外は5ファイルに縮小）
-  - [x] `ParseProgram` の暫定除外を解除（`parseStatement` 利用へ整理済みのため、暫定除外は4ファイルに縮小）
-  - [x] `check-structure` が暫定除外ファイルの存在を警告出力するよう拡張（違反判定とは独立して表示）
-  - [x] 暫定除外警告に現在行数を併記（削減優先度を `check-structure` 出力だけで判断可能化）
-  - [x] 200行制限の適用範囲を見直し（`test` は対象外、`src`/`app` のみ対象）
-  - [x] 暫定除外を `src` 側のみへ整理（現時点の暫定除外は `EvalStatements` の1ファイル）
-  - [x] `EvalStatements` 分割の第1段階として `valueToOutput` を専用モジュールへ切り出し（暫定除外解消へ向けた段階的縮小を開始）
-  - [x] `EvalStatements` 分割の第2段階として `while` / `for` 実行処理を専用モジュールへ切り出し（`EvalStatements` を 612→557 行へ縮小）
-  - [x] `EvalStatements` 分割の第3段階として `evalExpr` / 二項演算 / 関数呼び出し / 組み込み評価を専用モジュールへ分離し、`EvalStatements` を 126 行へ縮小
-  - [x] 200行制限の暫定除外を撤廃（`check-structure` は警告なしで通過）
-  - [x] 引数・リテラル構文を拡張し、`def/call/list/dict` の末尾カンマを受理（Parser/Runner テストで固定）
-  - [x] フリーズ原因特定のため、`scripts/run-test-with-diagnostics.sh` を追加（`cabal test` 実行中の CPU/メモリ/プロセス時系列ログを保存）
-  - [x] `return` 式省略を導入（`return` 単独を `None` として parse/eval、Parser/Runner テストで固定）
-  - [x] 実行安定性調整: 反復上限ガードを `10000` から `2000` に調整（`while/for` の暴走時に IDE 側が固まりにくい設定へ）
+- 2026-02-26
+  - [x] 開発環境の再現性向上のため `flake.nix` を追加（`nix develop` で GHC/Cabal/HLS/整形・Lint ツールを提供）
 - 2026-02-24
   - [x] READMEを新規作成し、実装済みPythonサブセット機能とMVP境界（未対応範囲）を明文化
 - 2026-02-19

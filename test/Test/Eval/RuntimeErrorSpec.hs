@@ -1,6 +1,6 @@
 module Test.Eval.RuntimeErrorSpec (spec) where
 
-import PythonHS.AST.BinaryOperator (BinaryOperator (AddOperator, MultiplyOperator, DivideOperator, FloorDivideOperator, ModuloOperator, SubtractOperator, LtOperator))
+import PythonHS.AST.BinaryOperator (BinaryOperator (AddOperator, MultiplyOperator, DivideOperator, ModuloOperator, LtOperator))
 import PythonHS.AST.Expr (Expr (BinaryExpr, CallExpr, DictExpr, IdentifierExpr, IntegerExpr, ListExpr, NoneExpr, StringExpr, UnaryMinusExpr))
 import PythonHS.AST.Program (Program (Program))
 import PythonHS.AST.Stmt (Stmt (AddAssignStmt, AssignStmt, BreakStmt, ContinueStmt, DivAssignStmt, FloorDivAssignStmt, ForStmt, FunctionDefStmt, IfStmt, ModAssignStmt, MulAssignStmt, PassStmt, PrintStmt, ReturnStmt, SubAssignStmt, WhileStmt))
@@ -87,27 +87,6 @@ spec = describe "runtime error reporting" $ do
           ]
       )
       `shouldBe` Left "Value error: division by zero at 13:10"
-
-    evalProgram
-      ( Program
-          [ PrintStmt (BinaryExpr FloorDivideOperator (StringExpr "x" (Position 13 8)) (IntegerExpr 2 (Position 13 13)) (Position 13 10)) (Position 13 1)
-          ]
-      )
-      `shouldBe` Left "Type error: expected int in // at 13:10"
-
-    evalProgram
-      ( Program
-          [ PrintStmt (BinaryExpr FloorDivideOperator (IntegerExpr 8 (Position 13 8)) (IntegerExpr 0 (Position 13 13)) (Position 13 10)) (Position 13 1)
-          ]
-      )
-      `shouldBe` Left "Value error: division by zero at 13:10"
-
-    evalProgram
-      ( Program
-          [ PrintStmt (BinaryExpr SubtractOperator (StringExpr "x" (Position 13 8)) (IntegerExpr 2 (Position 13 12)) (Position 13 10)) (Position 13 1)
-          ]
-      )
-      `shouldBe` Left "Type error: expected int in - at 13:10"
 
     evalProgram
       ( Program
