@@ -104,6 +104,9 @@
 ---
 
 ## メンテナンス記録（要約）
+- 2026-02-25
+  - [x] devcontainer を Dockerfile 構成へ移行し、`ghcup` 経由で `ghc` / `cabal` / `haskell-language-server` を導入
+  - [x] devcontainer の Haskell ツール指定を `latest` 参照へ更新（`ghc` / `cabal` / `haskell-language-server`）
 - 2026-02-24
   - [x] READMEを新規作成し、実装済みPythonサブセット機能とMVP境界（未対応範囲）を明文化
 - 2026-02-19
