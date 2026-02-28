@@ -9,7 +9,9 @@ startRepl :: IO ()
 startRepl = runInputT defaultSettings (loop Map.empty Map.empty [])
   where
     trimRight = reverse . dropWhile isSpace . reverse
+    trim = dropWhile isSpace . trimRight
     endsWithColon s = not (null (trimRight s)) && last (trimRight s) == ':'
+    isExitCommand s = trim s == "exit()"
 
     submitBufferIO env fenv buf =
       let src = unlines buf
@@ -28,18 +30,21 @@ startRepl = runInputT defaultSettings (loop Map.empty Map.empty [])
               return ()
           outputStrLn ""
         Just line ->
-          if null buf && trimRight line == ""
-            then loop env fenv []
+          if null buf && isExitCommand line
+            then return ()
             else
-              if null buf && not (endsWithColon line)
-                then do
-                  (env', fenv') <- case processSubmission env fenv (line ++ "\n") of
-                    Left err -> outputStrLn ("Error: " ++ err) >> return (env, fenv)
-                    Right (env'', fenv'', outs) -> mapM_ outputStrLn outs >> return (env'', fenv'')
-                  loop env' fenv' []
+              if null buf && trimRight line == ""
+                then loop env fenv []
                 else
-                  if not (null buf) && trimRight line == ""
+                  if null buf && not (endsWithColon line)
                     then do
-                      (env', fenv') <- submitBufferIO env fenv (init (buf ++ [line]))
+                      (env', fenv') <- case processSubmission env fenv (line ++ "\n") of
+                        Left err -> outputStrLn ("Error: " ++ err) >> return (env, fenv)
+                        Right (env'', fenv'', outs) -> mapM_ outputStrLn outs >> return (env'', fenv'')
                       loop env' fenv' []
-                    else loop env fenv (buf ++ [line])
+                    else
+                      if not (null buf) && trimRight line == ""
+                        then do
+                          (env', fenv') <- submitBufferIO env fenv (init (buf ++ [line]))
+                          loop env' fenv' []
+                        else loop env fenv (buf ++ [line])

@@ -64,6 +64,10 @@ spec = describe "runFile / replEvalLines" $ do
     outs <- replEvalLines ["print 1 / 0", "print 9", ""]
     outs `shouldBe` ["Error: Value error: division by zero at 1:9", "9"]
 
+  it "stops REPL evaluation when exit() is entered" $ do
+    outs <- replEvalLines ["print 1", "exit()", "print 2", ""]
+    outs `shouldBe` ["1"]
+
   it "keeps environment after a failed block submission in REPL" $ do
     outs <- replEvalLines ["x = 10", "if x:", "", "print x", ""]
     outs `shouldSatisfy` \xs ->
@@ -81,3 +85,9 @@ spec = describe "runFile / replEvalLines" $ do
     code `shouldBe` ExitSuccess
     (">>> " `isPrefixOf` out) `shouldBe` True
     ("Error: UnexpectedCharacter '@'\n>>> 2" `isInfixOf` out) `shouldBe` True
+
+  it "exits interactive REPL when exit() is entered" $ do
+    (code, out, _err) <- readCreateProcessWithExitCode (proc "cabal" ["run", "-v0", "exe:python-hs"]) "print 1\nexit()\nprint 2\n"
+    code `shouldBe` ExitSuccess
+    ("1" `isInfixOf` out) `shouldBe` True
+    ("2" `isInfixOf` out) `shouldBe` False

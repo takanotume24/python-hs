@@ -8,7 +8,9 @@ replEvalLines :: [String] -> IO [String]
 replEvalLines inputs = go inputs Map.empty Map.empty [] []
   where
     trimRight = reverse . dropWhile isSpace . reverse
+    trim = dropWhile isSpace . trimRight
     endsWithColon s = not (null (trimRight s)) && last (trimRight s) == ':'
+    isExitCommand s = trim s == "exit()"
 
     submitBuffer env fenv buf outsAcc =
       let src = unlines buf
@@ -21,6 +23,7 @@ replEvalLines inputs = go inputs Map.empty Map.empty [] []
       let (_, _, outsAcc') = submitBuffer env fenv buf outsAcc
        in return outsAcc'
     go (ln : rest) env fenv [] outsAcc
+      | isExitCommand ln = return outsAcc
       | trimRight ln == "" = go rest env fenv [] outsAcc
       | endsWithColon ln = go rest env fenv [ln] outsAcc
       | otherwise =

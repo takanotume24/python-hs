@@ -111,6 +111,11 @@
 ---
 
 ## メンテナンス記録（要約）
+- 2026-02-28
+  - [x] REPL改善: `exit()` 入力で対話REPLを終了できるよう `startRepl` を更新（通常評価せず終了）
+  - [x] REPL改善: `replEvalLines` でも `exit()` で入力列評価を打ち切る挙動を追加
+  - [x] 回帰防止: `CLISpec` に `exit()` 終了テスト（`replEvalLines` / 対話実行）を追加
+  - [x] 品質ゲート再確認: `cabal test`（339 examples）/ `cabal run check-structure` 成功
 - 2026-02-26
   - [x] P3継続: `setdefault(dict, key)` を追加（default省略時に `None` を補完、関数/メソッド形式を eval/runner で固定）
   - [x] P3継続: `update(dict, otherDict)` を追加（既存キー上書き+新規キー追加の辞書マージを eval/runner で固定）
