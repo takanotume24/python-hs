@@ -5,6 +5,7 @@ import PythonHS.AST.Expr (Expr (..))
 import PythonHS.AST.Stmt (Stmt)
 import PythonHS.Evaluator.Env (Env)
 import PythonHS.Evaluator.FuncEnv (FuncEnv)
+import PythonHS.Evaluator.MaxLoopIterations (maxLoopIterations)
 import PythonHS.Evaluator.ShowPos (showPos)
 import PythonHS.Evaluator.Value (Value (BreakValue, ContinueValue, DictValue, IntValue, ListValue))
 import PythonHS.Lexer.Position (Position)
@@ -72,5 +73,3 @@ evalForStmt evalStatementsFn evalExprFn env fenv outputs name iterExpr body forP
     exprPos (NotExpr _ pos) = pos
     exprPos (BinaryExpr _ _ _ pos) = pos
     exprPos (CallExpr _ _ pos) = pos
-
-    maxLoopIterations = 2000

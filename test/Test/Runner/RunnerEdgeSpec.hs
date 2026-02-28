@@ -63,9 +63,11 @@ spec = describe "runSource (integration edge/error)" $ do
   it "reports for-loop iterable type error" $ do
     runSource "for i in \"abc\":\nprint i\n" `shouldBe` Left "Type error: for expects iterable (int range, list, or dict) at 1:10"
 
-  it "reports iteration limit exceeded for while and for loops" $ do
-    runSource "x = 0\nwhile x < 10001:\nx = x + 1\nprint x\n" `shouldBe` Left "Value error: iteration limit exceeded at 2:1"
-    runSource "for i in range(10001):\npass\n" `shouldBe` Left "Value error: iteration limit exceeded at 1:1"
+  it "enforces iteration limit boundary for while and for loops" $ do
+    runSource "x = 0\nwhile x < 2000:\nx = x + 1\nprint x\n" `shouldBe` Right ["2000"]
+    runSource "x = 0\nwhile x < 2001:\nx = x + 1\nprint x\n" `shouldBe` Left "Value error: iteration limit exceeded at 2:1"
+    runSource "for i in range(2000):\npass\nprint 1\n" `shouldBe` Right ["1"]
+    runSource "for i in range(2001):\npass\n" `shouldBe` Left "Value error: iteration limit exceeded at 1:1"
 
   it "returns lexer error for unexpected character" $ do
     runSource "x @ 1\n" `shouldBe` Left "UnexpectedCharacter '@'"

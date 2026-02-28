@@ -4,6 +4,7 @@ import PythonHS.AST.Expr (Expr (..))
 import PythonHS.AST.Stmt (Stmt)
 import PythonHS.Evaluator.Env (Env)
 import PythonHS.Evaluator.FuncEnv (FuncEnv)
+import PythonHS.Evaluator.MaxLoopIterations (maxLoopIterations)
 import PythonHS.Evaluator.ShowPos (showPos)
 import PythonHS.Evaluator.Value (Value (BreakValue, ContinueValue, DictValue, IntValue, ListValue, NoneValue, StringValue))
 import PythonHS.Lexer.Position (Position)
@@ -57,5 +58,3 @@ evalWhileStmt evalStatementsFn evalExprFn env fenv outputs cond body whilePos re
     expectTruthy _ _ (ListValue vals) = Right (if null vals then 0 else 1)
     expectTruthy _ _ (DictValue pairs) = Right (if null pairs then 0 else 1)
     expectTruthy context pos _ = Left $ "Type error: expected int in " ++ context ++ " at " ++ showPos pos
-
-    maxLoopIterations = 2000

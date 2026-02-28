@@ -51,7 +51,7 @@ spec = describe "runtime error reporting" $ do
       )
       `shouldBe` Left "Name error: undefined identifier missing at 11:15"
 
-  it "prioritizes function call argument errors at evaluator layer" $ do
+  it "reports duplicate and unexpected keyword argument errors at evaluator layer" $ do
     evalProgram
       ( Program
           [ FunctionDefStmt "f" ["a"] [ReturnStmt (IdentifierExpr "a" (Position 2 10)) (Position 2 3)] (Position 1 1),
@@ -131,6 +131,7 @@ spec = describe "runtime error reporting" $ do
       )
       `shouldBe` Left "Name error: undefined identifier missing at 12:11"
 
+  it "reports multiple-values conflicts and argument expression precedence at evaluator layer" $ do
     evalProgram
       ( Program
           [ FunctionDefStmt "f" ["a"] [ReturnStmt (IdentifierExpr "a" (Position 8 10)) (Position 8 3)] (Position 7 1),
@@ -168,7 +169,7 @@ spec = describe "runtime error reporting" $ do
 
     evalProgram
       ( Program
-          [ FunctionDefStmt "f" ["a"] [ReturnStmt (IdentifierExpr "a" (Position 10 10)) (Position 10 3)] (Position 10 1),
+          [ FunctionDefStmt "f" ["a"] [ReturnStmt (IdentifierExpr "a" (Position 9 10)) (Position 9 3)] (Position 9 1),
             PrintStmt
               ( CallExpr
                   "f"
@@ -198,6 +199,7 @@ spec = describe "runtime error reporting" $ do
       )
       `shouldBe` Left "Name error: undefined identifier missing at 13:16"
 
+  it "reports builtin keyword rejection precedence in mixed calls at evaluator layer" $ do
     evalProgram
       ( Program
           [ FunctionDefStmt "f" ["a"] [ReturnStmt (IdentifierExpr "a" (Position 14 10)) (Position 14 3)] (Position 14 1),
@@ -1019,28 +1021,52 @@ spec = describe "runtime error reporting" $ do
       )
       `shouldBe` Left "Value error: range step must not be zero at 27:7"
 
-  it "reports iteration limit exceeded for while and for loops" $ do
+  it "enforces iteration limit boundary for while and for loops" $ do
     evalProgram
       ( Program
-          [ AssignStmt "x" (IntegerExpr 0 (Position 28 1)) (Position 28 1),
+          [ AssignStmt "x" (IntegerExpr 0 (Position 27 1)) (Position 27 1),
             WhileStmt
-              (BinaryExpr LtOperator (IdentifierExpr "x" (Position 29 7)) (IntegerExpr 10001 (Position 29 11)) (Position 29 9))
-              [AssignStmt "x" (BinaryExpr AddOperator (IdentifierExpr "x" (Position 30 5)) (IntegerExpr 1 (Position 30 9)) (Position 30 7)) (Position 30 1)]
-              (Position 29 1)
+              (BinaryExpr LtOperator (IdentifierExpr "x" (Position 28 7)) (IntegerExpr 2000 (Position 28 11)) (Position 28 9))
+              [AssignStmt "x" (BinaryExpr AddOperator (IdentifierExpr "x" (Position 29 5)) (IntegerExpr 1 (Position 29 9)) (Position 29 7)) (Position 29 1)]
+              (Position 28 1),
+            PrintStmt (IdentifierExpr "x" (Position 30 7)) (Position 30 1)
           ]
       )
-      `shouldBe` Left "Value error: iteration limit exceeded at 29:1"
+      `shouldBe` Right ["2000"]
 
     evalProgram
       ( Program
           [ ForStmt
               "i"
-              (CallExpr "range" [IntegerExpr 10001 (Position 31 17)] (Position 31 10))
+              (CallExpr "range" [IntegerExpr 2000 (Position 31 17)] (Position 31 10))
               [PassStmt (Position 32 1)]
-              (Position 31 1)
+              (Position 31 1),
+            PrintStmt (IntegerExpr 1 (Position 33 7)) (Position 33 1)
           ]
       )
-      `shouldBe` Left "Value error: iteration limit exceeded at 31:1"
+      `shouldBe` Right ["1"]
+
+    evalProgram
+      ( Program
+          [ AssignStmt "x" (IntegerExpr 0 (Position 34 1)) (Position 34 1),
+            WhileStmt
+              (BinaryExpr LtOperator (IdentifierExpr "x" (Position 35 7)) (IntegerExpr 2001 (Position 35 11)) (Position 35 9))
+              [AssignStmt "x" (BinaryExpr AddOperator (IdentifierExpr "x" (Position 36 5)) (IntegerExpr 1 (Position 36 9)) (Position 36 7)) (Position 36 1)]
+              (Position 35 1)
+          ]
+      )
+      `shouldBe` Left "Value error: iteration limit exceeded at 35:1"
+
+    evalProgram
+      ( Program
+          [ ForStmt
+              "i"
+              (CallExpr "range" [IntegerExpr 2001 (Position 37 17)] (Position 37 10))
+              [PassStmt (Position 38 1)]
+              (Position 37 1)
+          ]
+      )
+      `shouldBe` Left "Value error: iteration limit exceeded at 37:1"
 
   it "reports for-loop iterable type error clearly" $ do
     evalProgram

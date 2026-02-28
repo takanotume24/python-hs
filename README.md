@@ -5,7 +5,7 @@ TDD（`hspec`）で機能を拡張し、`Lexer -> Parser -> Evaluator -> Runner/
 
 このプログラムは、GitHub Copilotによって生成されたコード、及びtakanotume24が手動で修正したコードを含みます。
 
-## 現在の実装状況（2026-02-24）
+## 現在の実装状況（2026-03-01）
 
 ### 実行基盤
 - [x] ソース文字列実行（`runSource`）
@@ -40,7 +40,7 @@ TDD（`hspec`）で機能を拡張し、`Lexer -> Parser -> Evaluator -> Runner/
 - [x] 関数スコープ（引数優先・グローバル参照可）
 - [x] `global` は関数内代入をグローバルへ反映、`pass` は no-op として評価
 - [x] truthiness（`None`、空文字、空リスト、空辞書）
-- [x] 反復回数ガード（10000超で `Value error`）
+- [x] 反復回数ガード（2000超で `Value error`）
 - [x] 位置情報つきエラー報告（Name/Type/Value/Argument count など）
 
 ### 組み込み関数（実装済み）
