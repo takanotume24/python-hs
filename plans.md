@@ -23,7 +23,10 @@
 - [x] VM縦スライス1: 最小命令セット（定数push, load/store, add, print, halt）を導入
 - [x] VM縦スライス1: 失敗テスト先行で `RunSourceVmSpec` を追加し、最小成功系/未対応文の失敗系を固定
 - [x] VM縦スライス2: 制御構文（`if` / `while`）向けジャンプ命令とコンパイルを導入
-- [ ] VM縦スライス3: 関数呼び出し向け frame/call 命令を導入
+- [x] VM縦スライス3: 関数呼び出し向け frame/call 命令を導入
+- [x] VM縦スライス4: `float`・算術/比較・論理二項演算（`and`/`or`）をVM式評価へ導入
+- [x] VM縦スライス5: `and` / `or` を厳密短絡評価へ更新（右辺副作用を抑止）
+- [x] VM縦スライス6: 単項演算（`UnaryMinus` / `not`）をVM式評価へ導入
 
 ### 運用メモ
 - 受け入れテストは MVP 最小（`MvpScenarioSpec`）を維持し、詳細仕様は Runner/Eval の回帰テストで固定する。
@@ -120,6 +123,16 @@
 ## メンテナンス記録（要約）
 - 注記: 以下は時系列ログ。古い日付の「未対応」項目は、その後のエントリで仕様更新済みの場合がある。
 - 2026-03-01
+  - [x] P5継続: VM縦スライス6として `ApplyUnaryMinus` / `ApplyNot` 命令を導入し、単項演算をVMで実行可能化
+  - [x] P5継続: `RunSourceVmSpec` に単項演算（`-x`, `not 0/1/None`）ケースを追加し、失敗テスト先行でグリーン化
+  - [x] P5継続: VM縦スライス5として `CompileProgram` の式コンパイルをインデックス追跡化し、`and`/`or` をジャンプ命令ベースの厳密短絡へ更新
+  - [x] P5継続: `RunSourceVmSpec` に短絡時の右辺未評価（副作用なし）テストを追加し、失敗テスト先行でグリーン化
+  - [x] P5継続: VM縦スライス4として `ApplyBinary` 命令を導入し、算術/比較/論理二項演算を実行器で評価可能化
+  - [x] P5継続: `FloatExpr` / `NoneExpr` を `CompileProgram` でVM定数へ変換し、VM式カバレッジを拡張
+  - [x] P5継続: `RunSourceVmSpec` に float演算・比較・論理演算の失敗テストを先行追加してグリーン化
+  - [x] P5継続: VM縦スライス3として `def`/`call`/`return` の命令（`DefineFunction` / `CallFunction` / `ReturnTop`）を導入
+  - [x] P5継続: `PythonHS.VM.RunInstructions` に関数フレーム実行（ローカル引数束縛・戻り値スタック復帰）を追加
+  - [x] P5継続: `RunSourceVmSpec` に関数定義・呼び出し成功系を追加し、失敗テスト先行でグリーン化
   - [x] P5継続: VM縦スライス2として `if` / `while` のジャンプ命令（`JumpIfFalse` / `Jump`）を導入
   - [x] P5継続: `PythonHS.VM.CompileProgram` を制御構文対応し、`RunSourceVmSpec` に `if/else`・`while` 成功系を追加して固定
   - [x] 警告修正: `PythonHS.VM.RunInstructions` の truthiness 判定を全 `Value` コンストラクタ網羅へ修正
