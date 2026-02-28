@@ -8,7 +8,7 @@ import PythonHS.Evaluator.EvalCallExpr (evalCallExpr)
 import PythonHS.Evaluator.EvalExprBinary (evalExprBinary)
 import PythonHS.Evaluator.FuncEnv (FuncEnv)
 import PythonHS.Evaluator.ShowPos (showPos)
-import PythonHS.Evaluator.Value (Value (DictValue, IntValue, ListValue, NoneValue, StringValue))
+import PythonHS.Evaluator.Value (Value (DictValue, FloatValue, IntValue, ListValue, NoneValue, StringValue))
 import PythonHS.Lexer.Position (Position)
 
 evalExpr ::
@@ -20,6 +20,7 @@ evalExpr ::
 evalExpr evalStatementsFn env fenv expr =
   case expr of
     IntegerExpr n _ -> Right (IntValue n, [], env)
+    FloatExpr n _ -> Right (FloatValue n, [], env)
     StringExpr s _ -> Right (StringValue s, [], env)
     NoneExpr _ -> Right (NoneValue, [], env)
     ListExpr exprs _ -> do
@@ -38,6 +39,7 @@ evalExpr evalStatementsFn env fenv expr =
       (v, outs, envAfterExpr) <- evalExpr evalStatementsFn env fenv unaryExpr
       case v of
         IntValue n -> Right (IntValue (negate n), outs, envAfterExpr)
+        FloatValue n -> Right (FloatValue (negate n), outs, envAfterExpr)
         _ -> Left $ "Type error: unary - expects int at " ++ showPos pos
     NotExpr notExpr _ -> do
       (v, outs, envAfterExpr) <- evalExpr evalStatementsFn env fenv notExpr
@@ -63,6 +65,7 @@ evalExpr evalStatementsFn env fenv expr =
       Right ((keyVal, valueVal) : restVals, keyOuts ++ valueOuts ++ restOuts, envAfterRest)
 
     exprPos (IntegerExpr _ pos) = pos
+    exprPos (FloatExpr _ pos) = pos
     exprPos (StringExpr _ pos) = pos
     exprPos (NoneExpr pos) = pos
     exprPos (ListExpr _ pos) = pos
@@ -76,6 +79,7 @@ evalExpr evalStatementsFn env fenv expr =
 
     expectTruthy :: String -> Position -> Value -> Either String Int
     expectTruthy _ _ (IntValue n) = Right (if n == 0 then 0 else 1)
+    expectTruthy _ _ (FloatValue n) = Right (if n == 0 then 0 else 1)
     expectTruthy _ _ NoneValue = Right 0
     expectTruthy _ _ (StringValue s) = Right (if null s then 0 else 1)
     expectTruthy _ _ (ListValue vals) = Right (if null vals then 0 else 1)

@@ -6,7 +6,7 @@ import PythonHS.Evaluator.Env (Env)
 import PythonHS.Evaluator.FuncEnv (FuncEnv)
 import PythonHS.Evaluator.MaxLoopIterations (maxLoopIterations)
 import PythonHS.Evaluator.ShowPos (showPos)
-import PythonHS.Evaluator.Value (Value (BreakValue, ContinueValue, DictValue, IntValue, ListValue, NoneValue, StringValue))
+import PythonHS.Evaluator.Value (Value (BreakValue, ContinueValue, DictValue, FloatValue, IntValue, ListValue, NoneValue, StringValue))
 import PythonHS.Lexer.Position (Position)
 
 evalWhileStmt ::
@@ -41,6 +41,7 @@ evalWhileStmt evalStatementsFn evalExprFn env fenv outputs cond body whilePos re
                 Nothing -> nextIterations `seq` loop envAfter fenvAfter nextOutputAcc nextIterations
 
     exprPos (IntegerExpr _ pos) = pos
+    exprPos (FloatExpr _ pos) = pos
     exprPos (StringExpr _ pos) = pos
     exprPos (NoneExpr pos) = pos
     exprPos (ListExpr _ pos) = pos
@@ -52,7 +53,9 @@ evalWhileStmt evalStatementsFn evalExprFn env fenv outputs cond body whilePos re
     exprPos (BinaryExpr _ _ _ pos) = pos
     exprPos (CallExpr _ _ pos) = pos
 
+    expectTruthy :: String -> Position -> Value -> Either String Int
     expectTruthy _ _ (IntValue n) = Right (if n == 0 then 0 else 1)
+    expectTruthy _ _ (FloatValue n) = Right (if n == 0 then 0 else 1)
     expectTruthy _ _ NoneValue = Right 0
     expectTruthy _ _ (StringValue s) = Right (if null s then 0 else 1)
     expectTruthy _ _ (ListValue vals) = Right (if null vals then 0 else 1)

@@ -63,6 +63,7 @@ evalForStmt evalStatementsFn evalExprFn env fenv outputs name iterExpr body forP
             Nothing -> nextIterations `seq` loopList envAfter fenvAfter remaining nextOutputAcc nextIterations
 
     exprPos (IntegerExpr _ pos) = pos
+    exprPos (FloatExpr _ pos) = pos
     exprPos (StringExpr _ pos) = pos
     exprPos (NoneExpr pos) = pos
     exprPos (ListExpr _ pos) = pos

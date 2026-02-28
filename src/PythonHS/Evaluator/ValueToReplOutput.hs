@@ -1,11 +1,12 @@
 module PythonHS.Evaluator.ValueToReplOutput (valueToReplOutput) where
 
-import PythonHS.Evaluator.Value (Value (BreakValue, ContinueValue, DictValue, IntValue, ListValue, NoneValue, StringValue))
+import PythonHS.Evaluator.Value (Value (BreakValue, ContinueValue, DictValue, FloatValue, IntValue, ListValue, NoneValue, StringValue))
 
 valueToReplOutput :: Value -> String
 valueToReplOutput value =
   case value of
     IntValue n -> show n
+    FloatValue n -> show n
     StringValue s -> "'" ++ escapeString s ++ "'"
     NoneValue -> "None"
     ListValue vals -> "[" ++ joinWithCommaSpace (map valueToReplOutput vals) ++ "]"

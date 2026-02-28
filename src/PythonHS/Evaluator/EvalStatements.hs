@@ -9,7 +9,7 @@ import PythonHS.Evaluator.EvalForStmt (evalForStmt)
 import PythonHS.Evaluator.EvalWhileStmt (evalWhileStmt)
 import PythonHS.Evaluator.FuncEnv (FuncEnv)
 import PythonHS.Evaluator.ShowPos (showPos)
-import PythonHS.Evaluator.Value (Value (BreakValue, ContinueValue, DictValue, IntValue, ListValue, NoneValue, StringValue))
+import PythonHS.Evaluator.Value (Value (BreakValue, ContinueValue, DictValue, FloatValue, IntValue, ListValue, NoneValue, StringValue))
 import PythonHS.Evaluator.ValueToOutput (valueToOutput)
 import PythonHS.Lexer.Position (Position)
 
@@ -27,15 +27,18 @@ evalStatements env fenv outputs (stmt : rest) =
       newValue <-
         case (current, rhs) of
           (IntValue li, IntValue ri) -> Right (IntValue (li + ri))
+          (FloatValue li, FloatValue ri) -> Right (FloatValue (li + ri))
+          (IntValue li, FloatValue ri) -> Right (FloatValue (fromIntegral li + ri))
+          (FloatValue li, IntValue ri) -> Right (FloatValue (li + fromIntegral ri))
           (StringValue ls, StringValue rs) -> Right (StringValue (ls ++ rs))
           _ -> Left $ "Type error: + expects int+int or string+string at " ++ showPos pos
       evalStatements (Map.insert name newValue envAfterExpr) fenv (outputs ++ exprOuts) rest
 
-    SubAssignStmt name expr pos -> evalAssignInt name expr pos "-=" (\li ri -> li - ri)
-    MulAssignStmt name expr pos -> evalAssignInt name expr pos "*=" (\li ri -> li * ri)
-    DivAssignStmt name expr pos -> evalAssignIntNonZero name expr pos "/=" "Value error: division by zero at " (\li ri -> li `div` ri)
-    ModAssignStmt name expr pos -> evalAssignIntNonZero name expr pos "%=" "Value error: modulo by zero at " (\li ri -> li `mod` ri)
-    FloorDivAssignStmt name expr pos -> evalAssignIntNonZero name expr pos "//=" "Value error: division by zero at " (\li ri -> li `div` ri)
+    SubAssignStmt name expr pos -> evalAssignNumeric name expr pos "-=" (\li ri -> li - ri)
+    MulAssignStmt name expr pos -> evalAssignNumeric name expr pos "*=" (\li ri -> li * ri)
+    DivAssignStmt name expr pos -> evalAssignDivide name expr pos
+    ModAssignStmt name expr pos -> evalAssignModulo name expr pos
+    FloorDivAssignStmt name expr pos -> evalAssignFloorDivide name expr pos
 
     PrintStmt expr _ ->
       case expr of
@@ -87,30 +90,68 @@ evalStatements env fenv outputs (stmt : rest) =
         Just value -> Right value
         Nothing -> Left $ "Name error: undefined identifier " ++ name ++ " at " ++ showPos pos
 
-    evalAssignInt name expr pos context opFn = do
+    evalAssignNumeric name expr pos context opFn = do
       current <- lookupName env name pos
       (rhs, exprOuts, envAfterExpr) <- evalExpr evalStatements env fenv expr
-      leftInt <- expectInt context pos current
-      rightInt <- expectInt context pos rhs
-      let newValue = IntValue (opFn leftInt rightInt)
+      leftNumber <- expectNumber context pos current
+      rightNumber <- expectNumber context pos rhs
+      let newValue =
+            case (current, rhs) of
+              (IntValue _, IntValue _) -> IntValue (round (opFn leftNumber rightNumber))
+              _ -> FloatValue (opFn leftNumber rightNumber)
       evalStatements (Map.insert name newValue envAfterExpr) fenv (outputs ++ exprOuts) rest
 
-    evalAssignIntNonZero name expr pos context errPrefix opFn = do
+    evalAssignDivide name expr pos = do
       current <- lookupName env name pos
       (rhs, exprOuts, envAfterExpr) <- evalExpr evalStatements env fenv expr
-      leftInt <- expectInt context pos current
-      rightInt <- expectInt context pos rhs
-      if rightInt == 0
-        then Left $ errPrefix ++ showPos pos
+      leftNumber <- expectNumber "/=" pos current
+      rightNumber <- expectNumber "/=" pos rhs
+      if rightNumber == 0
+        then Left $ "Value error: division by zero at " ++ showPos pos
         else do
-          let newValue = IntValue (opFn leftInt rightInt)
+          let newValue = FloatValue (leftNumber / rightNumber)
           evalStatements (Map.insert name newValue envAfterExpr) fenv (outputs ++ exprOuts) rest
 
-    expectInt _ _ (IntValue n) = Right n
-    expectInt _ _ NoneValue = Right 0
-    expectInt context pos _ = Left $ "Type error: expected int in " ++ context ++ " at " ++ showPos pos
+    evalAssignFloorDivide name expr pos = do
+      current <- lookupName env name pos
+      (rhs, exprOuts, envAfterExpr) <- evalExpr evalStatements env fenv expr
+      leftNumber <- expectNumber "//=" pos current
+      rightNumber <- expectNumber "//=" pos rhs
+      if rightNumber == 0
+        then Left $ "Value error: division by zero at " ++ showPos pos
+        else do
+          let quotient = leftNumber / rightNumber
+              newValue =
+                case (current, rhs) of
+                  (IntValue _, IntValue _) -> IntValue (floor quotient)
+                  _ -> FloatValue (fromIntegral (floor quotient :: Int))
+          evalStatements (Map.insert name newValue envAfterExpr) fenv (outputs ++ exprOuts) rest
 
+    evalAssignModulo name expr pos = do
+      current <- lookupName env name pos
+      (rhs, exprOuts, envAfterExpr) <- evalExpr evalStatements env fenv expr
+      leftNumber <- expectNumber "%=" pos current
+      rightNumber <- expectNumber "%=" pos rhs
+      if rightNumber == 0
+        then Left $ "Value error: modulo by zero at " ++ showPos pos
+        else do
+          let quotient = leftNumber / rightNumber
+              floored = fromIntegral (floor quotient :: Int)
+              remainder = leftNumber - rightNumber * floored
+              newValue =
+                case (current, rhs) of
+                  (IntValue li, IntValue ri) -> IntValue (li `mod` ri)
+                  _ -> FloatValue remainder
+          evalStatements (Map.insert name newValue envAfterExpr) fenv (outputs ++ exprOuts) rest
+
+    expectNumber _ _ (IntValue n) = Right (fromIntegral n)
+    expectNumber _ _ (FloatValue n) = Right n
+    expectNumber _ _ NoneValue = Right 0
+    expectNumber context pos _ = Left $ "Type error: expected int in " ++ context ++ " at " ++ showPos pos
+
+    expectTruthy :: String -> Position -> Value -> Either String Int
     expectTruthy _ _ (IntValue n) = Right (if n == 0 then 0 else 1)
+    expectTruthy _ _ (FloatValue n) = Right (if n == 0 then 0 else 1)
     expectTruthy _ _ NoneValue = Right 0
     expectTruthy _ _ (StringValue s) = Right (if null s then 0 else 1)
     expectTruthy _ _ (ListValue vals) = Right (if null vals then 0 else 1)
@@ -118,6 +159,7 @@ evalStatements env fenv outputs (stmt : rest) =
     expectTruthy context pos _ = Left $ "Type error: expected int in " ++ context ++ " at " ++ showPos pos
 
     exprPos (IntegerExpr _ pos) = pos
+    exprPos (FloatExpr _ pos) = pos
     exprPos (StringExpr _ pos) = pos
     exprPos (NoneExpr pos) = pos
     exprPos (ListExpr _ pos) = pos

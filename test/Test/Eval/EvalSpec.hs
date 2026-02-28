@@ -1,7 +1,7 @@
 module Test.Eval.EvalSpec (spec) where
 
 import PythonHS.AST.BinaryOperator (BinaryOperator (..))
-import PythonHS.AST.Expr (Expr (BinaryExpr, CallExpr, DictExpr, IdentifierExpr, IntegerExpr, ListExpr, NoneExpr, NotExpr, StringExpr, UnaryMinusExpr))
+import PythonHS.AST.Expr (Expr (BinaryExpr, CallExpr, DictExpr, FloatExpr, IdentifierExpr, IntegerExpr, ListExpr, NoneExpr, NotExpr, StringExpr, UnaryMinusExpr))
 import PythonHS.AST.Program (Program (Program))
 import PythonHS.AST.Stmt (Stmt (AssignStmt, BreakStmt, ContinueStmt, ForStmt, FunctionDefStmt, GlobalStmt, IfStmt, PassStmt, PrintStmt, ReturnStmt, WhileStmt))
 import PythonHS.Lexer.Position (Position (Position))
@@ -60,10 +60,12 @@ spec = describe "evalProgram" $ do
 
   it "evaluates multiplicative operators" $ do
     evalProgram (Program [PrintStmt (BinaryExpr MultiplyOperator (IntegerExpr 6 (Position 0 0)) (IntegerExpr 7 (Position 0 0)) (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["42"]
-    evalProgram (Program [PrintStmt (BinaryExpr DivideOperator (IntegerExpr 7 (Position 0 0)) (IntegerExpr 2 (Position 0 0)) (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["3"]
+    evalProgram (Program [PrintStmt (BinaryExpr DivideOperator (IntegerExpr 7 (Position 0 0)) (IntegerExpr 2 (Position 0 0)) (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["3.5"]
     evalProgram (Program [PrintStmt (BinaryExpr FloorDivideOperator (IntegerExpr 7 (Position 0 0)) (IntegerExpr 2 (Position 0 0)) (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["3"]
     evalProgram (Program [PrintStmt (BinaryExpr ModuloOperator (IntegerExpr 7 (Position 0 0)) (IntegerExpr 4 (Position 0 0)) (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["3"]
     evalProgram (Program [PrintStmt (BinaryExpr SubtractOperator (IntegerExpr 7 (Position 0 0)) (IntegerExpr 4 (Position 0 0)) (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["3"]
+    evalProgram (Program [PrintStmt (BinaryExpr DivideOperator (FloatExpr 7.0 (Position 0 0)) (IntegerExpr 2 (Position 0 0)) (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["3.5"]
+    evalProgram (Program [PrintStmt (BinaryExpr AddOperator (FloatExpr 1.5 (Position 0 0)) (IntegerExpr 2 (Position 0 0)) (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["3.5"]
 
   it "evaluates len builtin for string" $ do
     evalProgram (Program [PrintStmt (CallExpr "len" [StringExpr "abc" (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["3"]
@@ -223,6 +225,10 @@ spec = describe "evalProgram" $ do
   it "evaluates None equality and inequality" $ do
     evalProgram (Program [PrintStmt (BinaryExpr EqOperator (NoneExpr (Position 0 0)) (NoneExpr (Position 0 0)) (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["1"]
     evalProgram (Program [PrintStmt (BinaryExpr NotEqOperator (NoneExpr (Position 0 0)) (NoneExpr (Position 0 0)) (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["0"]
+
+  it "evaluates mixed int/float equality and comparisons" $ do
+    evalProgram (Program [PrintStmt (BinaryExpr EqOperator (IntegerExpr 1 (Position 0 0)) (FloatExpr 1.0 (Position 0 0)) (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["1"]
+    evalProgram (Program [PrintStmt (BinaryExpr LtOperator (IntegerExpr 1 (Position 0 0)) (FloatExpr 2.0 (Position 0 0)) (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["1"]
 
   it "treats None as falsy in if/while/not" $ do
     evalProgram

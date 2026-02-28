@@ -1,10 +1,10 @@
 module PythonHS.Parser.ParseExpr (parseExpr) where
 
 import PythonHS.AST.BinaryOperator (BinaryOperator (AddOperator, AndOperator, DivideOperator, EqOperator, FloorDivideOperator, GtOperator, GteOperator, LtOperator, LteOperator, ModuloOperator, MultiplyOperator, NotEqOperator, OrOperator, SubtractOperator))
-import PythonHS.AST.Expr (Expr (BinaryExpr, CallExpr, DictExpr, IdentifierExpr, IntegerExpr, KeywordArgExpr, ListExpr, NoneExpr, NotExpr, StringExpr, UnaryMinusExpr))
+import PythonHS.AST.Expr (Expr (BinaryExpr, CallExpr, DictExpr, FloatExpr, IdentifierExpr, IntegerExpr, KeywordArgExpr, ListExpr, NoneExpr, NotExpr, StringExpr, UnaryMinusExpr))
 import PythonHS.Lexer.Position (Position (Position))
 import PythonHS.Lexer.Token (Token (Token), position)
-import PythonHS.Lexer.TokenType (TokenType (AndToken, AssignToken, ColonToken, CommaToken, DotToken, DoubleSlashToken, EqToken, FalseToken, GtToken, GteToken, IdentifierToken, IntegerToken, LBraceToken, LBracketToken, LParenToken, LtToken, LteToken, MinusToken, NoneToken, NotEqToken, NotToken, OrToken, PercentToken, PlusToken, RBraceToken, RBracketToken, RParenToken, SlashToken, StarToken, StringToken, TrueToken))
+import PythonHS.Lexer.TokenType (TokenType (AndToken, AssignToken, ColonToken, CommaToken, DotToken, DoubleSlashToken, EqToken, FalseToken, FloatToken, GtToken, GteToken, IdentifierToken, IntegerToken, LBraceToken, LBracketToken, LParenToken, LtToken, LteToken, MinusToken, NoneToken, NotEqToken, NotToken, OrToken, PercentToken, PlusToken, RBraceToken, RBracketToken, RParenToken, SlashToken, StarToken, StringToken, TrueToken))
 import PythonHS.Parser.ParseError (ParseError (ExpectedExpression))
 
 parseExpr :: [Token] -> Either ParseError (Expr, [Token])
@@ -92,10 +92,12 @@ parseExpr = parseOr
       parsePostfix baseExpr remaining
 
     parseAtom (Token IntegerToken value pos : rest) = Right (IntegerExpr (read value) pos, rest)
+    parseAtom (Token FloatToken value pos : rest) = Right (FloatExpr (read value) pos, rest)
     parseAtom (Token TrueToken _ pos : rest) = Right (IntegerExpr 1 pos, rest)
     parseAtom (Token FalseToken _ pos : rest) = Right (IntegerExpr 0 pos, rest)
     parseAtom (Token NoneToken _ pos : rest) = Right (NoneExpr pos, rest)
     parseAtom (Token MinusToken _ pos : Token IntegerToken value _ : rest) = Right (IntegerExpr (negate (read value)) pos, rest)
+    parseAtom (Token MinusToken _ pos : Token FloatToken value _ : rest) = Right (FloatExpr (negate (read value)) pos, rest)
     parseAtom (Token MinusToken _ pos : rest) = do
       (expr, remaining) <- parsePrimary rest
       Right (UnaryMinusExpr expr pos, remaining)
@@ -185,6 +187,7 @@ parseExpr = parseOr
       Right (argExpr, False, exprPos argExpr, afterArg)
 
     exprPos (IntegerExpr _ pos) = pos
+    exprPos (FloatExpr _ pos) = pos
     exprPos (StringExpr _ pos) = pos
     exprPos (NoneExpr pos) = pos
     exprPos (ListExpr _ pos) = pos

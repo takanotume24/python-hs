@@ -3,7 +3,7 @@ module Test.Lexer.ScanTokensCoreSpec (spec) where
 import PythonHS.Lexer.Position (Position (Position))
 import PythonHS.Lexer.ScanTokens (scanTokens)
 import PythonHS.Lexer.Token (Token (Token))
-import PythonHS.Lexer.TokenType (TokenType (AssignToken, BreakToken, ContinueToken, DotToken, DoubleSlashAssignToken, DoubleSlashToken, EOFToken, ElifToken, FalseToken, ForToken, GlobalToken, IdentifierToken, IfToken, InToken, IntegerToken, LParenToken, MinusAssignToken, NewlineToken, NoneToken, PassToken, PercentAssignToken, PercentToken, PlusAssignToken, PlusToken, PrintToken, ReturnToken, RParenToken, SlashAssignToken, SlashToken, StarAssignToken, StarToken, TrueToken))
+import PythonHS.Lexer.TokenType (TokenType (AssignToken, BreakToken, ContinueToken, DotToken, DoubleSlashAssignToken, DoubleSlashToken, EOFToken, ElifToken, FalseToken, FloatToken, ForToken, GlobalToken, IdentifierToken, IfToken, InToken, IntegerToken, LParenToken, MinusAssignToken, NewlineToken, NoneToken, PassToken, PercentAssignToken, PercentToken, PlusAssignToken, PlusToken, PrintToken, ReturnToken, RParenToken, SlashAssignToken, SlashToken, StarAssignToken, StarToken, TrueToken))
 import Test.Hspec (Spec, describe, it, shouldBe)
 
 spec :: Spec
@@ -196,4 +196,38 @@ spec = describe "scanTokens core tokens" $ do
           Token RParenToken ")" (Position 1 11),
           Token NewlineToken "\\n" (Position 1 12),
           Token EOFToken "" (Position 2 1)
+        ]
+
+  it "does not lex integer method call as float literal" $ do
+    scanTokens "1.append(2)\n" `shouldBe`
+      Right
+        [ Token IntegerToken "1" (Position 1 1),
+          Token DotToken "." (Position 1 2),
+          Token IdentifierToken "append" (Position 1 3),
+          Token LParenToken "(" (Position 1 9),
+          Token IntegerToken "2" (Position 1 10),
+          Token RParenToken ")" (Position 1 11),
+          Token NewlineToken "\\n" (Position 1 12),
+          Token EOFToken "" (Position 2 1)
+        ]
+
+  it "recognizes float literals including scientific notation" $ do
+    scanTokens "print 1.23\nprint 1.\nprint .5\nprint 1e3\nprint 1.2e-3\n" `shouldBe`
+      Right
+        [ Token PrintToken "print" (Position 1 1),
+          Token FloatToken "1.23" (Position 1 7),
+          Token NewlineToken "\\n" (Position 1 11),
+          Token PrintToken "print" (Position 2 1),
+          Token FloatToken "1." (Position 2 7),
+          Token NewlineToken "\\n" (Position 2 9),
+          Token PrintToken "print" (Position 3 1),
+          Token FloatToken ".5" (Position 3 7),
+          Token NewlineToken "\\n" (Position 3 9),
+          Token PrintToken "print" (Position 4 1),
+          Token FloatToken "1e3" (Position 4 7),
+          Token NewlineToken "\\n" (Position 4 10),
+          Token PrintToken "print" (Position 5 1),
+          Token FloatToken "1.2e-3" (Position 5 7),
+          Token NewlineToken "\\n" (Position 5 13),
+          Token EOFToken "" (Position 6 1)
         ]

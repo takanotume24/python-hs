@@ -1,11 +1,12 @@
 module PythonHS.Evaluator.ValueToOutput (valueToOutput) where
 
-import PythonHS.Evaluator.Value (Value (BreakValue, ContinueValue, DictValue, IntValue, ListValue, NoneValue, StringValue))
+import PythonHS.Evaluator.Value (Value (BreakValue, ContinueValue, DictValue, FloatValue, IntValue, ListValue, NoneValue, StringValue))
 
 valueToOutput :: Value -> String
 valueToOutput value =
   case value of
     IntValue n -> show n
+    FloatValue n -> show n
     StringValue s -> s
     NoneValue -> "None"
     ListValue vals -> "[" ++ joinWithCommaSpace (map valueToOutput vals) ++ "]"

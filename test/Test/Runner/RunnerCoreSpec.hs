@@ -132,7 +132,7 @@ spec = describe "runSource (integration core)" $ do
     runSource "print \"a\" + \"b\"\n" `shouldBe` Right ["ab"]
 
   it "evaluates multiplicative operators" $ do
-    runSource "print 6 * 7\nprint 7 / 2\nprint 7 // 2\nprint 7 % 4\nprint 7 - 4\n" `shouldBe` Right ["42", "3", "3", "3", "3"]
+    runSource "print 6 * 7\nprint 7 / 2\nprint 7 // 2\nprint 7 % 4\nprint 7 - 4\n" `shouldBe` Right ["42", "3.5", "3", "3", "3"]
 
   it "evaluates plus-assign statement" $ do
     runSource "x = 1\nx += 2\nprint x\n" `shouldBe` Right ["3"]
@@ -144,7 +144,7 @@ spec = describe "runSource (integration core)" $ do
     runSource "x = 4\nx *= 3\nprint x\n" `shouldBe` Right ["12"]
 
   it "evaluates slash-assign statement" $ do
-    runSource "x = 8\nx /= 2\nprint x\n" `shouldBe` Right ["4"]
+    runSource "x = 8\nx /= 2\nprint x\n" `shouldBe` Right ["4.0"]
 
   it "evaluates percent-assign statement" $ do
     runSource "x = 8\nx %= 3\nprint x\n" `shouldBe` Right ["2"]

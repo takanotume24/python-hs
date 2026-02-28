@@ -1,7 +1,7 @@
 module Test.Parser.ParseProgramSpec (spec) where
 
 import PythonHS.AST.BinaryOperator (BinaryOperator (..))
-import PythonHS.AST.Expr (Expr (BinaryExpr, CallExpr, DictExpr, IdentifierExpr, IntegerExpr, KeywordArgExpr, ListExpr, NoneExpr, NotExpr, StringExpr, UnaryMinusExpr))
+import PythonHS.AST.Expr (Expr (BinaryExpr, CallExpr, DictExpr, FloatExpr, IdentifierExpr, IntegerExpr, KeywordArgExpr, ListExpr, NoneExpr, NotExpr, StringExpr, UnaryMinusExpr))
 import PythonHS.AST.Program (Program (Program))
 import PythonHS.AST.Stmt (Stmt (AddAssignStmt, AssignStmt, BreakStmt, ContinueStmt, DivAssignStmt, FloorDivAssignStmt, ForStmt, FunctionDefDefaultsStmt, FunctionDefStmt, GlobalStmt, IfStmt, ModAssignStmt, MulAssignStmt, PassStmt, PrintStmt, ReturnStmt, SubAssignStmt, WhileStmt))
 import PythonHS.Lexer.Token (Token (Token))
@@ -24,6 +24,7 @@ import PythonHS.Lexer.TokenType
         ElifToken,
         TrueToken,
         FalseToken,
+        FloatToken,
         NoneToken,
         ForToken,
         IdentifierToken,
@@ -65,6 +66,23 @@ import Test.Hspec (Spec, describe, it, shouldBe)
 
 spec :: Spec
 spec = describe "parseProgram" $ do
+  it "parses float literal expressions" $ do
+    parseProgram
+      [ Token PrintToken "print" (Position 1 1),
+        Token FloatToken "1.5" (Position 1 7),
+        Token PlusToken "+" (Position 1 11),
+        Token IntegerToken "2" (Position 1 13),
+        Token NewlineToken "\\n" (Position 1 14),
+        Token EOFToken "" (Position 2 1)
+      ]
+      `shouldBe` Right
+        ( Program
+            [ PrintStmt
+                (BinaryExpr AddOperator (FloatExpr 1.5 (Position 1 7)) (IntegerExpr 2 (Position 1 13)) (Position 1 11))
+                (Position 1 1)
+            ]
+        )
+
   it "parses assignment and print statements" $ do
     parseProgram
       [ Token IdentifierToken "x" (Position 1 1),

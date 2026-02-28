@@ -3,6 +3,7 @@ module PythonHS.Lexer.TokenType (TokenType (..)) where
 data TokenType
   = IdentifierToken
   | IntegerToken
+  | FloatToken
   | StringToken
   | AssignToken
   | PlusAssignToken

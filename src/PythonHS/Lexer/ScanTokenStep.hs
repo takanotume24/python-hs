@@ -27,6 +27,7 @@ import PythonHS.Lexer.TokenType
         IfToken,
         InToken,
         IntegerToken,
+        FloatToken,
         StringToken,
         LParenToken,
         MinusToken,
@@ -110,7 +111,16 @@ scanTokenStep src ln col =
       | c == '}' -> Right (Token RBraceToken "}" (Position ln col), rest, col + 1)
       | c == ':' -> Right (Token ColonToken ":" (Position ln col), rest, col + 1)
       | c == ',' -> Right (Token CommaToken "," (Position ln col), rest, col + 1)
-      | c == '.' -> Right (Token DotToken "." (Position ln col), rest, col + 1)
+      | c == '.' ->
+          case rest of
+            (nextChar : _)
+              | isDigit nextChar ->
+                  let (fractionDigits, afterFraction) = span isDigit rest
+                      withFraction = "." ++ fractionDigits
+                      (exponentPart, tailInput) = parseExponent afterFraction
+                      lexeme = withFraction ++ exponentPart
+                   in Right (Token FloatToken lexeme (Position ln col), tailInput, col + length lexeme)
+            _ -> Right (Token DotToken "." (Position ln col), rest, col + 1)
       | c == '"' ->
           let (strContent, tailInput) = span (\x -> x /= '"' && x /= '\n') rest
               len = length strContent
@@ -118,9 +128,25 @@ scanTokenStep src ln col =
                 ('"' : rest') -> Right (Token StringToken strContent (Position ln col), rest', col + len + 2)
                 _ -> Left (UnexpectedCharacter '"')
       | isDigit c ->
-          let (digits, tailInput) = span isDigit (c : rest)
-              len = length digits
-           in Right (Token IntegerToken digits (Position ln col), tailInput, col + len)
+          let (digits, afterDigits) = span isDigit (c : rest)
+           in case afterDigits of
+                ('.' : afterDot) ->
+                  case afterDot of
+                    (nextChar : _)
+                      | isAlpha nextChar || nextChar == '_' -> Right (Token IntegerToken digits (Position ln col), afterDigits, col + length digits)
+                    _ ->
+                      let (fractionDigits, afterFraction) = span isDigit afterDot
+                          withFraction = digits ++ "." ++ fractionDigits
+                          (exponentPart, tailInput) = parseExponent afterFraction
+                          lexeme = withFraction ++ exponentPart
+                       in Right (Token FloatToken lexeme (Position ln col), tailInput, col + length lexeme)
+                _ ->
+                  let (exponentPart, tailInput) = parseExponent afterDigits
+                   in if null exponentPart
+                        then Right (Token IntegerToken digits (Position ln col), tailInput, col + length digits)
+                        else
+                          let lexeme = digits ++ exponentPart
+                           in Right (Token FloatToken lexeme (Position ln col), tailInput, col + length lexeme)
       | isAlpha c || c == '_' ->
           let (word, tailInput) = span (\x -> isAlphaNum x || x == '_') (c : rest)
               len = length word
@@ -148,3 +174,21 @@ scanTokenStep src ln col =
       | value == "or" = OrToken
       | value == "not" = NotToken
       | otherwise = IdentifierToken
+
+    parseExponent input =
+      case input of
+        (e : restInput)
+          | e == 'e' || e == 'E' ->
+              case restInput of
+                (signChar : afterSign)
+                  | signChar == '+' || signChar == '-' ->
+                      let (expDigits, remaining) = span isDigit afterSign
+                       in if null expDigits
+                            then ("", input)
+                            else (e : signChar : expDigits, remaining)
+                _ ->
+                  let (expDigits, remaining) = span isDigit restInput
+                   in if null expDigits
+                        then ("", input)
+                        else (e : expDigits, remaining)
+        _ -> ("", input)
