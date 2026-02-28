@@ -241,36 +241,6 @@ spec = describe "parse error reporting" $ do
       ]
       `shouldBe` Left (ExpectedExpression (Position 1 12))
 
-  it "reports ExpectedExpression for unsupported keyword argument in call" $ do
-    parseProgram
-      [ Token PrintToken "print" (Position 1 1),
-        Token IdentifierToken "f" (Position 1 7),
-        Token LParenToken "(" (Position 1 8),
-        Token IdentifierToken "a" (Position 1 9),
-        Token AssignToken "=" (Position 1 10),
-        Token IntegerToken "1" (Position 1 11),
-        Token RParenToken ")" (Position 1 12),
-        Token NewlineToken "\\n" (Position 1 13),
-        Token EOFToken "" (Position 2 1)
-      ]
-      `shouldBe` Left (ExpectedExpression (Position 1 10))
-
-  it "reports ExpectedExpression for mixed positional then keyword call arguments" $ do
-    parseProgram
-      [ Token PrintToken "print" (Position 1 1),
-        Token IdentifierToken "f" (Position 1 7),
-        Token LParenToken "(" (Position 1 8),
-        Token IntegerToken "1" (Position 1 9),
-        Token CommaToken "," (Position 1 10),
-        Token IdentifierToken "a" (Position 1 12),
-        Token AssignToken "=" (Position 1 13),
-        Token IntegerToken "2" (Position 1 14),
-        Token RParenToken ")" (Position 1 15),
-        Token NewlineToken "\\n" (Position 1 16),
-        Token EOFToken "" (Position 2 1)
-      ]
-      `shouldBe` Left (ExpectedExpression (Position 1 13))
-
   it "reports ExpectedExpression for mixed keyword then positional call arguments" $ do
     parseProgram
       [ Token PrintToken "print" (Position 1 1),
@@ -285,7 +255,27 @@ spec = describe "parse error reporting" $ do
         Token NewlineToken "\\n" (Position 1 16),
         Token EOFToken "" (Position 2 1)
       ]
-      `shouldBe` Left (ExpectedExpression (Position 1 10))
+      `shouldBe` Left (ExpectedExpression (Position 1 14))
+
+  it "reports ExpectedExpression when positional argument appears after multiple keyword arguments" $ do
+    parseProgram
+      [ Token PrintToken "print" (Position 1 1),
+        Token IdentifierToken "f" (Position 1 7),
+        Token LParenToken "(" (Position 1 8),
+        Token IdentifierToken "a" (Position 1 9),
+        Token AssignToken "=" (Position 1 10),
+        Token IntegerToken "1" (Position 1 11),
+        Token CommaToken "," (Position 1 12),
+        Token IdentifierToken "b" (Position 1 14),
+        Token AssignToken "=" (Position 1 15),
+        Token IntegerToken "2" (Position 1 16),
+        Token CommaToken "," (Position 1 17),
+        Token IntegerToken "3" (Position 1 19),
+        Token RParenToken ")" (Position 1 20),
+        Token NewlineToken "\\n" (Position 1 21),
+        Token EOFToken "" (Position 2 1)
+      ]
+      `shouldBe` Left (ExpectedExpression (Position 1 19))
 
   it "reports ExpectedExpression for unsupported star expansion in call arguments" $ do
     parseProgram

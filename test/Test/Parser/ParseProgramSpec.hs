@@ -1,7 +1,7 @@
 module Test.Parser.ParseProgramSpec (spec) where
 
 import PythonHS.AST.BinaryOperator (BinaryOperator (..))
-import PythonHS.AST.Expr (Expr (BinaryExpr, CallExpr, DictExpr, IdentifierExpr, IntegerExpr, ListExpr, NoneExpr, NotExpr, StringExpr, UnaryMinusExpr))
+import PythonHS.AST.Expr (Expr (BinaryExpr, CallExpr, DictExpr, IdentifierExpr, IntegerExpr, KeywordArgExpr, ListExpr, NoneExpr, NotExpr, StringExpr, UnaryMinusExpr))
 import PythonHS.AST.Program (Program (Program))
 import PythonHS.AST.Stmt (Stmt (AddAssignStmt, AssignStmt, BreakStmt, ContinueStmt, DivAssignStmt, FloorDivAssignStmt, ForStmt, FunctionDefDefaultsStmt, FunctionDefStmt, GlobalStmt, IfStmt, ModAssignStmt, MulAssignStmt, PassStmt, PrintStmt, ReturnStmt, SubAssignStmt, WhileStmt))
 import PythonHS.Lexer.Token (Token (Token))
@@ -733,6 +733,116 @@ spec = describe "parseProgram" $ do
             ]
         )
 
+  it "parses keyword argument call" $ do
+    parseProgram
+      [ Token PrintToken "print" (Position 1 1),
+        Token IdentifierToken "f" (Position 1 7),
+        Token LParenToken "(" (Position 1 8),
+        Token IdentifierToken "a" (Position 1 9),
+        Token AssignToken "=" (Position 1 10),
+        Token IntegerToken "1" (Position 1 11),
+        Token RParenToken ")" (Position 1 12),
+        Token NewlineToken "\\n" (Position 1 13),
+        Token EOFToken "" (Position 2 1)
+      ]
+      `shouldBe` Right
+        ( Program
+            [ PrintStmt
+                (CallExpr "f" [KeywordArgExpr "a" (IntegerExpr 1 (Position 1 11)) (Position 1 9)] (Position 1 7))
+                (Position 1 1)
+            ]
+        )
+
+  it "parses mixed positional then keyword argument call" $ do
+    parseProgram
+      [ Token PrintToken "print" (Position 1 1),
+        Token IdentifierToken "f" (Position 1 7),
+        Token LParenToken "(" (Position 1 8),
+        Token IntegerToken "1" (Position 1 9),
+        Token CommaToken "," (Position 1 10),
+        Token IdentifierToken "b" (Position 1 12),
+        Token AssignToken "=" (Position 1 13),
+        Token IntegerToken "2" (Position 1 14),
+        Token RParenToken ")" (Position 1 15),
+        Token NewlineToken "\\n" (Position 1 16),
+        Token EOFToken "" (Position 2 1)
+      ]
+      `shouldBe` Right
+        ( Program
+            [ PrintStmt
+                ( CallExpr
+                    "f"
+                    [IntegerExpr 1 (Position 1 9), KeywordArgExpr "b" (IntegerExpr 2 (Position 1 14)) (Position 1 12)]
+                    (Position 1 7)
+                )
+                (Position 1 1)
+            ]
+        )
+
+  it "parses positional then multiple keyword arguments" $ do
+    parseProgram
+      [ Token PrintToken "print" (Position 1 1),
+        Token IdentifierToken "f" (Position 1 7),
+        Token LParenToken "(" (Position 1 8),
+        Token IntegerToken "1" (Position 1 9),
+        Token CommaToken "," (Position 1 10),
+        Token IdentifierToken "b" (Position 1 12),
+        Token AssignToken "=" (Position 1 13),
+        Token IntegerToken "2" (Position 1 14),
+        Token CommaToken "," (Position 1 15),
+        Token IdentifierToken "c" (Position 1 17),
+        Token AssignToken "=" (Position 1 18),
+        Token IntegerToken "3" (Position 1 19),
+        Token RParenToken ")" (Position 1 20),
+        Token NewlineToken "\\n" (Position 1 21),
+        Token EOFToken "" (Position 2 1)
+      ]
+      `shouldBe` Right
+        ( Program
+            [ PrintStmt
+                ( CallExpr
+                    "f"
+                    [ IntegerExpr 1 (Position 1 9),
+                      KeywordArgExpr "b" (IntegerExpr 2 (Position 1 14)) (Position 1 12),
+                      KeywordArgExpr "c" (IntegerExpr 3 (Position 1 19)) (Position 1 17)
+                    ]
+                    (Position 1 7)
+                )
+                (Position 1 1)
+            ]
+        )
+
+  it "parses multiple keyword arguments with trailing comma" $ do
+    parseProgram
+      [ Token PrintToken "print" (Position 1 1),
+        Token IdentifierToken "f" (Position 1 7),
+        Token LParenToken "(" (Position 1 8),
+        Token IdentifierToken "a" (Position 1 9),
+        Token AssignToken "=" (Position 1 10),
+        Token IntegerToken "1" (Position 1 11),
+        Token CommaToken "," (Position 1 12),
+        Token IdentifierToken "b" (Position 1 14),
+        Token AssignToken "=" (Position 1 15),
+        Token IntegerToken "2" (Position 1 16),
+        Token CommaToken "," (Position 1 17),
+        Token RParenToken ")" (Position 1 18),
+        Token NewlineToken "\\n" (Position 1 19),
+        Token EOFToken "" (Position 2 1)
+      ]
+      `shouldBe` Right
+        ( Program
+            [ PrintStmt
+                ( CallExpr
+                    "f"
+                    [ KeywordArgExpr "a" (IntegerExpr 1 (Position 1 11)) (Position 1 9),
+                      KeywordArgExpr "b" (IntegerExpr 2 (Position 1 16)) (Position 1 14)
+                    ]
+                    (Position 1 7)
+                )
+                (Position 1 1)
+            ]
+        )
+
   it "parses method-call syntax as function-style call" $ do
     parseProgram
       [ Token PrintToken "print" (Position 1 1),
@@ -802,6 +912,28 @@ spec = describe "parseProgram" $ do
         ( Program
             [ PrintStmt
                 (CallExpr "update" [IdentifierExpr "d" (Position 1 7), IntegerExpr 1 (Position 1 16), IntegerExpr 9 (Position 1 19)] (Position 1 9))
+                (Position 1 1)
+            ]
+        )
+
+  it "parses method-call syntax with keyword argument" $ do
+    parseProgram
+      [ Token PrintToken "print" (Position 1 1),
+        Token IdentifierToken "d" (Position 1 7),
+        Token DotToken "." (Position 1 8),
+        Token IdentifierToken "update" (Position 1 9),
+        Token LParenToken "(" (Position 1 15),
+        Token IdentifierToken "k" (Position 1 16),
+        Token AssignToken "=" (Position 1 17),
+        Token IntegerToken "1" (Position 1 18),
+        Token RParenToken ")" (Position 1 19),
+        Token NewlineToken "\\n" (Position 1 20),
+        Token EOFToken "" (Position 2 1)
+      ]
+      `shouldBe` Right
+        ( Program
+            [ PrintStmt
+                (CallExpr "update" [IdentifierExpr "d" (Position 1 7), KeywordArgExpr "k" (IntegerExpr 1 (Position 1 18)) (Position 1 16)] (Position 1 9))
                 (Position 1 1)
             ]
         )

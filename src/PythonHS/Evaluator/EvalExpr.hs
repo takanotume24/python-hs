@@ -32,6 +32,8 @@ evalExpr evalStatementsFn env fenv expr =
       case Map.lookup name env of
         Just v -> Right (v, [], env)
         Nothing -> Left $ "Name error: undefined identifier " ++ name ++ " at " ++ showPos pos
+    KeywordArgExpr _ valueExpr _ ->
+      evalExpr evalStatementsFn env fenv valueExpr
     UnaryMinusExpr unaryExpr pos -> do
       (v, outs, envAfterExpr) <- evalExpr evalStatementsFn env fenv unaryExpr
       case v of
@@ -66,6 +68,7 @@ evalExpr evalStatementsFn env fenv expr =
     exprPos (ListExpr _ pos) = pos
     exprPos (DictExpr _ pos) = pos
     exprPos (IdentifierExpr _ pos) = pos
+    exprPos (KeywordArgExpr _ _ pos) = pos
     exprPos (UnaryMinusExpr _ pos) = pos
     exprPos (NotExpr _ pos) = pos
     exprPos (BinaryExpr _ _ _ pos) = pos

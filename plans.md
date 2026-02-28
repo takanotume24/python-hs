@@ -114,6 +114,31 @@
 ---
 
 ## メンテナンス記録（要約）
+- 2026-03-01
+  - [x] 仕様固定（評価順）: default引数式と明示引数式が混在する場合、明示引数を先に評価し、未指定defaultのみ後続評価する順序を Runner/Evaluator の両層テストで固定
+  - [x] 仕様固定（評価順）: 混在呼び出し（`positional + keyword`）でも引数式が左から順に評価されることを Runner/Evaluator の両層テストで固定
+  - [x] 仕様固定（評価順）: keyword-only 呼び出し引数は左から順に評価されることを Runner/Evaluator の両層テストで固定
+  - [x] 仕様明文化: メソッド呼び出し形式でも keyword 引数構文は parser で受理し、組み込み評価時に専用エラーで拒否する方針を固定
+  - [x] 回帰追加（Parser/Runner/Evaluator）: `d.update(k=1)` 系ケースを追加し、AST生成と実行時拒否文言/位置を固定
+  - [x] 回帰強化（Parser層）: 呼び出し引数境界を追加（`positional -> keyword(keyword...)` の受理、keyword群の末尾カンマ受理）
+  - [x] 回帰強化（Parser層）: keyword引数列の後に positional が現れた場合の parse error 位置を追加固定
+  - [x] 回帰強化（Evaluator層）: 関数呼び出しエラー優先順位（`duplicate` / `unexpected` / `multiple values`）を AST 直指定テストで固定
+  - [x] 回帰強化（Evaluator層）: 組み込み関数の keyword 引数拒否を AST 直指定テストで固定
+  - [x] 仕様明文化: ユーザー定義関数呼び出しのエラー優先順位を固定（`duplicate keyword` > `unexpected keyword` > `multiple values` > `count mismatch`）
+  - [x] 回帰追加: `RunnerEdgeSpec` に優先順位を確認する3ケースを追加
+  - [x] 組み込み関数ポリシー明文化: keyword 引数は未対応として専用エラーを返す（`Argument error: keyword arguments are not supported for builtin <name> at <pos>`）
+  - [x] 回帰追加: `RunnerEdgeSpec` に `len(x=[1])` ケースを追加し、拒否文言と位置を固定
+  - [x] 関数呼び出しエラー改善: 未知キーワード引数を専用エラーで報告（`Argument error: unexpected keyword argument <name> at <pos>`）
+  - [x] 回帰追加: `RunnerEdgeSpec` に `f(b=2)` ケースを追加し、エラー文言と位置を固定
+  - [x] 関数呼び出しエラー改善: 重複キーワード引数を専用エラーで報告（`Argument error: duplicate keyword argument <name> at <pos>`）
+  - [x] 関数呼び出しエラー改善: 位置引数とキーワード引数の多重束縛を専用エラーで報告（`Argument error: multiple values for parameter <name> at <pos>`）
+  - [x] 回帰追加: `RunnerEdgeSpec` に上記2ケースを追加してエラー文言と位置を固定
+  - [x] 関数呼び出し拡張（最小）: 位置引数→キーワード引数の混在（`f(1, b=2)`）を導入
+  - [x] 仕様整理: `keyword -> positional`（`f(a=1, 2)`）は引き続き parse error として固定
+  - [x] 回帰更新: `mixed positional then keyword` の Parser/Runner 負系を成功系へ置換
+  - [x] 関数呼び出し拡張（最小）: 呼び出し側キーワード引数 `f(a=1)` を導入（AST/parse/eval/runner）
+  - [x] 仕様整理: キーワード引数はユーザー定義関数呼び出しで有効、位置引数との混在は引き続き parse error として固定
+  - [x] 回帰更新: `ParserErrorSpec` の `f(a=1)` 未対応固定を撤回し、`ParseProgramSpec` と `RunnerEdgeSpec` の成功系へ置換
 - 2026-02-28
   - [x] 回帰防止（Parser/Runner）: 関数定義の戻り値型注釈（`def f() -> int`）は未対応として parse error を固定
   - [x] 回帰防止（Parser/Runner）: 関数定義の型注釈記法（`def f(a: int)`）は未対応として parse error を固定

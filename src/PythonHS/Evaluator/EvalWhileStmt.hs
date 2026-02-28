@@ -45,6 +45,7 @@ evalWhileStmt evalStatementsFn evalExprFn env fenv outputs cond body whilePos re
     exprPos (ListExpr _ pos) = pos
     exprPos (DictExpr _ pos) = pos
     exprPos (IdentifierExpr _ pos) = pos
+    exprPos (KeywordArgExpr _ _ pos) = pos
     exprPos (UnaryMinusExpr _ pos) = pos
     exprPos (NotExpr _ pos) = pos
     exprPos (BinaryExpr _ _ _ pos) = pos

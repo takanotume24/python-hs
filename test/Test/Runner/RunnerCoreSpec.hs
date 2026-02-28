@@ -11,6 +11,15 @@ spec = describe "runSource (integration core)" $ do
   it "accepts trailing commas in function definition and call" $ do
     runSource "def add(a, b,):\n  return a + b\nprint add(1, 2,)\n" `shouldBe` Right ["3"]
 
+  it "evaluates keyword-only call arguments left-to-right" $ do
+    runSource "def probe(x):\n  print x\n  return x\ndef add(a, b):\n  return a + b\nprint add(a=probe(1), b=probe(2))\n" `shouldBe` Right ["1", "2", "3"]
+
+  it "evaluates mixed positional and keyword call arguments left-to-right" $ do
+    runSource "def probe(x):\n  print x\n  return x\ndef add(a, b):\n  return a + b\nprint add(probe(1), b=probe(2))\n" `shouldBe` Right ["1", "2", "3"]
+
+  it "evaluates explicit args before missing default expressions" $ do
+    runSource "def probe(x):\n  print x\n  return x\ndef add(a, b=probe(2), c=probe(3)):\n  return a + b + c\nprint add(a=probe(1), c=probe(4))\n" `shouldBe` Right ["1", "4", "2", "7"]
+
   it "returns None for bare return in function" $ do
     runSource "def f():\n  return\nprint f()\n" `shouldBe` Right ["None"]
 

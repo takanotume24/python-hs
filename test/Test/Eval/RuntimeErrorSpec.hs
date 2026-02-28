@@ -1,7 +1,7 @@
 module Test.Eval.RuntimeErrorSpec (spec) where
 
 import PythonHS.AST.BinaryOperator (BinaryOperator (AddOperator, MultiplyOperator, DivideOperator, ModuloOperator, LtOperator))
-import PythonHS.AST.Expr (Expr (BinaryExpr, CallExpr, DictExpr, IdentifierExpr, IntegerExpr, ListExpr, NoneExpr, StringExpr, UnaryMinusExpr))
+import PythonHS.AST.Expr (Expr (BinaryExpr, CallExpr, DictExpr, IdentifierExpr, IntegerExpr, KeywordArgExpr, ListExpr, NoneExpr, StringExpr, UnaryMinusExpr))
 import PythonHS.AST.Program (Program (Program))
 import PythonHS.AST.Stmt (Stmt (AddAssignStmt, AssignStmt, BreakStmt, ContinueStmt, DivAssignStmt, FloorDivAssignStmt, ForStmt, FunctionDefStmt, IfStmt, ModAssignStmt, MulAssignStmt, PassStmt, PrintStmt, ReturnStmt, SubAssignStmt, WhileStmt))
 import PythonHS.Evaluator (evalProgram)
@@ -50,6 +50,50 @@ spec = describe "runtime error reporting" $ do
           ]
       )
       `shouldBe` Left "Name error: undefined identifier missing at 11:15"
+
+  it "prioritizes function call argument errors at evaluator layer" $ do
+    evalProgram
+      ( Program
+          [ FunctionDefStmt "f" ["a"] [ReturnStmt (IdentifierExpr "a" (Position 2 10)) (Position 2 3)] (Position 1 1),
+            PrintStmt
+              ( CallExpr
+                  "f"
+                  [ KeywordArgExpr "b" (IntegerExpr 1 (Position 3 13)) (Position 3 11),
+                    KeywordArgExpr "b" (IntegerExpr 2 (Position 3 18)) (Position 3 16)
+                  ]
+                  (Position 3 7)
+              )
+              (Position 3 1)
+          ]
+      )
+      `shouldBe` Left "Argument error: duplicate keyword argument b at 3:16"
+
+    evalProgram
+      ( Program
+          [ FunctionDefStmt "f" ["a"] [ReturnStmt (IdentifierExpr "a" (Position 5 10)) (Position 5 3)] (Position 4 1),
+            PrintStmt
+              (CallExpr "f" [IntegerExpr 1 (Position 6 9), KeywordArgExpr "b" (IntegerExpr 2 (Position 6 16)) (Position 6 14)] (Position 6 7))
+              (Position 6 1)
+          ]
+      )
+      `shouldBe` Left "Argument error: unexpected keyword argument b at 6:14"
+
+    evalProgram
+      ( Program
+          [ FunctionDefStmt "f" ["a"] [ReturnStmt (IdentifierExpr "a" (Position 8 10)) (Position 8 3)] (Position 7 1),
+            PrintStmt
+              ( CallExpr
+                  "f"
+                  [ IntegerExpr 1 (Position 9 9),
+                    IntegerExpr 2 (Position 9 12),
+                    KeywordArgExpr "a" (IntegerExpr 3 (Position 9 20)) (Position 9 18)
+                  ]
+                  (Position 9 7)
+              )
+              (Position 9 1)
+          ]
+      )
+      `shouldBe` Left "Argument error: multiple values for parameter a at 9:18"
 
   it "reports clear type error for unsupported mixed types in plus" $ do
     evalProgram
@@ -117,6 +161,36 @@ spec = describe "runtime error reporting" $ do
           ]
       )
       `shouldBe` Left "Argument count mismatch when calling len at 14:7"
+
+  it "reports builtin keyword argument as unsupported at evaluator layer" $ do
+    evalProgram
+      ( Program
+          [ PrintStmt
+              ( CallExpr
+                  "len"
+                  [KeywordArgExpr "x" (ListExpr [IntegerExpr 1 (Position 15 13)] (Position 15 12)) (Position 15 11)]
+                  (Position 15 7)
+              )
+              (Position 15 1)
+          ]
+      )
+      `shouldBe` Left "Argument error: keyword arguments are not supported for builtin len at 15:11"
+
+  it "reports method-style builtin keyword argument as unsupported at evaluator layer" $ do
+    evalProgram
+      ( Program
+          [ PrintStmt
+              ( CallExpr
+                  "update"
+                  [ DictExpr [] (Position 16 9),
+                    KeywordArgExpr "k" (IntegerExpr 1 (Position 16 22)) (Position 16 20)
+                  ]
+                  (Position 16 7)
+              )
+              (Position 16 1)
+          ]
+      )
+      `shouldBe` Left "Argument error: keyword arguments are not supported for builtin update at 16:20"
 
   it "reports bool builtin errors" $ do
     evalProgram

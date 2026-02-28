@@ -1,10 +1,10 @@
 module PythonHS.Parser.ParseExpr (parseExpr) where
 
 import PythonHS.AST.BinaryOperator (BinaryOperator (AddOperator, AndOperator, DivideOperator, EqOperator, FloorDivideOperator, GtOperator, GteOperator, LtOperator, LteOperator, ModuloOperator, MultiplyOperator, NotEqOperator, OrOperator, SubtractOperator))
-import PythonHS.AST.Expr (Expr (BinaryExpr, CallExpr, DictExpr, IdentifierExpr, IntegerExpr, ListExpr, NoneExpr, NotExpr, StringExpr, UnaryMinusExpr))
+import PythonHS.AST.Expr (Expr (BinaryExpr, CallExpr, DictExpr, IdentifierExpr, IntegerExpr, KeywordArgExpr, ListExpr, NoneExpr, NotExpr, StringExpr, UnaryMinusExpr))
 import PythonHS.Lexer.Position (Position (Position))
 import PythonHS.Lexer.Token (Token (Token), position)
-import PythonHS.Lexer.TokenType (TokenType (AndToken, ColonToken, CommaToken, DotToken, DoubleSlashToken, EqToken, FalseToken, GtToken, GteToken, IdentifierToken, IntegerToken, LBraceToken, LBracketToken, LParenToken, LtToken, LteToken, MinusToken, NoneToken, NotEqToken, NotToken, OrToken, PercentToken, PlusToken, RBraceToken, RBracketToken, RParenToken, SlashToken, StarToken, StringToken, TrueToken))
+import PythonHS.Lexer.TokenType (TokenType (AndToken, AssignToken, ColonToken, CommaToken, DotToken, DoubleSlashToken, EqToken, FalseToken, GtToken, GteToken, IdentifierToken, IntegerToken, LBraceToken, LBracketToken, LParenToken, LtToken, LteToken, MinusToken, NoneToken, NotEqToken, NotToken, OrToken, PercentToken, PlusToken, RBraceToken, RBracketToken, RParenToken, SlashToken, StarToken, StringToken, TrueToken))
 import PythonHS.Parser.ParseError (ParseError (ExpectedExpression))
 
 parseExpr :: [Token] -> Either ParseError (Expr, [Token])
@@ -119,7 +119,6 @@ parseExpr = parseOr
       (args, afterArgs) <- parseArguments rest
       parsePostfix (CallExpr methodName (receiverExpr : args) methodPos) afterArgs
     parsePostfix expr rest = Right (expr, rest)
-
     parseListElements listPos (Token RBracketToken _ _ : rest) =
       Right (ListExpr [] listPos, rest)
     parseListElements listPos ts = do
@@ -136,7 +135,6 @@ parseExpr = parseOr
       Right (ListExpr exprs listPos, rest)
     parseListTail _ _ (tok : _) = Left (ExpectedExpression (position tok))
     parseListTail _ _ _ = Left (ExpectedExpression (Position 0 0))
-
     parseDictEntries dictPos (Token RBraceToken _ _ : rest) =
       Right (DictExpr [] dictPos, rest)
     parseDictEntries dictPos ts = do
@@ -163,14 +161,37 @@ parseExpr = parseOr
       Right (DictExpr pairs dictPos, rest)
     parseDictTail _ _ (tok : _) = Left (ExpectedExpression (position tok))
     parseDictTail _ _ _ = Left (ExpectedExpression (Position 0 0))
-
     parseArguments (Token RParenToken _ _ : rest) = Right ([], rest)
-    parseArguments ts = do
-      (firstArg, afterFirst) <- parseExpr ts
-      case afterFirst of
-        Token RParenToken _ _ : rest -> Right ([firstArg], rest)
-        Token CommaToken _ _ : rest -> do
-          (otherArgs, finalRest) <- parseArguments rest
-          Right (firstArg : otherArgs, finalRest)
-        Token _ _ pos : _ -> Left (ExpectedExpression pos)
-        _ -> Left (ExpectedExpression (Position 0 0))
+    parseArguments ts = parseArgumentsTail False [] ts
+
+    parseArgumentsTail seenKeywordArg accArgs tokenStream = do
+      (argExpr, isKeywordArg, mismatchPos, afterArg) <- parseCallArgument tokenStream
+      if seenKeywordArg && not isKeywordArg
+        then Left (ExpectedExpression mismatchPos)
+        else
+          case afterArg of
+            Token RParenToken _ _ : rest -> Right (accArgs ++ [argExpr], rest)
+            Token CommaToken _ _ : rest ->
+              case rest of
+                Token RParenToken _ _ : afterParen -> Right (accArgs ++ [argExpr], afterParen)
+                _ -> parseArgumentsTail (seenKeywordArg || isKeywordArg) (accArgs ++ [argExpr]) rest
+            Token _ _ pos : _ -> Left (ExpectedExpression pos)
+            _ -> Left (ExpectedExpression (Position 0 0))
+    parseCallArgument (Token IdentifierToken name namePos : Token AssignToken _ assignPos : rest) = do
+      (valueExpr, afterValue) <- parseExpr rest
+      Right (KeywordArgExpr name valueExpr namePos, True, assignPos, afterValue)
+    parseCallArgument tokenStream = do
+      (argExpr, afterArg) <- parseExpr tokenStream
+      Right (argExpr, False, exprPos argExpr, afterArg)
+
+    exprPos (IntegerExpr _ pos) = pos
+    exprPos (StringExpr _ pos) = pos
+    exprPos (NoneExpr pos) = pos
+    exprPos (ListExpr _ pos) = pos
+    exprPos (DictExpr _ pos) = pos
+    exprPos (IdentifierExpr _ pos) = pos
+    exprPos (KeywordArgExpr _ _ pos) = pos
+    exprPos (UnaryMinusExpr _ pos) = pos
+    exprPos (NotExpr _ pos) = pos
+    exprPos (BinaryExpr _ _ _ pos) = pos
+    exprPos (CallExpr _ _ pos) = pos

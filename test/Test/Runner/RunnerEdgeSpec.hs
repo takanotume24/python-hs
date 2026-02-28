@@ -142,14 +142,38 @@ spec = describe "runSource (integration edge/error)" $ do
   it "returns parse error when duplicate parameter names include defaults" $ do
     runSource "def dup(a = 1, a = 2):\n  return a\n" `shouldBe` Left "ExpectedExpression (Position {line = 1, column = 16})"
 
-  it "returns parse error for unsupported keyword argument in call" $ do
-    runSource "print f(a=1)\n" `shouldBe` Left "ExpectedExpression (Position {line = 1, column = 10})"
+  it "supports keyword argument call for user-defined function" $ do
+    runSource "def f(a):\n  return a\nprint f(a=1)\n" `shouldBe` Right ["1"]
 
-  it "returns parse error for mixed positional then keyword call arguments" $ do
-    runSource "print f(1, a=2)\n" `shouldBe` Left "ExpectedExpression (Position {line = 1, column = 13})"
+  it "supports mixed positional then keyword call arguments" $ do
+    runSource "def add(a, b):\n  return a + b\nprint add(1, b=2)\n" `shouldBe` Right ["3"]
+
+  it "reports duplicate keyword argument with argument name and position" $ do
+    runSource "def f(a):\n  return a\nprint f(a=1, a=2)\n" `shouldBe` Left "Argument error: duplicate keyword argument a at 3:14"
+
+  it "reports multiple values for parameter when positional and keyword both bind it" $ do
+    runSource "def f(a):\n  return a\nprint f(1, a=2)\n" `shouldBe` Left "Argument error: multiple values for parameter a at 3:12"
+
+  it "reports unexpected keyword argument with argument name and position" $ do
+    runSource "def f(a):\n  return a\nprint f(b=2)\n" `shouldBe` Left "Argument error: unexpected keyword argument b at 3:9"
+
+  it "reports builtin keyword argument as unsupported" $ do
+    runSource "print len(x=[1])\n" `shouldBe` Left "Argument error: keyword arguments are not supported for builtin len at 1:11"
+
+  it "reports method-style builtin keyword argument as unsupported" $ do
+    runSource "d = {}\nprint d.update(k=1)\n" `shouldBe` Left "Argument error: keyword arguments are not supported for builtin update at 2:16"
+
+  it "prioritizes duplicate keyword error over unexpected keyword error" $ do
+    runSource "def f(a):\n  return a\nprint f(b=1, b=2)\n" `shouldBe` Left "Argument error: duplicate keyword argument b at 3:14"
+
+  it "prioritizes unexpected keyword error over count mismatch" $ do
+    runSource "def f(a):\n  return a\nprint f(1, b=2)\n" `shouldBe` Left "Argument error: unexpected keyword argument b at 3:12"
+
+  it "prioritizes multiple values error over count mismatch" $ do
+    runSource "def f(a):\n  return a\nprint f(1, 2, a=3)\n" `shouldBe` Left "Argument error: multiple values for parameter a at 3:15"
 
   it "returns parse error for mixed keyword then positional call arguments" $ do
-    runSource "print f(a=1, 2)\n" `shouldBe` Left "ExpectedExpression (Position {line = 1, column = 10})"
+    runSource "print f(a=1, 2)\n" `shouldBe` Left "ExpectedExpression (Position {line = 1, column = 14})"
 
   it "returns parse error for unsupported star expansion in call arguments" $ do
     runSource "print f(*[1,2])\n" `shouldBe` Left "ExpectedExpression (Position {line = 1, column = 9})"

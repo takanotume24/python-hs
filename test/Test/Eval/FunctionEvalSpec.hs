@@ -1,9 +1,9 @@
 module Test.Eval.FunctionEvalSpec (spec) where
 
 import PythonHS.AST.BinaryOperator (BinaryOperator (AddOperator, EqOperator))
-import PythonHS.AST.Expr (Expr (BinaryExpr, CallExpr, IdentifierExpr, IntegerExpr))
+import PythonHS.AST.Expr (Expr (BinaryExpr, CallExpr, IdentifierExpr, IntegerExpr, KeywordArgExpr))
 import PythonHS.AST.Program (Program (Program))
-import PythonHS.AST.Stmt (Stmt (AssignStmt, FunctionDefStmt, GlobalStmt, IfStmt, PrintStmt, ReturnStmt))
+import PythonHS.AST.Stmt (Stmt (AssignStmt, FunctionDefDefaultsStmt, FunctionDefStmt, GlobalStmt, IfStmt, PrintStmt, ReturnStmt))
 import PythonHS.Evaluator (evalProgram)
 import PythonHS.Lexer.Position (Position (Position))
 import Test.Hspec (Spec, describe, it, shouldBe)
@@ -140,3 +140,100 @@ spec = describe "function runtime" $ do
           ]
       )
       `shouldBe` Right ["0", "2"]
+
+  it "evaluates keyword call arguments left-to-right at evaluator layer" $ do
+    evalProgram
+      ( Program
+          [ FunctionDefStmt
+              "probe"
+              ["x"]
+              [ PrintStmt (IdentifierExpr "x" (Position 30 9)) (Position 30 3),
+                ReturnStmt (IdentifierExpr "x" (Position 31 10)) (Position 31 3)
+              ]
+              (Position 29 1),
+            FunctionDefStmt
+              "add"
+              ["a", "b"]
+              [ ReturnStmt (BinaryExpr AddOperator (IdentifierExpr "a" (Position 33 10)) (IdentifierExpr "b" (Position 33 14)) (Position 33 12)) (Position 33 3)
+              ]
+              (Position 32 1),
+            PrintStmt
+              ( CallExpr
+                  "add"
+                  [ KeywordArgExpr "a" (CallExpr "probe" [IntegerExpr 1 (Position 34 19)] (Position 34 13)) (Position 34 11),
+                    KeywordArgExpr "b" (CallExpr "probe" [IntegerExpr 2 (Position 34 31)] (Position 34 25)) (Position 34 23)
+                  ]
+                  (Position 34 7)
+              )
+              (Position 34 1)
+          ]
+      )
+      `shouldBe` Right ["1", "2", "3"]
+
+  it "evaluates mixed positional and keyword call arguments left-to-right at evaluator layer" $ do
+    evalProgram
+      ( Program
+          [ FunctionDefStmt
+              "probe"
+              ["x"]
+              [ PrintStmt (IdentifierExpr "x" (Position 36 9)) (Position 36 3),
+                ReturnStmt (IdentifierExpr "x" (Position 37 10)) (Position 37 3)
+              ]
+              (Position 35 1),
+            FunctionDefStmt
+              "add"
+              ["a", "b"]
+              [ ReturnStmt (BinaryExpr AddOperator (IdentifierExpr "a" (Position 39 10)) (IdentifierExpr "b" (Position 39 14)) (Position 39 12)) (Position 39 3)
+              ]
+              (Position 38 1),
+            PrintStmt
+              ( CallExpr
+                  "add"
+                  [ CallExpr "probe" [IntegerExpr 1 (Position 40 17)] (Position 40 11),
+                    KeywordArgExpr "b" (CallExpr "probe" [IntegerExpr 2 (Position 40 29)] (Position 40 23)) (Position 40 21)
+                  ]
+                  (Position 40 7)
+              )
+              (Position 40 1)
+          ]
+      )
+      `shouldBe` Right ["1", "2", "3"]
+
+  it "evaluates explicit keyword arguments before missing defaults at evaluator layer" $ do
+    evalProgram
+      ( Program
+          [ FunctionDefStmt
+              "probe"
+              ["x"]
+              [ PrintStmt (IdentifierExpr "x" (Position 42 9)) (Position 42 3),
+                ReturnStmt (IdentifierExpr "x" (Position 43 10)) (Position 43 3)
+              ]
+              (Position 41 1),
+            FunctionDefDefaultsStmt
+              "add"
+              ["a", "b", "c"]
+              [ ("b", CallExpr "probe" [IntegerExpr 2 (Position 44 21)] (Position 44 15)),
+                ("c", CallExpr "probe" [IntegerExpr 3 (Position 44 33)] (Position 44 27))
+              ]
+              [ ReturnStmt
+                  ( BinaryExpr
+                      AddOperator
+                      (BinaryExpr AddOperator (IdentifierExpr "a" (Position 45 10)) (IdentifierExpr "b" (Position 45 14)) (Position 45 12))
+                      (IdentifierExpr "c" (Position 45 18))
+                      (Position 45 16)
+                  )
+                  (Position 45 3)
+              ]
+              (Position 44 1),
+            PrintStmt
+              ( CallExpr
+                  "add"
+                  [ KeywordArgExpr "a" (CallExpr "probe" [IntegerExpr 1 (Position 46 19)] (Position 46 13)) (Position 46 11),
+                    KeywordArgExpr "c" (CallExpr "probe" [IntegerExpr 4 (Position 46 31)] (Position 46 25)) (Position 46 23)
+                  ]
+                  (Position 46 7)
+              )
+              (Position 46 1)
+          ]
+      )
+      `shouldBe` Right ["1", "4", "2", "7"]
