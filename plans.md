@@ -17,6 +17,14 @@
 - [x] `float` 最小導入（literal: `1.23` / `1.` / `.5` / 指数表記、演算: `/` 実数除算・`//` 床除算、混在比較の暗黙昇格）
 - [x] `float` 導入に伴う既存仕様差分の明文化（`/` 系期待値更新、表示規約、ゼロ除算エラー整合）
 
+## 現在のスコープ（P5: VM基盤導入・並行運用）
+- [x] P5 開始: AST評価器と並行して最小VM経路を追加する方針を開始
+- [x] VM縦スライス1: `runSourceVm` を追加（lex/parse/compile/execute）
+- [x] VM縦スライス1: 最小命令セット（定数push, load/store, add, print, halt）を導入
+- [x] VM縦スライス1: 失敗テスト先行で `RunSourceVmSpec` を追加し、最小成功系/未対応文の失敗系を固定
+- [x] VM縦スライス2: 制御構文（`if` / `while`）向けジャンプ命令とコンパイルを導入
+- [ ] VM縦スライス3: 関数呼び出し向け frame/call 命令を導入
+
 ### 運用メモ
 - 受け入れテストは MVP 最小（`MvpScenarioSpec`）を維持し、詳細仕様は Runner/Eval の回帰テストで固定する。
 
@@ -112,6 +120,13 @@
 ## メンテナンス記録（要約）
 - 注記: 以下は時系列ログ。古い日付の「未対応」項目は、その後のエントリで仕様更新済みの場合がある。
 - 2026-03-01
+  - [x] P5継続: VM縦スライス2として `if` / `while` のジャンプ命令（`JumpIfFalse` / `Jump`）を導入
+  - [x] P5継続: `PythonHS.VM.CompileProgram` を制御構文対応し、`RunSourceVmSpec` に `if/else`・`while` 成功系を追加して固定
+  - [x] 警告修正: `PythonHS.VM.RunInstructions` の truthiness 判定を全 `Value` コンストラクタ網羅へ修正
+  - [x] P5開始: VM基盤導入マイルストーンを開始（MVP互換・並行運用）
+  - [x] P5初回実装: `PythonHS.RunSourceVm` / `PythonHS.VM.*` を追加し、代入・`print`・`+` の最小実行をVM経路で実装
+  - [x] P5初回テスト: `Test.VM.RunSourceVmSpec` を追加して失敗テスト先行→実装でグリーン化
+  - [x] Runner拡張: `PythonHS.Runner` から `runSourceVm` を公開
   - [x] 運用ルール更新: 行数上限違反の解消で空行削除を禁止し、責務分離による別ファイル化を `AGENTS.md` に明記
   - [x] ドキュメント整合: `README` の float 関連仕様（literal形式、数値演算、`bool`/`sort`）を実装現状へ更新
   - [x] 追補（float互換）: 実行系で `1.` / `.5` / `1e3` / `1.2e-3` を固定する Eval/Runner テストを追加

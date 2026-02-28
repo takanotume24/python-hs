@@ -18,6 +18,7 @@ library
     , PythonHS.Parser.ParseError
     , PythonHS.Parser.ParseProgram
     , PythonHS.RunSource
+    , PythonHS.RunSourceVm
     , PythonHS.Runner
     , PythonHS.EvalProgram
     , PythonHS.CLI
@@ -47,6 +48,9 @@ library
     , PythonHS.Evaluator.EvalCallExpr
     , PythonHS.Evaluator.EvalBuiltinExpr
     , PythonHS.Evaluator.MaxLoopIterations
+    , PythonHS.VM.Instruction
+    , PythonHS.VM.CompileProgram
+    , PythonHS.VM.RunInstructions
   build-depends:
       base >=4.14 && <5
     , containers >=0.6 && <0.9
@@ -90,6 +94,7 @@ test-suite python-hs-test
     , Test.Runner.RunnerCoreSpec
     , Test.Runner.RunnerEdgeSpec
     , Test.CLI.CLISpec
+    , Test.VM.RunSourceVmSpec
     , Test.Structure.CheckStructureSpec
   build-depends:
       base >=4.14 && <5
