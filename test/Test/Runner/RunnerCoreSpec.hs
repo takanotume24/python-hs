@@ -241,6 +241,10 @@ spec = describe "runSource (integration core)" $ do
     runSource "print clear(1)\n" `shouldBe` Left "Type error: clear expects list or dict at 1:7"
     runSource "print clear([], 1)\n" `shouldBe` Left "Argument count mismatch when calling clear at 1:7"
 
+  it "reports builtin count mismatch at call-site position in core suite" $ do
+    runSource "print len()\n" `shouldBe` Left "Argument count mismatch when calling len at 1:7"
+    runSource "print {}.update()\n" `shouldBe` Left "Argument count mismatch when calling update at 1:10"
+
   it "evaluates keys builtin for dictionary" $ do
     runSource "print keys({1: 2, 3: 4})\n" `shouldBe` Right ["[1, 3]"]
 

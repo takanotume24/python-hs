@@ -23,9 +23,9 @@ evalCallExpr ::
 evalCallExpr evalStatementsFn evalExprFn env fenv fname args pos =
   case Map.lookup fname fenv of
     Just (params, defaults, body) -> do
-      (posVals, kwVals, kwPosByName, argOuts, envAfterArgs) <- evalCallArgs env fenv Map.empty Map.empty False [] args
-      boundByName <- bindByName params kwVals kwPosByName
-      baseBindings <- bindPositional params posVals boundByName kwPosByName
+      (posVals, kwVals, kwPosByName, kwOrder, argOuts, envAfterArgs) <- evalCallArgs env fenv Map.empty Map.empty [] False [] args
+      boundByName <- bindByName params kwVals kwPosByName kwOrder
+      baseBindings <- bindPositional params posVals boundByName kwPosByName kwOrder
       (bindingsWithDefaults, defaultOuts, envAfterDefaults) <- fillMissingDefaults envAfterArgs fenv params defaults baseBindings
       let globalNames = collectGlobalNames body
       let localEnv = Map.union bindingsWithDefaults envAfterDefaults
@@ -47,52 +47,73 @@ evalCallExpr evalStatementsFn evalExprFn env fenv fname args pos =
     firstKeywordArg (KeywordArgExpr argName _ kwPos : _) = Just (argName, kwPos)
     firstKeywordArg (_ : restArgs) = firstKeywordArg restArgs
 
-    evalCallArgs currentEnv _ seenKw seenKwPos _ positionalVals [] =
-      Right (positionalVals, seenKw, seenKwPos, [], currentEnv)
-    evalCallArgs currentEnv currentFenv seenKw seenKwPos seenKeywordArg positionalVals (argExpr : restArgs) =
+    evalCallArgs currentEnv _ seenKw seenKwPos seenKwOrder _ positionalVals [] =
+      Right (positionalVals, seenKw, seenKwPos, seenKwOrder, [], currentEnv)
+    evalCallArgs currentEnv currentFenv seenKw seenKwPos seenKwOrder seenKeywordArg positionalVals (argExpr : restArgs) =
       case argExpr of
         KeywordArgExpr argName valueExpr argPos ->
           case Map.lookup argName seenKw of
             Just _ -> Left $ "Argument error: duplicate keyword argument " ++ argName ++ " at " ++ showPos argPos
             Nothing -> do
               (value, exprOuts, envAfterExpr) <- evalExprFn currentEnv currentFenv valueExpr
-              (nextPosVals, nextKwVals, nextKwPosVals, restOuts, finalEnv) <-
+              (nextPosVals, nextKwVals, nextKwPosVals, nextKwOrder, restOuts, finalEnv) <-
                 evalCallArgs
                   envAfterExpr
                   currentFenv
                   (Map.insert argName value seenKw)
                   (Map.insert argName argPos seenKwPos)
+                  (seenKwOrder ++ [argName])
                   True
                   positionalVals
                   restArgs
-              Right (nextPosVals, nextKwVals, nextKwPosVals, exprOuts ++ restOuts, finalEnv)
+              Right (nextPosVals, nextKwVals, nextKwPosVals, nextKwOrder, exprOuts ++ restOuts, finalEnv)
         _ ->
           if seenKeywordArg
             then Left $ "Argument count mismatch when calling " ++ fname ++ " at " ++ showPos pos
             else do
               (value, exprOuts, envAfterExpr) <- evalExprFn currentEnv currentFenv argExpr
-              (nextPosVals, nextKwVals, nextKwPosVals, restOuts, finalEnv) <-
-                evalCallArgs envAfterExpr currentFenv seenKw seenKwPos False (positionalVals ++ [value]) restArgs
-              Right (nextPosVals, nextKwVals, nextKwPosVals, exprOuts ++ restOuts, finalEnv)
+              (nextPosVals, nextKwVals, nextKwPosVals, nextKwOrder, restOuts, finalEnv) <-
+                evalCallArgs envAfterExpr currentFenv seenKw seenKwPos seenKwOrder False (positionalVals ++ [value]) restArgs
+              Right (nextPosVals, nextKwVals, nextKwPosVals, nextKwOrder, exprOuts ++ restOuts, finalEnv)
 
-    bindByName params keywordVals kwPosByName =
-      case filter (`notElem` params) (Map.keys keywordVals) of
+    bindByName params keywordVals kwPosByName kwOrder =
+      case filter (`notElem` params) kwOrder of
         unexpectedName : _ ->
           case Map.lookup unexpectedName kwPosByName of
             Just argPos -> Left $ "Argument error: unexpected keyword argument " ++ unexpectedName ++ " at " ++ showPos argPos
             Nothing -> Left $ "Argument count mismatch when calling " ++ fname ++ " at " ++ showPos pos
-        [] -> Right keywordVals
+        [] ->
+          case filter (`notElem` params) (Map.keys keywordVals) of
+            unexpectedName : _ ->
+              case Map.lookup unexpectedName kwPosByName of
+                Just argPos -> Left $ "Argument error: unexpected keyword argument " ++ unexpectedName ++ " at " ++ showPos argPos
+                Nothing -> Left $ "Argument count mismatch when calling " ++ fname ++ " at " ++ showPos pos
+            [] -> Right keywordVals
 
-    bindPositional [] [] bound _ = Right bound
-    bindPositional [] (_ : _) _ _ = Left $ "Argument count mismatch when calling " ++ fname ++ " at " ++ showPos pos
-    bindPositional (_ : restParams) [] bound kwPosByName = bindPositional restParams [] bound kwPosByName
-    bindPositional (paramName : restParams) (value : restVals) bound kwPosByName =
-      case Map.lookup paramName bound of
-        Just _ ->
-          case Map.lookup paramName kwPosByName of
-            Just argPos -> Left $ "Argument error: multiple values for parameter " ++ paramName ++ " at " ++ showPos argPos
-            Nothing -> Left $ "Argument count mismatch when calling " ++ fname ++ " at " ++ showPos pos
-        Nothing -> bindPositional restParams restVals (Map.insert paramName value bound) kwPosByName
+    bindPositional params positionalVals bound kwPosByName kwOrder
+      | otherwise =
+          case firstCollisionName of
+            Just paramName ->
+              case Map.lookup paramName kwPosByName of
+                Just argPos -> Left $ "Argument error: multiple values for parameter " ++ paramName ++ " at " ++ showPos argPos
+                Nothing -> Left $ "Argument count mismatch when calling " ++ fname ++ " at " ++ showPos pos
+            Nothing ->
+              if length positionalVals > length params
+                then Left $ "Argument count mismatch when calling " ++ fname ++ " at " ++ showPos pos
+                else Right $ foldl insertPositional bound (zip positionalParamNames positionalVals)
+      where
+        positionalParamNames = take (min (length positionalVals) (length params)) params
+        firstCollisionName = firstMatch kwOrder positionalParamNames
+
+        insertPositional acc (paramName, value) =
+          case Map.lookup paramName acc of
+            Just _ -> acc
+            Nothing -> Map.insert paramName value acc
+
+    firstMatch [] _ = Nothing
+    firstMatch (name : rest) candidates
+      | name `elem` candidates = Just name
+      | otherwise = firstMatch rest candidates
 
     collectGlobalNames stmts = nub (concatMap goStmt stmts)
       where

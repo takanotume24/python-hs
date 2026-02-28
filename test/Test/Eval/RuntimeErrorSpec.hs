@@ -82,21 +82,54 @@ spec = describe "runtime error reporting" $ do
       ( Program
           [ FunctionDefStmt "f" ["a"] [ReturnStmt (IdentifierExpr "a" (Position 7 10)) (Position 7 3)] (Position 7 1),
             PrintStmt
-              (CallExpr "f" [KeywordArgExpr "b" (CallExpr "len" [IntegerExpr 1 (Position 8 17)] (Position 8 13)) (Position 8 11)] (Position 8 7))
+              ( CallExpr
+                  "f"
+                  [ IntegerExpr 1 (Position 8 9),
+                    KeywordArgExpr "z" (IntegerExpr 2 (Position 8 14)) (Position 8 12),
+                    KeywordArgExpr "b" (IntegerExpr 3 (Position 8 21)) (Position 8 19)
+                  ]
+                  (Position 8 7)
+              )
               (Position 8 1)
           ]
       )
-      `shouldBe` Left "Type error: len expects string or list at 8:13"
+      `shouldBe` Left "Argument error: unexpected keyword argument z at 8:12"
 
     evalProgram
       ( Program
           [ FunctionDefStmt "f" ["a"] [ReturnStmt (IdentifierExpr "a" (Position 9 10)) (Position 9 3)] (Position 9 1),
             PrintStmt
-              (CallExpr "f" [KeywordArgExpr "b" (IdentifierExpr "missing" (Position 10 11)) (Position 10 11)] (Position 10 7))
+              ( CallExpr
+                  "f"
+                  [ KeywordArgExpr "z" (IntegerExpr 1 (Position 10 11)) (Position 10 9),
+                    KeywordArgExpr "b" (IntegerExpr 2 (Position 10 16)) (Position 10 14)
+                  ]
+                  (Position 10 7)
+              )
               (Position 10 1)
           ]
       )
-      `shouldBe` Left "Name error: undefined identifier missing at 10:11"
+      `shouldBe` Left "Argument error: unexpected keyword argument z at 10:9"
+
+    evalProgram
+      ( Program
+          [ FunctionDefStmt "f" ["a"] [ReturnStmt (IdentifierExpr "a" (Position 9 10)) (Position 9 3)] (Position 9 1),
+            PrintStmt
+              (CallExpr "f" [KeywordArgExpr "b" (CallExpr "len" [IntegerExpr 1 (Position 10 17)] (Position 10 13)) (Position 10 11)] (Position 10 7))
+              (Position 10 1)
+          ]
+      )
+      `shouldBe` Left "Type error: len expects string or list at 10:13"
+
+    evalProgram
+      ( Program
+          [ FunctionDefStmt "f" ["a"] [ReturnStmt (IdentifierExpr "a" (Position 11 10)) (Position 11 3)] (Position 11 1),
+            PrintStmt
+              (CallExpr "f" [KeywordArgExpr "b" (IdentifierExpr "missing" (Position 12 11)) (Position 12 11)] (Position 12 7))
+              (Position 12 1)
+          ]
+      )
+      `shouldBe` Left "Name error: undefined identifier missing at 12:11"
 
     evalProgram
       ( Program
@@ -114,6 +147,24 @@ spec = describe "runtime error reporting" $ do
           ]
       )
       `shouldBe` Left "Argument error: multiple values for parameter a at 9:18"
+
+    evalProgram
+      ( Program
+          [ FunctionDefStmt "f" ["a", "b"] [ReturnStmt (IdentifierExpr "a" (Position 10 10)) (Position 10 3)] (Position 10 1),
+            PrintStmt
+              ( CallExpr
+                  "f"
+                  [ IntegerExpr 1 (Position 11 9),
+                    IntegerExpr 2 (Position 11 12),
+                    KeywordArgExpr "b" (IntegerExpr 3 (Position 11 17)) (Position 11 15),
+                    KeywordArgExpr "a" (IntegerExpr 4 (Position 11 24)) (Position 11 22)
+                  ]
+                  (Position 11 7)
+              )
+              (Position 11 1)
+          ]
+      )
+      `shouldBe` Left "Argument error: multiple values for parameter b at 11:15"
 
     evalProgram
       ( Program
@@ -178,72 +229,6 @@ spec = describe "runtime error reporting" $ do
           ]
       )
       `shouldBe` Left "Name error: undefined identifier missing at 17:20"
-
-    evalProgram
-      ( Program
-          [ FunctionDefDefaultsStmt
-              "f"
-              ["a", "b", "c"]
-              [("c", CallExpr "len" [KeywordArgExpr "x" (ListExpr [IntegerExpr 1 (Position 18 24)] (Position 18 23)) (Position 18 21)] (Position 18 16))]
-              [ReturnStmt (IdentifierExpr "a" (Position 19 10)) (Position 19 3)]
-              (Position 18 1),
-            PrintStmt
-              ( CallExpr
-                  "f"
-                  [ KeywordArgExpr "a" (IntegerExpr 1 (Position 20 13)) (Position 20 11),
-                    KeywordArgExpr "a" (IntegerExpr 2 (Position 20 20)) (Position 20 18),
-                    KeywordArgExpr "b" (IntegerExpr 3 (Position 20 27)) (Position 20 25)
-                  ]
-                  (Position 20 7)
-              )
-              (Position 20 1)
-          ]
-      )
-      `shouldBe` Left "Argument error: duplicate keyword argument a at 20:18"
-
-    evalProgram
-      ( Program
-          [ FunctionDefDefaultsStmt
-              "f"
-              ["a", "b", "c"]
-              [("c", CallExpr "len" [KeywordArgExpr "x" (ListExpr [IntegerExpr 1 (Position 22 24)] (Position 22 23)) (Position 22 21)] (Position 22 16))]
-              [ReturnStmt (IdentifierExpr "a" (Position 23 10)) (Position 23 3)]
-              (Position 22 1),
-            PrintStmt
-              ( CallExpr
-                  "f"
-                  [ KeywordArgExpr "a" (IntegerExpr 1 (Position 24 13)) (Position 24 11),
-                    KeywordArgExpr "b" (IntegerExpr 2 (Position 24 20)) (Position 24 18),
-                    KeywordArgExpr "d" (IntegerExpr 3 (Position 24 27)) (Position 24 25)
-                  ]
-                  (Position 24 7)
-              )
-              (Position 24 1)
-          ]
-      )
-      `shouldBe` Left "Argument error: unexpected keyword argument d at 24:25"
-
-    evalProgram
-      ( Program
-          [ FunctionDefDefaultsStmt
-              "f"
-              ["a", "b", "c"]
-              [("c", CallExpr "len" [KeywordArgExpr "x" (ListExpr [IntegerExpr 1 (Position 26 24)] (Position 26 23)) (Position 26 21)] (Position 26 16))]
-              [ReturnStmt (IdentifierExpr "a" (Position 27 10)) (Position 27 3)]
-              (Position 26 1),
-            PrintStmt
-              ( CallExpr
-                  "f"
-                  [ IntegerExpr 1 (Position 28 9),
-                    KeywordArgExpr "a" (IntegerExpr 2 (Position 28 14)) (Position 28 12),
-                    KeywordArgExpr "b" (IntegerExpr 3 (Position 28 21)) (Position 28 19)
-                  ]
-                  (Position 28 7)
-              )
-              (Position 28 1)
-          ]
-      )
-      `shouldBe` Left "Argument error: multiple values for parameter a at 28:12"
 
   it "prioritizes first keyword evaluation error over duplicate keyword detection at evaluator layer" $ do
     evalProgram
@@ -312,6 +297,147 @@ spec = describe "runtime error reporting" $ do
           ]
       )
       `shouldBe` Left "Argument error: duplicate keyword argument a at 21:18"
+
+  it "reports first duplicate keyword argument in source order at evaluator layer" $ do
+    evalProgram
+      ( Program
+          [ FunctionDefStmt "f" ["a", "b"] [ReturnStmt (IdentifierExpr "a" (Position 30 10)) (Position 30 3)] (Position 29 1),
+            PrintStmt
+              ( CallExpr
+                  "f"
+                  [ KeywordArgExpr "a" (IntegerExpr 1 (Position 31 13)) (Position 31 11),
+                    KeywordArgExpr "b" (IntegerExpr 2 (Position 31 20)) (Position 31 18),
+                    KeywordArgExpr "a" (IntegerExpr 3 (Position 31 27)) (Position 31 25),
+                    KeywordArgExpr "b" (IntegerExpr 4 (Position 31 34)) (Position 31 32)
+                  ]
+                  (Position 31 7)
+              )
+              (Position 31 1)
+          ]
+      )
+      `shouldBe` Left "Argument error: duplicate keyword argument a at 31:25"
+
+  it "prioritizes call-site binding errors over default builtin keyword rejection at evaluator layer" $ do
+    evalProgram
+      ( Program
+          [ FunctionDefDefaultsStmt
+              "f"
+              ["a", "b", "c"]
+              [("c", CallExpr "len" [KeywordArgExpr "x" (ListExpr [IntegerExpr 1 (Position 18 24)] (Position 18 23)) (Position 18 21)] (Position 18 16))]
+              [ReturnStmt (IdentifierExpr "a" (Position 19 10)) (Position 19 3)]
+              (Position 18 1),
+            PrintStmt
+              ( CallExpr
+                  "f"
+                  [ KeywordArgExpr "a" (IntegerExpr 1 (Position 20 13)) (Position 20 11),
+                    KeywordArgExpr "a" (IntegerExpr 2 (Position 20 20)) (Position 20 18),
+                    KeywordArgExpr "b" (IntegerExpr 3 (Position 20 27)) (Position 20 25)
+                  ]
+                  (Position 20 7)
+              )
+              (Position 20 1)
+          ]
+      )
+      `shouldBe` Left "Argument error: duplicate keyword argument a at 20:18"
+
+    evalProgram
+      ( Program
+          [ FunctionDefDefaultsStmt
+              "f"
+              ["a", "b", "c"]
+              [("c", CallExpr "len" [KeywordArgExpr "x" (ListExpr [IntegerExpr 1 (Position 22 24)] (Position 22 23)) (Position 22 21)] (Position 22 16))]
+              [ReturnStmt (IdentifierExpr "a" (Position 23 10)) (Position 23 3)]
+              (Position 22 1),
+            PrintStmt
+              ( CallExpr
+                  "f"
+                  [ KeywordArgExpr "a" (IntegerExpr 1 (Position 24 13)) (Position 24 11),
+                    KeywordArgExpr "b" (IntegerExpr 2 (Position 24 20)) (Position 24 18),
+                    KeywordArgExpr "d" (IntegerExpr 3 (Position 24 27)) (Position 24 25)
+                  ]
+                  (Position 24 7)
+              )
+              (Position 24 1)
+          ]
+      )
+      `shouldBe` Left "Argument error: unexpected keyword argument d at 24:25"
+
+    evalProgram
+      ( Program
+          [ FunctionDefDefaultsStmt
+              "f"
+              ["a", "b", "c"]
+              [("c", CallExpr "len" [KeywordArgExpr "x" (ListExpr [IntegerExpr 1 (Position 26 24)] (Position 26 23)) (Position 26 21)] (Position 26 16))]
+              [ReturnStmt (IdentifierExpr "a" (Position 27 10)) (Position 27 3)]
+              (Position 26 1),
+            PrintStmt
+              ( CallExpr
+                  "f"
+                  [ IntegerExpr 1 (Position 28 9),
+                    KeywordArgExpr "a" (IntegerExpr 2 (Position 28 14)) (Position 28 12),
+                    KeywordArgExpr "b" (IntegerExpr 3 (Position 28 21)) (Position 28 19)
+                  ]
+                  (Position 28 7)
+              )
+              (Position 28 1)
+          ]
+      )
+      `shouldBe` Left "Argument error: multiple values for parameter a at 28:12"
+
+  it "prioritizes unexpected keyword error over multiple values error at evaluator layer" $ do
+    evalProgram
+      ( Program
+          [ FunctionDefStmt "f" ["a"] [ReturnStmt (IdentifierExpr "a" (Position 22 10)) (Position 22 3)] (Position 22 1),
+            PrintStmt
+              ( CallExpr
+                  "f"
+                  [ IntegerExpr 1 (Position 23 9),
+                    KeywordArgExpr "a" (IntegerExpr 2 (Position 23 14)) (Position 23 12),
+                    KeywordArgExpr "b" (IntegerExpr 3 (Position 23 21)) (Position 23 19)
+                  ]
+                  (Position 23 7)
+              )
+              (Position 23 1)
+          ]
+      )
+      `shouldBe` Left "Argument error: unexpected keyword argument b at 23:19"
+
+  it "reports user-defined count mismatch at call-site position at evaluator layer" $ do
+    evalProgram
+      ( Program
+          [ FunctionDefStmt "add" ["a"] [ReturnStmt (IdentifierExpr "a" (Position 32 10)) (Position 32 3)] (Position 31 1),
+            PrintStmt
+              (CallExpr "add" [IntegerExpr 1 (Position 33 11), IntegerExpr 2 (Position 33 14)] (Position 33 7))
+              (Position 33 1)
+          ]
+      )
+      `shouldBe` Left "Argument count mismatch when calling add at 33:7"
+
+    evalProgram
+      ( Program
+          [ FunctionDefStmt "add" ["a", "b"] [ReturnStmt (IdentifierExpr "a" (Position 35 10)) (Position 35 3)] (Position 34 1),
+            PrintStmt
+              (CallExpr "add" [KeywordArgExpr "a" (IntegerExpr 1 (Position 36 13)) (Position 36 11)] (Position 36 7))
+              (Position 36 1)
+          ]
+      )
+      `shouldBe` Left "Argument count mismatch when calling add at 36:7"
+
+    evalProgram
+      ( Program
+          [ FunctionDefStmt "add" ["a"] [ReturnStmt (IdentifierExpr "a" (Position 38 10)) (Position 38 3)] (Position 37 1),
+            PrintStmt
+              ( CallExpr
+                  "add"
+                  [ KeywordArgExpr "a" (IntegerExpr 1 (Position 39 13)) (Position 39 11),
+                    IntegerExpr 2 (Position 39 16)
+                  ]
+                  (Position 39 7)
+              )
+              (Position 39 1)
+          ]
+      )
+      `shouldBe` Left "Argument count mismatch when calling add at 39:7"
 
   it "reports clear type error for unsupported mixed types in plus" $ do
     evalProgram
@@ -643,6 +769,38 @@ spec = describe "runtime error reporting" $ do
       )
       `shouldBe` Left "Type error: len expects string or list at 60:11"
 
+  it "prioritizes count mismatch over default builtin keyword rejection with keyword call at evaluator layer" $ do
+    evalProgram
+      ( Program
+          [ FunctionDefDefaultsStmt
+              "f"
+              ["a", "b", "c"]
+              [("c", CallExpr "len" [KeywordArgExpr "x" (ListExpr [IntegerExpr 1 (Position 62 24)] (Position 62 23)) (Position 62 21)] (Position 62 16))]
+              [ReturnStmt (IdentifierExpr "a" (Position 63 10)) (Position 63 3)]
+              (Position 62 1),
+            PrintStmt
+              (CallExpr "f" [KeywordArgExpr "a" (IntegerExpr 1 (Position 64 11)) (Position 64 9)] (Position 64 7))
+              (Position 64 1)
+          ]
+      )
+      `shouldBe` Left "Argument count mismatch when calling f at 64:7"
+
+  it "prioritizes count mismatch over default builtin keyword rejection with positional call at evaluator layer" $ do
+    evalProgram
+      ( Program
+          [ FunctionDefDefaultsStmt
+              "f"
+              ["a", "b", "c"]
+              [("c", CallExpr "len" [KeywordArgExpr "x" (ListExpr [IntegerExpr 1 (Position 66 24)] (Position 66 23)) (Position 66 21)] (Position 66 16))]
+              [ReturnStmt (IdentifierExpr "a" (Position 67 10)) (Position 67 3)]
+              (Position 66 1),
+            PrintStmt
+              (CallExpr "f" [IntegerExpr 1 (Position 68 9)] (Position 68 7))
+              (Position 68 1)
+          ]
+      )
+      `shouldBe` Left "Argument count mismatch when calling f at 68:7"
+
   it "prioritizes leftmost argument evaluation error in mixed positional and keyword call at evaluator layer" $ do
     evalProgram
       ( Program
@@ -774,20 +932,13 @@ spec = describe "runtime error reporting" $ do
       )
       `shouldBe` Left "Argument count mismatch when calling append at 20:7"
 
-  it "reports dictionary builtin errors" $ do
+  it "reports dictionary builtin type and value errors" $ do
     evalProgram
       ( Program
           [ PrintStmt (CallExpr "keys" [IntegerExpr 1 (Position 21 12)] (Position 21 7)) (Position 21 1)
           ]
       )
       `shouldBe` Left "Type error: keys expects dict at 21:7"
-
-    evalProgram
-      ( Program
-          [ PrintStmt (CallExpr "keys" [] (Position 22 7)) (Position 22 1)
-          ]
-      )
-      `shouldBe` Left "Argument count mismatch when calling keys at 22:7"
 
     evalProgram
       ( Program
@@ -805,24 +956,10 @@ spec = describe "runtime error reporting" $ do
 
     evalProgram
       ( Program
-          [ PrintStmt (CallExpr "get" [DictExpr [] (Position 24 12)] (Position 24 7)) (Position 24 1)
-          ]
-      )
-      `shouldBe` Left "Argument count mismatch when calling get at 24:7"
-
-    evalProgram
-      ( Program
           [ PrintStmt (CallExpr "values" [IntegerExpr 1 (Position 25 14)] (Position 25 7)) (Position 25 1)
           ]
       )
       `shouldBe` Left "Type error: values expects dict at 25:7"
-
-    evalProgram
-      ( Program
-          [ PrintStmt (CallExpr "items" [] (Position 26 7)) (Position 26 1)
-          ]
-      )
-      `shouldBe` Left "Argument count mismatch when calling items at 26:7"
 
     evalProgram
       ( Program
@@ -837,6 +974,42 @@ spec = describe "runtime error reporting" $ do
           ]
       )
       `shouldBe` Left "Type error: update expects dict as second argument at 28:7"
+
+  it "reports dictionary builtin argument count mismatches" $ do
+    evalProgram
+      ( Program
+          [ PrintStmt (CallExpr "keys" [] (Position 22 7)) (Position 22 1)
+          ]
+      )
+      `shouldBe` Left "Argument count mismatch when calling keys at 22:7"
+
+    evalProgram
+      ( Program
+          [ PrintStmt (CallExpr "get" [DictExpr [] (Position 24 12)] (Position 24 7)) (Position 24 1)
+          ]
+      )
+      `shouldBe` Left "Argument count mismatch when calling get at 24:7"
+
+    evalProgram
+      ( Program
+          [ PrintStmt (CallExpr "items" [] (Position 26 7)) (Position 26 1)
+          ]
+      )
+      `shouldBe` Left "Argument count mismatch when calling items at 26:7"
+
+    evalProgram
+      ( Program
+          [ PrintStmt (CallExpr "update" [DictExpr [] (Position 29 14)] (Position 29 7)) (Position 29 1)
+          ]
+      )
+      `shouldBe` Left "Argument count mismatch when calling update at 29:7"
+
+    evalProgram
+      ( Program
+          [ PrintStmt (CallExpr "setdefault" [DictExpr [] (Position 30 18)] (Position 30 7)) (Position 30 1)
+          ]
+      )
+      `shouldBe` Left "Argument count mismatch when calling setdefault at 30:7"
 
   it "reports extended range builtin errors" $ do
     evalProgram
@@ -892,7 +1065,7 @@ spec = describe "runtime error reporting" $ do
       )
       `shouldBe` Left "Type error: unary - expects int at 23:7"
 
-  it "reports pop builtin errors" $ do
+  it "reports pop builtin type and value errors" $ do
     evalProgram
       ( Program
           [ PrintStmt (CallExpr "pop" [ListExpr [] (Position 24 10)] (Position 24 7)) (Position 24 1)
@@ -909,13 +1082,6 @@ spec = describe "runtime error reporting" $ do
 
     evalProgram
       ( Program
-          [ PrintStmt (CallExpr "pop" [ListExpr [IntegerExpr 1 (Position 26 11)] (Position 26 10), IntegerExpr 0 (Position 26 14)] (Position 26 7)) (Position 26 1)
-          ]
-      )
-      `shouldBe` Left "Argument count mismatch when calling pop at 26:7"
-
-    evalProgram
-      ( Program
           [ PrintStmt (CallExpr "pop" [DictExpr [(IntegerExpr 1 (Position 27 11), IntegerExpr 2 (Position 27 14))] (Position 27 10), IntegerExpr 9 (Position 27 18)] (Position 27 7)) (Position 27 1)
           ]
       )
@@ -928,7 +1094,15 @@ spec = describe "runtime error reporting" $ do
       )
       `shouldBe` Left "Type error: pop expects dict as first argument at 28:7"
 
-  it "reports clear builtin errors" $ do
+  it "reports pop builtin argument count mismatches" $ do
+    evalProgram
+      ( Program
+          [ PrintStmt (CallExpr "pop" [ListExpr [IntegerExpr 1 (Position 26 11)] (Position 26 10), IntegerExpr 0 (Position 26 14)] (Position 26 7)) (Position 26 1)
+          ]
+      )
+      `shouldBe` Left "Argument count mismatch when calling pop at 26:7"
+
+  it "reports clear builtin type errors" $ do
     evalProgram
       ( Program
           [ PrintStmt (CallExpr "clear" [IntegerExpr 1 (Position 27 11)] (Position 27 7)) (Position 27 1)
@@ -936,6 +1110,7 @@ spec = describe "runtime error reporting" $ do
       )
       `shouldBe` Left "Type error: clear expects list or dict at 27:7"
 
+  it "reports clear builtin argument count mismatches" $ do
     evalProgram
       ( Program
           [ PrintStmt (CallExpr "clear" [ListExpr [IntegerExpr 1 (Position 28 11)] (Position 28 10), IntegerExpr 0 (Position 28 14)] (Position 28 7)) (Position 28 1)
@@ -943,7 +1118,7 @@ spec = describe "runtime error reporting" $ do
       )
       `shouldBe` Left "Argument count mismatch when calling clear at 28:7"
 
-  it "reports setdefault builtin errors" $ do
+  it "reports setdefault builtin type errors" $ do
     evalProgram
       ( Program
           [ PrintStmt (CallExpr "setdefault" [IntegerExpr 1 (Position 29 11), IntegerExpr 2 (Position 29 14), IntegerExpr 3 (Position 29 17)] (Position 29 7)) (Position 29 1)
@@ -958,7 +1133,7 @@ spec = describe "runtime error reporting" $ do
       )
       `shouldBe` Left "Type error: setdefault expects dict as first argument at 30:7"
 
-  it "reports insert builtin errors" $ do
+  it "reports insert builtin type errors" $ do
     evalProgram
       ( Program
           [ PrintStmt (CallExpr "insert" [IntegerExpr 1 (Position 31 11), IntegerExpr 0 (Position 31 14), IntegerExpr 2 (Position 31 17)] (Position 31 7)) (Position 31 1)
@@ -973,6 +1148,7 @@ spec = describe "runtime error reporting" $ do
       )
       `shouldBe` Left "Type error: insert expects int index at 32:7"
 
+  it "reports insert builtin argument count mismatches" $ do
     evalProgram
       ( Program
           [ PrintStmt (CallExpr "insert" [ListExpr [] (Position 33 10), IntegerExpr 0 (Position 33 14)] (Position 33 7)) (Position 33 1)
@@ -980,7 +1156,7 @@ spec = describe "runtime error reporting" $ do
       )
       `shouldBe` Left "Argument count mismatch when calling insert at 33:7"
 
-  it "reports remove builtin errors" $ do
+  it "reports remove builtin type and value errors" $ do
     evalProgram
       ( Program
           [ PrintStmt (CallExpr "remove" [IntegerExpr 1 (Position 34 11), IntegerExpr 2 (Position 34 14)] (Position 34 7)) (Position 34 1)
@@ -995,6 +1171,7 @@ spec = describe "runtime error reporting" $ do
       )
       `shouldBe` Left "Value error: remove value not found at 35:7"
 
+  it "reports remove builtin argument count mismatches" $ do
     evalProgram
       ( Program
           [ PrintStmt (CallExpr "remove" [ListExpr [IntegerExpr 1 (Position 36 11)] (Position 36 10)] (Position 36 7)) (Position 36 1)

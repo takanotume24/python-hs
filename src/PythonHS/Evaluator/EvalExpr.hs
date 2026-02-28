@@ -74,6 +74,7 @@ evalExpr evalStatementsFn env fenv expr =
     exprPos (BinaryExpr _ _ _ pos) = pos
     exprPos (CallExpr _ _ pos) = pos
 
+    expectTruthy :: String -> Position -> Value -> Either String Int
     expectTruthy _ _ (IntValue n) = Right (if n == 0 then 0 else 1)
     expectTruthy _ _ NoneValue = Right 0
     expectTruthy _ _ (StringValue s) = Right (if null s then 0 else 1)

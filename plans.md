@@ -135,6 +135,19 @@
   - [x] 仕様固定（エラー優先順位: 引数評価 vs default評価）: 呼び出し時に明示引数式の評価エラーと未指定default式の評価エラーが競合する場合、明示引数式のエラーを先に返すことを Runner/Evaluator で固定
   - [x] 仕様固定（エラー優先順位: 引数評価 vs default内builtin keyword拒否）: `def f(a, b=len(x=[1]))` で呼び出し時に明示/positional 引数式の評価エラーがある場合、未指定default側の builtin keyword 未対応エラーより先に引数式エラーを返すことを Runner/Evaluator で固定
   - [x] 仕様固定（エラー優先順位: duplicate/unexpected/multiple values vs default内builtin keyword拒否）: `def f(a,b,c=len(x=[1]))` の呼び出しで `duplicate keyword` / `unexpected keyword` / `multiple values` が起こる場合、未指定default側の builtin keyword 未対応エラーより先に各引数束縛エラーを返すことを Runner/Evaluator で固定
+  - [x] 仕様固定（エラー優先順位: count mismatch vs default内builtin keyword拒否）: `def f(a,b,c=len(x=[1]))` の呼び出しで必須引数不足がある場合、未指定default側の builtin keyword 未対応エラーより先に `Argument count mismatch` を返すことを Runner/Evaluator で固定
+  - [x] 仕様固定（count mismatch の位置規約）: ユーザー定義関数で `count mismatch` が発生する場合（引数過多・必須不足・keyword後positional の AST 直指定ケースを含む）、常に call-site 位置（`CallExpr` 位置）を報告することを Runner/Evaluator で固定
+  - [x] 仕様固定（エラー優先順位: unexpected keyword vs multiple values）: 同一呼び出しで未知キーワードと多重束縛が同時に起こり得る場合（`f(1, a=2, b=3)`）、`multiple values` より先に `unexpected keyword` を返すことを Runner/Evaluator で固定
+  - [x] 仕様固定（unexpected keyword の位置優先）: `f(1, z=2, b=3)` のように `unexpected keyword` と `count mismatch` が競合し得る場合でも、`count mismatch` の呼び出し位置ではなく最初の未知キーワード位置（`z`）を報告することを Runner/Evaluator で固定
+  - [x] 仕様固定（unexpected keyword の報告順）: 未知キーワードが複数ある呼び出し（`f(z=1, b=2)`）では、辞書順ではなくソース順で最初に出現した未知キーワード（`z`）を報告することを Runner/Evaluator で固定
+  - [x] 仕様固定（duplicate keyword の報告順）: 同一呼び出しで複数の duplicate 候補がある場合（`f(a=1, b=2, a=3, b=4)`）、ソース順で最初に検出される duplicate（`a`）を報告することを Runner/Evaluator で固定
+  - [x] 仕様固定（multiple values の報告順）: 同一呼び出しで複数の multiple values 候補がある場合（`f(1,2,b=3,a=4)`）、パラメータ順ではなくソース順で最初に衝突した keyword 側（`b`）を報告することを Runner/Evaluator で固定
+  - [x] 仕様固定（builtin count mismatch の位置規約）: 組み込み関数/メソッド呼び出し（`len` / `update` / `setdefault`）で引数個数不一致が発生する場合、常に call-site 位置を報告することを Runner/Evaluator で固定
+  - [x] 回帰重複固定（RunnerCore）: 上記 builtin count mismatch の call-site 位置規約を `RunnerCoreSpec`（`len()` / `{}.update()`）にも重複追加し、統合回帰の耐性を強化
+  - [x] テスト可読性改善: `RuntimeErrorSpec` の巨大ブロック（function call argument errors）から default衝突3ケースを独立 `it` へ分割し、仕様不変のまま保守性を向上
+  - [x] テスト可読性改善: `RuntimeErrorSpec` の `reports dictionary builtin errors` を「型/値エラー」と「引数個数不一致」に分割し、仕様不変のまま見通しを改善
+  - [x] テスト可読性改善: `RuntimeErrorSpec` の `reports pop builtin errors` を「型/値エラー」と「引数個数不一致」に分割し、仕様不変のまま見通しを改善
+  - [x] テスト可読性改善: `RuntimeErrorSpec` の `clear` / `insert` / `remove` builtin エラーブロックを「型/値エラー」と「引数個数不一致」に分割し、`setdefault` は型エラー専用名へ整理して仕様不変のまま可読性を改善
 
   - [x] （default参照・評価順）
   - [x] 仕様固定（評価順: positional + keyword + default）: 混在呼び出し（例: `add(probe(1), c=probe(3))`）では positional/keyword 引数式を先に左から評価し、未指定 default式（例: `b=probe(a)`）を後続評価する順序を Runner/Evaluator で固定
