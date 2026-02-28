@@ -178,6 +178,33 @@ spec = describe "runSource (integration edge/error)" $ do
   it "reports Name error when default expression references later parameter" $ do
     runSource "def f(a, b = c, c = 2):\n  return a + b + c\nprint f(1)\n" `shouldBe` Left "Name error: undefined identifier c at 1:14"
 
+  it "reports Name error position from composite default expression" $ do
+    runSource "def f(a, b = 2, c = b + d):\n  return a + b + c\nprint f(1)\n" `shouldBe` Left "Name error: undefined identifier d at 1:25"
+
+  it "reports builtin type error from default expression using bound parameter" $ do
+    runSource "def f(a, b = len(a)):\n  return a + b\nprint f(1)\n" `shouldBe` Left "Type error: len expects string or list at 1:14"
+
+  it "prioritizes explicit argument evaluation error over default expression error" $ do
+    runSource "def f(a, b = 1 / 0):\n  return a + b\nprint f(a=len(1))\n" `shouldBe` Left "Type error: len expects string or list at 3:11"
+
+  it "prioritizes positional argument evaluation error over default expression error" $ do
+    runSource "def f(a, b = 1 / 0):\n  return a + b\nprint f(len(1))\n" `shouldBe` Left "Type error: len expects string or list at 3:9"
+
+  it "prioritizes leftmost argument evaluation error in mixed positional and keyword call" $ do
+    runSource "def f(a, b):\n  return a + b\nprint f(len(1), b=len(1))\n" `shouldBe` Left "Type error: len expects string or list at 3:9"
+
+  it "prioritizes leftmost argument evaluation error in keyword-only call" $ do
+    runSource "def f(a, b):\n  return a + b\nprint f(a=len(1), b=len(1))\n" `shouldBe` Left "Type error: len expects string or list at 3:11"
+
+  it "reports right keyword argument evaluation error after left keyword succeeds" $ do
+    runSource "def f(a, b):\n  return a + b\nprint f(a=1, b=len(1))\n" `shouldBe` Left "Type error: len expects string or list at 3:16"
+
+  it "reports keyword argument evaluation error after positional argument succeeds" $ do
+    runSource "def f(a, b):\n  return a + b\nprint f(1, b=len(1))\n" `shouldBe` Left "Type error: len expects string or list at 3:14"
+
+  it "reports Name error position inside builtin default list expression" $ do
+    runSource "def f(a, b = len([a, missing])):\n  return a + b\nprint f(1)\n" `shouldBe` Left "Name error: undefined identifier missing at 1:22"
+
   it "prioritizes duplicate keyword error over unexpected keyword error" $ do
     runSource "def f(a):\n  return a\nprint f(b=1, b=2)\n" `shouldBe` Left "Argument error: duplicate keyword argument b at 3:14"
 

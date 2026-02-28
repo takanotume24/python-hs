@@ -282,6 +282,158 @@ spec = describe "runtime error reporting" $ do
       )
       `shouldBe` Left "Name error: undefined identifier c at 34:14"
 
+  it "reports Name error position from composite default expression at evaluator layer" $ do
+    evalProgram
+      ( Program
+          [ FunctionDefDefaultsStmt
+              "f"
+              ["a", "b", "c"]
+              [ ("b", IntegerExpr 2 (Position 38 14)),
+                ("c", BinaryExpr AddOperator (IdentifierExpr "b" (Position 38 21)) (IdentifierExpr "d" (Position 38 25)) (Position 38 23))
+              ]
+              [ ReturnStmt
+                  ( BinaryExpr
+                      AddOperator
+                      (BinaryExpr AddOperator (IdentifierExpr "a" (Position 39 10)) (IdentifierExpr "b" (Position 39 14)) (Position 39 12))
+                      (IdentifierExpr "c" (Position 39 18))
+                      (Position 39 16)
+                  )
+                  (Position 39 3)
+              ]
+              (Position 38 1),
+            PrintStmt (CallExpr "f" [IntegerExpr 1 (Position 40 9)] (Position 40 7)) (Position 40 1)
+          ]
+      )
+      `shouldBe` Left "Name error: undefined identifier d at 38:25"
+
+  it "reports builtin type error from default expression using bound parameter at evaluator layer" $ do
+    evalProgram
+      ( Program
+          [ FunctionDefDefaultsStmt
+              "f"
+              ["a", "b"]
+              [("b", CallExpr "len" [IdentifierExpr "a" (Position 42 18)] (Position 42 14))]
+              [ReturnStmt (BinaryExpr AddOperator (IdentifierExpr "a" (Position 43 10)) (IdentifierExpr "b" (Position 43 14)) (Position 43 12)) (Position 43 3)]
+              (Position 42 1),
+            PrintStmt (CallExpr "f" [IntegerExpr 1 (Position 44 9)] (Position 44 7)) (Position 44 1)
+          ]
+      )
+      `shouldBe` Left "Type error: len expects string or list at 42:14"
+
+  it "prioritizes explicit argument evaluation error over default expression error at evaluator layer" $ do
+    evalProgram
+      ( Program
+          [ FunctionDefDefaultsStmt
+              "f"
+              ["a", "b"]
+              [("b", BinaryExpr DivideOperator (IntegerExpr 1 (Position 46 14)) (IntegerExpr 0 (Position 46 18)) (Position 46 16))]
+              [ReturnStmt (BinaryExpr AddOperator (IdentifierExpr "a" (Position 47 10)) (IdentifierExpr "b" (Position 47 14)) (Position 47 12)) (Position 47 3)]
+              (Position 46 1),
+            PrintStmt
+              (CallExpr "f" [KeywordArgExpr "a" (CallExpr "len" [IntegerExpr 1 (Position 48 17)] (Position 48 13)) (Position 48 11)] (Position 48 7))
+              (Position 48 1)
+          ]
+      )
+      `shouldBe` Left "Type error: len expects string or list at 48:13"
+
+  it "prioritizes positional argument evaluation error over default expression error at evaluator layer" $ do
+    evalProgram
+      ( Program
+          [ FunctionDefDefaultsStmt
+              "f"
+              ["a", "b"]
+              [("b", BinaryExpr DivideOperator (IntegerExpr 1 (Position 50 14)) (IntegerExpr 0 (Position 50 18)) (Position 50 16))]
+              [ReturnStmt (BinaryExpr AddOperator (IdentifierExpr "a" (Position 51 10)) (IdentifierExpr "b" (Position 51 14)) (Position 51 12)) (Position 51 3)]
+              (Position 50 1),
+            PrintStmt
+              (CallExpr "f" [CallExpr "len" [IntegerExpr 1 (Position 52 15)] (Position 52 11)] (Position 52 7))
+              (Position 52 1)
+          ]
+      )
+      `shouldBe` Left "Type error: len expects string or list at 52:11"
+
+  it "prioritizes leftmost argument evaluation error in mixed positional and keyword call at evaluator layer" $ do
+    evalProgram
+      ( Program
+          [ FunctionDefStmt "f" ["a", "b"] [ReturnStmt (BinaryExpr AddOperator (IdentifierExpr "a" (Position 54 10)) (IdentifierExpr "b" (Position 54 14)) (Position 54 12)) (Position 54 3)] (Position 53 1),
+            PrintStmt
+              ( CallExpr
+                  "f"
+                  [ CallExpr "len" [IntegerExpr 1 (Position 55 13)] (Position 55 9),
+                    KeywordArgExpr "b" (CallExpr "len" [IntegerExpr 1 (Position 55 24)] (Position 55 20)) (Position 55 18)
+                  ]
+                  (Position 55 7)
+              )
+              (Position 55 1)
+          ]
+      )
+      `shouldBe` Left "Type error: len expects string or list at 55:9"
+
+  it "prioritizes leftmost argument evaluation error in keyword-only call at evaluator layer" $ do
+    evalProgram
+      ( Program
+          [ FunctionDefStmt "f" ["a", "b"] [ReturnStmt (BinaryExpr AddOperator (IdentifierExpr "a" (Position 57 10)) (IdentifierExpr "b" (Position 57 14)) (Position 57 12)) (Position 57 3)] (Position 56 1),
+            PrintStmt
+              ( CallExpr
+                  "f"
+                  [ KeywordArgExpr "a" (CallExpr "len" [IntegerExpr 1 (Position 58 17)] (Position 58 13)) (Position 58 11),
+                    KeywordArgExpr "b" (CallExpr "len" [IntegerExpr 1 (Position 58 27)] (Position 58 23)) (Position 58 21)
+                  ]
+                  (Position 58 7)
+              )
+              (Position 58 1)
+          ]
+      )
+      `shouldBe` Left "Type error: len expects string or list at 58:13"
+
+  it "reports right keyword argument evaluation error after left keyword succeeds at evaluator layer" $ do
+    evalProgram
+      ( Program
+          [ FunctionDefStmt "f" ["a", "b"] [ReturnStmt (BinaryExpr AddOperator (IdentifierExpr "a" (Position 60 10)) (IdentifierExpr "b" (Position 60 14)) (Position 60 12)) (Position 60 3)] (Position 59 1),
+            PrintStmt
+              ( CallExpr
+                  "f"
+                  [ KeywordArgExpr "a" (IntegerExpr 1 (Position 61 13)) (Position 61 11),
+                    KeywordArgExpr "b" (CallExpr "len" [IntegerExpr 1 (Position 61 23)] (Position 61 19)) (Position 61 17)
+                  ]
+                  (Position 61 7)
+              )
+              (Position 61 1)
+          ]
+      )
+      `shouldBe` Left "Type error: len expects string or list at 61:19"
+
+  it "reports keyword argument evaluation error after positional argument succeeds at evaluator layer" $ do
+    evalProgram
+      ( Program
+          [ FunctionDefStmt "f" ["a", "b"] [ReturnStmt (BinaryExpr AddOperator (IdentifierExpr "a" (Position 63 10)) (IdentifierExpr "b" (Position 63 14)) (Position 63 12)) (Position 63 3)] (Position 62 1),
+            PrintStmt
+              ( CallExpr
+                  "f"
+                  [ IntegerExpr 1 (Position 64 9),
+                    KeywordArgExpr "b" (CallExpr "len" [IntegerExpr 1 (Position 64 19)] (Position 64 15)) (Position 64 13)
+                  ]
+                  (Position 64 7)
+              )
+              (Position 64 1)
+          ]
+      )
+      `shouldBe` Left "Type error: len expects string or list at 64:15"
+
+  it "reports Name error position inside builtin default list expression at evaluator layer" $ do
+    evalProgram
+      ( Program
+          [ FunctionDefDefaultsStmt
+              "f"
+              ["a", "b"]
+              [("b", CallExpr "len" [ListExpr [IdentifierExpr "a" (Position 46 19), IdentifierExpr "missing" (Position 46 22)] (Position 46 18)] (Position 46 14))]
+              [ReturnStmt (BinaryExpr AddOperator (IdentifierExpr "a" (Position 47 10)) (IdentifierExpr "b" (Position 47 14)) (Position 47 12)) (Position 47 3)]
+              (Position 46 1),
+            PrintStmt (CallExpr "f" [IntegerExpr 1 (Position 48 9)] (Position 48 7)) (Position 48 1)
+          ]
+      )
+      `shouldBe` Left "Name error: undefined identifier missing at 46:22"
+
   it "reports bool builtin errors" $ do
     evalProgram
       ( Program

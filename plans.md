@@ -115,11 +115,35 @@
 
 ## メンテナンス記録（要約）
 - 2026-03-01
+  - [x] （引数評価エラーの優先順位・位置）
+  - [x] 仕様固定（mixed call 右側keywordエラー位置）: 混在呼び出しで positional 引数式が成功し後続 keyword 引数式のみ失敗する場合（例: `f(1, b=len(1))`）、後続 keyword 引数式の位置でエラーを報告することを Runner/Evaluator で固定
+  - [x] 仕様固定（keyword-only 右側エラー位置）: keyword-only 呼び出しで左側 keyword 引数式が成功し右側のみ失敗する場合（例: `f(a=1, b=len(1))`）、右側引数式の位置でエラーを報告することを Runner/Evaluator で固定
+  - [x] 仕様固定（エラー優先順位: keyword-only の左から評価）: keyword-only 呼び出しで複数引数式がエラーになり得る場合、左端の keyword 引数式エラー（例: `f(a=len(1), b=len(1))` の `a` 側）を優先して返すことを Runner/Evaluator で固定
+  - [x] 仕様固定（エラー優先順位: positional + keyword の左から評価）: 混在呼び出しで positional/keyword 両方の引数式がエラーになり得る場合、左端の引数式エラー（例: `f(len(1), b=len(1))` の先頭 `len(1)`）を優先して返すことを Runner/Evaluator で固定
+  - [x] 仕様固定（エラー優先順位: positional引数評価 vs default評価）: 呼び出し時に positional 引数式の評価エラーと未指定default式の評価エラーが競合する場合、positional 引数式のエラーを先に返すことを Runner/Evaluator で固定
+  - [x] 仕様固定（エラー優先順位: 引数評価 vs default評価）: 呼び出し時に明示引数式の評価エラーと未指定default式の評価エラーが競合する場合、明示引数式のエラーを先に返すことを Runner/Evaluator で固定
+
+  - [x] （default参照・評価順）
+  - [x] 仕様固定（評価順: positional + keyword + default）: 混在呼び出し（例: `add(probe(1), c=probe(3))`）では positional/keyword 引数式を先に左から評価し、未指定 default式（例: `b=probe(a)`）を後続評価する順序を Runner/Evaluator で固定
+  - [x] 仕様固定（keyword評価順×default参照）: keyword引数式（例: `a=probe(1)`）を先に評価し、その結果を参照する default式（例: `b=probe(a)`）が後続で評価される順序を Runner/Evaluator で固定
+  - [x] 仕様固定（default参照 + keyword束縛）: keyword引数で束縛されたパラメータ（例: `add(a=3)`）を default引数式（`b=a`）が参照できることを Runner/Evaluator で固定
+  - [x] 関数機能拡張（default参照）: default引数式は、呼び出し時に先行して束縛済みの引数/先行defaultを参照できるようにし、`def f(a, b=2, c=b)` を Runner/Evaluator で成功系固定
+  - [x] 仕様更新履歴（default参照境界）: 旧挙動では `c = b` を `Name error` として固定していたが、同日更新で先行束縛参照を許可する仕様へ移行
   - [x] 仕様固定（default参照境界）: default引数式から明示引数パラメータ（例: `c=a`）を参照できることを Runner/Evaluator で固定
   - [x] 仕様固定（default参照境界）: default引数式から後続パラメータ（例: `b=c`）を参照した場合は未束縛として `Name error`（式内位置）になることを Runner/Evaluator で固定
-  - [x] 関数機能拡張（default参照）: default引数式は、呼び出し時に先行して束縛済みの引数/先行defaultを参照できるようにし、`def f(a, b=2, c=b)` を Runner/Evaluator で成功系固定
   - [x] 仕様固定（default参照負系）: default引数式中の未知識別子参照（例: `c=d`）は引き続き `Name error`（式内位置）として Runner/Evaluator で固定
-  - [x] 仕様更新履歴（default参照境界）: 旧挙動では `c = b` を `Name error` として固定していたが、同日更新で先行束縛参照を許可する仕様へ移行
+  - [x] 仕様固定（default評価順）: 明示指定と未指定が混在する場合でも、未指定default式はパラメータ順（左から）で評価されることを Runner/Evaluator で固定
+  - [x] 仕様固定（default評価順）: 未指定defaultが複数ある場合、default式はパラメータ順（左から）で評価されることを Runner/Evaluator で固定
+  - [x] 仕様固定（default副作用）: default式内の副作用付き呼び出しは、引数が未指定のときだけ実行され、明示指定時は実行されないことを Runner/Evaluator で固定
+
+  - [x] （default式内の複合式・builtin・エラー位置）
+  - [x] 仕様固定（default + builtin副作用）: default引数式に組み込み呼び出しを含む副作用付き式（例: `c=probe(len([a,b]))`）を置いた場合、引数未指定時のみ評価されることを Runner/Evaluator で固定
+  - [x] 仕様固定（default + builtin副作用 上書き）: 上記 default が明示引数で上書きされた場合は default 式が評価されないことを Runner/Evaluator で固定
+  - [x] 仕様固定（default + builtin）: default引数式で組み込み呼び出し（例: `c=len([a,b])`）を使い、先行束縛済み引数/defaultを参照して評価できることを Runner/Evaluator で固定
+  - [x] 仕様固定（default複合式）: default引数式の複合参照（例: `c=b+a`）で、先行束縛済み引数/defaultを利用して評価できることを Runner/Evaluator で固定
+  - [x] 仕様固定（default + builtin エラー位置）: default引数式で束縛済み値を介して組み込み型エラーが発生した場合（例: `b=len(a)` かつ `a` が int）、組み込み呼び出し位置を報告することを Runner/Evaluator で固定
+  - [x] 仕様固定（default + builtin内識別子位置）: default引数式内の `len([a, missing])` のような式で未定義識別子が出た場合、識別子位置を `Name error` として報告することを Runner/Evaluator で固定
+  - [x] 仕様固定（default複合式エラー位置）: default引数の複合式内で未知識別子を参照した場合、未定義識別子の位置（例: `d`）を `Name error` として報告することを Runner/Evaluator で固定
   - [x] 仕様固定（default評価順）: 明示指定と未指定が混在する場合でも、未指定default式はパラメータ順（左から）で評価されることを Runner/Evaluator で固定
   - [x] 仕様固定（default評価順）: 未指定defaultが複数ある場合、default式はパラメータ順（左から）で評価されることを Runner/Evaluator で固定
   - [x] 仕様固定（default副作用）: default式内の副作用付き呼び出しは、引数が未指定のときだけ実行され、明示指定時は実行されないことを Runner/Evaluator で固定

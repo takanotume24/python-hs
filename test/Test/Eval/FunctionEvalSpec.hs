@@ -1,7 +1,7 @@
 module Test.Eval.FunctionEvalSpec (spec) where
 
 import PythonHS.AST.BinaryOperator (BinaryOperator (AddOperator, EqOperator))
-import PythonHS.AST.Expr (Expr (BinaryExpr, CallExpr, IdentifierExpr, IntegerExpr, KeywordArgExpr))
+import PythonHS.AST.Expr (Expr (BinaryExpr, CallExpr, IdentifierExpr, IntegerExpr, KeywordArgExpr, ListExpr))
 import PythonHS.AST.Program (Program (Program))
 import PythonHS.AST.Stmt (Stmt (AssignStmt, FunctionDefDefaultsStmt, FunctionDefStmt, GlobalStmt, IfStmt, PrintStmt, ReturnStmt))
 import PythonHS.Evaluator (evalProgram)
@@ -238,6 +238,68 @@ spec = describe "function runtime" $ do
       )
       `shouldBe` Right ["1", "4", "2", "7"]
 
+  it "evaluates keyword argument before default expression that references it at evaluator layer" $ do
+    evalProgram
+      ( Program
+          [ FunctionDefStmt
+              "probe"
+              ["x"]
+              [ PrintStmt (IdentifierExpr "x" (Position 47 9)) (Position 47 3),
+                ReturnStmt (IdentifierExpr "x" (Position 48 10)) (Position 48 3)
+              ]
+              (Position 46 1),
+            FunctionDefDefaultsStmt
+              "add"
+              ["a", "b"]
+              [("b", CallExpr "probe" [IdentifierExpr "a" (Position 49 22)] (Position 49 16))]
+              [ReturnStmt (BinaryExpr AddOperator (IdentifierExpr "a" (Position 50 10)) (IdentifierExpr "b" (Position 50 14)) (Position 50 12)) (Position 50 3)]
+              (Position 49 1),
+            PrintStmt
+              (CallExpr "add" [KeywordArgExpr "a" (CallExpr "probe" [IntegerExpr 1 (Position 51 25)] (Position 51 19)) (Position 51 17)] (Position 51 7))
+              (Position 51 1)
+          ]
+      )
+      `shouldBe` Right ["1", "1", "2"]
+
+  it "evaluates positional and keyword arguments before omitted default expressions in mixed call at evaluator layer" $ do
+    evalProgram
+      ( Program
+          [ FunctionDefStmt
+              "probe"
+              ["x"]
+              [ PrintStmt (IdentifierExpr "x" (Position 53 9)) (Position 53 3),
+                ReturnStmt (IdentifierExpr "x" (Position 54 10)) (Position 54 3)
+              ]
+              (Position 52 1),
+            FunctionDefDefaultsStmt
+              "add"
+              ["a", "b", "c"]
+              [ ("b", CallExpr "probe" [IdentifierExpr "a" (Position 55 22)] (Position 55 16)),
+                ("c", CallExpr "probe" [IntegerExpr 30 (Position 55 34)] (Position 55 28))
+              ]
+              [ ReturnStmt
+                  ( BinaryExpr
+                      AddOperator
+                      (BinaryExpr AddOperator (IdentifierExpr "a" (Position 56 10)) (IdentifierExpr "b" (Position 56 14)) (Position 56 12))
+                      (IdentifierExpr "c" (Position 56 18))
+                      (Position 56 16)
+                  )
+                  (Position 56 3)
+              ]
+              (Position 55 1),
+            PrintStmt
+              ( CallExpr
+                  "add"
+                  [ CallExpr "probe" [IntegerExpr 1 (Position 57 17)] (Position 57 11),
+                    KeywordArgExpr "c" (CallExpr "probe" [IntegerExpr 3 (Position 57 29)] (Position 57 23)) (Position 57 21)
+                  ]
+                  (Position 57 7)
+              )
+              (Position 57 1)
+          ]
+      )
+      `shouldBe` Right ["1", "3", "1", "5"]
+
   it "evaluates default expression using global value at call time at evaluator layer" $ do
     evalProgram
       ( Program
@@ -302,6 +364,140 @@ spec = describe "function runtime" $ do
           ]
       )
       `shouldBe` Right ["8"]
+
+  it "evaluates default expression referencing parameter bound by keyword argument at evaluator layer" $ do
+    evalProgram
+      ( Program
+          [ FunctionDefDefaultsStmt
+              "add"
+              ["a", "b"]
+              [("b", IdentifierExpr "a" (Position 60 14))]
+              [ReturnStmt (BinaryExpr AddOperator (IdentifierExpr "a" (Position 61 10)) (IdentifierExpr "b" (Position 61 14)) (Position 61 12)) (Position 61 3)]
+              (Position 60 1),
+            PrintStmt
+              (CallExpr "add" [KeywordArgExpr "a" (IntegerExpr 3 (Position 62 13)) (Position 62 11)] (Position 62 7))
+              (Position 62 1)
+          ]
+      )
+      `shouldBe` Right ["6"]
+
+  it "evaluates composite default expression referencing bound values at evaluator layer" $ do
+    evalProgram
+      ( Program
+          [ FunctionDefDefaultsStmt
+              "add"
+              ["a", "b", "c"]
+              [ ("b", IntegerExpr 2 (Position 61 14)),
+                ("c", BinaryExpr AddOperator (IdentifierExpr "b" (Position 61 21)) (IdentifierExpr "a" (Position 61 25)) (Position 61 23))
+              ]
+              [ ReturnStmt
+                  ( BinaryExpr
+                      AddOperator
+                      (BinaryExpr AddOperator (IdentifierExpr "a" (Position 62 10)) (IdentifierExpr "b" (Position 62 14)) (Position 62 12))
+                      (IdentifierExpr "c" (Position 62 18))
+                      (Position 62 16)
+                  )
+                  (Position 62 3)
+              ]
+              (Position 61 1),
+            PrintStmt (CallExpr "add" [IntegerExpr 3 (Position 63 11)] (Position 63 7)) (Position 63 1)
+          ]
+      )
+      `shouldBe` Right ["10"]
+
+  it "evaluates builtin call in default expression using bound values at evaluator layer" $ do
+    evalProgram
+      ( Program
+          [ FunctionDefDefaultsStmt
+              "add"
+              ["a", "b", "c"]
+              [ ("b", IntegerExpr 2 (Position 65 14)),
+                ("c", CallExpr "len" [ListExpr [IdentifierExpr "a" (Position 65 26), IdentifierExpr "b" (Position 65 29)] (Position 65 25)] (Position 65 21))
+              ]
+              [ ReturnStmt
+                  ( BinaryExpr
+                      AddOperator
+                      (BinaryExpr AddOperator (IdentifierExpr "a" (Position 66 10)) (IdentifierExpr "b" (Position 66 14)) (Position 66 12))
+                      (IdentifierExpr "c" (Position 66 18))
+                      (Position 66 16)
+                  )
+                  (Position 66 3)
+              ]
+              (Position 65 1),
+            PrintStmt (CallExpr "add" [IntegerExpr 3 (Position 67 11)] (Position 67 7)) (Position 67 1)
+          ]
+      )
+      `shouldBe` Right ["7"]
+
+  it "evaluates builtin default expression with side effect when omitted at evaluator layer" $ do
+    evalProgram
+      ( Program
+          [ FunctionDefStmt
+              "probe"
+              ["x"]
+              [ PrintStmt (IdentifierExpr "x" (Position 69 9)) (Position 69 3),
+                ReturnStmt (IdentifierExpr "x" (Position 70 10)) (Position 70 3)
+              ]
+              (Position 68 1),
+            FunctionDefDefaultsStmt
+              "add"
+              ["a", "b", "c"]
+              [ ("b", IntegerExpr 2 (Position 71 14)),
+                ("c", CallExpr "probe" [CallExpr "len" [ListExpr [IdentifierExpr "a" (Position 71 32), IdentifierExpr "b" (Position 71 35)] (Position 71 31)] (Position 71 27)] (Position 71 21))
+              ]
+              [ ReturnStmt
+                  ( BinaryExpr
+                      AddOperator
+                      (BinaryExpr AddOperator (IdentifierExpr "a" (Position 72 10)) (IdentifierExpr "b" (Position 72 14)) (Position 72 12))
+                      (IdentifierExpr "c" (Position 72 18))
+                      (Position 72 16)
+                  )
+                  (Position 72 3)
+              ]
+              (Position 71 1),
+            PrintStmt (CallExpr "add" [IntegerExpr 3 (Position 73 11)] (Position 73 7)) (Position 73 1)
+          ]
+      )
+      `shouldBe` Right ["2", "7"]
+
+  it "does not evaluate builtin default expression with side effect when explicitly overridden at evaluator layer" $ do
+    evalProgram
+      ( Program
+          [ FunctionDefStmt
+              "probe"
+              ["x"]
+              [ PrintStmt (IdentifierExpr "x" (Position 75 9)) (Position 75 3),
+                ReturnStmt (IdentifierExpr "x" (Position 76 10)) (Position 76 3)
+              ]
+              (Position 74 1),
+            FunctionDefDefaultsStmt
+              "add"
+              ["a", "b", "c"]
+              [ ("b", IntegerExpr 2 (Position 77 14)),
+                ("c", CallExpr "probe" [CallExpr "len" [ListExpr [IdentifierExpr "a" (Position 77 32), IdentifierExpr "b" (Position 77 35)] (Position 77 31)] (Position 77 27)] (Position 77 21))
+              ]
+              [ ReturnStmt
+                  ( BinaryExpr
+                      AddOperator
+                      (BinaryExpr AddOperator (IdentifierExpr "a" (Position 78 10)) (IdentifierExpr "b" (Position 78 14)) (Position 78 12))
+                      (IdentifierExpr "c" (Position 78 18))
+                      (Position 78 16)
+                  )
+                  (Position 78 3)
+              ]
+              (Position 77 1),
+            PrintStmt
+              ( CallExpr
+                  "add"
+                  [ IntegerExpr 3 (Position 79 11),
+                    KeywordArgExpr "c" (CallExpr "probe" [IntegerExpr 9 (Position 79 23)] (Position 79 17)) (Position 79 15)
+                  ]
+                  (Position 79 7)
+              )
+              (Position 79 1)
+          ]
+      )
+      `shouldBe` Right ["9", "14"]
 
   it "does not evaluate default side effect when keyword argument is explicitly provided at evaluator layer" $ do
     evalProgram

@@ -20,6 +20,12 @@ spec = describe "runSource (integration core)" $ do
   it "evaluates explicit args before missing default expressions" $ do
     runSource "def probe(x):\n  print x\n  return x\ndef add(a, b=probe(2), c=probe(3)):\n  return a + b + c\nprint add(a=probe(1), c=probe(4))\n" `shouldBe` Right ["1", "4", "2", "7"]
 
+  it "evaluates keyword argument before default expression that references it" $ do
+    runSource "def probe(x):\n  print x\n  return x\ndef add(a, b=probe(a)):\n  return a + b\nprint add(a=probe(1))\n" `shouldBe` Right ["1", "1", "2"]
+
+  it "evaluates positional and keyword arguments before omitted default expressions in mixed call" $ do
+    runSource "def probe(x):\n  print x\n  return x\ndef add(a, b=probe(a), c=probe(30)):\n  return a + b + c\nprint add(probe(1), c=probe(3))\n" `shouldBe` Right ["1", "3", "1", "5"]
+
   it "evaluates default expression using global value at call time" $ do
     runSource "x = 10\ndef add(a, b=x):\n  return a + b\nx = 20\nprint add(1)\n" `shouldBe` Right ["21"]
 
@@ -28,6 +34,21 @@ spec = describe "runSource (integration core)" $ do
 
   it "evaluates default expression referencing explicit argument parameter" $ do
     runSource "def add(a, b=2, c=a):\n  return a + b + c\nprint add(3)\n" `shouldBe` Right ["8"]
+
+  it "evaluates default expression referencing parameter bound by keyword argument" $ do
+    runSource "def add(a, b=a):\n  return a + b\nprint add(a=3)\n" `shouldBe` Right ["6"]
+
+  it "evaluates composite default expression referencing bound values" $ do
+    runSource "def add(a, b=2, c=b+a):\n  return a + b + c\nprint add(3)\n" `shouldBe` Right ["10"]
+
+  it "evaluates builtin call in default expression using bound values" $ do
+    runSource "def add(a, b=2, c=len([a, b])):\n  return a + b + c\nprint add(3)\n" `shouldBe` Right ["7"]
+
+  it "evaluates builtin default expression with side effect when omitted" $ do
+    runSource "def probe(x):\n  print x\n  return x\ndef add(a, b=2, c=probe(len([a, b]))):\n  return a + b + c\nprint add(3)\n" `shouldBe` Right ["2", "7"]
+
+  it "does not evaluate builtin default expression with side effect when explicitly overridden" $ do
+    runSource "def probe(x):\n  print x\n  return x\ndef add(a, b=2, c=probe(len([a, b]))):\n  return a + b + c\nprint add(3, c=probe(9))\n" `shouldBe` Right ["9", "14"]
 
   it "does not evaluate default expression side effect when argument is explicitly provided" $ do
     runSource "def probe(x):\n  print x\n  return x\ndef add(a, b=probe(2)):\n  return a + b\nprint add(1, b=3)\n" `shouldBe` Right ["4"]
