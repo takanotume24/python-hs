@@ -80,6 +80,26 @@ spec = describe "runtime error reporting" $ do
 
     evalProgram
       ( Program
+          [ FunctionDefStmt "f" ["a"] [ReturnStmt (IdentifierExpr "a" (Position 7 10)) (Position 7 3)] (Position 7 1),
+            PrintStmt
+              (CallExpr "f" [KeywordArgExpr "b" (CallExpr "len" [IntegerExpr 1 (Position 8 17)] (Position 8 13)) (Position 8 11)] (Position 8 7))
+              (Position 8 1)
+          ]
+      )
+      `shouldBe` Left "Type error: len expects string or list at 8:13"
+
+    evalProgram
+      ( Program
+          [ FunctionDefStmt "f" ["a"] [ReturnStmt (IdentifierExpr "a" (Position 9 10)) (Position 9 3)] (Position 9 1),
+            PrintStmt
+              (CallExpr "f" [KeywordArgExpr "b" (IdentifierExpr "missing" (Position 10 11)) (Position 10 11)] (Position 10 7))
+              (Position 10 1)
+          ]
+      )
+      `shouldBe` Left "Name error: undefined identifier missing at 10:11"
+
+    evalProgram
+      ( Program
           [ FunctionDefStmt "f" ["a"] [ReturnStmt (IdentifierExpr "a" (Position 8 10)) (Position 8 3)] (Position 7 1),
             PrintStmt
               ( CallExpr
@@ -94,6 +114,204 @@ spec = describe "runtime error reporting" $ do
           ]
       )
       `shouldBe` Left "Argument error: multiple values for parameter a at 9:18"
+
+    evalProgram
+      ( Program
+          [ FunctionDefStmt "f" ["a"] [ReturnStmt (IdentifierExpr "a" (Position 10 10)) (Position 10 3)] (Position 10 1),
+            PrintStmt
+              ( CallExpr
+                  "f"
+                  [ IntegerExpr 1 (Position 11 9),
+                    KeywordArgExpr "a" (CallExpr "len" [IntegerExpr 1 (Position 11 20)] (Position 11 16)) (Position 11 14)
+                  ]
+                  (Position 11 7)
+              )
+              (Position 11 1)
+          ]
+      )
+      `shouldBe` Left "Type error: len expects string or list at 11:16"
+
+    evalProgram
+      ( Program
+          [ FunctionDefStmt "f" ["a"] [ReturnStmt (IdentifierExpr "a" (Position 12 10)) (Position 12 3)] (Position 12 1),
+            PrintStmt
+              ( CallExpr
+                  "f"
+                  [ IntegerExpr 1 (Position 13 9),
+                    KeywordArgExpr "a" (IdentifierExpr "missing" (Position 13 16)) (Position 13 14)
+                  ]
+                  (Position 13 7)
+              )
+              (Position 13 1)
+          ]
+      )
+      `shouldBe` Left "Name error: undefined identifier missing at 13:16"
+
+    evalProgram
+      ( Program
+          [ FunctionDefStmt "f" ["a"] [ReturnStmt (IdentifierExpr "a" (Position 14 10)) (Position 14 3)] (Position 14 1),
+            PrintStmt
+              ( CallExpr
+                  "f"
+                  [ IntegerExpr 1 (Position 15 9),
+                    KeywordArgExpr "a" (CallExpr "len" [KeywordArgExpr "x" (ListExpr [IntegerExpr 1 (Position 15 24)] (Position 15 23)) (Position 15 21)] (Position 15 16)) (Position 15 14)
+                  ]
+                  (Position 15 7)
+              )
+              (Position 15 1)
+          ]
+      )
+      `shouldBe` Left "Argument error: keyword arguments are not supported for builtin len at 15:21"
+
+    evalProgram
+      ( Program
+          [ FunctionDefStmt "f" ["a"] [ReturnStmt (IdentifierExpr "a" (Position 16 10)) (Position 16 3)] (Position 16 1),
+            PrintStmt
+              ( CallExpr
+                  "f"
+                  [ IntegerExpr 1 (Position 17 9),
+                    KeywordArgExpr "a" (CallExpr "len" [IdentifierExpr "missing" (Position 17 20)] (Position 17 16)) (Position 17 14)
+                  ]
+                  (Position 17 7)
+              )
+              (Position 17 1)
+          ]
+      )
+      `shouldBe` Left "Name error: undefined identifier missing at 17:20"
+
+    evalProgram
+      ( Program
+          [ FunctionDefDefaultsStmt
+              "f"
+              ["a", "b", "c"]
+              [("c", CallExpr "len" [KeywordArgExpr "x" (ListExpr [IntegerExpr 1 (Position 18 24)] (Position 18 23)) (Position 18 21)] (Position 18 16))]
+              [ReturnStmt (IdentifierExpr "a" (Position 19 10)) (Position 19 3)]
+              (Position 18 1),
+            PrintStmt
+              ( CallExpr
+                  "f"
+                  [ KeywordArgExpr "a" (IntegerExpr 1 (Position 20 13)) (Position 20 11),
+                    KeywordArgExpr "a" (IntegerExpr 2 (Position 20 20)) (Position 20 18),
+                    KeywordArgExpr "b" (IntegerExpr 3 (Position 20 27)) (Position 20 25)
+                  ]
+                  (Position 20 7)
+              )
+              (Position 20 1)
+          ]
+      )
+      `shouldBe` Left "Argument error: duplicate keyword argument a at 20:18"
+
+    evalProgram
+      ( Program
+          [ FunctionDefDefaultsStmt
+              "f"
+              ["a", "b", "c"]
+              [("c", CallExpr "len" [KeywordArgExpr "x" (ListExpr [IntegerExpr 1 (Position 22 24)] (Position 22 23)) (Position 22 21)] (Position 22 16))]
+              [ReturnStmt (IdentifierExpr "a" (Position 23 10)) (Position 23 3)]
+              (Position 22 1),
+            PrintStmt
+              ( CallExpr
+                  "f"
+                  [ KeywordArgExpr "a" (IntegerExpr 1 (Position 24 13)) (Position 24 11),
+                    KeywordArgExpr "b" (IntegerExpr 2 (Position 24 20)) (Position 24 18),
+                    KeywordArgExpr "d" (IntegerExpr 3 (Position 24 27)) (Position 24 25)
+                  ]
+                  (Position 24 7)
+              )
+              (Position 24 1)
+          ]
+      )
+      `shouldBe` Left "Argument error: unexpected keyword argument d at 24:25"
+
+    evalProgram
+      ( Program
+          [ FunctionDefDefaultsStmt
+              "f"
+              ["a", "b", "c"]
+              [("c", CallExpr "len" [KeywordArgExpr "x" (ListExpr [IntegerExpr 1 (Position 26 24)] (Position 26 23)) (Position 26 21)] (Position 26 16))]
+              [ReturnStmt (IdentifierExpr "a" (Position 27 10)) (Position 27 3)]
+              (Position 26 1),
+            PrintStmt
+              ( CallExpr
+                  "f"
+                  [ IntegerExpr 1 (Position 28 9),
+                    KeywordArgExpr "a" (IntegerExpr 2 (Position 28 14)) (Position 28 12),
+                    KeywordArgExpr "b" (IntegerExpr 3 (Position 28 21)) (Position 28 19)
+                  ]
+                  (Position 28 7)
+              )
+              (Position 28 1)
+          ]
+      )
+      `shouldBe` Left "Argument error: multiple values for parameter a at 28:12"
+
+  it "prioritizes first keyword evaluation error over duplicate keyword detection at evaluator layer" $ do
+    evalProgram
+      ( Program
+          [ FunctionDefStmt "f" ["a"] [ReturnStmt (IdentifierExpr "a" (Position 12 10)) (Position 12 3)] (Position 11 1),
+            PrintStmt
+              ( CallExpr
+                  "f"
+                  [ KeywordArgExpr "a" (CallExpr "len" [IntegerExpr 1 (Position 13 17)] (Position 13 13)) (Position 13 11),
+                    KeywordArgExpr "a" (IntegerExpr 2 (Position 13 22)) (Position 13 20)
+                  ]
+                  (Position 13 7)
+              )
+              (Position 13 1)
+          ]
+      )
+      `shouldBe` Left "Type error: len expects string or list at 13:13"
+
+  it "prioritizes duplicate keyword detection over second keyword evaluation error at evaluator layer" $ do
+    evalProgram
+      ( Program
+          [ FunctionDefStmt "f" ["a"] [ReturnStmt (IdentifierExpr "a" (Position 15 10)) (Position 15 3)] (Position 14 1),
+            PrintStmt
+              ( CallExpr
+                  "f"
+                  [ KeywordArgExpr "a" (IntegerExpr 1 (Position 16 13)) (Position 16 11),
+                    KeywordArgExpr "a" (CallExpr "len" [IntegerExpr 1 (Position 16 24)] (Position 16 20)) (Position 16 18)
+                  ]
+                  (Position 16 7)
+              )
+              (Position 16 1)
+          ]
+      )
+      `shouldBe` Left "Argument error: duplicate keyword argument a at 16:18"
+
+  it "prioritizes first keyword Name error over duplicate keyword detection at evaluator layer" $ do
+    evalProgram
+      ( Program
+          [ FunctionDefStmt "f" ["a"] [ReturnStmt (IdentifierExpr "a" (Position 17 10)) (Position 17 3)] (Position 17 1),
+            PrintStmt
+              ( CallExpr
+                  "f"
+                  [ KeywordArgExpr "a" (IdentifierExpr "missing" (Position 18 11)) (Position 18 11),
+                    KeywordArgExpr "a" (IntegerExpr 2 (Position 18 22)) (Position 18 20)
+                  ]
+                  (Position 18 7)
+              )
+              (Position 18 1)
+          ]
+      )
+      `shouldBe` Left "Name error: undefined identifier missing at 18:11"
+
+  it "prioritizes duplicate keyword detection over second keyword Name error at evaluator layer" $ do
+    evalProgram
+      ( Program
+          [ FunctionDefStmt "f" ["a"] [ReturnStmt (IdentifierExpr "a" (Position 20 10)) (Position 20 3)] (Position 19 1),
+            PrintStmt
+              ( CallExpr
+                  "f"
+                  [ KeywordArgExpr "a" (IntegerExpr 1 (Position 21 13)) (Position 21 11),
+                    KeywordArgExpr "a" (IdentifierExpr "missing" (Position 21 20)) (Position 21 18)
+                  ]
+                  (Position 21 7)
+              )
+              (Position 21 1)
+          ]
+      )
+      `shouldBe` Left "Argument error: duplicate keyword argument a at 21:18"
 
   it "reports clear type error for unsupported mixed types in plus" $ do
     evalProgram
@@ -176,6 +394,32 @@ spec = describe "runtime error reporting" $ do
       )
       `shouldBe` Left "Argument error: keyword arguments are not supported for builtin len at 15:11"
 
+    evalProgram
+      ( Program
+          [ PrintStmt
+              ( CallExpr
+                  "len"
+                  [KeywordArgExpr "x" (CallExpr "len" [IntegerExpr 1 (Position 16 17)] (Position 16 13)) (Position 16 11)]
+                  (Position 16 7)
+              )
+              (Position 16 1)
+          ]
+      )
+      `shouldBe` Left "Argument error: keyword arguments are not supported for builtin len at 16:11"
+
+    evalProgram
+      ( Program
+        [ PrintStmt
+          ( CallExpr
+            "len"
+            [KeywordArgExpr "x" (IdentifierExpr "missing" (Position 17 13)) (Position 17 11)]
+            (Position 17 7)
+          )
+          (Position 17 1)
+        ]
+      )
+      `shouldBe` Left "Argument error: keyword arguments are not supported for builtin len at 17:11"
+
   it "reports method-style builtin keyword argument as unsupported at evaluator layer" $ do
     evalProgram
       ( Program
@@ -191,6 +435,21 @@ spec = describe "runtime error reporting" $ do
           ]
       )
       `shouldBe` Left "Argument error: keyword arguments are not supported for builtin update at 16:20"
+
+    evalProgram
+      ( Program
+          [ PrintStmt
+              ( CallExpr
+                  "update"
+                  [ DictExpr [] (Position 17 9),
+                    KeywordArgExpr "k" (CallExpr "len" [IntegerExpr 1 (Position 17 27)] (Position 17 23)) (Position 17 20)
+                  ]
+                  (Position 17 7)
+              )
+              (Position 17 1)
+          ]
+      )
+      `shouldBe` Left "Argument error: keyword arguments are not supported for builtin update at 17:20"
 
   it "reports runtime error position from default expression at evaluator layer" $ do
     evalProgram
@@ -351,6 +610,38 @@ spec = describe "runtime error reporting" $ do
           ]
       )
       `shouldBe` Left "Type error: len expects string or list at 52:11"
+
+  it "prioritizes explicit argument evaluation error over default builtin keyword rejection at evaluator layer" $ do
+    evalProgram
+      ( Program
+          [ FunctionDefDefaultsStmt
+              "f"
+              ["a", "b"]
+              [("b", CallExpr "len" [KeywordArgExpr "x" (ListExpr [IntegerExpr 1 (Position 54 22)] (Position 54 21)) (Position 54 20)] (Position 54 14))]
+              [ReturnStmt (BinaryExpr AddOperator (IdentifierExpr "a" (Position 55 10)) (IdentifierExpr "b" (Position 55 14)) (Position 55 12)) (Position 55 3)]
+              (Position 54 1),
+            PrintStmt
+              (CallExpr "f" [KeywordArgExpr "a" (CallExpr "len" [IntegerExpr 1 (Position 56 17)] (Position 56 13)) (Position 56 11)] (Position 56 7))
+              (Position 56 1)
+          ]
+      )
+      `shouldBe` Left "Type error: len expects string or list at 56:13"
+
+  it "prioritizes positional argument evaluation error over default builtin keyword rejection at evaluator layer" $ do
+    evalProgram
+      ( Program
+          [ FunctionDefDefaultsStmt
+              "f"
+              ["a", "b"]
+              [("b", CallExpr "len" [KeywordArgExpr "x" (ListExpr [IntegerExpr 1 (Position 58 22)] (Position 58 21)) (Position 58 20)] (Position 58 14))]
+              [ReturnStmt (BinaryExpr AddOperator (IdentifierExpr "a" (Position 59 10)) (IdentifierExpr "b" (Position 59 14)) (Position 59 12)) (Position 59 3)]
+              (Position 58 1),
+            PrintStmt
+              (CallExpr "f" [CallExpr "len" [IntegerExpr 1 (Position 60 15)] (Position 60 11)] (Position 60 7))
+              (Position 60 1)
+          ]
+      )
+      `shouldBe` Left "Type error: len expects string or list at 60:11"
 
   it "prioritizes leftmost argument evaluation error in mixed positional and keyword call at evaluator layer" $ do
     evalProgram

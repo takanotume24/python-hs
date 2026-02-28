@@ -151,17 +151,65 @@ spec = describe "runSource (integration edge/error)" $ do
   it "reports duplicate keyword argument with argument name and position" $ do
     runSource "def f(a):\n  return a\nprint f(a=1, a=2)\n" `shouldBe` Left "Argument error: duplicate keyword argument a at 3:14"
 
+  it "prioritizes first keyword evaluation error over duplicate keyword detection" $ do
+    runSource "def f(a):\n  return a\nprint f(a=len(1), a=2)\n" `shouldBe` Left "Type error: len expects string or list at 3:11"
+
+  it "prioritizes duplicate keyword detection over second keyword evaluation error" $ do
+    runSource "def f(a):\n  return a\nprint f(a=1, a=len(1))\n" `shouldBe` Left "Argument error: duplicate keyword argument a at 3:14"
+
+  it "prioritizes first keyword Name error over duplicate keyword detection" $ do
+    runSource "def f(a):\n  return a\nprint f(a=missing, a=2)\n" `shouldBe` Left "Name error: undefined identifier missing at 3:11"
+
+  it "prioritizes duplicate keyword detection over second keyword Name error" $ do
+    runSource "def f(a):\n  return a\nprint f(a=1, a=missing)\n" `shouldBe` Left "Argument error: duplicate keyword argument a at 3:14"
+
   it "reports multiple values for parameter when positional and keyword both bind it" $ do
     runSource "def f(a):\n  return a\nprint f(1, a=2)\n" `shouldBe` Left "Argument error: multiple values for parameter a at 3:12"
+
+  it "prioritizes keyword evaluation error over multiple values detection" $ do
+    runSource "def f(a):\n  return a\nprint f(1, a=len(1))\n" `shouldBe` Left "Type error: len expects string or list at 3:14"
+
+  it "prioritizes keyword Name error over multiple values detection" $ do
+    runSource "def f(a):\n  return a\nprint f(1, a=missing)\n" `shouldBe` Left "Name error: undefined identifier missing at 3:14"
+
+  it "prioritizes nested builtin keyword rejection over multiple values detection" $ do
+    runSource "def f(a):\n  return a\nprint f(1, a=len(x=[1]))\n" `shouldBe` Left "Argument error: keyword arguments are not supported for builtin len at 3:18"
+
+  it "prioritizes nested Name error over multiple values detection" $ do
+    runSource "def f(a):\n  return a\nprint f(1, a=len(missing))\n" `shouldBe` Left "Name error: undefined identifier missing at 3:18"
 
   it "reports unexpected keyword argument with argument name and position" $ do
     runSource "def f(a):\n  return a\nprint f(b=2)\n" `shouldBe` Left "Argument error: unexpected keyword argument b at 3:9"
 
+  it "prioritizes keyword evaluation error over unexpected keyword detection" $ do
+    runSource "def f(a):\n  return a\nprint f(b=len(1))\n" `shouldBe` Left "Type error: len expects string or list at 3:11"
+
+  it "prioritizes keyword Name error over unexpected keyword detection" $ do
+    runSource "def f(a):\n  return a\nprint f(b=missing)\n" `shouldBe` Left "Name error: undefined identifier missing at 3:11"
+
   it "reports builtin keyword argument as unsupported" $ do
     runSource "print len(x=[1])\n" `shouldBe` Left "Argument error: keyword arguments are not supported for builtin len at 1:11"
 
+  it "prioritizes builtin keyword rejection over keyword argument expression error" $ do
+    runSource "print len(x=len(1))\n" `shouldBe` Left "Argument error: keyword arguments are not supported for builtin len at 1:11"
+
+  it "prioritizes builtin keyword rejection over keyword argument Name error" $ do
+    runSource "print len(x=missing)\n" `shouldBe` Left "Argument error: keyword arguments are not supported for builtin len at 1:11"
+
   it "reports method-style builtin keyword argument as unsupported" $ do
     runSource "d = {}\nprint d.update(k=1)\n" `shouldBe` Left "Argument error: keyword arguments are not supported for builtin update at 2:16"
+
+  it "prioritizes method-style builtin keyword rejection over keyword argument expression error" $ do
+    runSource "d = {}\nprint d.update(k=len(1))\n" `shouldBe` Left "Argument error: keyword arguments are not supported for builtin update at 2:16"
+
+  it "prioritizes duplicate keyword detection over default builtin keyword rejection" $ do
+    runSource "def f(a, b, c = len(x=[1])):\n  return a + b + c\nprint f(a=1, a=2, b=3)\n" `shouldBe` Left "Argument error: duplicate keyword argument a at 3:14"
+
+  it "prioritizes unexpected keyword detection over default builtin keyword rejection" $ do
+    runSource "def f(a, b, c = len(x=[1])):\n  return a + b + c\nprint f(a=1, b=2, d=3)\n" `shouldBe` Left "Argument error: unexpected keyword argument d at 3:19"
+
+  it "prioritizes multiple values detection over default builtin keyword rejection" $ do
+    runSource "def f(a, b, c = len(x=[1])):\n  return a + b + c\nprint f(1, a=2, b=3)\n" `shouldBe` Left "Argument error: multiple values for parameter a at 3:12"
 
   it "reports runtime error position from default expression evaluation" $ do
     runSource "def f(a, b = 1 / 0):\n  return a + b\nprint f(1)\n" `shouldBe` Left "Value error: division by zero at 1:16"
@@ -189,6 +237,12 @@ spec = describe "runSource (integration edge/error)" $ do
 
   it "prioritizes positional argument evaluation error over default expression error" $ do
     runSource "def f(a, b = 1 / 0):\n  return a + b\nprint f(len(1))\n" `shouldBe` Left "Type error: len expects string or list at 3:9"
+
+  it "prioritizes explicit argument evaluation error over default builtin keyword rejection" $ do
+    runSource "def f(a, b = len(x=[1])):\n  return a + b\nprint f(a=len(1))\n" `shouldBe` Left "Type error: len expects string or list at 3:11"
+
+  it "prioritizes positional argument evaluation error over default builtin keyword rejection" $ do
+    runSource "def f(a, b = len(x=[1])):\n  return a + b\nprint f(len(1))\n" `shouldBe` Left "Type error: len expects string or list at 3:9"
 
   it "prioritizes leftmost argument evaluation error in mixed positional and keyword call" $ do
     runSource "def f(a, b):\n  return a + b\nprint f(len(1), b=len(1))\n" `shouldBe` Left "Type error: len expects string or list at 3:9"

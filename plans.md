@@ -116,12 +116,25 @@
 ## メンテナンス記録（要約）
 - 2026-03-01
   - [x] （引数評価エラーの優先順位・位置）
+  - [x] 仕様固定（エラー優先順位: multiple values と内側Name errorの衝突）: `f(1, a=len(missing))` は multiple values 検出より先に内側 `len` の `Name error` を返すことを Runner/Evaluator で固定
+  - [x] 仕様固定（エラー優先順位: multiple values と内側builtin keyword拒否の衝突）: `f(1, a=len(x=[1]))` は multiple values 検出より先に内側 `len` の builtin keyword 未対応エラーを返すことを Runner/Evaluator で固定
+  - [x] 仕様固定（エラー優先順位: unexpected keyword と Name error の衝突）: `f(b=missing)` は unexpected keyword 検出より先に keyword 引数式の `Name error` を返し、`f(b=2)`/`f(1, b=2)` は従来どおり unexpected keyword を返すことを Runner/Evaluator で固定
+  - [x] 仕様固定（エラー優先順位: multiple values と Name error の衝突）: `f(1, a=missing)` は keyword 引数式の `Name error` を返し、`f(1, a=2)` は multiple values 検出を返すことを Runner/Evaluator で固定
+  - [x] 仕様固定（エラー優先順位: duplicate keyword と Name error の衝突）: `f(a=missing, a=2)` は先頭 keyword の `Name error` を返し、`f(a=1, a=missing)` は2番目 keyword の duplicate 検出を優先することを Runner/Evaluator で固定
+  - [x] 仕様固定（エラー優先順位: builtin keyword拒否 と Name error の衝突）: `len(x=missing)` は keyword 値式の `Name error` よりも builtin keyword 未対応エラーを優先して返すことを Runner/Evaluator で固定
+  - [x] 仕様固定（エラー優先順位: method-style builtin keyword拒否 と引数式評価の衝突）: `d.update(k=len(1))` は keyword 値式の型エラーよりも method-style builtin keyword 未対応エラーを優先して返すことを Runner/Evaluator で固定
+  - [x] 仕様固定（エラー優先順位: builtin keyword拒否 と引数式評価の衝突）: `len(x=len(1))` は keyword 値式の型エラーよりも builtin keyword 未対応エラーを優先して返すことを Runner/Evaluator で固定
+  - [x] 仕様固定（エラー優先順位: unexpected keyword と引数式評価の衝突）: `f(b=len(1))` は unexpected keyword 検出より先に keyword 引数式の評価エラーを返し、`f(b=2)`/`f(1, b=2)` は従来どおり unexpected keyword を返すことを Runner/Evaluator で固定
+  - [x] 仕様固定（エラー優先順位: multiple values と引数式評価の衝突）: `f(1, a=len(1))` は keyword 引数式の評価エラーを返し、`f(1, a=2)` は multiple values 検出を返すことを Runner/Evaluator で固定
+  - [x] 仕様固定（エラー優先順位: duplicate keyword と引数式評価の衝突）: `f(a=len(1), a=2)` は先頭 keyword 引数式の評価エラーを返し、`f(a=1, a=len(1))` は2番目 keyword の duplicate 検出を優先することを Runner/Evaluator で固定
   - [x] 仕様固定（mixed call 右側keywordエラー位置）: 混在呼び出しで positional 引数式が成功し後続 keyword 引数式のみ失敗する場合（例: `f(1, b=len(1))`）、後続 keyword 引数式の位置でエラーを報告することを Runner/Evaluator で固定
   - [x] 仕様固定（keyword-only 右側エラー位置）: keyword-only 呼び出しで左側 keyword 引数式が成功し右側のみ失敗する場合（例: `f(a=1, b=len(1))`）、右側引数式の位置でエラーを報告することを Runner/Evaluator で固定
   - [x] 仕様固定（エラー優先順位: keyword-only の左から評価）: keyword-only 呼び出しで複数引数式がエラーになり得る場合、左端の keyword 引数式エラー（例: `f(a=len(1), b=len(1))` の `a` 側）を優先して返すことを Runner/Evaluator で固定
   - [x] 仕様固定（エラー優先順位: positional + keyword の左から評価）: 混在呼び出しで positional/keyword 両方の引数式がエラーになり得る場合、左端の引数式エラー（例: `f(len(1), b=len(1))` の先頭 `len(1)`）を優先して返すことを Runner/Evaluator で固定
   - [x] 仕様固定（エラー優先順位: positional引数評価 vs default評価）: 呼び出し時に positional 引数式の評価エラーと未指定default式の評価エラーが競合する場合、positional 引数式のエラーを先に返すことを Runner/Evaluator で固定
   - [x] 仕様固定（エラー優先順位: 引数評価 vs default評価）: 呼び出し時に明示引数式の評価エラーと未指定default式の評価エラーが競合する場合、明示引数式のエラーを先に返すことを Runner/Evaluator で固定
+  - [x] 仕様固定（エラー優先順位: 引数評価 vs default内builtin keyword拒否）: `def f(a, b=len(x=[1]))` で呼び出し時に明示/positional 引数式の評価エラーがある場合、未指定default側の builtin keyword 未対応エラーより先に引数式エラーを返すことを Runner/Evaluator で固定
+  - [x] 仕様固定（エラー優先順位: duplicate/unexpected/multiple values vs default内builtin keyword拒否）: `def f(a,b,c=len(x=[1]))` の呼び出しで `duplicate keyword` / `unexpected keyword` / `multiple values` が起こる場合、未指定default側の builtin keyword 未対応エラーより先に各引数束縛エラーを返すことを Runner/Evaluator で固定
 
   - [x] （default参照・評価順）
   - [x] 仕様固定（評価順: positional + keyword + default）: 混在呼び出し（例: `add(probe(1), c=probe(3))`）では positional/keyword 引数式を先に左から評価し、未指定 default式（例: `b=probe(a)`）を後続評価する順序を Runner/Evaluator で固定
