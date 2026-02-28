@@ -14,6 +14,7 @@ TDD（`hspec`）で機能を拡張し、`Lexer -> Parser -> Evaluator -> Runner/
 
 ### 字句解析（Lexer）
 - [x] 整数・識別子・改行
+- [x] 浮動小数リテラル（`1.23`, `1.`, `.5`, 指数表記 `1e3`, `1.2e-3`）
 - [x] 文字列リテラル（`"..."`）
 - [x] 真偽/Noneリテラル（`True`, `False`, `None`）
 - [x] 演算子（`+ - * / % //`, 比較, `and/or/not`）
@@ -28,12 +29,14 @@ TDD（`hspec`）で機能を拡張し、`Lexer -> Parser -> Evaluator -> Runner/
 - [x] 関数定義: `def name(args): ...`
 - [x] 式: 四則演算（`+ - * / % //`）, 比較, `not`, 関数呼び出し
 - [x] 組み込みのメソッド呼び出し構文（例: `x.append(3)` を関数呼び出しへデシュガー）
-- [x] リテラル: int/string/list/dict/None
+- [x] リテラル: int/float/string/list/dict/None
 - [x] インラインsuiteとインデントsuiteの両対応
 
 ### 評価器（Evaluator）
 - [x] 変数束縛と式評価
 - [x] 文字列連結（`"a" + "b"`）
+- [x] 数値演算の暗黙昇格（int/float 混在）
+- [x] `/` 実数除算 / `//` 床除算 / `%` 数値同士対応
 - [x] 条件分岐・ループ実行
 - [x] `break` / `continue` の制御伝播
 - [x] 関数呼び出し（再帰を含む）
@@ -45,11 +48,11 @@ TDD（`hspec`）で機能を拡張し、`Lexer -> Parser -> Evaluator -> Runner/
 
 ### 組み込み関数（実装済み）
 - [x] `len(x)`（string/list）
-- [x] `bool(x)`（int/None/string/list/dictのtruthiness）
+- [x] `bool(x)`（int/float/None/string/list/dictのtruthiness）
 - [x] `range(stop)` / `range(start, stop)` / `range(start, stop, step)`
 - [x] `append(list, value)`
 - [x] `remove(list, value)`
-- [x] `sort(list)`（int要素のみ対応）
+- [x] `sort(list)`（数値要素: int/float、混在可）
 - [x] `reverse(list)`
 - [x] `insert(list, index, value)`
 - [x] `pop(list)` / `pop(dict, key)` / `pop(dict, key, default)`

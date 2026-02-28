@@ -112,6 +112,13 @@
 ## メンテナンス記録（要約）
 - 注記: 以下は時系列ログ。古い日付の「未対応」項目は、その後のエントリで仕様更新済みの場合がある。
 - 2026-03-01
+  - [x] 運用ルール更新: 行数上限違反の解消で空行削除を禁止し、責務分離による別ファイル化を `AGENTS.md` に明記
+  - [x] ドキュメント整合: `README` の float 関連仕様（literal形式、数値演算、`bool`/`sort`）を実装現状へ更新
+  - [x] 追補（float互換）: 実行系で `1.` / `.5` / `1e3` / `1.2e-3` を固定する Eval/Runner テストを追加
+  - [x] 不具合修正（float literal）: parser の `read` 失敗を回避するため `FloatToken` を正規化（先頭/末尾ドット補正）し、`1.` 実行時クラッシュを解消
+  - [x] 追補（float互換）: `sort` を数値リスト（int/float混在）対応へ拡張し、非数値要素時は `Type error: sort expects list of number` を返す仕様で Eval/Runner テストを固定
+  - [x] 追補（float互換）: `bool(0.0)==0` / `bool(0.5)==1` を Eval/Runner テストで固定し、builtin `bool` を `FloatValue` 対応
+  - [x] 品質ゲート再確認（追補後）: `cabal test`（514 examples）/ `cabal run check-structure` 成功
   - [x] P4完了: `float` 導入を完了（Lexer/Parser/AST/Evaluator/Runner）し、`cabal test`（514 examples）と `cabal run check-structure` を通過
   - [x] 仕様固定（float literal）: `1.23` / `1.` / `.5` / 指数表記（`1e3`, `1.2e-3`）を受理することを Lexer/Parser テストで固定
   - [x] 仕様固定（数値演算）: `/` は実数除算、`//` は床除算、`%` は float 含む数値同士で評価可能とし、ゼロ除算メッセージ規約を維持

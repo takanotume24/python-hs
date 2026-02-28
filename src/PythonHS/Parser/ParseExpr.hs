@@ -1,5 +1,4 @@
 module PythonHS.Parser.ParseExpr (parseExpr) where
-
 import PythonHS.AST.BinaryOperator (BinaryOperator (AddOperator, AndOperator, DivideOperator, EqOperator, FloorDivideOperator, GtOperator, GteOperator, LtOperator, LteOperator, ModuloOperator, MultiplyOperator, NotEqOperator, OrOperator, SubtractOperator))
 import PythonHS.AST.Expr (Expr (BinaryExpr, CallExpr, DictExpr, FloatExpr, IdentifierExpr, IntegerExpr, KeywordArgExpr, ListExpr, NoneExpr, NotExpr, StringExpr, UnaryMinusExpr))
 import PythonHS.Lexer.Position (Position (Position))
@@ -92,12 +91,12 @@ parseExpr = parseOr
       parsePostfix baseExpr remaining
 
     parseAtom (Token IntegerToken value pos : rest) = Right (IntegerExpr (read value) pos, rest)
-    parseAtom (Token FloatToken value pos : rest) = Right (FloatExpr (read value) pos, rest)
+    parseAtom (Token FloatToken value pos : rest) = Right (FloatExpr (read (normalizeFloatLiteral value)) pos, rest)
     parseAtom (Token TrueToken _ pos : rest) = Right (IntegerExpr 1 pos, rest)
     parseAtom (Token FalseToken _ pos : rest) = Right (IntegerExpr 0 pos, rest)
     parseAtom (Token NoneToken _ pos : rest) = Right (NoneExpr pos, rest)
     parseAtom (Token MinusToken _ pos : Token IntegerToken value _ : rest) = Right (IntegerExpr (negate (read value)) pos, rest)
-    parseAtom (Token MinusToken _ pos : Token FloatToken value _ : rest) = Right (FloatExpr (negate (read value)) pos, rest)
+    parseAtom (Token MinusToken _ pos : Token FloatToken value _ : rest) = Right (FloatExpr (negate (read (normalizeFloatLiteral value))) pos, rest)
     parseAtom (Token MinusToken _ pos : rest) = do
       (expr, remaining) <- parsePrimary rest
       Right (UnaryMinusExpr expr pos, remaining)
@@ -147,7 +146,6 @@ parseExpr = parseOr
           parseDictTail dictPos [(keyExpr, valueExpr)] afterValue
         tok : _ -> Left (ExpectedExpression (position tok))
         _ -> Left (ExpectedExpression (Position 0 0))
-
     parseDictTail dictPos pairs (Token CommaToken _ _ : rest) = do
       case rest of
         Token RBraceToken _ _ : afterBrace -> Right (DictExpr pairs dictPos, afterBrace)
@@ -165,7 +163,6 @@ parseExpr = parseOr
     parseDictTail _ _ _ = Left (ExpectedExpression (Position 0 0))
     parseArguments (Token RParenToken _ _ : rest) = Right ([], rest)
     parseArguments ts = parseArgumentsTail False [] ts
-
     parseArgumentsTail seenKeywordArg accArgs tokenStream = do
       (argExpr, isKeywordArg, mismatchPos, afterArg) <- parseCallArgument tokenStream
       if seenKeywordArg && not isKeywordArg
@@ -185,6 +182,9 @@ parseExpr = parseOr
     parseCallArgument tokenStream = do
       (argExpr, afterArg) <- parseExpr tokenStream
       Right (argExpr, False, exprPos argExpr, afterArg)
+    normalizeFloatLiteral literal =
+      let withLeading = if take 1 literal == "." then '0' : literal else literal
+       in if not (null withLeading) && last withLeading == '.' then withLeading ++ "0" else withLeading
 
     exprPos (IntegerExpr _ pos) = pos
     exprPos (FloatExpr _ pos) = pos

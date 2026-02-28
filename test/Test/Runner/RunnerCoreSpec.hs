@@ -125,6 +125,9 @@ spec = describe "runSource (integration core)" $ do
   it "assigns string and prints identifier" $ do
     runSource "x = \"hello\"\nprint x\n" `shouldBe` Right ["hello"]
 
+  it "parses and evaluates float literal forms" $ do
+    runSource "print 1.\nprint .5\nprint 1e3\nprint 1.2e-3\n" `shouldBe` Right ["1.0", "0.5", "1000.0", "1.2e-3"]
+
   it "accepts trailing commas in list and dict literals" $ do
     runSource "print [1, 2,]\nprint {1: 2,}\n" `shouldBe` Right ["[1, 2]", "{1: 2}"]
 
@@ -166,7 +169,7 @@ spec = describe "runSource (integration core)" $ do
     runSource "print len([1, 2])\n" `shouldBe` Right ["2"]
 
   it "evaluates bool builtin truthiness across core types" $ do
-    runSource "print bool(0)\nprint bool(2)\nprint bool(None)\nprint bool(\"\")\nprint bool(\"x\")\nprint bool([])\nprint bool([1])\nprint bool({})\nprint bool({1: 2})\n" `shouldBe` Right ["0", "1", "0", "0", "1", "0", "1", "0", "1"]
+    runSource "print bool(0)\nprint bool(2)\nprint bool(0.0)\nprint bool(0.5)\nprint bool(None)\nprint bool(\"\")\nprint bool(\"x\")\nprint bool([])\nprint bool([1])\nprint bool({})\nprint bool({1: 2})\n" `shouldBe` Right ["0", "1", "0", "1", "0", "0", "1", "0", "1", "0", "1"]
 
   it "evaluates append builtin for list" $ do
     runSource "print append([1, 2], 3)\n" `shouldBe` Right ["[1, 2, 3]"]
@@ -197,8 +200,8 @@ spec = describe "runSource (integration core)" $ do
       "x = [3, 1, 2, 2]\nprint x.remove(2)\nprint x.insert(1, 9)\nprint x.sort()\nprint x.reverse()\n"
       `shouldBe` Right ["[3, 1, 2]", "[3, 9, 1, 2, 2]", "[1, 2, 2, 3]", "[2, 2, 1, 3]"]
 
-  it "evaluates sort builtin for integer list" $ do
-    runSource "print sort([3, 1, 2])\nprint sort([])\n" `shouldBe` Right ["[1, 2, 3]", "[]"]
+  it "evaluates sort builtin for numeric list" $ do
+    runSource "print sort([3, 1, 2])\nprint sort([3.2, 1.1, 2.4])\nprint sort([3, 1.5, 2])\nprint sort([])\n" `shouldBe` Right ["[1, 2, 3]", "[1.1, 2.4, 3.2]", "[1.5, 2, 3]", "[]"]
 
   it "evaluates reverse builtin for list" $ do
     runSource "print reverse([1, 2, 3])\nprint reverse([])\n" `shouldBe` Right ["[3, 2, 1]", "[]"]
@@ -209,7 +212,7 @@ spec = describe "runSource (integration core)" $ do
 
   it "reports sort builtin type and argument errors" $ do
     runSource "print sort(1)\n" `shouldBe` Left "Type error: sort expects list as first argument at 1:7"
-    runSource "print sort([\"x\"])\n" `shouldBe` Left "Type error: sort expects list of int at 1:7"
+    runSource "print sort([\"x\"])\n" `shouldBe` Left "Type error: sort expects list of number at 1:7"
     runSource "print sort([], 1)\n" `shouldBe` Left "Argument count mismatch when calling sort at 1:7"
 
   it "evaluates remove builtin for list" $ do

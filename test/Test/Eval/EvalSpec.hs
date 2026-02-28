@@ -16,6 +16,11 @@ spec = describe "evalProgram" $ do
   it "prints unary minus integer literal" $ do
     evalProgram (Program [PrintStmt (IntegerExpr (-2) (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["-2"]
 
+  it "prints float literals including scientific notation" $ do
+    evalProgram (Program [PrintStmt (FloatExpr 1.0 (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["1.0"]
+    evalProgram (Program [PrintStmt (FloatExpr 0.5 (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["0.5"]
+    evalProgram (Program [PrintStmt (FloatExpr 1000.0 (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["1000.0"]
+
   it "evaluates unary minus for identifier and expression" $ do
     evalProgram
       ( Program
@@ -76,6 +81,8 @@ spec = describe "evalProgram" $ do
   it "evaluates bool builtin truthiness across core types" $ do
     evalProgram (Program [PrintStmt (CallExpr "bool" [IntegerExpr 0 (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["0"]
     evalProgram (Program [PrintStmt (CallExpr "bool" [IntegerExpr 2 (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["1"]
+    evalProgram (Program [PrintStmt (CallExpr "bool" [FloatExpr 0.0 (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["0"]
+    evalProgram (Program [PrintStmt (CallExpr "bool" [FloatExpr 0.5 (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["1"]
     evalProgram (Program [PrintStmt (CallExpr "bool" [NoneExpr (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["0"]
     evalProgram (Program [PrintStmt (CallExpr "bool" [StringExpr "" (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["0"]
     evalProgram (Program [PrintStmt (CallExpr "bool" [StringExpr "x" (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["1"]
@@ -87,8 +94,10 @@ spec = describe "evalProgram" $ do
   it "evaluates append builtin for list" $ do
     evalProgram (Program [PrintStmt (CallExpr "append" [ListExpr [IntegerExpr 1 (Position 0 0), IntegerExpr 2 (Position 0 0)] (Position 0 0), IntegerExpr 3 (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["[1, 2, 3]"]
 
-  it "evaluates sort builtin for integer list" $ do
+  it "evaluates sort builtin for numeric list" $ do
     evalProgram (Program [PrintStmt (CallExpr "sort" [ListExpr [IntegerExpr 3 (Position 0 0), IntegerExpr 1 (Position 0 0), IntegerExpr 2 (Position 0 0)] (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["[1, 2, 3]"]
+    evalProgram (Program [PrintStmt (CallExpr "sort" [ListExpr [FloatExpr 3.2 (Position 0 0), FloatExpr 1.1 (Position 0 0), FloatExpr 2.4 (Position 0 0)] (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["[1.1, 2.4, 3.2]"]
+    evalProgram (Program [PrintStmt (CallExpr "sort" [ListExpr [IntegerExpr 3 (Position 0 0), FloatExpr 1.5 (Position 0 0), IntegerExpr 2 (Position 0 0)] (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["[1.5, 2, 3]"]
     evalProgram (Program [PrintStmt (CallExpr "sort" [ListExpr [] (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["[]"]
 
   it "evaluates reverse builtin for list" $ do
@@ -101,7 +110,7 @@ spec = describe "evalProgram" $ do
 
   it "reports sort builtin type and argument errors" $ do
     evalProgram (Program [PrintStmt (CallExpr "sort" [IntegerExpr 1 (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Left "Type error: sort expects list as first argument at 0:0"
-    evalProgram (Program [PrintStmt (CallExpr "sort" [ListExpr [StringExpr "x" (Position 0 0)] (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Left "Type error: sort expects list of int at 0:0"
+    evalProgram (Program [PrintStmt (CallExpr "sort" [ListExpr [StringExpr "x" (Position 0 0)] (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Left "Type error: sort expects list of number at 0:0"
     evalProgram (Program [PrintStmt (CallExpr "sort" [ListExpr [] (Position 0 0), IntegerExpr 1 (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Left "Argument count mismatch when calling sort at 0:0"
 
   it "evaluates remove builtin for list" $ do

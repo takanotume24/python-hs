@@ -1,11 +1,11 @@
 module PythonHS.Evaluator.EvalBuiltinExpr (evalBuiltinExpr) where
 
-import Data.List (sort)
+import Data.List (sortOn)
 import PythonHS.AST.Expr (Expr)
 import PythonHS.Evaluator.Env (Env)
 import PythonHS.Evaluator.FuncEnv (FuncEnv)
 import PythonHS.Evaluator.ShowPos (showPos)
-import PythonHS.Evaluator.Value (Value (DictValue, IntValue, ListValue, NoneValue, StringValue))
+import PythonHS.Evaluator.Value (Value (DictValue, FloatValue, IntValue, ListValue, NoneValue, StringValue))
 import PythonHS.Lexer.Position (Position)
 
 evalBuiltinExpr :: (Env -> FuncEnv -> Expr -> Either String (Value, [String], Env)) -> Env -> FuncEnv -> String -> [Expr] -> Position -> Maybe (Either String (Value, [String], Env))
@@ -22,6 +22,7 @@ evalBuiltinExpr evalExprFn env fenv fname args pos =
       (argVals, argOuts, envAfterArgs) <- evalArgs env fenv args
       case argVals of
         [IntValue n] -> Right (IntValue (if n == 0 then 0 else 1), argOuts, envAfterArgs)
+        [FloatValue n] -> Right (IntValue (if n == 0 then 0 else 1), argOuts, envAfterArgs)
         [NoneValue] -> Right (IntValue 0, argOuts, envAfterArgs)
         [StringValue s] -> Right (IntValue (if null s then 0 else 1), argOuts, envAfterArgs)
         [ListValue vals] -> Right (IntValue (if null vals then 0 else 1), argOuts, envAfterArgs)
@@ -50,9 +51,9 @@ evalBuiltinExpr evalExprFn env fenv fname args pos =
       (argVals, argOuts, envAfterArgs) <- evalArgs env fenv args
       case argVals of
         [ListValue vals] ->
-          case intValues vals of
-            Just ns -> Right (ListValue (map IntValue (sort ns)), argOuts, envAfterArgs)
-            Nothing -> Left $ "Type error: sort expects list of int at " ++ showPos pos
+          case numberPairs vals of
+            Just pairs -> Right (ListValue (map snd (sortOn fst pairs)), argOuts, envAfterArgs)
+            Nothing -> Left $ "Type error: sort expects list of number at " ++ showPos pos
         [_] -> Left $ "Type error: sort expects list as first argument at " ++ showPos pos
         _ -> Left $ "Argument count mismatch when calling sort at " ++ showPos pos
     "reverse" -> Just $ do
@@ -171,7 +172,6 @@ evalBuiltinExpr evalExprFn env fenv fname args pos =
     mergeDictValues pairs [] = pairs
     mergeDictValues pairs ((key, value) : restPairs) =
       mergeDictValues (updateDictValue pairs key value) restPairs
-
     setDefaultDictValue pairs key defaultValue =
       case lookupDictValue pairs key of
         Just _ -> pairs
@@ -180,10 +180,10 @@ evalBuiltinExpr evalExprFn env fenv fname args pos =
     removeFirstValue (v : restVals) target
       | v == target = Just restVals
       | otherwise = fmap (v :) (removeFirstValue restVals target)
-
-    intValues [] = Just []
-    intValues (IntValue n : restVals) = fmap (n :) (intValues restVals)
-    intValues (_ : _) = Nothing
+    numberPairs [] = Just []
+    numberPairs (IntValue n : restVals) = fmap ((fromIntegral n, IntValue n) :) (numberPairs restVals)
+    numberPairs (FloatValue n : restVals) = fmap ((n, FloatValue n) :) (numberPairs restVals)
+    numberPairs (_ : _) = Nothing
 
     insertAtIndex values index value =
       let clampedIndex = max 0 (min index (length values))
