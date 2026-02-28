@@ -39,6 +39,7 @@ library
     , PythonHS.Parser.ParseStatement
     , PythonHS.Structure.CheckStructureWarnings
     , PythonHS.Evaluator.ValueToOutput
+    , PythonHS.Evaluator.ValueToReplOutput
     , PythonHS.Evaluator.EvalWhileStmt
     , PythonHS.Evaluator.EvalForStmt
     , PythonHS.Evaluator.EvalExpr

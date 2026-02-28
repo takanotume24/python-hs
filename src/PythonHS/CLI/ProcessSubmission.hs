@@ -2,11 +2,16 @@ module PythonHS.CLI.ProcessSubmission (processSubmission) where
 
 import PythonHS.AST.Program (Program (Program))
 import PythonHS.Evaluator.EvalStatements (evalStatements)
+import PythonHS.Evaluator.EvalExpr (evalExpr)
 import PythonHS.Evaluator.Env (Env)
 import PythonHS.Evaluator.FuncEnv (FuncEnv)
 import PythonHS.Evaluator.ShowPos (showPos)
-import PythonHS.Evaluator.Value (Value (BreakValue, ContinueValue))
+import PythonHS.Evaluator.Value (Value (BreakValue, ContinueValue, NoneValue))
+import PythonHS.Evaluator.ValueToReplOutput (valueToReplOutput)
 import PythonHS.Lexer.ScanTokens (scanTokens)
+import PythonHS.Lexer.Token (Token (Token))
+import PythonHS.Lexer.TokenType (TokenType (EOFToken, NewlineToken))
+import PythonHS.Parser.ParseExpr (parseExpr)
 import PythonHS.Parser.ParseProgram (parseProgram)
 
 processSubmission :: Env -> FuncEnv -> String -> Either String (Env, FuncEnv, [String])
@@ -15,7 +20,18 @@ processSubmission env fenv src =
     Left lexErr -> Left (show lexErr)
     Right tokens ->
       case parseProgram tokens of
-        Left parseErr -> Left (show parseErr)
+        Left parseErr ->
+          case parseReplExpr tokens of
+            Just expr ->
+              case evalExpr evalStatements env fenv expr of
+                Left err -> Left err
+                Right (val, exprOuts, envAfterExpr) ->
+                  let resultOuts =
+                        case val of
+                          NoneValue -> []
+                          _ -> [valueToReplOutput val]
+                   in Right (envAfterExpr, fenv, exprOuts ++ resultOuts)
+            Nothing -> Left (show parseErr)
         Right (Program stmts) ->
           case evalStatements env fenv [] stmts of
             Left err -> Left err
@@ -25,3 +41,12 @@ processSubmission env fenv src =
                 Just (ContinueValue, pos) -> Left $ "Continue outside loop at " ++ showPos pos
                 Just (_, pos) -> Left $ "Return outside function at " ++ showPos pos
                 Nothing -> Right (env', fenv', outs)
+  where
+    parseReplExpr tokens =
+      case parseExpr tokens of
+        Right (expr, remaining) | onlyLineEnd remaining -> Just expr
+        _ -> Nothing
+
+    onlyLineEnd [Token NewlineToken _ _, Token EOFToken _ _] = True
+    onlyLineEnd [Token EOFToken _ _] = True
+    onlyLineEnd _ = False

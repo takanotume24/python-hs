@@ -34,6 +34,38 @@ spec = describe "runFile / replEvalLines" $ do
     outs <- replEvalLines ["x = 1", "print x", ""]
     outs `shouldBe` ["1"]
 
+  it "prints expression result for single-line REPL input" $ do
+    outs <- replEvalLines ["1 + 2", ""]
+    outs `shouldBe` ["3"]
+
+  it "prints expression result using existing environment in REPL" $ do
+    outs <- replEvalLines ["x = 10", "x + 5", ""]
+    outs `shouldBe` ["15"]
+
+  it "does not print expression result when it is None in REPL" $ do
+    outs <- replEvalLines ["None", "1", ""]
+    outs `shouldBe` ["1"]
+
+  it "prints string expression result with quotes in REPL" $ do
+    outs <- replEvalLines ["\"hello\"", ""]
+    outs `shouldBe` ["'hello'"]
+
+  it "prints list expression result using repr-style element formatting in REPL" $ do
+    outs <- replEvalLines ["[\"a\", 1]", ""]
+    outs `shouldBe` ["['a', 1]"]
+
+  it "escapes tab and backslash in string expression result in REPL" $ do
+    outs <- replEvalLines ["\"a\tb\"", "\"a\\b\"", ""]
+    outs `shouldBe` ["'a\\tb'", "'a\\\\b'"]
+
+  it "escapes single quote in string expression result in REPL" $ do
+    outs <- replEvalLines ["\"a'b\"", ""]
+    outs `shouldBe` ["'a\\'b'"]
+
+  it "prints dictionary string keys with quotes in REPL" $ do
+    outs <- replEvalLines ["{\"k\": 1, \"x\": 2}", ""]
+    outs `shouldBe` ["{'k': 1, 'x': 2}"]
+
   it "accepts multi-line blocks (function def) and preserves functions" $ do
     outs <- replEvalLines ["def add(a, b):", "print a", "", "print add(1, 2)", ""]
     outs `shouldBe` ["1", "0"]
@@ -91,3 +123,30 @@ spec = describe "runFile / replEvalLines" $ do
     code `shouldBe` ExitSuccess
     ("1" `isInfixOf` out) `shouldBe` True
     ("2" `isInfixOf` out) `shouldBe` False
+
+  it "prints expression result in interactive REPL executable" $ do
+    (code, out, _err) <- readCreateProcessWithExitCode (proc "cabal" ["run", "-v0", "exe:python-hs"]) "x = 10\nx + 5\nlen([1, 2]) + 3\n"
+    code `shouldBe` ExitSuccess
+    (">>> 15" `isInfixOf` out) `shouldBe` True
+    (">>> 5" `isInfixOf` out) `shouldBe` True
+
+  it "does not print None expression result in interactive REPL executable" $ do
+    (code, out, _err) <- readCreateProcessWithExitCode (proc "cabal" ["run", "-v0", "exe:python-hs"]) "None\n1\n"
+    code `shouldBe` ExitSuccess
+    (">>> >>> 1" `isInfixOf` out) `shouldBe` True
+
+  it "prints string expression result with quotes in interactive REPL executable" $ do
+    (code, out, _err) <- readCreateProcessWithExitCode (proc "cabal" ["run", "-v0", "exe:python-hs"]) "\"hello\"\n"
+    code `shouldBe` ExitSuccess
+    (">>> 'hello'" `isInfixOf` out) `shouldBe` True
+
+  it "escapes special characters in string expression result in interactive REPL executable" $ do
+    (code, out, _err) <- readCreateProcessWithExitCode (proc "cabal" ["run", "-v0", "exe:python-hs"]) "\"a'b\"\n\"a\tb\"\n"
+    code `shouldBe` ExitSuccess
+    (">>> 'a\\'b'" `isInfixOf` out) `shouldBe` True
+    (">>> 'a\\tb'" `isInfixOf` out) `shouldBe` True
+
+  it "prints dictionary string keys with quotes in interactive REPL executable" $ do
+    (code, out, _err) <- readCreateProcessWithExitCode (proc "cabal" ["run", "-v0", "exe:python-hs"]) "{\"k\": 1}\n"
+    code `shouldBe` ExitSuccess
+    (">>> {'k': 1}" `isInfixOf` out) `shouldBe` True
