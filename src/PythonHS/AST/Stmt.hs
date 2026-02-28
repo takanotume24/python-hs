@@ -23,4 +23,5 @@ data Stmt
   | WhileStmt Expr [Stmt] Position                  -- condition, body
   | ForStmt String Expr [Stmt] Position             -- loop variable, iterable expression, body
   | FunctionDefStmt String [String] [Stmt] Position -- name, params, body
+  | FunctionDefDefaultsStmt String [String] [(String, Expr)] [Stmt] Position -- name, params, defaults, body
   deriving (Eq, Show)

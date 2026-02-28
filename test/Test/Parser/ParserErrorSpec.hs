@@ -4,7 +4,9 @@ import PythonHS.Lexer.Position (Position (Position))
 import PythonHS.Lexer.Token (Token (Token))
 import PythonHS.Lexer.TokenType
   ( TokenType
-      ( EOFToken,
+      ( AssignToken,
+        EOFToken,
+        CommaToken,
         ColonToken,
         DefToken,
         ElifToken,
@@ -16,9 +18,17 @@ import PythonHS.Lexer.TokenType
         IndentToken,
         InToken,
         IntegerToken,
+        LBraceToken,
+        LBracketToken,
         LParenToken,
+        MinusToken,
         NewlineToken,
         PrintToken,
+        GtToken,
+        SlashToken,
+        RBraceToken,
+        StarToken,
+        RBracketToken,
         RParenToken,
         WhileToken
       )
@@ -198,3 +208,221 @@ spec = describe "parse error reporting" $ do
         Token EOFToken "" (Position 2 1)
       ]
       `shouldBe` Left (ExpectedExpression (Position 1 8))
+
+  it "reports ExpectedExpression when required parameter appears after default parameter" $ do
+    parseProgram
+      [ Token DefToken "def" (Position 1 1),
+        Token IdentifierToken "bad" (Position 1 5),
+        Token LParenToken "(" (Position 1 8),
+        Token IdentifierToken "a" (Position 1 9),
+        Token AssignToken "=" (Position 1 10),
+        Token IntegerToken "1" (Position 1 11),
+        Token CommaToken "," (Position 1 12),
+        Token IdentifierToken "b" (Position 1 14),
+        Token RParenToken ")" (Position 1 15),
+        Token ColonToken ":" (Position 1 16),
+        Token NewlineToken "\\n" (Position 1 17),
+        Token EOFToken "" (Position 2 1)
+      ]
+      `shouldBe` Left (ExpectedExpression (Position 1 14))
+
+  it "reports ExpectedExpression when function parameters contain duplicate names" $ do
+    parseProgram
+      [ Token DefToken "def" (Position 1 1),
+        Token IdentifierToken "dup" (Position 1 5),
+        Token LParenToken "(" (Position 1 8),
+        Token IdentifierToken "a" (Position 1 9),
+        Token CommaToken "," (Position 1 10),
+        Token IdentifierToken "a" (Position 1 12),
+        Token RParenToken ")" (Position 1 13),
+        Token ColonToken ":" (Position 1 14),
+        Token NewlineToken "\\n" (Position 1 15),
+        Token EOFToken "" (Position 2 1)
+      ]
+      `shouldBe` Left (ExpectedExpression (Position 1 12))
+
+  it "reports ExpectedExpression for unsupported keyword argument in call" $ do
+    parseProgram
+      [ Token PrintToken "print" (Position 1 1),
+        Token IdentifierToken "f" (Position 1 7),
+        Token LParenToken "(" (Position 1 8),
+        Token IdentifierToken "a" (Position 1 9),
+        Token AssignToken "=" (Position 1 10),
+        Token IntegerToken "1" (Position 1 11),
+        Token RParenToken ")" (Position 1 12),
+        Token NewlineToken "\\n" (Position 1 13),
+        Token EOFToken "" (Position 2 1)
+      ]
+      `shouldBe` Left (ExpectedExpression (Position 1 10))
+
+  it "reports ExpectedExpression for mixed positional then keyword call arguments" $ do
+    parseProgram
+      [ Token PrintToken "print" (Position 1 1),
+        Token IdentifierToken "f" (Position 1 7),
+        Token LParenToken "(" (Position 1 8),
+        Token IntegerToken "1" (Position 1 9),
+        Token CommaToken "," (Position 1 10),
+        Token IdentifierToken "a" (Position 1 12),
+        Token AssignToken "=" (Position 1 13),
+        Token IntegerToken "2" (Position 1 14),
+        Token RParenToken ")" (Position 1 15),
+        Token NewlineToken "\\n" (Position 1 16),
+        Token EOFToken "" (Position 2 1)
+      ]
+      `shouldBe` Left (ExpectedExpression (Position 1 13))
+
+  it "reports ExpectedExpression for mixed keyword then positional call arguments" $ do
+    parseProgram
+      [ Token PrintToken "print" (Position 1 1),
+        Token IdentifierToken "f" (Position 1 7),
+        Token LParenToken "(" (Position 1 8),
+        Token IdentifierToken "a" (Position 1 9),
+        Token AssignToken "=" (Position 1 10),
+        Token IntegerToken "1" (Position 1 11),
+        Token CommaToken "," (Position 1 12),
+        Token IntegerToken "2" (Position 1 14),
+        Token RParenToken ")" (Position 1 15),
+        Token NewlineToken "\\n" (Position 1 16),
+        Token EOFToken "" (Position 2 1)
+      ]
+      `shouldBe` Left (ExpectedExpression (Position 1 10))
+
+  it "reports ExpectedExpression for unsupported star expansion in call arguments" $ do
+    parseProgram
+      [ Token PrintToken "print" (Position 1 1),
+        Token IdentifierToken "f" (Position 1 7),
+        Token LParenToken "(" (Position 1 8),
+        Token StarToken "*" (Position 1 9),
+        Token LBracketToken "[" (Position 1 10),
+        Token IntegerToken "1" (Position 1 11),
+        Token CommaToken "," (Position 1 12),
+        Token IntegerToken "2" (Position 1 13),
+        Token RBracketToken "]" (Position 1 14),
+        Token RParenToken ")" (Position 1 15),
+        Token NewlineToken "\\n" (Position 1 16),
+        Token EOFToken "" (Position 2 1)
+      ]
+      `shouldBe` Left (ExpectedExpression (Position 1 9))
+
+  it "reports ExpectedExpression for unsupported double-star expansion in call arguments" $ do
+    parseProgram
+      [ Token PrintToken "print" (Position 1 1),
+        Token IdentifierToken "f" (Position 1 7),
+        Token LParenToken "(" (Position 1 8),
+        Token StarToken "*" (Position 1 9),
+        Token StarToken "*" (Position 1 10),
+        Token LBraceToken "{" (Position 1 11),
+        Token RBraceToken "}" (Position 1 12),
+        Token RParenToken ")" (Position 1 13),
+        Token NewlineToken "\\n" (Position 1 14),
+        Token EOFToken "" (Position 2 1)
+      ]
+      `shouldBe` Left (ExpectedExpression (Position 1 9))
+
+  it "reports ExpectedExpression for unsupported *args in function definition" $ do
+    parseProgram
+      [ Token DefToken "def" (Position 1 1),
+        Token IdentifierToken "f" (Position 1 5),
+        Token LParenToken "(" (Position 1 6),
+        Token StarToken "*" (Position 1 7),
+        Token IdentifierToken "args" (Position 1 8),
+        Token RParenToken ")" (Position 1 12),
+        Token ColonToken ":" (Position 1 13),
+        Token NewlineToken "\\n" (Position 1 14),
+        Token EOFToken "" (Position 2 1)
+      ]
+      `shouldBe` Left (ExpectedExpression (Position 1 7))
+
+  it "reports ExpectedExpression for unsupported **kwargs in function definition" $ do
+    parseProgram
+      [ Token DefToken "def" (Position 1 1),
+        Token IdentifierToken "f" (Position 1 5),
+        Token LParenToken "(" (Position 1 6),
+        Token StarToken "*" (Position 1 7),
+        Token StarToken "*" (Position 1 8),
+        Token IdentifierToken "kwargs" (Position 1 9),
+        Token RParenToken ")" (Position 1 15),
+        Token ColonToken ":" (Position 1 16),
+        Token NewlineToken "\\n" (Position 1 17),
+        Token EOFToken "" (Position 2 1)
+      ]
+      `shouldBe` Left (ExpectedExpression (Position 1 7))
+
+  it "reports ExpectedExpression for unsupported keyword-only separator in function definition" $ do
+    parseProgram
+      [ Token DefToken "def" (Position 1 1),
+        Token IdentifierToken "f" (Position 1 5),
+        Token LParenToken "(" (Position 1 6),
+        Token StarToken "*" (Position 1 7),
+        Token CommaToken "," (Position 1 8),
+        Token IdentifierToken "a" (Position 1 10),
+        Token RParenToken ")" (Position 1 11),
+        Token ColonToken ":" (Position 1 12),
+        Token NewlineToken "\\n" (Position 1 13),
+        Token EOFToken "" (Position 2 1)
+      ]
+      `shouldBe` Left (ExpectedExpression (Position 1 7))
+
+  it "reports ExpectedExpression for unsupported positional-only separator in function definition" $ do
+    parseProgram
+      [ Token DefToken "def" (Position 1 1),
+        Token IdentifierToken "f" (Position 1 5),
+        Token LParenToken "(" (Position 1 6),
+        Token IdentifierToken "a" (Position 1 7),
+        Token CommaToken "," (Position 1 8),
+        Token SlashToken "/" (Position 1 10),
+        Token RParenToken ")" (Position 1 11),
+        Token ColonToken ":" (Position 1 12),
+        Token NewlineToken "\\n" (Position 1 13),
+        Token EOFToken "" (Position 2 1)
+      ]
+      `shouldBe` Left (ExpectedExpression (Position 1 10))
+
+  it "reports ExpectedExpression for unsupported type annotation in function parameter" $ do
+    parseProgram
+      [ Token DefToken "def" (Position 1 1),
+        Token IdentifierToken "f" (Position 1 5),
+        Token LParenToken "(" (Position 1 6),
+        Token IdentifierToken "a" (Position 1 7),
+        Token ColonToken ":" (Position 1 8),
+        Token IdentifierToken "int" (Position 1 10),
+        Token RParenToken ")" (Position 1 13),
+        Token ColonToken ":" (Position 1 14),
+        Token NewlineToken "\\n" (Position 1 15),
+        Token EOFToken "" (Position 2 1)
+      ]
+      `shouldBe` Left (ExpectedExpression (Position 1 8))
+
+  it "reports ExpectedExpression for unsupported return type annotation in function definition" $ do
+    parseProgram
+      [ Token DefToken "def" (Position 1 1),
+        Token IdentifierToken "f" (Position 1 5),
+        Token LParenToken "(" (Position 1 6),
+        Token RParenToken ")" (Position 1 7),
+        Token MinusToken "-" (Position 1 9),
+        Token GtToken ">" (Position 1 10),
+        Token IdentifierToken "int" (Position 1 12),
+        Token ColonToken ":" (Position 1 15),
+        Token NewlineToken "\\n" (Position 1 16),
+        Token EOFToken "" (Position 2 1)
+      ]
+      `shouldBe` Left (ExpectedExpression (Position 1 9))
+
+  it "reports ExpectedExpression when duplicate parameter names include defaults" $ do
+    parseProgram
+      [ Token DefToken "def" (Position 1 1),
+        Token IdentifierToken "dup" (Position 1 5),
+        Token LParenToken "(" (Position 1 8),
+        Token IdentifierToken "a" (Position 1 9),
+        Token AssignToken "=" (Position 1 10),
+        Token IntegerToken "1" (Position 1 11),
+        Token CommaToken "," (Position 1 12),
+        Token IdentifierToken "a" (Position 1 14),
+        Token AssignToken "=" (Position 1 15),
+        Token IntegerToken "2" (Position 1 16),
+        Token RParenToken ")" (Position 1 17),
+        Token ColonToken ":" (Position 1 18),
+        Token NewlineToken "\\n" (Position 1 19),
+        Token EOFToken "" (Position 2 1)
+      ]
+      `shouldBe` Left (ExpectedExpression (Position 1 14))

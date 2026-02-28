@@ -94,6 +94,9 @@
 - [x] データ構造拡張の第7段階: `update(dict, otherDict)` を導入（辞書マージ, eval/runner）
 - [x] データ構造拡張の第8段階: `setdefault(dict, key)` を導入（default省略時は `None`, eval/runner）
 - [x] 呼び出し構文拡張の第1段階: 組み込みメソッド呼び出し（`x.append(3)`）を導入（lex/parse/runner）
+- [x] 関数機能拡張の第1段階: デフォルト引数（`def f(a, b=2)`）を導入（parse/eval/runner）
+- [x] 関数機能拡張の第2段階: 引数順序規則を追加（デフォルト引数の後に必須引数を禁止）
+- [x] 関数機能拡張の第3段階: 関数定義の重複引数名を禁止（`def f(a, a)` は parse error）
 
 ### ブロック構文 仕様メモ（2026-02-24 時点）
 - lexer は行頭スペースで `INDENT` / `DEDENT` を生成し、EOF 時に必要な `DEDENT` を flush する。
@@ -112,6 +115,26 @@
 
 ## メンテナンス記録（要約）
 - 2026-02-28
+  - [x] 回帰防止（Parser/Runner）: 関数定義の戻り値型注釈（`def f() -> int`）は未対応として parse error を固定
+  - [x] 回帰防止（Parser/Runner）: 関数定義の型注釈記法（`def f(a: int)`）は未対応として parse error を固定
+  - [x] 回帰防止（Parser/Runner）: 呼び出し側の位置/キーワード混在（`f(1, a=2)`, `f(a=1, 2)`）は未対応として parse error を固定
+  - [x] 回帰防止（Parser/Runner）: 定義側位置専用区切り（`def f(a, /)`）は未対応として parse error を固定
+  - [x] 回帰防止（Parser/Runner）: 定義側キーワード専用区切り（`def f(*, a)`）は未対応として parse error を固定
+  - [x] 回帰防止（Parser/Runner）: 呼び出し側の辞書展開（`f(**{})`）は未対応として parse error を固定
+  - [x] 回帰防止（Parser/Runner）: 呼び出し側の引数展開（`f(*[1,2])`）は未対応として parse error を固定
+  - [x] 回帰防止（Parser/Runner）: 可変引数構文（`def f(*args)`, `def f(**kwargs)`）は未対応として parse error を固定
+  - [x] 回帰防止（Parser/Runner）: 呼び出し側キーワード引数（`f(a=1)`）は未対応として parse error を固定
+  - [x] 回帰防止（Parser/Runner）: 重複引数名 + デフォルト引数（`def f(a=1, a=2)`）の parse error をテストで固定
+  - [x] 関数機能拡張: 重複引数名を禁止（`def f(a, a)` を parse error 化）
+  - [x] 回帰防止（Parser/Runner）: 重複引数名の負系テストを追加し、エラー位置を固定
+  - [x] 回帰防止（Parser/Runner）: デフォルト引数付き関数定義の末尾カンマ（`def f(a, b=2,)`）をテストで固定
+  - [x] 回帰防止（Parser単体）: デフォルト引数付き関数定義の AST 生成を `ParseProgramSpec` で固定
+  - [x] 回帰防止（Parser単体）: デフォルト引数後の必須引数を禁止する parse error 位置を `ParserErrorSpec` で固定
+  - [x] 関数機能拡張: 引数順序規則を追加（`def f(a=1, b)` は parse error）
+  - [x] 回帰防止: `RunnerEdgeSpec` にデフォルト引数後の必須引数を禁止する負系テストを追加
+  - [x] 関数機能拡張: デフォルト引数付き関数定義を追加（`def add(a, b = 2): ...`）
+  - [x] 関数呼び出し拡張: 省略された末尾引数をデフォルト式で補完する評価を追加
+  - [x] 回帰防止: `RunnerEdgeSpec` にデフォルト引数の成功系/引数不足エラー系テストを追加
   - [x] REPL互換改善: 辞書の文字列キー表示（`{'k': 1}` 形式）を単体/対話REPLテストで固定
   - [x] REPL互換改善: 文字列式結果のエスケープ表示（`\t` / `\\` / `\'`）をテストで固定
   - [x] REPL受け入れ強化: 対話REPL実行テストに文字列エスケープ表示ケースを追加

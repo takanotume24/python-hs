@@ -3,7 +3,7 @@ module Test.Parser.ParseProgramSpec (spec) where
 import PythonHS.AST.BinaryOperator (BinaryOperator (..))
 import PythonHS.AST.Expr (Expr (BinaryExpr, CallExpr, DictExpr, IdentifierExpr, IntegerExpr, ListExpr, NoneExpr, NotExpr, StringExpr, UnaryMinusExpr))
 import PythonHS.AST.Program (Program (Program))
-import PythonHS.AST.Stmt (Stmt (AddAssignStmt, AssignStmt, BreakStmt, ContinueStmt, DivAssignStmt, FloorDivAssignStmt, ForStmt, GlobalStmt, IfStmt, FunctionDefStmt, ModAssignStmt, MulAssignStmt, PassStmt, PrintStmt, ReturnStmt, SubAssignStmt, WhileStmt))
+import PythonHS.AST.Stmt (Stmt (AddAssignStmt, AssignStmt, BreakStmt, ContinueStmt, DivAssignStmt, FloorDivAssignStmt, ForStmt, FunctionDefDefaultsStmt, FunctionDefStmt, GlobalStmt, IfStmt, ModAssignStmt, MulAssignStmt, PassStmt, PrintStmt, ReturnStmt, SubAssignStmt, WhileStmt))
 import PythonHS.Lexer.Token (Token (Token))
 import PythonHS.Lexer.Position (Position (Position))
 import PythonHS.Lexer.TokenType
@@ -673,6 +673,63 @@ spec = describe "parseProgram" $ do
         ( Program
             [ FunctionDefStmt "add" ["a", "b"] [PrintStmt (IdentifierExpr "a" (Position 1 1)) (Position 1 1)] (Position 1 1),
               PrintStmt (CallExpr "add" [IntegerExpr 1 (Position 1 1), IntegerExpr 2 (Position 1 1)] (Position 1 1)) (Position 1 1)
+            ]
+        )
+
+  it "parses function definition with default parameter" $ do
+    parseProgram
+      [ Token DefToken "def" (Position 1 1),
+        Token IdentifierToken "add" (Position 1 5),
+        Token LParenToken "(" (Position 1 8),
+        Token IdentifierToken "a" (Position 1 9),
+        Token CommaToken "," (Position 1 10),
+        Token IdentifierToken "b" (Position 1 12),
+        Token AssignToken "=" (Position 1 14),
+        Token IntegerToken "2" (Position 1 16),
+        Token RParenToken ")" (Position 1 17),
+        Token ColonToken ":" (Position 1 18),
+        Token PrintToken "print" (Position 1 20),
+        Token IdentifierToken "a" (Position 1 26),
+        Token NewlineToken "\\n" (Position 1 27),
+        Token EOFToken "" (Position 2 1)
+      ]
+      `shouldBe` Right
+        ( Program
+            [ FunctionDefDefaultsStmt
+                "add"
+                ["a", "b"]
+                [("b", IntegerExpr 2 (Position 1 16))]
+                [PrintStmt (IdentifierExpr "a" (Position 1 26)) (Position 1 20)]
+                (Position 1 1)
+            ]
+        )
+
+  it "parses function definition with default parameter and trailing comma" $ do
+    parseProgram
+      [ Token DefToken "def" (Position 1 1),
+        Token IdentifierToken "add" (Position 1 5),
+        Token LParenToken "(" (Position 1 8),
+        Token IdentifierToken "a" (Position 1 9),
+        Token CommaToken "," (Position 1 10),
+        Token IdentifierToken "b" (Position 1 12),
+        Token AssignToken "=" (Position 1 14),
+        Token IntegerToken "2" (Position 1 16),
+        Token CommaToken "," (Position 1 17),
+        Token RParenToken ")" (Position 1 18),
+        Token ColonToken ":" (Position 1 19),
+        Token PrintToken "print" (Position 1 21),
+        Token IdentifierToken "a" (Position 1 27),
+        Token NewlineToken "\\n" (Position 1 28),
+        Token EOFToken "" (Position 2 1)
+      ]
+      `shouldBe` Right
+        ( Program
+            [ FunctionDefDefaultsStmt
+                "add"
+                ["a", "b"]
+                [("b", IntegerExpr 2 (Position 1 16))]
+                [PrintStmt (IdentifierExpr "a" (Position 1 27)) (Position 1 21)]
+                (Position 1 1)
             ]
         )
 

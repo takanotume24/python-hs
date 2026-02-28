@@ -25,19 +25,21 @@ evalCallExpr evalStatementsFn evalExprFn env fenv fname args pos =
     Just result -> result
     Nothing -> case Map.lookup fname fenv of
       Nothing -> Left $ "Name error: undefined function " ++ fname ++ " at " ++ showPos pos
-      Just (params, body) -> do
+      Just (params, defaults, body) -> do
         (argVals, argOuts, envAfterArgs) <- evalArgs env fenv args
-        if length params /= length argVals
+        if length argVals > length params
           then Left $ "Argument count mismatch when calling " ++ fname ++ " at " ++ showPos pos
           else do
+            (defaultVals, defaultOuts, envAfterDefaults) <- evalMissingDefaults envAfterArgs fenv params defaults argVals
             let globalNames = collectGlobalNames body
-            let localEnv = Map.union (Map.fromList (zip params argVals)) envAfterArgs
+            let allArgVals = argVals ++ defaultVals
+            let localEnv = Map.union (Map.fromList (zip params allArgVals)) envAfterDefaults
             (finalEnv, _finalFenv, bodyOuts, ret) <- evalStatementsFn localEnv fenv [] body
             let retVal = case ret of
                   Just (v, _) -> v
                   Nothing -> IntValue 0
-            let propagatedEnv = applyGlobalWrites envAfterArgs finalEnv globalNames
-            Right (retVal, argOuts ++ bodyOuts, propagatedEnv)
+            let propagatedEnv = applyGlobalWrites envAfterDefaults finalEnv globalNames
+            Right (retVal, argOuts ++ defaultOuts ++ bodyOuts, propagatedEnv)
   where
     evalArgs currentEnv currentFenv = foldl go (Right ([], [], currentEnv))
       where
@@ -53,6 +55,7 @@ evalCallExpr evalStatementsFn evalExprFn env fenv fname args pos =
         goStmt (WhileStmt _ body _) = concatMap goStmt body
         goStmt (ForStmt _ _ body _) = concatMap goStmt body
         goStmt (FunctionDefStmt _ _ _ _) = []
+        goStmt (FunctionDefDefaultsStmt _ _ _ _ _) = []
         goStmt _ = []
 
     applyGlobalWrites outerEnv finalLocalEnv names =
@@ -62,3 +65,17 @@ evalCallExpr evalStatementsFn evalExprFn env fenv fname args pos =
           case Map.lookup name finalLocalEnv of
             Just value -> Map.insert name value accEnv
             Nothing -> accEnv
+
+    evalMissingDefaults currentEnv currentFenv params defaults argVals =
+      fill currentEnv (drop (length argVals) params)
+      where
+        defaultsMap = Map.fromList defaults
+
+        fill envNow [] = Right ([], [], envNow)
+        fill envNow (missingName : remaining) =
+          case Map.lookup missingName defaultsMap of
+            Nothing -> Left $ "Argument count mismatch when calling " ++ fname ++ " at " ++ showPos pos
+            Just defaultExpr -> do
+              (v, exprOuts, envAfterExpr) <- evalExprFn envNow currentFenv defaultExpr
+              (otherVals, otherOuts, finalEnv) <- fill envAfterExpr remaining
+              Right (v : otherVals, exprOuts ++ otherOuts, finalEnv)

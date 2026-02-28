@@ -124,6 +124,57 @@ spec = describe "runSource (integration edge/error)" $ do
   it "executes function and collects prints from body and call" $ do
     runSource "def add(a, b):\nprint a\nprint add(1, 2)\n" `shouldBe` Right ["1", "0"]
 
+  it "supports function default arguments for omitted trailing parameters" $ do
+    runSource "def add(a, b = 2):\n  return a + b\nprint add(3)\nprint add(3, 4)\n" `shouldBe` Right ["5", "7"]
+
+  it "supports function default arguments with trailing comma in parameter list" $ do
+    runSource "def add(a, b = 2,):\n  return a + b\nprint add(3)\n" `shouldBe` Right ["5"]
+
+  it "reports argument count mismatch when required parameter is missing even with defaults" $ do
+    runSource "def add(a, b = 2):\n  return a + b\nprint add()\n" `shouldBe` Left "Argument count mismatch when calling add at 3:7"
+
+  it "returns parse error when required parameter appears after default parameter" $ do
+    runSource "def bad(a = 1, b):\n  return a + b\n" `shouldBe` Left "ExpectedExpression (Position {line = 1, column = 16})"
+
+  it "returns parse error when function parameters contain duplicate names" $ do
+    runSource "def dup(a, a):\n  return a\n" `shouldBe` Left "ExpectedExpression (Position {line = 1, column = 12})"
+
+  it "returns parse error when duplicate parameter names include defaults" $ do
+    runSource "def dup(a = 1, a = 2):\n  return a\n" `shouldBe` Left "ExpectedExpression (Position {line = 1, column = 16})"
+
+  it "returns parse error for unsupported keyword argument in call" $ do
+    runSource "print f(a=1)\n" `shouldBe` Left "ExpectedExpression (Position {line = 1, column = 10})"
+
+  it "returns parse error for mixed positional then keyword call arguments" $ do
+    runSource "print f(1, a=2)\n" `shouldBe` Left "ExpectedExpression (Position {line = 1, column = 13})"
+
+  it "returns parse error for mixed keyword then positional call arguments" $ do
+    runSource "print f(a=1, 2)\n" `shouldBe` Left "ExpectedExpression (Position {line = 1, column = 10})"
+
+  it "returns parse error for unsupported star expansion in call arguments" $ do
+    runSource "print f(*[1,2])\n" `shouldBe` Left "ExpectedExpression (Position {line = 1, column = 9})"
+
+  it "returns parse error for unsupported double-star expansion in call arguments" $ do
+    runSource "print f(**{})\n" `shouldBe` Left "ExpectedExpression (Position {line = 1, column = 9})"
+
+  it "returns parse error for unsupported *args in function definition" $ do
+    runSource "def f(*args):\n  pass\n" `shouldBe` Left "ExpectedExpression (Position {line = 1, column = 7})"
+
+  it "returns parse error for unsupported **kwargs in function definition" $ do
+    runSource "def f(**kwargs):\n  pass\n" `shouldBe` Left "ExpectedExpression (Position {line = 1, column = 7})"
+
+  it "returns parse error for unsupported keyword-only separator in function definition" $ do
+    runSource "def f(*, a):\n  pass\n" `shouldBe` Left "ExpectedExpression (Position {line = 1, column = 7})"
+
+  it "returns parse error for unsupported positional-only separator in function definition" $ do
+    runSource "def f(a, /):\n  pass\n" `shouldBe` Left "ExpectedExpression (Position {line = 1, column = 10})"
+
+  it "returns parse error for unsupported type annotation in function parameter" $ do
+    runSource "def f(a: int):\n  pass\n" `shouldBe` Left "ExpectedExpression (Position {line = 1, column = 8})"
+
+  it "returns parse error for unsupported return type annotation in function definition" $ do
+    runSource "def f() -> int:\n  pass\n" `shouldBe` Left "ExpectedExpression (Position {line = 1, column = 9})"
+
   it "reports update merge type error for non-dict second argument" $ do
     runSource "print update({}, 1)\n" `shouldBe` Left "Type error: update expects dict as second argument at 1:7"
 

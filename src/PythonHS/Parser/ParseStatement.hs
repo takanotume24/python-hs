@@ -1,7 +1,7 @@
 module PythonHS.Parser.ParseStatement (parseStatement) where
-
+import qualified Data.Set as Set
 import PythonHS.AST.Expr (Expr (NoneExpr))
-import PythonHS.AST.Stmt (Stmt (AddAssignStmt, AssignStmt, BreakStmt, ContinueStmt, DivAssignStmt, FloorDivAssignStmt, ForStmt, FunctionDefStmt, GlobalStmt, IfStmt, ModAssignStmt, MulAssignStmt, PassStmt, PrintStmt, ReturnStmt, SubAssignStmt, WhileStmt))
+import PythonHS.AST.Stmt (Stmt (AddAssignStmt, AssignStmt, BreakStmt, ContinueStmt, DivAssignStmt, FloorDivAssignStmt, ForStmt, FunctionDefDefaultsStmt, FunctionDefStmt, GlobalStmt, IfStmt, ModAssignStmt, MulAssignStmt, PassStmt, PrintStmt, ReturnStmt, SubAssignStmt, WhileStmt))
 import PythonHS.Lexer.Position (Position (Position))
 import PythonHS.Lexer.Token (Token (Token), position)
 import PythonHS.Lexer.TokenType
@@ -38,7 +38,6 @@ import PythonHS.Lexer.TokenType
   )
 import PythonHS.Parser.ParseError (ParseError (ExpectedAssignAfterIdentifier, ExpectedExpression, ExpectedNewlineAfterStatement))
 import PythonHS.Parser.ParseExpr (parseExpr)
-
 parseStatement :: [Token] -> Either ParseError (Stmt, [Token])
 parseStatement tokenStream =
   case tokenStream of
@@ -102,11 +101,13 @@ parseStatement tokenStream =
         Token _ _ pos' : _ -> Left (ExpectedExpression pos')
         _ -> Left (ExpectedExpression (Position 0 0))
     Token DefToken _ posDef : Token IdentifierToken name _ : Token LParenToken _ _ : rest -> do
-      (params, afterParams) <- parseParameters rest
+      (params, defaults, afterParams) <- parseParameters rest
       case afterParams of
         Token ColonToken _ _ : afterColon -> do
           (bodySuite, finalRest) <- parseSuite afterColon
-          Right (FunctionDefStmt name params bodySuite posDef, finalRest)
+          if null defaults
+            then Right (FunctionDefStmt name params bodySuite posDef, finalRest)
+            else Right (FunctionDefDefaultsStmt name params defaults bodySuite posDef, finalRest)
         Token _ _ pos' : _ -> Left (ExpectedExpression pos')
         _ -> Left (ExpectedExpression (Position 0 0))
     Token IdentifierToken _ pos : _ -> Left (ExpectedAssignAfterIdentifier pos)
@@ -139,14 +140,31 @@ parseStatement tokenStream =
     consumeNewline (Token _ _ pos : _) = Left (ExpectedNewlineAfterStatement pos)
     consumeNewline [] = Left (ExpectedNewlineAfterStatement (Position 0 0))
 
-    parseParameters (Token RParenToken _ _ : rest) = Right ([], rest)
-    parseParameters (Token IdentifierToken p _ : Token RParenToken _ _ : rest) = Right ([p], rest)
-    parseParameters (Token IdentifierToken p _ : Token CommaToken _ _ : rest) = do
-      (others, after) <- parseParameters rest
-      Right (p : others, after)
-    parseParameters (tok : _) = Left (ExpectedExpression (position tok))
-    parseParameters _ = Left (ExpectedExpression (Position 0 0))
+    parseParameters ts = parseParametersWithState False Set.empty ts
+    parseParametersWithState _ _ (Token RParenToken _ _ : rest) = Right ([], [], rest)
+    parseParametersWithState seenDefault seenNames ts = do
+      ((paramName, paramDefault, paramPos), afterParam) <- parseSingleParameter ts
+      if seenDefault && paramDefault == Nothing
+        then Left (ExpectedExpression paramPos)
+        else if Set.member paramName seenNames
+          then Left (ExpectedExpression paramPos)
+        else case afterParam of
+          Token RParenToken _ _ : rest ->
+            Right ([paramName], paramDefaultPair paramName paramDefault, rest)
+          Token CommaToken _ _ : rest -> do
+            (otherParams, otherDefaults, after) <- parseParametersWithState (seenDefault || paramDefault /= Nothing) (Set.insert paramName seenNames) rest
+            Right (paramName : otherParams, paramDefaultPair paramName paramDefault ++ otherDefaults, after)
+          tok : _ -> Left (ExpectedExpression (position tok))
+          _ -> Left (ExpectedExpression (Position 0 0))
 
+    parseSingleParameter (Token IdentifierToken p pPos : Token AssignToken _ _ : rest) = do
+      (defaultExpr, afterDefault) <- parseExpr rest
+      Right ((p, Just defaultExpr, pPos), afterDefault)
+    parseSingleParameter (Token IdentifierToken p pPos : rest) = Right ((p, Nothing, pPos), rest)
+    parseSingleParameter (tok : _) = Left (ExpectedExpression (position tok))
+    parseSingleParameter _ = Left (ExpectedExpression (Position 0 0))
+    paramDefaultPair _ Nothing = []
+    paramDefaultPair name (Just defaultExpr) = [(name, defaultExpr)]
     dropLeadingNewlines (Token NewlineToken _ _ : rest) = dropLeadingNewlines rest
     dropLeadingNewlines ts = ts
 

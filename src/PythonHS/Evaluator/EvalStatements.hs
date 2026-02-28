@@ -77,7 +77,10 @@ evalStatements env fenv outputs (stmt : rest) =
       evalForStmt evalStatements (evalExpr evalStatements) env fenv outputs name iterExpr body forPos rest
 
     FunctionDefStmt name params body _ ->
-      evalStatements env (Map.insert name (params, body) fenv) outputs rest
+      evalStatements env (Map.insert name (params, [], body) fenv) outputs rest
+
+    FunctionDefDefaultsStmt name params defaults body _ ->
+      evalStatements env (Map.insert name (params, defaults, body) fenv) outputs rest
   where
     lookupName env' name pos =
       case Map.lookup name env' of
