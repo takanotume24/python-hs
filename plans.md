@@ -115,6 +115,18 @@
 
 ## メンテナンス記録（要約）
 - 2026-03-01
+  - [x] 仕様固定（default参照境界）: default引数式から明示引数パラメータ（例: `c=a`）を参照できることを Runner/Evaluator で固定
+  - [x] 仕様固定（default参照境界）: default引数式から後続パラメータ（例: `b=c`）を参照した場合は未束縛として `Name error`（式内位置）になることを Runner/Evaluator で固定
+  - [x] 関数機能拡張（default参照）: default引数式は、呼び出し時に先行して束縛済みの引数/先行defaultを参照できるようにし、`def f(a, b=2, c=b)` を Runner/Evaluator で成功系固定
+  - [x] 仕様固定（default参照負系）: default引数式中の未知識別子参照（例: `c=d`）は引き続き `Name error`（式内位置）として Runner/Evaluator で固定
+  - [x] 仕様更新履歴（default参照境界）: 旧挙動では `c = b` を `Name error` として固定していたが、同日更新で先行束縛参照を許可する仕様へ移行
+  - [x] 仕様固定（default評価順）: 明示指定と未指定が混在する場合でも、未指定default式はパラメータ順（左から）で評価されることを Runner/Evaluator で固定
+  - [x] 仕様固定（default評価順）: 未指定defaultが複数ある場合、default式はパラメータ順（左から）で評価されることを Runner/Evaluator で固定
+  - [x] 仕様固定（default副作用）: default式内の副作用付き呼び出しは、引数が未指定のときだけ実行され、明示指定時は実行されないことを Runner/Evaluator で固定
+  - [x] 仕様固定（エラー位置）: default引数式内の組み込み型エラー（例: `len(1)`）も式内の呼び出し位置を報告することを Runner/Evaluator で固定
+  - [x] 仕様固定（エラー位置）: default引数式の `Name error` 位置も式内識別子位置を報告することを Runner/Evaluator で固定
+  - [x] 仕様固定（エラー位置）: default引数式の評価中に発生するランタイムエラーは、関数定義ヘッダ位置ではなく default 式内の演算位置を報告することを Runner/Evaluator で固定
+  - [x] 仕様固定（default評価）: default引数式で参照する global 値は関数定義時ではなく呼び出し時点の環境を使うことを Runner/Evaluator の両層テストで固定
   - [x] 仕様固定（評価順）: default引数式と明示引数式が混在する場合、明示引数を先に評価し、未指定defaultのみ後続評価する順序を Runner/Evaluator の両層テストで固定
   - [x] 仕様固定（評価順）: 混在呼び出し（`positional + keyword`）でも引数式が左から順に評価されることを Runner/Evaluator の両層テストで固定
   - [x] 仕様固定（評価順）: keyword-only 呼び出し引数は左から順に評価されることを Runner/Evaluator の両層テストで固定

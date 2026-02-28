@@ -3,7 +3,7 @@ module Test.Eval.RuntimeErrorSpec (spec) where
 import PythonHS.AST.BinaryOperator (BinaryOperator (AddOperator, MultiplyOperator, DivideOperator, ModuloOperator, LtOperator))
 import PythonHS.AST.Expr (Expr (BinaryExpr, CallExpr, DictExpr, IdentifierExpr, IntegerExpr, KeywordArgExpr, ListExpr, NoneExpr, StringExpr, UnaryMinusExpr))
 import PythonHS.AST.Program (Program (Program))
-import PythonHS.AST.Stmt (Stmt (AddAssignStmt, AssignStmt, BreakStmt, ContinueStmt, DivAssignStmt, FloorDivAssignStmt, ForStmt, FunctionDefStmt, IfStmt, ModAssignStmt, MulAssignStmt, PassStmt, PrintStmt, ReturnStmt, SubAssignStmt, WhileStmt))
+import PythonHS.AST.Stmt (Stmt (AddAssignStmt, AssignStmt, BreakStmt, ContinueStmt, DivAssignStmt, FloorDivAssignStmt, ForStmt, FunctionDefDefaultsStmt, FunctionDefStmt, IfStmt, ModAssignStmt, MulAssignStmt, PassStmt, PrintStmt, ReturnStmt, SubAssignStmt, WhileStmt))
 import PythonHS.Evaluator (evalProgram)
 import PythonHS.Lexer.Position (Position (Position))
 import Test.Hspec (Spec, describe, it, shouldBe)
@@ -191,6 +191,96 @@ spec = describe "runtime error reporting" $ do
           ]
       )
       `shouldBe` Left "Argument error: keyword arguments are not supported for builtin update at 16:20"
+
+  it "reports runtime error position from default expression at evaluator layer" $ do
+    evalProgram
+      ( Program
+          [ FunctionDefDefaultsStmt
+              "f"
+              ["a", "b"]
+              [("b", BinaryExpr DivideOperator (IntegerExpr 1 (Position 18 14)) (IntegerExpr 0 (Position 18 18)) (Position 18 16))]
+              [ReturnStmt (BinaryExpr AddOperator (IdentifierExpr "a" (Position 19 10)) (IdentifierExpr "b" (Position 19 14)) (Position 19 12)) (Position 19 3)]
+              (Position 18 1),
+            PrintStmt (CallExpr "f" [IntegerExpr 1 (Position 20 9)] (Position 20 7)) (Position 20 1)
+          ]
+      )
+      `shouldBe` Left "Value error: division by zero at 18:16"
+
+  it "reports Name error position from default expression at evaluator layer" $ do
+    evalProgram
+      ( Program
+          [ FunctionDefDefaultsStmt
+              "f"
+              ["a", "b"]
+              [("b", IdentifierExpr "missing" (Position 22 14))]
+              [ReturnStmt (BinaryExpr AddOperator (IdentifierExpr "a" (Position 23 10)) (IdentifierExpr "b" (Position 23 14)) (Position 23 12)) (Position 23 3)]
+              (Position 22 1),
+            PrintStmt (CallExpr "f" [IntegerExpr 1 (Position 24 9)] (Position 24 7)) (Position 24 1)
+          ]
+      )
+      `shouldBe` Left "Name error: undefined identifier missing at 22:14"
+
+  it "reports builtin type error position from default expression at evaluator layer" $ do
+    evalProgram
+      ( Program
+          [ FunctionDefDefaultsStmt
+              "f"
+              ["a", "b"]
+              [("b", CallExpr "len" [IntegerExpr 1 (Position 26 18)] (Position 26 14))]
+              [ReturnStmt (BinaryExpr AddOperator (IdentifierExpr "a" (Position 27 10)) (IdentifierExpr "b" (Position 27 14)) (Position 27 12)) (Position 27 3)]
+              (Position 26 1),
+            PrintStmt (CallExpr "f" [IntegerExpr 1 (Position 28 9)] (Position 28 7)) (Position 28 1)
+          ]
+      )
+      `shouldBe` Left "Type error: len expects string or list at 26:14"
+
+  it "reports Name error when default expression references unknown identifier at evaluator layer" $ do
+    evalProgram
+      ( Program
+          [ FunctionDefDefaultsStmt
+              "f"
+              ["a", "b", "c"]
+              [ ("b", IntegerExpr 2 (Position 30 14)),
+                ("c", IdentifierExpr "d" (Position 30 21))
+              ]
+              [ ReturnStmt
+                  ( BinaryExpr
+                      AddOperator
+                      (BinaryExpr AddOperator (IdentifierExpr "a" (Position 31 10)) (IdentifierExpr "b" (Position 31 14)) (Position 31 12))
+                      (IdentifierExpr "c" (Position 31 18))
+                      (Position 31 16)
+                  )
+                  (Position 31 3)
+              ]
+              (Position 30 1),
+            PrintStmt (CallExpr "f" [IntegerExpr 1 (Position 32 9)] (Position 32 7)) (Position 32 1)
+          ]
+      )
+      `shouldBe` Left "Name error: undefined identifier d at 30:21"
+
+  it "reports Name error when default expression references later parameter at evaluator layer" $ do
+    evalProgram
+      ( Program
+          [ FunctionDefDefaultsStmt
+              "f"
+              ["a", "b", "c"]
+              [ ("b", IdentifierExpr "c" (Position 34 14)),
+                ("c", IntegerExpr 2 (Position 34 21))
+              ]
+              [ ReturnStmt
+                  ( BinaryExpr
+                      AddOperator
+                      (BinaryExpr AddOperator (IdentifierExpr "a" (Position 35 10)) (IdentifierExpr "b" (Position 35 14)) (Position 35 12))
+                      (IdentifierExpr "c" (Position 35 18))
+                      (Position 35 16)
+                  )
+                  (Position 35 3)
+              ]
+              (Position 34 1),
+            PrintStmt (CallExpr "f" [IntegerExpr 1 (Position 36 9)] (Position 36 7)) (Position 36 1)
+          ]
+      )
+      `shouldBe` Left "Name error: undefined identifier c at 34:14"
 
   it "reports bool builtin errors" $ do
     evalProgram

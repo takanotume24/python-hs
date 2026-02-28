@@ -163,6 +163,21 @@ spec = describe "runSource (integration edge/error)" $ do
   it "reports method-style builtin keyword argument as unsupported" $ do
     runSource "d = {}\nprint d.update(k=1)\n" `shouldBe` Left "Argument error: keyword arguments are not supported for builtin update at 2:16"
 
+  it "reports runtime error position from default expression evaluation" $ do
+    runSource "def f(a, b = 1 / 0):\n  return a + b\nprint f(1)\n" `shouldBe` Left "Value error: division by zero at 1:16"
+
+  it "reports Name error position from default expression evaluation" $ do
+    runSource "def f(a, b = missing):\n  return a + b\nprint f(1)\n" `shouldBe` Left "Name error: undefined identifier missing at 1:14"
+
+  it "reports builtin type error position from default expression evaluation" $ do
+    runSource "def f(a, b = len(1)):\n  return a + b\nprint f(1)\n" `shouldBe` Left "Type error: len expects string or list at 1:14"
+
+  it "reports Name error when default expression references unknown identifier" $ do
+    runSource "def f(a, b = 2, c = d):\n  return a + b + c\nprint f(1)\n" `shouldBe` Left "Name error: undefined identifier d at 1:21"
+
+  it "reports Name error when default expression references later parameter" $ do
+    runSource "def f(a, b = c, c = 2):\n  return a + b + c\nprint f(1)\n" `shouldBe` Left "Name error: undefined identifier c at 1:14"
+
   it "prioritizes duplicate keyword error over unexpected keyword error" $ do
     runSource "def f(a):\n  return a\nprint f(b=1, b=2)\n" `shouldBe` Left "Argument error: duplicate keyword argument b at 3:14"
 

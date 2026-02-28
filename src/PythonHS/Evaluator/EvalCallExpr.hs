@@ -125,6 +125,7 @@ evalCallExpr evalStatementsFn evalExprFn env fenv fname args pos =
               case Map.lookup paramName defaultsMap of
                 Nothing -> Left $ "Argument count mismatch when calling " ++ fname ++ " at " ++ showPos pos
                 Just defaultExpr -> do
-                  (v, exprOuts, envAfterExpr) <- evalExprFn envNow currentFenv defaultExpr
+                  let defaultEnv = Map.union acc envNow
+                  (v, exprOuts, envAfterExpr) <- evalExprFn defaultEnv currentFenv defaultExpr
                   (nextAcc, otherOuts, finalEnv) <- fill envAfterExpr remaining (Map.insert paramName v acc)
                   Right (nextAcc, exprOuts ++ otherOuts, finalEnv)

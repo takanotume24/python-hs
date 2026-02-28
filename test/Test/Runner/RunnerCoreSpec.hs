@@ -20,6 +20,27 @@ spec = describe "runSource (integration core)" $ do
   it "evaluates explicit args before missing default expressions" $ do
     runSource "def probe(x):\n  print x\n  return x\ndef add(a, b=probe(2), c=probe(3)):\n  return a + b + c\nprint add(a=probe(1), c=probe(4))\n" `shouldBe` Right ["1", "4", "2", "7"]
 
+  it "evaluates default expression using global value at call time" $ do
+    runSource "x = 10\ndef add(a, b=x):\n  return a + b\nx = 20\nprint add(1)\n" `shouldBe` Right ["21"]
+
+  it "evaluates default expression referencing earlier default parameter" $ do
+    runSource "def add(a, b=2, c=b):\n  return a + b + c\nprint add(1)\n" `shouldBe` Right ["5"]
+
+  it "evaluates default expression referencing explicit argument parameter" $ do
+    runSource "def add(a, b=2, c=a):\n  return a + b + c\nprint add(3)\n" `shouldBe` Right ["8"]
+
+  it "does not evaluate default expression side effect when argument is explicitly provided" $ do
+    runSource "def probe(x):\n  print x\n  return x\ndef add(a, b=probe(2)):\n  return a + b\nprint add(1, b=3)\n" `shouldBe` Right ["4"]
+
+  it "evaluates default expression side effect when argument is omitted" $ do
+    runSource "def probe(x):\n  print x\n  return x\ndef add(a, b=probe(2)):\n  return a + b\nprint add(1)\n" `shouldBe` Right ["2", "3"]
+
+  it "evaluates multiple omitted default expressions in parameter order" $ do
+    runSource "def probe(x):\n  print x\n  return x\ndef add(a, b=probe(2), c=probe(3)):\n  return a + b + c\nprint add(1)\n" `shouldBe` Right ["2", "3", "6"]
+
+  it "evaluates omitted defaults in parameter order when explicit and omitted arguments are interleaved" $ do
+    runSource "def probe(x):\n  print x\n  return x\ndef add(a, b=probe(2), c=probe(30), d=probe(4)):\n  return a + b + c + d\nprint add(a=probe(1), c=probe(3))\n" `shouldBe` Right ["1", "3", "2", "4", "10"]
+
   it "returns None for bare return in function" $ do
     runSource "def f():\n  return\nprint f()\n" `shouldBe` Right ["None"]
 
