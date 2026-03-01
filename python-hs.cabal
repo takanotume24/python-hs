@@ -82,7 +82,7 @@ library
     , directory
     , filepath
     , haskeline
-  default-language:    GHC2021
+  default-language:    GHC2024
   ghc-options:         -Wall
 
 executable python-hs
@@ -91,7 +91,7 @@ executable python-hs
   build-depends:
       base >=4.14 && <5
     , python-hs
-  default-language:    GHC2021
+  default-language:    GHC2024
   ghc-options:         -Wall
 
 executable check-structure
@@ -100,7 +100,7 @@ executable check-structure
   build-depends:
       base >=4.14 && <5
     , python-hs
-  default-language:    GHC2021
+  default-language:    GHC2024
   ghc-options:         -Wall
 
 executable check-runner-case-coverage
@@ -109,7 +109,7 @@ executable check-runner-case-coverage
   build-depends:
       base >=4.14 && <5
     , python-hs
-  default-language:    GHC2021
+  default-language:    GHC2024
   ghc-options:         -Wall
 
 test-suite python-hs-test
@@ -149,5 +149,5 @@ test-suite python-hs-test
     hspec-discover:hspec-discover
     , python-hs:python-hs
     , python-hs:check-runner-case-coverage
-  default-language:    GHC2021
+  default-language:    GHC2024
   ghc-options:         -Wall
