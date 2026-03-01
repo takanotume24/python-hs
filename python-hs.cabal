@@ -20,6 +20,7 @@ library
     , PythonHS.RunSource
     , PythonHS.RunSourceVm
     , PythonHS.Runner
+    , PythonHS.Runner.RunnerCaseCoverageHasMissing
     , PythonHS.Runner.RunnerCaseCoverageReport
     , PythonHS.EvalProgram
     , PythonHS.CLI
@@ -33,6 +34,7 @@ library
     , PythonHS.Structure.CheckStructureViolations
   other-modules:
       PythonHS.CLI.ProcessSubmission
+    , PythonHS.CLI.ProcessVmSubmission
     , PythonHS.CLI.ReplEvalLines
     , PythonHS.CLI.RunFile
     , PythonHS.CLI.StartRepl
@@ -125,6 +127,7 @@ test-suite python-hs-test
     , Test.Runner.RunnerCoreSpec
     , Test.Runner.RunnerEdgeSpec
     , Test.Runner.RunnerCaseCoverageReportSpec
+    , Test.Runner.RunnerCaseCoverageHasMissingSpec
     , Test.Runner.RunnerVmParitySpec
     , Test.CLI.CLISpec
     , Test.VM.RunSourceVmSpec

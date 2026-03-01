@@ -3,6 +3,7 @@ module PythonHS.VM.CallBuiltin (callBuiltin) where
 import Data.List (sortOn)
 import PythonHS.Evaluator.ShowPos (showPos)
 import PythonHS.Evaluator.Value (Value (DictValue, FloatValue, IntValue, ListValue, NoneValue, StringValue))
+import PythonHS.Evaluator.ValueToReplOutput (valueToReplOutput)
 import PythonHS.Lexer.Position (Position)
 
 callBuiltin :: String -> [Value] -> Position -> Maybe (Either String Value)
@@ -118,6 +119,9 @@ callBuiltin name args pos =
       [DictValue pairs] -> Right (ListValue (map pairToList pairs))
       [_] -> Left ("Type error: items expects dict at " ++ showPos pos)
       _ -> Left ("Argument count mismatch when calling items at " ++ showPos pos)
+    "__python_hs_repl_repr__" -> Just $ case args of
+      [value] -> Right (StringValue (valueToReplOutput value))
+      _ -> Left ("Argument count mismatch when calling __python_hs_repl_repr__ at " ++ showPos pos)
     _ -> Nothing
   where
     rangeOne n

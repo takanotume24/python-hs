@@ -3,6 +3,7 @@ module PythonHS.CLI.ReplEvalLines (replEvalLines) where
 import Data.Char (isSpace)
 import qualified Data.Map.Strict as Map
 import PythonHS.CLI.ProcessSubmission (processSubmission)
+import PythonHS.CLI.ProcessVmSubmission (processVmSubmission)
 import PythonHS.Runner.RunnerEngine (RunnerEngine (AstEngine, VmEngine))
 import PythonHS.Runner.ResolveRunnerEngine (resolveRunnerEngine)
 import System.Environment (lookupEnv)
@@ -12,7 +13,7 @@ replEvalLines inputs = do
   envEngine <- lookupEnv "PYTHON_HS_RUNNER_ENGINE"
   case resolveRunnerEngine envEngine of
     AstEngine -> go inputs Map.empty Map.empty [] []
-    VmEngine -> return ["Error: VM engine is not supported in REPL yet"]
+    VmEngine -> goVm inputs [] [] [] []
   where
     trimRight = reverse . dropWhile isSpace . reverse
     trim = dropWhile isSpace . trimRight
@@ -42,3 +43,25 @@ replEvalLines inputs = do
         let (env', fenv', outsAcc') = submitBuffer env fenv buf outsAcc
          in go rest env' fenv' [] outsAcc'
       | otherwise = go rest env fenv (buf ++ [ln]) outsAcc
+
+    submitVmBuffer acceptedLines acceptedOutputs buf outsAcc =
+      case processVmSubmission acceptedLines acceptedOutputs buf of
+        Left err -> (acceptedLines, acceptedOutputs, outsAcc ++ ["Error: " ++ err])
+        Right (newLines, newOutputs, deltaOutputs) -> (newLines, newOutputs, outsAcc ++ deltaOutputs)
+
+    goVm [] _ _ [] outsAcc = return outsAcc
+    goVm [] acceptedLines acceptedOutputs buf outsAcc =
+      let (_, _, outsAcc') = submitVmBuffer acceptedLines acceptedOutputs buf outsAcc
+       in return outsAcc'
+    goVm (ln : rest) acceptedLines acceptedOutputs [] outsAcc
+      | isExitCommand ln = return outsAcc
+      | trimRight ln == "" = goVm rest acceptedLines acceptedOutputs [] outsAcc
+      | endsWithColon ln = goVm rest acceptedLines acceptedOutputs [ln] outsAcc
+      | otherwise =
+        let (newLines, newOutputs, outsAcc') = submitVmBuffer acceptedLines acceptedOutputs [ln] outsAcc
+         in goVm rest newLines newOutputs [] outsAcc'
+    goVm (ln : rest) acceptedLines acceptedOutputs buf outsAcc
+      | trimRight ln == "" =
+        let (newLines, newOutputs, outsAcc') = submitVmBuffer acceptedLines acceptedOutputs buf outsAcc
+         in goVm rest newLines newOutputs [] outsAcc'
+      | otherwise = goVm rest acceptedLines acceptedOutputs (buf ++ [ln]) outsAcc

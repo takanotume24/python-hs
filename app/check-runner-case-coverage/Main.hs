@@ -1,5 +1,6 @@
 module Main (main) where
 
+import PythonHS.Runner.RunnerCaseCoverageHasMissing (runnerCaseCoverageHasMissing)
 import PythonHS.Runner.RunnerCaseCoverageReport (runnerCaseCoverageReport)
 import System.Environment (getArgs)
 import System.Exit (exitFailure)
@@ -11,6 +12,9 @@ main = do
     [edgePath, parityPath, vmPath] -> do
       report <- runnerCaseCoverageReport edgePath parityPath vmPath
       putStr report
+      if runnerCaseCoverageHasMissing report
+        then exitFailure
+        else pure ()
     _ -> do
       putStrLn "Usage: check-runner-case-coverage <RunnerEdgeSpec.hs> <RunnerVmParitySpec.hs> <RunSourceVmSpec.hs>"
       exitFailure

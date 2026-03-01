@@ -59,6 +59,19 @@
 - [x] VM縦スライス33: `nix flake check` に `check-runner-case-coverage` を統合し、Nix経路で parity 欠落検査を自動実行
 - [x] VM縦スライス34: interactive REPL executable テストの `python-hs` 解決を `Paths_python_hs.getBinDir` ベースへ変更し、`PYTHON_HS_SKIP_INTERACTIVE_REPL_TESTS` に依存しない実行へ移行
 
+## 現在のスコープ（P6: REPL VMパリティ）
+- [x] P6 開始: REPL の `vm` 未対応ガードを撤廃し、AST/VM 並行運用を REPL へ拡張する
+- [x] 失敗テスト先行: `replEvalLines` の `PYTHON_HS_RUNNER_ENGINE=vm` で状態保持（代入→参照）を固定
+- [x] REPL VM縦スライス1: `replEvalLines` に VM 実行経路を追加（逐次入力・ブロック確定・EOF flush）
+- [x] REPL VM縦スライス1: `startRepl` に VM 実行経路を追加（対話入力・エラー継続）
+- [x] REPL VM縦スライス1: 品質ゲート（`cabal test` / `cabal run check-structure`）を再実行
+- [x] 品質ゲート強化: `check-runner-case-coverage` を欠落検出時に `exitFailure` する実質ゲートへ更新
+- [x] REPL VM縦スライス2: VM REPL の単発式入力（例: `1 + 2`）を受理し、出力を返す
+- [x] CLI縦スライス: `python-hs --engine ast|vm [file]` を追加し、REPL/ファイル実行でエンジン指定を受理
+- [x] 品質ゲート強化: `check-runner-case-coverage` 実行バイナリの終了コード（欠落あり失敗 / 欠落なし成功）を統合テストで固定
+- [x] ドキュメント整合: README に `cabal run python-hs -- --engine vm`（`--` 区切り必須）を追記
+- [x] REPL VM縦スライス3: 単発式入力の表示を repr 互換化（string/list/dict を AST REPL と同形式で表示）
+
 ### 運用メモ
 - 受け入れテストは MVP 最小（`MvpScenarioSpec`）を維持し、詳細仕様は Runner/Eval の回帰テストで固定する。
 
@@ -154,6 +167,24 @@
 ## メンテナンス記録（要約）
 - 注記: 以下は時系列ログ。古い日付の「未対応」項目は、その後のエントリで仕様更新済みの場合がある。
 - 2026-03-02
+  - [x] P6継続: `processVmSubmission` の単発式フォールバックを `print __python_hs_repl_repr__(expr)` へ変更し、VM REPL の表示を repr 互換化
+  - [x] P6継続: VM内部組み込み `__python_hs_repl_repr__` を追加し、`valueToReplOutput` を利用して REPL 表示文字列を生成
+  - [x] P6継続: `CLISpec` に VM REPL の repr 表示ケース（string/dict）を追加し、失敗テスト先行でグリーン化
+  - [x] P6継続: 品質ゲート再実行（`cabal test` / `cabal run check-structure`）で 678 examples green を確認
+  - [x] P6継続: `RunnerCaseCoverageReportSpec` に `check-runner-case-coverage` 実行テストを追加し、欠落ありで `ExitFailure 1`・欠落なしで `ExitSuccess` を固定
+  - [x] P6継続: `README` の使い方へ VM 起動手順を追記（`cabal run ... -- --engine vm` と環境変数指定）
+  - [x] P6継続: 品質ゲート再実行（`cabal test` / `cabal run check-structure`）で 677 examples green を確認
+  - [x] P6継続: `python-hs --engine ast|vm [file]` を追加し、`--engine vm` でREPL起動できるよう修正（未知値は `ast` へフォールバック）
+  - [x] P6継続: VM REPL の単発式入力を `processVmSubmission` で検出し、式行のみ `print <expr>` へフォールバックして評価可能化
+  - [x] P6継続: `CLISpec` に `--engine vm` 起動ケースと VM REPL 単発式ケースを追加し、失敗テスト先行でグリーン化
+  - [x] P6継続: 品質ゲート再実行（`cabal test` / `cabal run check-structure`）で 675 examples green を確認
+  - [x] P6継続: `check-runner-case-coverage` に欠落判定（`COUNT PARITY`/`COUNT VM` > 0）を追加し、欠落時に `exitFailure` する品質ゲートへ更新
+  - [x] P6継続: `RunnerCaseCoverageHasMissing` を追加し、件数0/非0判定のユニットテスト（3件）を失敗テスト先行で追加してグリーン化
+  - [x] P6継続: 品質ゲート再実行（`cabal test` / `cabal run check-structure`）で 673 examples green を確認
+  - [x] P6開始: REPL の `PYTHON_HS_RUNNER_ENGINE=vm` 未対応ガードを撤廃し、`replEvalLines` / `startRepl` の両経路で VM 実行（逐次入力・複文確定・EOF flush・エラー継続）を有効化
+  - [x] P6開始: `PythonHS.CLI.ProcessVmSubmission` を追加し、受理済みソース再実行 + 出力差分抽出で REPL の VM 状態保持（代入→参照）を実装
+  - [x] P6開始: `CLISpec` の VM REPL ケースを「未対応メッセージ」から「状態保持で評価成功」へ更新し、失敗テスト先行でグリーン化
+  - [x] P6開始: 品質ゲート再実行（`cabal test` / `cabal run check-structure`）で全通過を確認
   - [x] P5継続: interactive REPL executable テストの `python-hs` 解決を `getBinDir` 起点の近傍探索へ拡張し、Nixサンドボックス下でも `posix_spawnp: python-hs` を再発させない実行経路へ修正
   - [x] P5継続: `PYTHON_HS_SKIP_INTERACTIVE_REPL_TESTS` への依存を撤廃した状態で品質ゲートを再実行（`cabal run check-structure` / `cabal test` / `nix flake check -L path:.`）し、スキップなしで全通過を確認
   - [x] P5継続: `CLISpec` の interactive REPL executable テストで `python-hs` 実行パスを `Paths_python_hs.getBinDir` から解決するよう更新し、コマンド探索の外部 `PATH` 依存を除去

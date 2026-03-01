@@ -117,6 +117,24 @@ cabal run python-hs -- examples/sample.pyhs
 cabal run python-hs
 ```
 
+### 5. VMエンジンで起動
+`cabal run` から実行ファイルへ引数を渡すときは `--` 区切りが必要です。
+
+```bash
+# VMでREPL起動
+cabal run python-hs -- --engine vm
+
+# VMでファイル実行
+cabal run python-hs -- --engine vm examples/sample.pyhs
+```
+
+環境変数でも同じ指定ができます。
+
+```bash
+PYTHON_HS_RUNNER_ENGINE=vm cabal run python-hs
+PYTHON_HS_RUNNER_ENGINE=vm cabal run python-hs -- examples/sample.pyhs
+```
+
 ## サンプル
 
 ```python

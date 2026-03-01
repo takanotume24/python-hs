@@ -48,11 +48,23 @@ spec = describe "runFile / replEvalLines" $ do
         res <- runFile path
         res `shouldBe` Right ["3"]
 
-  it "reports unsupported mode for replEvalLines when PYTHON_HS_RUNNER_ENGINE=vm" $
+  it "evaluates REPL lines with vm engine when PYTHON_HS_RUNNER_ENGINE=vm" $
     bracket (lookupEnv "PYTHON_HS_RUNNER_ENGINE") restoreRunnerEngine $ \_ -> do
       setEnv "PYTHON_HS_RUNNER_ENGINE" "vm"
-      outs <- replEvalLines ["print 1", ""]
-      outs `shouldBe` ["Error: VM engine is not supported in REPL yet"]
+      outs <- replEvalLines ["x = 1", "print x", ""]
+      outs `shouldBe` ["1"]
+
+  it "prints expression result for single-line VM REPL input" $
+    bracket (lookupEnv "PYTHON_HS_RUNNER_ENGINE") restoreRunnerEngine $ \_ -> do
+      setEnv "PYTHON_HS_RUNNER_ENGINE" "vm"
+      outs <- replEvalLines ["1 + 2", ""]
+      outs `shouldBe` ["3"]
+
+  it "prints repr-style string and dict results for single-line VM REPL input" $
+    bracket (lookupEnv "PYTHON_HS_RUNNER_ENGINE") restoreRunnerEngine $ \_ -> do
+      setEnv "PYTHON_HS_RUNNER_ENGINE" "vm"
+      outs <- replEvalLines ["\"hello\"", "{\"k\": 1}", ""]
+      outs `shouldBe` ["'hello'", "{'k': 1}"]
 
   it "returns an IO error for missing file" $ do
     res <- runFile "this-file-does-not-exist-xyz"
@@ -180,10 +192,19 @@ spec = describe "runFile / replEvalLines" $ do
     (code, out, _err) <- runInteractivePythonHs "{\"k\": 1}\n"
     code `shouldBe` ExitSuccess
     (">>> {'k': 1}" `isInfixOf` out) `shouldBe` True
+
+  it "starts interactive REPL with --engine vm" $ do
+    (code, out, _err) <- runInteractivePythonHsWithArgs ["--engine", "vm"] "x = 1\nprint x\n"
+    code `shouldBe` ExitSuccess
+    ("1" `isInfixOf` out) `shouldBe` True
   where
     runInteractivePythonHs input = do
       exePath <- pythonHsExecutablePath
       readCreateProcessWithExitCode (proc exePath []) input
+
+    runInteractivePythonHsWithArgs args input = do
+      exePath <- pythonHsExecutablePath
+      readCreateProcessWithExitCode (proc exePath args) input
 
     pythonHsExecutablePath = do
       binDir <- Paths_python_hs.getBinDir
