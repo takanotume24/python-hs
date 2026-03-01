@@ -3,7 +3,7 @@ module Test.Lexer.ScanTokensCoreSpec (spec) where
 import PythonHS.Lexer.Position (Position (Position))
 import PythonHS.Lexer.ScanTokens (scanTokens)
 import PythonHS.Lexer.Token (Token (Token))
-import PythonHS.Lexer.TokenType (TokenType (AssignToken, BreakToken, ContinueToken, DotToken, DoubleSlashAssignToken, DoubleSlashToken, EOFToken, ElifToken, FalseToken, FloatToken, ForToken, GlobalToken, IdentifierToken, IfToken, ImportToken, InToken, IntegerToken, LParenToken, MinusAssignToken, NewlineToken, NoneToken, PassToken, PercentAssignToken, PercentToken, PlusAssignToken, PlusToken, PrintToken, ReturnToken, RParenToken, SlashAssignToken, SlashToken, StarAssignToken, StarToken, TrueToken))
+import PythonHS.Lexer.TokenType (TokenType (AsToken, AssignToken, BreakToken, ContinueToken, DotToken, DoubleSlashAssignToken, DoubleSlashToken, EOFToken, ElifToken, FalseToken, FloatToken, ForToken, FromToken, GlobalToken, IdentifierToken, IfToken, ImportToken, InToken, IntegerToken, LParenToken, MinusAssignToken, NewlineToken, NoneToken, PassToken, PercentAssignToken, PercentToken, PlusAssignToken, PlusToken, PrintToken, ReturnToken, RParenToken, SlashAssignToken, SlashToken, StarAssignToken, StarToken, TrueToken))
 import Test.Hspec (Spec, describe, it, shouldBe)
 
 spec :: Spec
@@ -191,6 +191,21 @@ spec = describe "scanTokens core tokens" $ do
         [ Token ImportToken "import" (Position 1 1),
           Token IdentifierToken "math" (Position 1 8),
           Token NewlineToken "\\n" (Position 1 12),
+          Token EOFToken "" (Position 2 1)
+        ]
+
+  it "recognizes from/as keywords for import variants" $ do
+    scanTokens "from pkg.mod import sqrt as s\n" `shouldBe`
+      Right
+        [ Token FromToken "from" (Position 1 1),
+          Token IdentifierToken "pkg" (Position 1 6),
+          Token DotToken "." (Position 1 9),
+          Token IdentifierToken "mod" (Position 1 10),
+          Token ImportToken "import" (Position 1 14),
+          Token IdentifierToken "sqrt" (Position 1 21),
+          Token AsToken "as" (Position 1 26),
+          Token IdentifierToken "s" (Position 1 29),
+          Token NewlineToken "\\n" (Position 1 30),
           Token EOFToken "" (Position 2 1)
         ]
 

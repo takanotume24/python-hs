@@ -1,7 +1,7 @@
 module PythonHS.Parser.ParseStatement (parseStatement) where
 import qualified Data.Set as Set
 import PythonHS.AST.Expr (Expr (NoneExpr))
-import PythonHS.AST.Stmt (Stmt (AddAssignStmt, AssignStmt, BreakStmt, ContinueStmt, DivAssignStmt, FloorDivAssignStmt, ForStmt, FunctionDefDefaultsStmt, FunctionDefStmt, GlobalStmt, IfStmt, ImportStmt, ModAssignStmt, MulAssignStmt, PassStmt, PrintStmt, ReturnStmt, SubAssignStmt, WhileStmt))
+import PythonHS.AST.Stmt (Stmt (AddAssignStmt, AssignStmt, BreakStmt, ContinueStmt, DivAssignStmt, FloorDivAssignStmt, ForStmt, FunctionDefDefaultsStmt, FunctionDefStmt, GlobalStmt, IfStmt, ModAssignStmt, MulAssignStmt, PassStmt, PrintStmt, ReturnStmt, SubAssignStmt, WhileStmt))
 import PythonHS.Lexer.Position (Position (Position))
 import PythonHS.Lexer.Token (Token (Token), position)
 import PythonHS.Lexer.TokenType
@@ -15,6 +15,7 @@ import PythonHS.Lexer.TokenType
         DefToken,
         DoubleSlashAssignToken,
         ForToken,
+        FromToken,
         GlobalToken,
         IdentifierToken,
         ImportToken,
@@ -38,6 +39,7 @@ import PythonHS.Lexer.TokenType
 import PythonHS.Parser.ParseError (ParseError (ExpectedAssignAfterIdentifier, ExpectedExpression, ExpectedNewlineAfterStatement))
 import PythonHS.Parser.ParseExpr (parseExpr)
 import PythonHS.Parser.ParseIfTail (parseIfTail)
+import PythonHS.Parser.ParseImportStmt (parseImportStmt)
 parseStatement :: [Token] -> Either ParseError (Stmt, [Token])
 parseStatement tokenStream =
   case tokenStream of
@@ -54,8 +56,8 @@ parseStatement tokenStream =
     Token PassToken _ pos : rest -> Right (PassStmt pos, rest)
     Token GlobalToken _ pos : Token IdentifierToken name _ : rest ->
       Right (GlobalStmt name pos, rest)
-    Token ImportToken _ pos : Token IdentifierToken name _ : rest ->
-      Right (ImportStmt name pos, rest)
+    Token ImportToken _ _ : _ -> parseImportStmt tokenStream
+    Token FromToken _ _ : _ -> parseImportStmt tokenStream
     Token IdentifierToken name pos : Token AssignToken _ _ : rest -> do
       (valueExpr, remaining) <- parseExpr rest
       Right (AssignStmt name valueExpr pos, remaining)

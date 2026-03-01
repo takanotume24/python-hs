@@ -82,6 +82,15 @@
 - [x] 品質ゲート再実行（`cabal test` / `cabal run check-structure` / warning 0）
 - [x] CI修正: `RunnerCaseCoverageReportSpec` 実行時に `check-runner-case-coverage` 実行ファイルを解決できるよう、test-suite の `build-tool-depends` に `python-hs:check-runner-case-coverage` を追加
 
+## 現在のスコープ（P8: VM import 拡張）
+- [x] P8 開始: import を VM 実行系で拡張する（AST 評価器は今回スコープ外）
+- [x] 失敗テスト先行: `import x` / `import x as y` / `from x import y` / `from x import y as z` の lexer/parser ケースを追加
+- [x] 失敗テスト先行: VM/CLI で `math` 組み込み + ローカル `.py` import ケースを追加
+- [x] 構文拡張: `from` / `as` / dotted module path を parser/AST へ導入
+- [x] VM 実装: import 解決器（探索パス配列、初回実行キャッシュ、循環 import エラー）を導入
+- [x] 仕様固定: `math` は組み込み、その他はローカル `.py` を解決
+- [x] 品質ゲート再実行（`cabal test` / `cabal run check-structure` / warning 0）
+
 ### 運用メモ
 - 受け入れテストは MVP 最小（`MvpScenarioSpec`）を維持し、詳細仕様は Runner/Eval の回帰テストで固定する。
 
@@ -177,6 +186,9 @@
 ## メンテナンス記録（要約）
 - 注記: 以下は時系列ログ。古い日付の「未対応」項目は、その後のエントリで仕様更新済みの場合がある。
 - 2026-03-02
+  - [x] P8完了: `import` 拡張（`import`/`import as`/`from import`/dotted path）を lexer/parser/AST/VM へ導入し、VM 実行で `math` 組み込み + ローカル `.py` import を有効化
+  - [x] P8完了: `runFile` の VM 経路に探索パス注入（実行ファイルディレクトリ）を導入し、ローカルモジュール解決を実運用導線で固定
+  - [x] P8完了: 品質ゲート再実行（`cabal test`: 695 examples green / `cabal run check-structure`: pass）を確認
   - [x] P4継続: GHC 9.14.1 で `RunnerCaseCoverageReportSpec` が `check-runner-case-coverage` 未検出となる差分を解消するため、test-suite の `build-tool-depends` に `python-hs:check-runner-case-coverage` を追加
   - [x] P4継続: ツールチェーン最新化のスコープを開始し、`ghcup` で `ghc 9.14.1` / `cabal-install 3.16.1.0` を導入
   - [x] P4継続: `ghcup set` でデフォルトを `ghc 9.14.1` / `cabal 3.16.1.0` へ切替し、`ghc --version` / `cabal --version` で反映を確認

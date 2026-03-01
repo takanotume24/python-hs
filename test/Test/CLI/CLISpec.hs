@@ -9,7 +9,7 @@ import System.Exit (ExitCode (ExitSuccess))
 import System.FilePath ((</>))
 import System.FilePath (takeDirectory)
 import System.IO (hPutStr, hClose)
-import System.IO.Temp (withSystemTempFile)
+import System.IO.Temp (withSystemTempDirectory, withSystemTempFile)
 import System.Process (proc, readCreateProcessWithExitCode)
 import PythonHS.CLI (runFile, replEvalLines)
 import Test.Hspec (Spec, describe, it, shouldBe, shouldSatisfy)
@@ -57,6 +57,46 @@ spec = describe "runFile / replEvalLines" $ do
         res <- runFile path
         res `shouldBe` Right ["0.0", "1.0", "0.0", "0.0", "2.718281828459045", "2.718281828459045"]
 
+  it "runs import math alias script in vm engine for runFile" $
+    withSystemTempFile "vm-math-alias.pyhs" $ \path h -> do
+      hPutStr h "import math as m\nprint m.sqrt(9)\nprint m.pi()\n"
+      hClose h
+      bracket (lookupEnv "PYTHON_HS_RUNNER_ENGINE") restoreRunnerEngine $ \_ -> do
+        setEnv "PYTHON_HS_RUNNER_ENGINE" "vm"
+        res <- runFile path
+        res `shouldBe` Right ["3.0", "3.141592653589793"]
+
+  it "runs from math import alias script in vm engine for runFile" $
+    withSystemTempFile "vm-math-from.pyhs" $ \path h -> do
+      hPutStr h "from math import sqrt as s, e\nprint s(9)\nprint e\n"
+      hClose h
+      bracket (lookupEnv "PYTHON_HS_RUNNER_ENGINE") restoreRunnerEngine $ \_ -> do
+        setEnv "PYTHON_HS_RUNNER_ENGINE" "vm"
+        res <- runFile path
+        res `shouldBe` Right ["3.0", "2.718281828459045"]
+
+  it "runs local .py module import in vm engine for runFile" $
+    withSystemTempDirectory "vm-local-import" $ \dir -> do
+      let modulePath = dir </> "helper.py"
+      let mainPath = dir </> "main.py"
+      writeFile modulePath "def inc(x):\n  return x + 1\n"
+      writeFile mainPath "import helper\nprint helper.inc(4)\n"
+      bracket (lookupEnv "PYTHON_HS_RUNNER_ENGINE") restoreRunnerEngine $ \_ -> do
+        setEnv "PYTHON_HS_RUNNER_ENGINE" "vm"
+        res <- runFile mainPath
+        res `shouldBe` Right ["5"]
+
+  it "runs local .py from-import with alias in vm engine for runFile" $
+    withSystemTempDirectory "vm-local-from-import" $ \dir -> do
+      let modulePath = dir </> "helper.py"
+      let mainPath = dir </> "main.py"
+      writeFile modulePath "base = 10\ndef add(x):\n  return x + base\n"
+      writeFile mainPath "from helper import add as a, base\nprint a(2)\nprint base\n"
+      bracket (lookupEnv "PYTHON_HS_RUNNER_ENGINE") restoreRunnerEngine $ \_ -> do
+        setEnv "PYTHON_HS_RUNNER_ENGINE" "vm"
+        res <- runFile mainPath
+        res `shouldBe` Right ["12", "10"]
+
   it "reports math type error in vm engine for runFile" $
     withSystemTempFile "vm-math-type-error.pyhs" $ \path h -> do
       hPutStr h "import math\nprint math.sqrt(\"x\")\n"
@@ -66,14 +106,14 @@ spec = describe "runFile / replEvalLines" $ do
         res <- runFile path
         res `shouldSatisfy` (== Left "Type error: sqrt expects number at 2:12")
 
-  it "reports unsupported import module in vm engine for runFile" $
+  it "reports module-not-found import error in vm engine for runFile" $
     withSystemTempFile "vm-import-unsupported.pyhs" $ \path h -> do
       hPutStr h "import os\n"
       hClose h
       bracket (lookupEnv "PYTHON_HS_RUNNER_ENGINE") restoreRunnerEngine $ \_ -> do
         setEnv "PYTHON_HS_RUNNER_ENGINE" "vm"
         res <- runFile path
-        res `shouldBe` Left "Import error: unsupported module os at 1:1"
+        res `shouldBe` Left "Import error: module not found os"
 
   it "falls back to ast engine when PYTHON_HS_RUNNER_ENGINE is unknown" $
     withSystemTempFile "ast-fallback.pyhs" $ \path h -> do

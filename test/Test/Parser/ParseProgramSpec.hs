@@ -3,7 +3,7 @@ module Test.Parser.ParseProgramSpec (spec) where
 import PythonHS.AST.BinaryOperator (BinaryOperator (..))
 import PythonHS.AST.Expr (Expr (BinaryExpr, CallExpr, DictExpr, FloatExpr, IdentifierExpr, IntegerExpr, KeywordArgExpr, ListExpr, NoneExpr, NotExpr, StringExpr, UnaryMinusExpr))
 import PythonHS.AST.Program (Program (Program))
-import PythonHS.AST.Stmt (Stmt (AddAssignStmt, AssignStmt, BreakStmt, ContinueStmt, DivAssignStmt, FloorDivAssignStmt, ForStmt, FunctionDefDefaultsStmt, FunctionDefStmt, GlobalStmt, IfStmt, ImportStmt, ModAssignStmt, MulAssignStmt, PassStmt, PrintStmt, ReturnStmt, SubAssignStmt, WhileStmt))
+import PythonHS.AST.Stmt (Stmt (AddAssignStmt, AssignStmt, BreakStmt, ContinueStmt, DivAssignStmt, FloorDivAssignStmt, ForStmt, FromImportStmt, FunctionDefDefaultsStmt, FunctionDefStmt, GlobalStmt, IfStmt, ImportStmt, ModAssignStmt, MulAssignStmt, PassStmt, PrintStmt, ReturnStmt, SubAssignStmt, WhileStmt))
 import PythonHS.Lexer.Token (Token (Token))
 import PythonHS.Lexer.Position (Position (Position))
 import PythonHS.Lexer.TokenType
@@ -22,9 +22,11 @@ import PythonHS.Lexer.TokenType
         EOFToken,
         ElseToken,
         ElifToken,
+        AsToken,
         TrueToken,
         FalseToken,
         FloatToken,
+        FromToken,
         NoneToken,
         ForToken,
         ImportToken,
@@ -76,7 +78,43 @@ spec = describe "parseProgram" $ do
       ]
       `shouldBe` Right
         ( Program
-            [ ImportStmt "math" (Position 1 1)
+            [ ImportStmt [(["math"], Nothing)] (Position 1 1)
+            ]
+        )
+
+  it "parses import statement with dotted module and alias" $ do
+    parseProgram
+      [ Token ImportToken "import" (Position 1 1),
+        Token IdentifierToken "pkg" (Position 1 8),
+        Token DotToken "." (Position 1 11),
+        Token IdentifierToken "mod" (Position 1 12),
+        Token AsToken "as" (Position 1 16),
+        Token IdentifierToken "m" (Position 1 19),
+        Token NewlineToken "\\n" (Position 1 20),
+        Token EOFToken "" (Position 2 1)
+      ]
+      `shouldBe` Right
+        ( Program
+            [ ImportStmt [(["pkg", "mod"], Just "m")] (Position 1 1)
+            ]
+        )
+
+  it "parses from-import statement with alias" $ do
+    parseProgram
+      [ Token FromToken "from" (Position 1 1),
+        Token IdentifierToken "pkg" (Position 1 6),
+        Token DotToken "." (Position 1 9),
+        Token IdentifierToken "mod" (Position 1 10),
+        Token ImportToken "import" (Position 1 14),
+        Token IdentifierToken "sqrt" (Position 1 21),
+        Token AsToken "as" (Position 1 26),
+        Token IdentifierToken "s" (Position 1 29),
+        Token NewlineToken "\\n" (Position 1 30),
+        Token EOFToken "" (Position 2 1)
+      ]
+      `shouldBe` Right
+        ( Program
+            [ FromImportStmt ["pkg", "mod"] [("sqrt", Just "s")] (Position 1 1)
             ]
         )
 

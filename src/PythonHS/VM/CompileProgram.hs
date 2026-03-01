@@ -3,12 +3,13 @@ module PythonHS.VM.CompileProgram (compileProgram) where
 import PythonHS.AST.BinaryOperator (BinaryOperator (AddOperator, AndOperator, DivideOperator, FloorDivideOperator, ModuloOperator, MultiplyOperator, OrOperator, SubtractOperator))
 import PythonHS.AST.Expr (Expr (BinaryExpr, CallExpr, DictExpr, FloatExpr, IdentifierExpr, IntegerExpr, ListExpr, NoneExpr, NotExpr, StringExpr, UnaryMinusExpr))
 import PythonHS.AST.Program (Program (Program))
-import PythonHS.AST.Stmt (Stmt (AddAssignStmt, AssignStmt, BreakStmt, ContinueStmt, DivAssignStmt, FloorDivAssignStmt, ForStmt, FunctionDefDefaultsStmt, FunctionDefStmt, GlobalStmt, IfStmt, ImportStmt, ModAssignStmt, MulAssignStmt, PassStmt, PrintStmt, ReturnStmt, SubAssignStmt, WhileStmt))
+import PythonHS.AST.Stmt (Stmt (AddAssignStmt, AssignStmt, BreakStmt, ContinueStmt, DivAssignStmt, FloorDivAssignStmt, ForStmt, FromImportStmt, FunctionDefDefaultsStmt, FunctionDefStmt, GlobalStmt, IfStmt, ImportStmt, ModAssignStmt, MulAssignStmt, PassStmt, PrintStmt, ReturnStmt, SubAssignStmt, WhileStmt))
 import PythonHS.Evaluator.ShowPos (showPos)
 import PythonHS.Evaluator.Value (Value (FloatValue, IntValue, NoneValue, StringValue))
 import PythonHS.VM.CompileCallArgsAt (compileCallArgsAt)
 import PythonHS.VM.CompileDefaults (compileDefaults)
 import PythonHS.VM.CompileExprItemsAt (compileExprItemsAt)
+import PythonHS.VM.CompileImportStmt (compileImportStmt)
 import PythonHS.VM.ExprPosition (exprPosition)
 import PythonHS.VM.Instruction (Instruction (ApplyBinary, ApplyNot, ApplyUnaryMinus, BuildDict, BuildList, CallFunction, DeclareGlobal, DefineFunction, ForNext, ForSetup, Halt, Jump, JumpIfFalse, LoadName, LoopGuard, PrintTop, PushConst, ReturnTop, StoreName))
 import PythonHS.VM.StmtPosition (stmtPosition)
@@ -32,10 +33,10 @@ compileProgram (Program stmts) = do
       case stmt of
         PassStmt _ -> Right ([], baseIndex)
         GlobalStmt name _ -> Right ([DeclareGlobal name], baseIndex + 1)
-        ImportStmt moduleName pos ->
-          if moduleName == "math"
-            then Right ([PushConst (StringValue "<module:math>"), StoreName "math"], baseIndex + 2)
-            else Left ("Import error: unsupported module " ++ moduleName ++ " at " ++ showPos pos)
+        ImportStmt _ _ ->
+          compileImportStmt baseIndex stmt
+        FromImportStmt _ _ _ ->
+          compileImportStmt baseIndex stmt
         AssignStmt name expr _ -> do
           (exprCode, exprEnd) <- compileExprAt baseIndex expr
           let code = exprCode ++ [StoreName name]

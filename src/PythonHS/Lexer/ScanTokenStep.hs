@@ -39,6 +39,8 @@ import PythonHS.Lexer.TokenType
         ContinueToken,
         GlobalToken,
         PassToken,
+        FromToken,
+        AsToken,
         ImportToken,
         EqToken,
         NotEqToken,
@@ -171,6 +173,8 @@ scanTokenStep src ln col =
       | value == "continue" = ContinueToken
       | value == "global" = GlobalToken
       | value == "pass" = PassToken
+      | value == "from" = FromToken
+      | value == "as" = AsToken
       | value == "import" = ImportToken
       | value == "and" = AndToken
       | value == "or" = OrToken

@@ -19,6 +19,7 @@ library
     , PythonHS.Parser.ParseProgram
     , PythonHS.RunSource
     , PythonHS.RunSourceVm
+    , PythonHS.RunSourceVmWithSearchPaths
     , PythonHS.Runner
     , PythonHS.Runner.RunnerCaseCoverageHasMissing
     , PythonHS.Runner.RunnerCaseCoverageReport
@@ -42,6 +43,7 @@ library
     , PythonHS.Parser.ParseExpr
     , PythonHS.Parser.ParseStatement
     , PythonHS.Parser.ParseIfTail
+    , PythonHS.Parser.ParseImportStmt
     , PythonHS.Structure.CheckStructureWarnings
     , PythonHS.Evaluator.ValueToOutput
     , PythonHS.Evaluator.ValueToReplOutput
@@ -63,7 +65,10 @@ library
     , PythonHS.VM.CompileCallArgsAt
     , PythonHS.VM.CompileDefaults
     , PythonHS.VM.CompileExprItemsAt
+    , PythonHS.VM.CompileImportStmt
     , PythonHS.VM.EvalBinaryOp
+    , PythonHS.VM.ResolveLocalImports
+    , PythonHS.VM.TransformImportAliases
     , PythonHS.VM.CollectFunctionGlobalDecls
     , PythonHS.VM.EvaluateBuiltinArgs
     , PythonHS.VM.EvaluateUserArgs
