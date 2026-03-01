@@ -14,7 +14,8 @@
         };
         haskellLib = pkgs.haskell.lib;
         pythonHs = pkgs.haskellPackages.callCabal2nix "python-hs" ./. { };
-        pythonHsWithChecks = haskellLib.doCheck pythonHs;
+        pythonHsForChecks = haskellLib.addBuildTools pythonHs [ pkgs.cabal-install ];
+        pythonHsWithChecks = haskellLib.doCheck pythonHsForChecks;
       in {
         checks = {
           cabal-test = pkgs.runCommand "python-hs-cabal-test" {
@@ -24,9 +25,18 @@
             touch $out
           '';
           check-structure = pkgs.runCommand "python-hs-check-structure" {
-            nativeBuildInputs = [ pythonHs ];
+            nativeBuildInputs = [ pythonHsWithChecks ];
           } ''
             check-structure
+            touch $out
+          '';
+          check-runner-case-coverage = pkgs.runCommand "python-hs-check-runner-case-coverage" {
+            nativeBuildInputs = [ pythonHsWithChecks ];
+          } ''
+            check-runner-case-coverage \
+              ${./test/Test/Runner/RunnerEdgeSpec.hs} \
+              ${./test/Test/Runner/RunnerVmParitySpec.hs} \
+              ${./test/Test/VM/RunSourceVmSpec.hs}
             touch $out
           '';
         };
@@ -50,6 +60,7 @@
             echo "- run: cabal update"
             echo "- run: cabal test"
             echo "- run: cabal run check-structure"
+            echo "- run: cabal run check-runner-case-coverage -- test/Test/Runner/RunnerEdgeSpec.hs test/Test/Runner/RunnerVmParitySpec.hs test/Test/VM/RunSourceVmSpec.hs"
           '';
         };
       });

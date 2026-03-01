@@ -83,7 +83,7 @@ cabal test
 cabal run check-structure
 ```
 
-Flake check でも同等の検証（テスト + 構造チェック）を実行できます。
+Flake check でも同等の検証（テスト + 構造チェック + runner case coverage）を実行できます。
 
 ```bash
 nix flake check path:.

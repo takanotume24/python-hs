@@ -43,6 +43,21 @@
 - [x] VM縦スライス17: keyword 引数付き関数呼び出し（ユーザー定義関数）をVMで実行可能化
 - [x] VM縦スライス18: keyword 引数エラー系（duplicate/unexpected/multiple values/builtin keyword拒否）のVM回帰とparityを拡張
 - [x] VM縦スライス19: keyword 引数の優先順位互換（builtin keyword拒否の先行判定、duplicate検出順）をVMで整合
+- [x] VM縦スライス20: keyword 優先順位ケース（method-style builtin / unexpected vs multiple values / source-order）のparityを拡張
+- [x] VM縦スライス21: default競合ケース（default内builtin keyword競合・count mismatch優先・default評価位置）のparityを拡張
+- [x] VM縦スライス22: default参照/位置ケース（Name error位置・composite default・leftmost評価順）のparityを拡張
+- [x] VM縦スライス23: `RunnerEdge` keyword残件（duplicate/unexpected/multiple values の優先順位・source-order）を parity/VM spec へ移植
+- [x] VM縦スライス24: keyword 由来の parse 境界（mixed順序, `*`/`**` 展開, `*args`/`**kwargs`, keyword-only/positional-only separator）を parity/VM spec へ移植
+- [x] VM縦スライス25: type annotation 由来の parse 境界（parameter annotation / return annotation）を parity/VM spec へ移植
+- [x] VM縦スライス26: 非keyword parse 境界（header body欠落・standalone `elif/else`・先頭インデント・colon欠落）を parity/VM spec へ移植
+- [x] VM縦スライス27: lexer 境界（unexpected character・dedent不整合・tab受理）を parity/VM spec へ移植
+- [x] VM縦スライス28: `RunnerEdge` 関数/スコープ境界（暗黙return値・global関数全域適用・count mismatch補完）を parity/VM spec とVM実装へ反映
+- [x] VM縦スライス29: `RunnerEdge` 統合成功系残件（if/elif/while代表スクリプト・`update({}, 1)`）を parity/VM spec へ移植
+- [x] VM縦スライス30: `RunnerEdge` 前半エッジ残件（unary minus詳細・method-call位置エラー・builtin count mismatch位置・for range/list/dict）を parity/VM spec へ移植
+- [x] VM縦スライス31: `RunnerEdge` との差分機械抽出で判明したVM欠落4件（default参照Name error 2件・keyword評価優先2件）を `RunSourceVmSpec` へ追補
+- [x] VM縦スライス32: Haskell製 `check-runner-case-coverage` を追加（`RunnerEdge`/parity/VM 3ファイル比較、欠落ケースと件数を出力）
+- [x] VM縦スライス33: `nix flake check` に `check-runner-case-coverage` を統合し、Nix経路で parity 欠落検査を自動実行
+- [x] VM縦スライス34: interactive REPL executable テストの `python-hs` 解決を `Paths_python_hs.getBinDir` ベースへ変更し、`PYTHON_HS_SKIP_INTERACTIVE_REPL_TESTS` に依存しない実行へ移行
 
 ### 運用メモ
 - 受け入れテストは MVP 最小（`MvpScenarioSpec`）を維持し、詳細仕様は Runner/Eval の回帰テストで固定する。
@@ -138,7 +153,61 @@
 
 ## メンテナンス記録（要約）
 - 注記: 以下は時系列ログ。古い日付の「未対応」項目は、その後のエントリで仕様更新済みの場合がある。
+- 2026-03-02
+  - [x] P5継続: interactive REPL executable テストの `python-hs` 解決を `getBinDir` 起点の近傍探索へ拡張し、Nixサンドボックス下でも `posix_spawnp: python-hs` を再発させない実行経路へ修正
+  - [x] P5継続: `PYTHON_HS_SKIP_INTERACTIVE_REPL_TESTS` への依存を撤廃した状態で品質ゲートを再実行（`cabal run check-structure` / `cabal test` / `nix flake check -L path:.`）し、スキップなしで全通過を確認
+  - [x] P5継続: `CLISpec` の interactive REPL executable テストで `python-hs` 実行パスを `Paths_python_hs.getBinDir` から解決するよう更新し、コマンド探索の外部 `PATH` 依存を除去
+  - [x] P5継続: `flake.nix` の `preCheck` で設定していた `PYTHON_HS_SKIP_INTERACTIVE_REPL_TESTS=1` を削除し、スキップなしで `nix flake check` を通す構成へ修正
+  - [x] P5継続: `nix flake check` で `check-runner-case-coverage` が `python-hs` 実行ファイルを見つけられず失敗したため、`flake.nix` の当該checkを `pythonHsWithChecks` 依存へ修正して `preCheck` の `PYTHON_HS_SKIP_INTERACTIVE_REPL_TESTS=1` を有効化
+  - [x] P5継続: `check-structure` も同様に `pythonHsWithChecks` 依存へ揃え、Nixサンドボックス下での REPL 実行テスト失敗（`posix_spawnp: python-hs`）を回避
+  - [x] P5継続: `PythonHS.Runner.RunnerCaseCoverageReport` の `tail` 使用による `-Wx-partial` 警告を除去（パターンマッチへ置換）
+  - [x] P5継続: VM縦スライス33として `flake.nix` の `checks` に `check-runner-case-coverage` を追加し、`RunnerEdgeSpec` / `RunnerVmParitySpec` / `RunSourceVmSpec` の3ファイルを固定入力として検証するよう統合
+  - [x] P5継続: `README` の Flake check 説明を更新し、検証内容を「テスト + 構造チェック + runner case coverage」へ同期
+  - [x] P5継続: `nix flake check` 実行でNix経路の品質ゲートを確認
 - 2026-03-01
+  - [x] P5継続: VM縦スライス32として Haskell製の差分抽出CLI（`check-runner-case-coverage`）を追加し、`PythonHS.Runner.RunnerCaseCoverageReport` に抽出・集合差分・レポート整形ロジックを実装
+  - [x] P5継続: 失敗テスト先行で `Test.Runner.RunnerCaseCoverageReportSpec` を追加し、欠落ケース検出（parity:1, vm:2）の期待値を固定
+  - [x] P5継続: `python-hs.cabal` を更新（library公開モジュール、新規 executable、test-suite module）
+  - [x] P5継続: focused実行（`--match "runnerCaseCoverageReport"`）で追加テストのグリーンを確認
+  - [x] P5継続: 品質ゲート再実行（`cabal run check-structure` / `cabal test`）で 670 examples green を確認
+  - [x] P5継続: VM縦スライス31として `RunnerEdge` との差分機械抽出を再実行し、VM側のみ欠落していた4ケース（`def f(a, b = 2, c = d)` / `def f(a, b = c, c = 2)` / `print f(a=len(1), b=len(1))` / `print f(1, b=len(1))`）を `RunSourceVmSpec` へ追加
+  - [x] P5継続: focused実行（`--match "mirrors RunnerEdge exact source variants"`）で追補4ケースを含む対象群のグリーンを確認
+  - [x] P5継続: 品質ゲート再実行（`cabal run check-structure` / `cabal test`）で 669 examples green を確認
+  - [x] P5継続: VM縦スライス30として `RunnerEdge` 前半エッジ残件（unary minus literal/expr/type error、method-call styleの型/位置、builtin count mismatch call-site位置、for range/list/dict代表）を `RunSourceVmSpec` / `RunnerVmParitySpec` へ移植
+  - [x] P5継続: focused実行（`--match "RunnerEdge"`）で追加ケースを含む対象群のグリーンを確認
+  - [x] P5継続: 品質ゲート再実行（`cabal run check-structure` / `cabal test`）で 667 examples green を確認
+  - [x] P5継続: VM縦スライス29として `RunnerEdge` の統合成功系残件（if/else+function, if/elif/else, while skip/repeat）と `update({}, 1)` 型エラーケースを `RunSourceVmSpec` / `RunnerVmParitySpec` へ移植
+  - [x] P5継続: focused実行（`--match "RunnerEdge"`）で追加ケースを含む対象群のグリーンを確認
+  - [x] P5継続: 品質ゲート再実行（`cabal run check-structure` / `cabal test`）で 660 examples green を確認
+  - [x] P5継続: VM縦スライス28として `RunnerEdge` の関数/スコープ境界ケース（function body print + call、default trailing comma、count mismatch 3種、global read/shadow/new-global/branch-global）を `RunSourceVmSpec` / `RunnerVmParitySpec` へ移植
+  - [x] P5継続: VM実装をAST規約へ整合（暗黙returnを `0` に統一、関数内 `global` を分岐有無にかかわらず関数全域で有効化）
+  - [x] P5継続: 構造制約対応として `collectFunctionGlobalDecls` を `PythonHS.VM.CollectFunctionGlobalDecls` へ責務分離し、`RunInstructions.hs` の200行制約を回復
+  - [x] P5継続: focused実行（`--match "RunnerEdge"`）→品質ゲート（`cabal run check-structure` / `cabal test`）で 654 examples green を確認
+  - [x] P5継続: VM縦スライス27として `RunnerEdge` の lexer 境界（`UnexpectedCharacter '@'`, dedent不整合, 先頭/区切りタブ受理）を `RunSourceVmSpec` / `RunnerVmParitySpec` へ移植
+  - [x] P5継続: focused実行（`--match "lexer"`）で lexer 境界追加ケースのグリーンを確認
+  - [x] P5継続: 品質ゲート再実行（`cabal run check-structure` / `cabal test`）で 644 examples green を確認
+  - [x] P5継続: VM縦スライス26として `RunnerEdge` の非keyword parse 境界（`print/global` malformed、`if/def/while/for` body欠落、standalone `elif/else`、先頭インデント、header colon欠落）を `RunSourceVmSpec` / `RunnerVmParitySpec` へ移植
+  - [x] P5継続: focused実行（`--match "parse"`）で parse 境界追加ケースのグリーンを確認
+  - [x] P5継続: 品質ゲート再実行（`cabal run check-structure` / `cabal test`）で 639 examples green を確認
+  - [x] P5継続: VM縦スライス25として type annotation 由来 parse 境界（`def f(a: int)` / `def f() -> int`）を `RunSourceVmSpec` / `RunnerVmParitySpec` へ移植
+  - [x] P5継続: focused実行（`--match "unsupported"`）で追加ケースを含む parse 境界のグリーンを確認
+  - [x] P5継続: 品質ゲート再実行（`cabal run check-structure` / `cabal test`）で 623 examples green を確認
+  - [x] P5継続: VM縦スライス24として `RunnerEdge` の keyword 由来 parse 境界ケース（mixed keyword→positional、`*[...]` / `**{}`、`*args` / `**kwargs`、`def f(*, a)` / `def f(a, /)`）を `RunSourceVmSpec` / `RunnerVmParitySpec` へ移植
+  - [x] P5継続: keyword 優先順位残件（duplicate vs second Name、duplicate vs unexpected、unexpected/multiple values vs count mismatch）を parity/VM spec へ追加して固定
+  - [x] P5継続: focused実行（`--match "keyword"` / `--match "unsupported"`）で追加ケースのグリーンを確認
+  - [x] P5継続: 品質ゲート再実行（`cabal run check-structure` / `cabal test`）で 621 examples green を確認
+  - [x] P5継続: VM縦スライス23として `RunnerEdge` の keyword 残件（first duplicate source-order、first keyword eval/Name precedence、multiple values 優先順位、first unexpected source-order）を `RunSourceVmSpec` / `RunnerVmParitySpec` へ移植
+  - [x] P5継続: 実装差分なしで追加ケースが既存VMで満たされることを focused実行（`--match "keyword"`）で確認
+  - [x] P5継続: 品質ゲート再実行（`cabal run check-structure` / `cabal test`）で 608 examples green を確認
+  - [x] P5継続: VM縦スライス22として `RunnerEdge` の default参照/位置ケースを parity/VM spec へ移植（missing識別子位置、composite default位置、leftmost評価順）
+  - [x] P5継続: VM Name error 文言を `undefined identifier` へ統一し、AST/evaluator とエラーメッセージ規約を整合
+  - [x] P5継続: focused実行（`--match "default"`）→全体ゲートで 599 examples green を確認
+  - [x] P5継続: VM縦スライス21として default競合ケースを `RunSourceVmSpec` / `RunnerVmParitySpec` に拡張（`duplicate/unexpected` vs default builtin keyword rejection）
+  - [x] P5継続: default評価位置ケース（`b = 1 / 0`）と count mismatch 優先ケース（`print f(1)`）を parity に追加してAST/VM一致を固定
+  - [x] P5継続: 実装差分なしで既存VMが仕様を満たすことを focused実行（`--match "default"`）と全体ゲートで確認
+  - [x] P5継続: VM縦スライス20として `RunnerEdge` の keyword 優先順位ケースを `RunSourceVmSpec` / `RunnerVmParitySpec` へ移植拡張
+  - [x] P5継続: 追加ケース（`len(x=missing)`, `d.update(k=1)`, `d.update(k=len(1))`, `f(1, a=2, b=3)`, `f(1,2,b=3,a=4)`, `f(b=len(1))`）で AST/VM 一致を固定
+  - [x] P5継続: 実装差分なしでグリーン維持を確認（仕様固定の回帰拡張）
   - [x] P5継続: VM縦スライス19として `CallExpr` の引数コードを `CallFunction` 命令へ遅延保持し、実行時に左から評価する方式へ更新
   - [x] P5継続: builtin 呼び出しで keyword 引数を検出した場合、引数式評価より先に rejection を返す優先順位へ整合
   - [x] P5継続: user-defined 呼び出しで duplicate keyword を値式評価前に検出する優先順位へ整合

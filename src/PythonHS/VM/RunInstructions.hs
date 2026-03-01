@@ -8,6 +8,7 @@ import PythonHS.Evaluator.Value (Value (DictValue, FloatValue, IntValue, ListVal
 import PythonHS.Evaluator.ValueToOutput (valueToOutput)
 import PythonHS.VM.BindCallArguments (bindCallArguments)
 import PythonHS.VM.CallBuiltin (callBuiltin)
+import PythonHS.VM.CollectFunctionGlobalDecls (collectFunctionGlobalDecls)
 import PythonHS.VM.EvalBinaryOp (evalBinaryOp)
 import PythonHS.VM.EvaluateBuiltinArgs (evaluateBuiltinArgs)
 import PythonHS.VM.EvaluateUserArgs (evaluateUserArgs)
@@ -30,7 +31,7 @@ runInstructions instructions = do
             LoadName name pos ->
               case lookupName name localEnv globalsEnv of
                 Just value -> execute code (ip + 1) (value : stack) globalsEnv localEnv functions globalDecls forStates loopCounts outputs isTopLevel
-                Nothing -> Left ("Name error: undefined variable " ++ name ++ " at " ++ showPos pos)
+                Nothing -> Left ("Name error: undefined identifier " ++ name ++ " at " ++ showPos pos)
             DeclareGlobal name ->
               let newGlobalDecls = Set.insert name globalDecls
                in execute code (ip + 1) stack globalsEnv localEnv functions newGlobalDecls forStates loopCounts outputs isTopLevel
@@ -121,12 +122,13 @@ runInstructions instructions = do
                     initialLocals <- bindCallArguments fname pos params argValues argKinds
                     (functionLocals, globalsAfterDefaults, functionsAfterDefaults, outputsAfterDefaults) <-
                       bindDefaults fname pos params defaultCodes initialLocals globalsAfterArgs functionsAfterArgs outputsAfterArgs
+                    let functionGlobalDecls = collectFunctionGlobalDecls functionCode
                     (maybeValue, newGlobals, newFunctions, newOutputs) <-
-                      execute functionCode 0 [] globalsAfterDefaults functionLocals functionsAfterDefaults Set.empty Map.empty Map.empty outputsAfterDefaults False
+                      execute functionCode 0 [] globalsAfterDefaults functionLocals functionsAfterDefaults functionGlobalDecls Map.empty Map.empty outputsAfterDefaults False
                     let returnValue =
                           case maybeValue of
                             Just value -> value
-                            Nothing -> NoneValue
+                            Nothing -> IntValue 0
                     let newLocalEnv = if isTopLevel then newGlobals else localEnv
                     execute code (ip + 1) (returnValue : stack) newGlobals newLocalEnv newFunctions globalDecls forStates loopCounts newOutputs isTopLevel
             ApplyBinary op pos ->

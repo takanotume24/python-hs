@@ -2,10 +2,14 @@ module Test.CLI.CLISpec (spec) where
 
 import Control.Exception (bracket)
 import Data.List (isInfixOf, isPrefixOf)
-import System.Environment (lookupEnv, setEnv, unsetEnv)
+import qualified Paths_python_hs
+import System.Directory (doesFileExist)
+import System.Environment (getExecutablePath, lookupEnv, setEnv, unsetEnv)
 import System.Exit (ExitCode (ExitSuccess))
-import System.IO.Temp (withSystemTempFile)
+import System.FilePath ((</>))
+import System.FilePath (takeDirectory)
 import System.IO (hPutStr, hClose)
+import System.IO.Temp (withSystemTempFile)
 import System.Process (proc, readCreateProcessWithExitCode)
 import PythonHS.CLI (runFile, replEvalLines)
 import Test.Hspec (Spec, describe, it, shouldBe, shouldSatisfy)
@@ -134,49 +138,74 @@ spec = describe "runFile / replEvalLines" $ do
         _ -> False
 
   it "flushes pending block on EOF in interactive REPL executable" $ do
-    (code, out, _err) <- readCreateProcessWithExitCode (proc "cabal" ["run", "-v0", "exe:python-hs"]) "def id(v):\n  return v\nprint id(3)\n"
+    (code, out, _err) <- runInteractivePythonHs "def id(v):\n  return v\nprint id(3)\n"
     code `shouldBe` ExitSuccess
     ("3" `isInfixOf` out) `shouldBe` True
 
   it "shows initial prompt and re-shows prompt after an error in interactive REPL executable" $ do
-    (code, out, _err) <- readCreateProcessWithExitCode (proc "cabal" ["run", "-v0", "exe:python-hs"]) "x @ 1\nprint 2\n"
+    (code, out, _err) <- runInteractivePythonHs "x @ 1\nprint 2\n"
     code `shouldBe` ExitSuccess
     (">>> " `isPrefixOf` out) `shouldBe` True
     ("Error: UnexpectedCharacter '@'\n>>> 2" `isInfixOf` out) `shouldBe` True
 
   it "exits interactive REPL when exit() is entered" $ do
-    (code, out, _err) <- readCreateProcessWithExitCode (proc "cabal" ["run", "-v0", "exe:python-hs"]) "print 1\nexit()\nprint 2\n"
+    (code, out, _err) <- runInteractivePythonHs "print 1\nexit()\nprint 2\n"
     code `shouldBe` ExitSuccess
     ("1" `isInfixOf` out) `shouldBe` True
     ("2" `isInfixOf` out) `shouldBe` False
 
   it "prints expression result in interactive REPL executable" $ do
-    (code, out, _err) <- readCreateProcessWithExitCode (proc "cabal" ["run", "-v0", "exe:python-hs"]) "x = 10\nx + 5\nlen([1, 2]) + 3\n"
+    (code, out, _err) <- runInteractivePythonHs "x = 10\nx + 5\nlen([1, 2]) + 3\n"
     code `shouldBe` ExitSuccess
     (">>> 15" `isInfixOf` out) `shouldBe` True
     (">>> 5" `isInfixOf` out) `shouldBe` True
 
   it "does not print None expression result in interactive REPL executable" $ do
-    (code, out, _err) <- readCreateProcessWithExitCode (proc "cabal" ["run", "-v0", "exe:python-hs"]) "None\n1\n"
+    (code, out, _err) <- runInteractivePythonHs "None\n1\n"
     code `shouldBe` ExitSuccess
     (">>> >>> 1" `isInfixOf` out) `shouldBe` True
 
   it "prints string expression result with quotes in interactive REPL executable" $ do
-    (code, out, _err) <- readCreateProcessWithExitCode (proc "cabal" ["run", "-v0", "exe:python-hs"]) "\"hello\"\n"
+    (code, out, _err) <- runInteractivePythonHs "\"hello\"\n"
     code `shouldBe` ExitSuccess
     (">>> 'hello'" `isInfixOf` out) `shouldBe` True
 
   it "escapes special characters in string expression result in interactive REPL executable" $ do
-    (code, out, _err) <- readCreateProcessWithExitCode (proc "cabal" ["run", "-v0", "exe:python-hs"]) "\"a'b\"\n\"a\tb\"\n"
+    (code, out, _err) <- runInteractivePythonHs "\"a'b\"\n\"a\tb\"\n"
     code `shouldBe` ExitSuccess
     (">>> 'a\\'b'" `isInfixOf` out) `shouldBe` True
     (">>> 'a\\tb'" `isInfixOf` out) `shouldBe` True
 
   it "prints dictionary string keys with quotes in interactive REPL executable" $ do
-    (code, out, _err) <- readCreateProcessWithExitCode (proc "cabal" ["run", "-v0", "exe:python-hs"]) "{\"k\": 1}\n"
+    (code, out, _err) <- runInteractivePythonHs "{\"k\": 1}\n"
     code `shouldBe` ExitSuccess
     (">>> {'k': 1}" `isInfixOf` out) `shouldBe` True
   where
+    runInteractivePythonHs input = do
+      exePath <- pythonHsExecutablePath
+      readCreateProcessWithExitCode (proc exePath []) input
+
+    pythonHsExecutablePath = do
+      binDir <- Paths_python_hs.getBinDir
+      testExe <- getExecutablePath
+      let baseDir = takeDirectory testExe
+      let candidateDirs = take 12 (iterate takeDirectory baseDir)
+      let candidatePaths =
+            [binDir </> "python-hs"]
+              ++ map (</> "x/python-hs/build/python-hs/python-hs") candidateDirs
+              ++ map (</> "build/python-hs/python-hs") candidateDirs
+      found <- findFirstExistingPath candidatePaths
+      case found of
+        Just path -> return path
+        Nothing -> error "python-hs executable not found from Paths_python_hs.getBinDir or test binary layout"
+
+    findFirstExistingPath [] = return Nothing
+    findFirstExistingPath (candidate : rest) = do
+      exists <- doesFileExist candidate
+      if exists
+        then return (Just candidate)
+        else findFirstExistingPath rest
+
     restoreRunnerEngine previous =
       case previous of
         Nothing -> unsetEnv "PYTHON_HS_RUNNER_ENGINE"

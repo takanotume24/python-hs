@@ -91,12 +91,12 @@ compileProgram (Program stmts) = do
           pure (code, loopEndIndex)
         FunctionDefStmt name params body _ -> do
           (bodyCode, _) <- compileStatements 0 True Nothing body
-          let functionCode = bodyCode ++ [PushConst NoneValue, ReturnTop]
+          let functionCode = bodyCode ++ [PushConst (IntValue 0), ReturnTop]
           pure ([DefineFunction name params [] functionCode], baseIndex + 1)
         FunctionDefDefaultsStmt name params defaults body _ -> do
           (defaultCodes, _) <- compileDefaults compileExprAt defaults
           (bodyCode, _) <- compileStatements 0 True Nothing body
-          let functionCode = bodyCode ++ [PushConst NoneValue, ReturnTop]
+          let functionCode = bodyCode ++ [PushConst (IntValue 0), ReturnTop]
           pure ([DefineFunction name params defaultCodes functionCode], baseIndex + 1)
         ReturnStmt expr _ ->
           if inFunction
