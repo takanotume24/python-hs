@@ -106,6 +106,13 @@
 - [x] 構造制約対応: `CompileTryExcept` / `HandleRuntimeError` へ責務分離し、200行制約を維持
 - [x] 品質ゲート再実行（`cabal test` / `cabal run check-structure` / warning 0）
 
+## 現在のスコープ（P11: VM except複数節対応）
+- [x] P11 開始: `try` に複数 `except` 節を許可する VM 専用スコープを開始
+- [x] 失敗テスト先行: parser/VM/CLI に複数 `except` 節ケースを追加
+- [x] VM 実装: `TryExceptStmt` を複数 `except` 節対応へ拡張し、先頭 `except` 節のみ実行して残りをスキップする挙動を固定
+- [x] 構造制約対応: `ParseExceptSuites` を分離して `ParseStatement` の 200 行制約を維持
+- [x] 品質ゲート再実行（`cabal test` / `cabal run check-structure` / warning 0）
+
 ### 運用メモ
 - 受け入れテストは MVP 最小（`MvpScenarioSpec`）を維持し、詳細仕様は Runner/Eval の回帰テストで固定する。
 
@@ -251,6 +258,9 @@
   - [x] P5継続: `README` の Flake check 説明を更新し、検証内容を「テスト + 構造チェック + runner case coverage」へ同期
   - [x] P5継続: `nix flake check` 実行でNix経路の品質ゲートを確認
 - 2026-03-01
+  - [x] P11開始/完了: VM専用で `try` の複数 `except` 節を導入し、同日内にテスト・実装・品質ゲートまで完了
+  - [x] P11継続: `ParseExceptSuites` を新設して `except:` 節収集を分離し、`ParseStatement` の構造制約超過（206行）を解消
+  - [x] P11継続: 失敗テスト先行で `ParseProgramSpec` / `RunSourceVmSpec` / `CLISpec` に複数 `except` 節ケースを追加し、品質ゲート（`cabal test` 711 examples green / `cabal run check-structure` pass / warning 0）を確認
   - [x] P10開始/完了: VM専用で `try/except/finally` の `finally` を導入し、同日内にテスト・実装・品質ゲートまで完了
   - [x] P10継続: `TryExceptStmt` を finally保持対応へ拡張し、`CompileProgram` / `RunInstructions` に finally制御（`PushFinallyHandler` / `RaisePendingError`）を追加
   - [x] P10継続: 失敗テスト先行で `ScanTokensCoreSpec` / `ParseProgramSpec` / `RunSourceVmSpec` / `CLISpec` に finally ケースを追加し、品質ゲート（`cabal test` 708 examples green / `cabal run check-structure` pass / warning 0）を確認

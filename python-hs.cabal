@@ -44,6 +44,7 @@ library
     , PythonHS.Lexer.ScanTokenStep
     , PythonHS.Parser.ParseExpr
     , PythonHS.Parser.ParseStatement
+    , PythonHS.Parser.ParseExceptSuites
     , PythonHS.Parser.ParseIfTail
     , PythonHS.Parser.ParseImportStmt
     , PythonHS.Structure.CheckStructureWarnings

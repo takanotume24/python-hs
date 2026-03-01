@@ -20,7 +20,6 @@ import PythonHS.Lexer.TokenType
         IdentifierToken,
          ImportToken,
          TryToken,
-         ExceptToken,
          FinallyToken,
          RaiseToken,
          IfToken,
@@ -41,6 +40,7 @@ import PythonHS.Lexer.TokenType
       )
   )
 import PythonHS.Parser.ParseError (ParseError (ExpectedAssignAfterIdentifier, ExpectedExpression, ExpectedNewlineAfterStatement))
+import PythonHS.Parser.ParseExceptSuites (parseExceptSuites)
 import PythonHS.Parser.ParseExpr (parseExpr)
 import PythonHS.Parser.ParseIfTail (parseIfTail)
 import PythonHS.Parser.ParseImportStmt (parseImportStmt)
@@ -99,16 +99,14 @@ parseStatement tokenStream =
       case rest of
         Token ColonToken _ _ : afterColon -> do
           (trySuite, afterTrySuite) <- parseSuite afterColon
-          case dropLeadingNewlines afterTrySuite of
-            Token ExceptToken _ _ : Token ColonToken _ _ : afterExceptColon -> do
-              (exceptSuite, afterExceptSuite) <- parseSuite afterExceptColon
-              case dropLeadingNewlines afterExceptSuite of
+          case parseExceptSuites parseSuite (dropLeadingNewlines afterTrySuite) of
+            Right (exceptSuites, afterExceptSuites) ->
+              case dropLeadingNewlines afterExceptSuites of
                 Token FinallyToken _ _ : Token ColonToken _ _ : afterFinallyColon -> do
                   (finallySuite, finalRest) <- parseSuite afterFinallyColon
-                  Right (TryExceptStmt trySuite exceptSuite (Just finallySuite) pos, finalRest)
-                _ -> Right (TryExceptStmt trySuite exceptSuite Nothing pos, afterExceptSuite)
-            Token _ _ pos' : _ -> Left (ExpectedExpression pos')
-            _ -> Left (ExpectedExpression (Position 0 0))
+                  Right (TryExceptStmt trySuite exceptSuites (Just finallySuite) pos, finalRest)
+                _ -> Right (TryExceptStmt trySuite exceptSuites Nothing pos, afterExceptSuites)
+            Left err -> Left err
         Token _ _ pos' : _ -> Left (ExpectedExpression pos')
         _ -> Left (ExpectedExpression (Position 0 0))
     Token WhileToken _ pos : rest -> do

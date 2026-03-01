@@ -23,6 +23,9 @@ spec = describe "runSourceVm (vm mvp)" $ do
   it "runs finally after except catches an error" $ do
     runSourceVm "try:\n  raise \"boom\"\nexcept:\n  print 7\nfinally:\n  print 8\n" `shouldBe` Right ["7", "8"]
 
+  it "runs only the first except suite when multiple except suites exist" $ do
+    runSourceVm "try:\n  raise \"boom\"\nexcept:\n  print 1\nexcept:\n  print 2\nfinally:\n  print 3\n" `shouldBe` Right ["1", "3"]
+
   it "supports import math with MVP functions" $ do
     runSourceVm "import math\nprint math.sqrt(9)\nprint math.sin(0)\nprint math.pi()\nprint math.e()\n" `shouldBe` Right ["3.0", "0.0", "3.141592653589793", "2.718281828459045"]
 
