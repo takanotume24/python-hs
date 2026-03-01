@@ -1,7 +1,9 @@
 module PythonHS.Lexer.ScanTokenStep (scanTokenStep) where
 
 import Data.Char (isAlpha, isAlphaNum, isDigit)
+import PythonHS.Lexer.KeywordOrIdentifier (keywordOrIdentifier)
 import PythonHS.Lexer.LexerError (LexerError (UnexpectedCharacter))
+import PythonHS.Lexer.ParseExponent (parseExponent)
 import PythonHS.Lexer.Position (Position (Position))
 import PythonHS.Lexer.Token (Token (Token))
 import PythonHS.Lexer.TokenType
@@ -15,42 +17,20 @@ import PythonHS.Lexer.TokenType
         DoubleSlashAssignToken,
         ColonToken,
         CommaToken,
-        DefToken,
         DotToken,
-        ElseToken,
-        ElifToken,
-        TrueToken,
-        FalseToken,
-        NoneToken,
-        ForToken,
-        IdentifierToken,
-        IfToken,
-        InToken,
         IntegerToken,
         FloatToken,
         StringToken,
         LParenToken,
         MinusToken,
         PlusToken,
-        PrintToken,
         RParenToken,
-        ReturnToken,
-        BreakToken,
-        ContinueToken,
-        GlobalToken,
-        PassToken,
-        FromToken,
-        AsToken,
-        ImportToken,
         EqToken,
         NotEqToken,
         LtToken,
         GtToken,
         LteToken,
         GteToken,
-        AndToken,
-        OrToken,
-        NotToken,
         LBracketToken,
         RBracketToken,
         LBraceToken,
@@ -58,8 +38,7 @@ import PythonHS.Lexer.TokenType
         SlashToken,
         DoubleSlashToken,
         PercentToken,
-        StarToken,
-        WhileToken
+        StarToken
       )
   )
 
@@ -155,46 +134,3 @@ scanTokenStep src ln col =
               len = length word
            in Right (Token (keywordOrIdentifier word) word (Position ln col), tailInput, col + len)
       | otherwise -> Left (UnexpectedCharacter c)
-  where
-    keywordOrIdentifier value
-      | value == "print" = PrintToken
-      | value == "if" = IfToken
-      | value == "elif" = ElifToken
-      | value == "True" = TrueToken
-      | value == "False" = FalseToken
-      | value == "None" = NoneToken
-      | value == "else" = ElseToken
-      | value == "while" = WhileToken
-      | value == "for" = ForToken
-      | value == "in" = InToken
-      | value == "def" = DefToken
-      | value == "return" = ReturnToken
-      | value == "break" = BreakToken
-      | value == "continue" = ContinueToken
-      | value == "global" = GlobalToken
-      | value == "pass" = PassToken
-      | value == "from" = FromToken
-      | value == "as" = AsToken
-      | value == "import" = ImportToken
-      | value == "and" = AndToken
-      | value == "or" = OrToken
-      | value == "not" = NotToken
-      | otherwise = IdentifierToken
-
-    parseExponent input =
-      case input of
-        (e : restInput)
-          | e == 'e' || e == 'E' ->
-              case restInput of
-                (signChar : afterSign)
-                  | signChar == '+' || signChar == '-' ->
-                      let (expDigits, remaining) = span isDigit afterSign
-                       in if null expDigits
-                            then ("", input)
-                            else (e : signChar : expDigits, remaining)
-                _ ->
-                  let (expDigits, remaining) = span isDigit restInput
-                   in if null expDigits
-                        then ("", input)
-                        else (e : expDigits, remaining)
-        _ -> ("", input)

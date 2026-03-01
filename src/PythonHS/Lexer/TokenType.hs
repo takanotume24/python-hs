@@ -49,6 +49,9 @@ data TokenType
   | FromToken
   | AsToken
   | ImportToken
+  | TryToken
+  | ExceptToken
+  | RaiseToken
   | EqToken
   | NotEqToken
   | LtToken

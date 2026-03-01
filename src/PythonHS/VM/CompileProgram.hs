@@ -3,15 +3,16 @@ module PythonHS.VM.CompileProgram (compileProgram) where
 import PythonHS.AST.BinaryOperator (BinaryOperator (AddOperator, AndOperator, DivideOperator, FloorDivideOperator, ModuloOperator, MultiplyOperator, OrOperator, SubtractOperator))
 import PythonHS.AST.Expr (Expr (BinaryExpr, CallExpr, DictExpr, FloatExpr, IdentifierExpr, IntegerExpr, ListExpr, NoneExpr, NotExpr, StringExpr, UnaryMinusExpr))
 import PythonHS.AST.Program (Program (Program))
-import PythonHS.AST.Stmt (Stmt (AddAssignStmt, AssignStmt, BreakStmt, ContinueStmt, DivAssignStmt, FloorDivAssignStmt, ForStmt, FromImportStmt, FunctionDefDefaultsStmt, FunctionDefStmt, GlobalStmt, IfStmt, ImportStmt, ModAssignStmt, MulAssignStmt, PassStmt, PrintStmt, ReturnStmt, SubAssignStmt, WhileStmt))
+import PythonHS.AST.Stmt (Stmt (AddAssignStmt, AssignStmt, BreakStmt, ContinueStmt, DivAssignStmt, FloorDivAssignStmt, ForStmt, FromImportStmt, FunctionDefDefaultsStmt, FunctionDefStmt, GlobalStmt, IfStmt, ImportStmt, ModAssignStmt, MulAssignStmt, PassStmt, PrintStmt, RaiseStmt, ReturnStmt, SubAssignStmt, TryExceptStmt, WhileStmt))
 import PythonHS.Evaluator.ShowPos (showPos)
 import PythonHS.Evaluator.Value (Value (FloatValue, IntValue, NoneValue, StringValue))
 import PythonHS.VM.CompileCallArgsAt (compileCallArgsAt)
 import PythonHS.VM.CompileDefaults (compileDefaults)
 import PythonHS.VM.CompileExprItemsAt (compileExprItemsAt)
 import PythonHS.VM.CompileImportStmt (compileImportStmt)
+import PythonHS.VM.CompileLogicalExpr (compileLogicalExpr)
 import PythonHS.VM.ExprPosition (exprPosition)
-import PythonHS.VM.Instruction (Instruction (ApplyBinary, ApplyNot, ApplyUnaryMinus, BuildDict, BuildList, CallFunction, DeclareGlobal, DefineFunction, ForNext, ForSetup, Halt, Jump, JumpIfFalse, LoadName, LoopGuard, PrintTop, PushConst, ReturnTop, StoreName))
+import PythonHS.VM.Instruction (Instruction (ApplyBinary, ApplyNot, ApplyUnaryMinus, BuildDict, BuildList, CallFunction, DeclareGlobal, DefineFunction, ForNext, ForSetup, Halt, Jump, JumpIfFalse, LoadName, LoopGuard, PopExceptionHandler, PrintTop, PushConst, PushExceptionHandler, RaiseTop, ReturnTop, StoreName))
 import PythonHS.VM.StmtPosition (stmtPosition)
 
 compileProgram :: Program -> Either String [Instruction]
@@ -33,6 +34,23 @@ compileProgram (Program stmts) = do
       case stmt of
         PassStmt _ -> Right ([], baseIndex)
         GlobalStmt name _ -> Right ([DeclareGlobal name], baseIndex + 1)
+        RaiseStmt expr pos -> do
+          (exprCode, exprEnd) <- compileExprAt baseIndex expr
+          let code = exprCode ++ [RaiseTop pos]
+          pure (code, exprEnd + 1)
+        TryExceptStmt tryStmts exceptStmts _ -> do
+          let tryStartIndex = baseIndex + 1
+          (tryCode, tryEndIndex) <- compileStatements tryStartIndex inFunction maybeLoop tryStmts
+          let popHandlerIndex = tryEndIndex
+          let jumpEndIndex = popHandlerIndex + 1
+          let exceptStartIndex = jumpEndIndex + 1
+          (exceptCode, exceptEndIndex) <- compileStatements exceptStartIndex inFunction maybeLoop exceptStmts
+          let code =
+                [PushExceptionHandler exceptStartIndex]
+                  ++ tryCode
+                  ++ [PopExceptionHandler, Jump exceptEndIndex]
+                  ++ exceptCode
+          pure (code, exceptEndIndex)
         ImportStmt _ _ ->
           compileImportStmt baseIndex stmt
         FromImportStmt _ _ _ ->
@@ -143,8 +161,8 @@ compileProgram (Program stmts) = do
         NotExpr notExpr pos -> do
           (exprCode, exprEnd) <- compileExprAt baseIndex notExpr
           pure (exprCode ++ [ApplyNot pos], exprEnd + 1)
-        BinaryExpr AndOperator left right _ -> compileAndExpr baseIndex left right
-        BinaryExpr OrOperator left right _ -> compileOrExpr baseIndex left right
+        BinaryExpr AndOperator left right _ -> compileLogicalExpr compileExprAt AndOperator baseIndex left right
+        BinaryExpr OrOperator left right _ -> compileLogicalExpr compileExprAt OrOperator baseIndex left right
         BinaryExpr op left right pos -> do
           (leftCode, leftEnd) <- compileExprAt baseIndex left
           (rightCode, rightEnd) <- compileExprAt leftEnd right
@@ -162,39 +180,3 @@ compileProgram (Program stmts) = do
           (valueCode, valueEnd) <- compileExprAt keyEnd valueExpr
           (restCode, restEnd) <- compileDictEntriesAt valueEnd rest
           pure (keyCode ++ valueCode ++ restCode, restEnd)
-
-    compileAndExpr baseIndex left right = do
-      (leftCode, leftEnd) <- compileExprAt baseIndex left
-      let firstJumpIndex = leftEnd
-      let rightStartIndex = firstJumpIndex + 1
-      (rightCode, rightEnd) <- compileExprAt rightStartIndex right
-      let secondJumpIndex = rightEnd
-      let truePushIndex = secondJumpIndex + 1
-      let jumpEndIndex = truePushIndex + 1
-      let falsePushIndex = jumpEndIndex + 1
-      let endIndex = falsePushIndex + 1
-      let code =
-            leftCode
-              ++ [JumpIfFalse falsePushIndex]
-              ++ rightCode
-              ++ [JumpIfFalse falsePushIndex, PushConst (IntValue 1), Jump endIndex, PushConst (IntValue 0)]
-      pure (code, endIndex)
-
-    compileOrExpr baseIndex left right = do
-      (leftCode, leftEnd) <- compileExprAt baseIndex left
-      let jumpEvalRightIndex = leftEnd
-      let trueFromLeftIndex = jumpEvalRightIndex + 1
-      let jumpEndFromLeftIndex = trueFromLeftIndex + 1
-      let rightStartIndex = jumpEndFromLeftIndex + 1
-      (rightCode, rightEnd) <- compileExprAt rightStartIndex right
-      let jumpFalseIndex = rightEnd
-      let trueFromRightIndex = jumpFalseIndex + 1
-      let jumpEndFromRightIndex = trueFromRightIndex + 1
-      let falsePushIndex = jumpEndFromRightIndex + 1
-      let endIndex = falsePushIndex + 1
-      let code =
-            leftCode
-              ++ [JumpIfFalse rightStartIndex, PushConst (IntValue 1), Jump endIndex]
-              ++ rightCode
-              ++ [JumpIfFalse falsePushIndex, PushConst (IntValue 1), Jump endIndex, PushConst (IntValue 0)]
-      pure (code, endIndex)

@@ -14,6 +14,8 @@ data Instruction
   | LoopGuard Position
   | ForSetup Int Position
   | ForNext String Int Position
+  | PushExceptionHandler Int
+  | PopExceptionHandler
   | ApplyUnaryMinus Position
   | ApplyNot Position
   | ApplyBinary BinaryOperator Position
@@ -21,6 +23,7 @@ data Instruction
   | Jump Int
   | DefineFunction String [String] [(String, [Instruction])] [Instruction]
   | CallFunction String [([Instruction], Maybe String, Position)] Position
+  | RaiseTop Position
   | ReturnTop
   | PrintTop
   | Halt

@@ -91,6 +91,13 @@
 - [x] 仕様固定: `math` は組み込み、その他はローカル `.py` を解決
 - [x] 品質ゲート再実行（`cabal test` / `cabal run check-structure` / warning 0）
 
+## 現在のスコープ（P9: VM例外処理MVP）
+- [x] P9 開始: 次機能を `try/except` + `raise <expr>` の VM 専用導入として計画確定
+- [x] 失敗テスト先行: `try` / `except` / `raise` の lexer/parser ケースを追加
+- [x] 失敗テスト先行: VM/CLI で `raise` 送出と `try/except` 捕捉ケースを追加
+- [x] VM 実装: `raise` 命令と `try/except` ハンドラ制御を追加
+- [x] 品質ゲート再実行（`cabal test` / `cabal run check-structure` / warning 0）
+
 ### 運用メモ
 - 受け入れテストは MVP 最小（`MvpScenarioSpec`）を維持し、詳細仕様は Runner/Eval の回帰テストで固定する。
 
@@ -236,6 +243,11 @@
   - [x] P5継続: `README` の Flake check 説明を更新し、検証内容を「テスト + 構造チェック + runner case coverage」へ同期
   - [x] P5継続: `nix flake check` 実行でNix経路の品質ゲートを確認
 - 2026-03-01
+  - [x] P9開始/完了: VM専用で `try/except` + `raise <expr>` のMVPスコープを開始し、同日内に実装と品質ゲートまで完了
+  - [x] P9継続: 失敗テスト先行で `ScanTokensCoreSpec` / `ParseProgramSpec` / `RunSourceVmSpec` / `CLISpec` に `try` / `except` / `raise` ケースを追加
+  - [x] P9継続: lexer/parser/AST/VM（命令追加とハンドラ制御）を実装し、`raise` 送出と `try/except` 捕捉をVM経路で有効化
+  - [x] P9継続: 構造制約対応として `KeywordOrIdentifier` / `ParseExponent` / `CompileLogicalExpr` / `LookupName` / `PopValues` / `BindDefaults` へ責務分離し、200行制約を維持
+  - [x] P9継続: 品質ゲート再実行（`cabal test` 702 examples green / `cabal run check-structure` pass / warning 0）を確認
   - [x] P5継続: VM縦スライス32として Haskell製の差分抽出CLI（`check-runner-case-coverage`）を追加し、`PythonHS.Runner.RunnerCaseCoverageReport` に抽出・集合差分・レポート整形ロジックを実装
   - [x] P5継続: 失敗テスト先行で `Test.Runner.RunnerCaseCoverageReportSpec` を追加し、欠落ケース検出（parity:1, vm:2）の期待値を固定
   - [x] P5継続: `python-hs.cabal` を更新（library公開モジュール、新規 executable、test-suite module）

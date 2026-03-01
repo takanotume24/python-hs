@@ -115,6 +115,15 @@ spec = describe "runFile / replEvalLines" $ do
         res <- runFile path
         res `shouldBe` Left "Import error: module not found os"
 
+  it "handles try/except and raise in vm engine for runFile" $
+    withSystemTempFile "vm-try-except-raise.pyhs" $ \path h -> do
+      hPutStr h "try:\n  raise \"boom\"\nexcept:\n  print 1\nprint 2\n"
+      hClose h
+      bracket (lookupEnv "PYTHON_HS_RUNNER_ENGINE") restoreRunnerEngine $ \_ -> do
+        setEnv "PYTHON_HS_RUNNER_ENGINE" "vm"
+        res <- runFile path
+        res `shouldBe` Right ["1", "2"]
+
   it "falls back to ast engine when PYTHON_HS_RUNNER_ENGINE is unknown" $
     withSystemTempFile "ast-fallback.pyhs" $ \path h -> do
       hPutStr h "def add(a, b = 2):\n  return a + b\nprint add(1)\n"

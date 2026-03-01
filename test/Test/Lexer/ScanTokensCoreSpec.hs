@@ -3,7 +3,7 @@ module Test.Lexer.ScanTokensCoreSpec (spec) where
 import PythonHS.Lexer.Position (Position (Position))
 import PythonHS.Lexer.ScanTokens (scanTokens)
 import PythonHS.Lexer.Token (Token (Token))
-import PythonHS.Lexer.TokenType (TokenType (AsToken, AssignToken, BreakToken, ContinueToken, DotToken, DoubleSlashAssignToken, DoubleSlashToken, EOFToken, ElifToken, FalseToken, FloatToken, ForToken, FromToken, GlobalToken, IdentifierToken, IfToken, ImportToken, InToken, IntegerToken, LParenToken, MinusAssignToken, NewlineToken, NoneToken, PassToken, PercentAssignToken, PercentToken, PlusAssignToken, PlusToken, PrintToken, ReturnToken, RParenToken, SlashAssignToken, SlashToken, StarAssignToken, StarToken, TrueToken))
+import PythonHS.Lexer.TokenType (TokenType (AsToken, AssignToken, BreakToken, ColonToken, ContinueToken, DotToken, DoubleSlashAssignToken, DoubleSlashToken, EOFToken, ElifToken, ExceptToken, FalseToken, FloatToken, ForToken, FromToken, GlobalToken, IdentifierToken, IfToken, ImportToken, InToken, IntegerToken, LParenToken, MinusAssignToken, NewlineToken, NoneToken, PassToken, PercentAssignToken, PercentToken, PlusAssignToken, PlusToken, PrintToken, RaiseToken, ReturnToken, RParenToken, SlashAssignToken, SlashToken, StarAssignToken, StarToken, StringToken, TrueToken, TryToken))
 import Test.Hspec (Spec, describe, it, shouldBe)
 
 spec :: Spec
@@ -192,6 +192,21 @@ spec = describe "scanTokens core tokens" $ do
           Token IdentifierToken "math" (Position 1 8),
           Token NewlineToken "\\n" (Position 1 12),
           Token EOFToken "" (Position 2 1)
+        ]
+
+  it "recognizes try/except/raise keywords" $ do
+    scanTokens "try:\nexcept:\nraise \"x\"\n" `shouldBe`
+      Right
+        [ Token TryToken "try" (Position 1 1),
+          Token ColonToken ":" (Position 1 4),
+          Token NewlineToken "\\n" (Position 1 5),
+          Token ExceptToken "except" (Position 2 1),
+          Token ColonToken ":" (Position 2 7),
+          Token NewlineToken "\\n" (Position 2 8),
+          Token RaiseToken "raise" (Position 3 1),
+          Token StringToken "x" (Position 3 7),
+          Token NewlineToken "\\n" (Position 3 10),
+          Token EOFToken "" (Position 4 1)
         ]
 
   it "recognizes from/as keywords for import variants" $ do

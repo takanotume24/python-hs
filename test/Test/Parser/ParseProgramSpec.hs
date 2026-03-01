@@ -3,7 +3,7 @@ module Test.Parser.ParseProgramSpec (spec) where
 import PythonHS.AST.BinaryOperator (BinaryOperator (..))
 import PythonHS.AST.Expr (Expr (BinaryExpr, CallExpr, DictExpr, FloatExpr, IdentifierExpr, IntegerExpr, KeywordArgExpr, ListExpr, NoneExpr, NotExpr, StringExpr, UnaryMinusExpr))
 import PythonHS.AST.Program (Program (Program))
-import PythonHS.AST.Stmt (Stmt (AddAssignStmt, AssignStmt, BreakStmt, ContinueStmt, DivAssignStmt, FloorDivAssignStmt, ForStmt, FromImportStmt, FunctionDefDefaultsStmt, FunctionDefStmt, GlobalStmt, IfStmt, ImportStmt, ModAssignStmt, MulAssignStmt, PassStmt, PrintStmt, ReturnStmt, SubAssignStmt, WhileStmt))
+import PythonHS.AST.Stmt (Stmt (AddAssignStmt, AssignStmt, BreakStmt, ContinueStmt, DivAssignStmt, FloorDivAssignStmt, ForStmt, FromImportStmt, FunctionDefDefaultsStmt, FunctionDefStmt, GlobalStmt, IfStmt, ImportStmt, ModAssignStmt, MulAssignStmt, PassStmt, PrintStmt, RaiseStmt, ReturnStmt, SubAssignStmt, TryExceptStmt, WhileStmt))
 import PythonHS.Lexer.Token (Token (Token))
 import PythonHS.Lexer.Position (Position (Position))
 import PythonHS.Lexer.TokenType
@@ -44,10 +44,11 @@ import PythonHS.Lexer.TokenType
         DoubleSlashToken,
         PrintToken,
         RParenToken,
-        ReturnToken,
-        BreakToken,
-        ContinueToken,
-        GlobalToken,
+         ReturnToken,
+         RaiseToken,
+         BreakToken,
+         ContinueToken,
+         GlobalToken,
         PassToken,
         IndentToken,
         DedentToken,
@@ -55,10 +56,12 @@ import PythonHS.Lexer.TokenType
         AndToken,
         OrToken,
         NotToken,
-        IfToken,
-        WhileToken,
-        LBracketToken,
-        RBracketToken,
+         IfToken,
+         TryToken,
+         ExceptToken,
+         WhileToken,
+         LBracketToken,
+         RBracketToken,
         LBraceToken,
         RBraceToken
       )
@@ -115,6 +118,48 @@ spec = describe "parseProgram" $ do
       `shouldBe` Right
         ( Program
             [ FromImportStmt ["pkg", "mod"] [("sqrt", Just "s")] (Position 1 1)
+            ]
+        )
+
+  it "parses raise statement" $ do
+    parseProgram
+      [ Token RaiseToken "raise" (Position 1 1),
+        Token StringToken "oops" (Position 1 7),
+        Token NewlineToken "\\n" (Position 1 13),
+        Token EOFToken "" (Position 2 1)
+      ]
+      `shouldBe` Right
+        ( Program
+            [ RaiseStmt (StringExpr "oops" (Position 1 7)) (Position 1 1)
+            ]
+        )
+
+  it "parses try/except statement with indented suites" $ do
+    parseProgram
+      [ Token TryToken "try" (Position 1 1),
+        Token ColonToken ":" (Position 1 4),
+        Token NewlineToken "\\n" (Position 1 5),
+        Token IndentToken "<INDENT>" (Position 2 1),
+        Token RaiseToken "raise" (Position 2 3),
+        Token StringToken "x" (Position 2 9),
+        Token NewlineToken "\\n" (Position 2 12),
+        Token DedentToken "<DEDENT>" (Position 3 1),
+        Token ExceptToken "except" (Position 3 1),
+        Token ColonToken ":" (Position 3 7),
+        Token NewlineToken "\\n" (Position 3 8),
+        Token IndentToken "<INDENT>" (Position 4 1),
+        Token PrintToken "print" (Position 4 3),
+        Token IntegerToken "1" (Position 4 9),
+        Token NewlineToken "\\n" (Position 4 10),
+        Token DedentToken "<DEDENT>" (Position 5 1),
+        Token EOFToken "" (Position 5 1)
+      ]
+      `shouldBe` Right
+        ( Program
+            [ TryExceptStmt
+                [RaiseStmt (StringExpr "x" (Position 2 9)) (Position 2 3)]
+                [PrintStmt (IntegerExpr 1 (Position 4 9)) (Position 4 3)]
+                (Position 1 1)
             ]
         )
 
@@ -1375,4 +1420,3 @@ spec = describe "parseProgram" $ do
                 (Position 1 1)
             ]
         )
-

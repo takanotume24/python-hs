@@ -1,7 +1,7 @@
 module PythonHS.Parser.ParseStatement (parseStatement) where
 import qualified Data.Set as Set
 import PythonHS.AST.Expr (Expr (NoneExpr))
-import PythonHS.AST.Stmt (Stmt (AddAssignStmt, AssignStmt, BreakStmt, ContinueStmt, DivAssignStmt, FloorDivAssignStmt, ForStmt, FunctionDefDefaultsStmt, FunctionDefStmt, GlobalStmt, IfStmt, ModAssignStmt, MulAssignStmt, PassStmt, PrintStmt, ReturnStmt, SubAssignStmt, WhileStmt))
+import PythonHS.AST.Stmt (Stmt (AddAssignStmt, AssignStmt, BreakStmt, ContinueStmt, DivAssignStmt, FloorDivAssignStmt, ForStmt, FunctionDefDefaultsStmt, FunctionDefStmt, GlobalStmt, IfStmt, ModAssignStmt, MulAssignStmt, PassStmt, PrintStmt, RaiseStmt, ReturnStmt, SubAssignStmt, TryExceptStmt, WhileStmt))
 import PythonHS.Lexer.Position (Position (Position))
 import PythonHS.Lexer.Token (Token (Token), position)
 import PythonHS.Lexer.TokenType
@@ -18,8 +18,11 @@ import PythonHS.Lexer.TokenType
         FromToken,
         GlobalToken,
         IdentifierToken,
-        ImportToken,
-        IfToken,
+         ImportToken,
+         TryToken,
+         ExceptToken,
+         RaiseToken,
+         IfToken,
         InToken,
         IndentToken,
         LParenToken,
@@ -51,6 +54,9 @@ parseStatement tokenStream =
     Token ReturnToken _ pos : rest -> do
       (valueExpr, remaining) <- parseExpr rest
       Right (ReturnStmt valueExpr pos, remaining)
+    Token RaiseToken _ pos : rest -> do
+      (valueExpr, remaining) <- parseExpr rest
+      Right (RaiseStmt valueExpr pos, remaining)
     Token BreakToken _ pos : rest -> Right (BreakStmt pos, rest)
     Token ContinueToken _ pos : rest -> Right (ContinueStmt pos, rest)
     Token PassToken _ pos : rest -> Right (PassStmt pos, rest)
@@ -86,6 +92,18 @@ parseStatement tokenStream =
           (thenSuite, afterThen) <- parseSuite afterColon
           (elseBranch, finalRest) <- parseIfTail parseSuite afterThen
           Right (IfStmt cond thenSuite elseBranch pos, finalRest)
+        Token _ _ pos' : _ -> Left (ExpectedExpression pos')
+        _ -> Left (ExpectedExpression (Position 0 0))
+    Token TryToken _ pos : rest ->
+      case rest of
+        Token ColonToken _ _ : afterColon -> do
+          (trySuite, afterTrySuite) <- parseSuite afterColon
+          case dropLeadingNewlines afterTrySuite of
+            Token ExceptToken _ _ : Token ColonToken _ _ : afterExceptColon -> do
+              (exceptSuite, finalRest) <- parseSuite afterExceptColon
+              Right (TryExceptStmt trySuite exceptSuite pos, finalRest)
+            Token _ _ pos' : _ -> Left (ExpectedExpression pos')
+            _ -> Left (ExpectedExpression (Position 0 0))
         Token _ _ pos' : _ -> Left (ExpectedExpression pos')
         _ -> Left (ExpectedExpression (Position 0 0))
     Token WhileToken _ pos : rest -> do
@@ -143,6 +161,9 @@ parseStatement tokenStream =
     consumeNewline (Token NewlineToken _ _ : rest) = Right rest
     consumeNewline (Token _ _ pos : _) = Left (ExpectedNewlineAfterStatement pos)
     consumeNewline [] = Left (ExpectedNewlineAfterStatement (Position 0 0))
+
+    dropLeadingNewlines (Token NewlineToken _ _ : rest) = dropLeadingNewlines rest
+    dropLeadingNewlines rest = rest
 
     parseParameters ts = parseParametersWithState False Set.empty ts
     parseParametersWithState _ _ (Token RParenToken _ _ : rest) = Right ([], [], rest)

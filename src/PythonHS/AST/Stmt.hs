@@ -20,6 +20,8 @@ data Stmt
   | GlobalStmt String Position
   | ImportStmt [([String], Maybe String)] Position
   | FromImportStmt [String] [(String, Maybe String)] Position
+  | TryExceptStmt [Stmt] [Stmt] Position
+  | RaiseStmt Expr Position
   | PassStmt Position
   | IfStmt Expr [Stmt] (Maybe [Stmt]) Position      -- condition, then-branch, optional else-branch
   | WhileStmt Expr [Stmt] Position                  -- condition, body

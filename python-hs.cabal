@@ -39,6 +39,8 @@ library
     , PythonHS.CLI.ReplEvalLines
     , PythonHS.CLI.RunFile
     , PythonHS.CLI.StartRepl
+    , PythonHS.Lexer.KeywordOrIdentifier
+    , PythonHS.Lexer.ParseExponent
     , PythonHS.Lexer.ScanTokenStep
     , PythonHS.Parser.ParseExpr
     , PythonHS.Parser.ParseStatement
@@ -59,6 +61,7 @@ library
     , PythonHS.Runner.ResolveRunnerEngine
     , PythonHS.Runner.RunSourceWithEngine
     , PythonHS.VM.CallBuiltin
+    , PythonHS.VM.BindDefaults
     , PythonHS.VM.CallCollectionBuiltin
     , PythonHS.VM.CallMathBuiltin
     , PythonHS.VM.BindCallArguments
@@ -66,6 +69,7 @@ library
     , PythonHS.VM.CompileDefaults
     , PythonHS.VM.CompileExprItemsAt
     , PythonHS.VM.CompileImportStmt
+    , PythonHS.VM.CompileLogicalExpr
     , PythonHS.VM.EvalBinaryOp
     , PythonHS.VM.ResolveLocalImports
     , PythonHS.VM.TransformImportAliases
@@ -77,6 +81,8 @@ library
     , PythonHS.VM.StmtPosition
     , PythonHS.VM.Instruction
     , PythonHS.VM.IsTruthy
+    , PythonHS.VM.LookupName
+    , PythonHS.VM.PopValues
     , PythonHS.VM.ToForIterable
     , PythonHS.VM.ToPairs
     , PythonHS.VM.CompileProgram

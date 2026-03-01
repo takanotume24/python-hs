@@ -8,7 +8,7 @@ import PythonHS.Lexer.Position (Position)
 import PythonHS.VM.Instruction (Instruction (ReturnTop), Instruction)
 
 evaluateUserArgs ::
-  ([Instruction] -> Int -> [Value] -> Map.Map String Value -> Map.Map String Value -> Map.Map String ([String], [(String, [Instruction])], [Instruction]) -> Set.Set String -> Map.Map Int [Value] -> Map.Map Int Int -> [String] -> Bool -> Either String (Maybe Value, Map.Map String Value, Map.Map String ([String], [(String, [Instruction])], [Instruction]), [String])) ->
+  ([Instruction] -> Int -> [Value] -> Map.Map String Value -> Map.Map String Value -> Map.Map String ([String], [(String, [Instruction])], [Instruction]) -> Set.Set String -> Map.Map Int [Value] -> Map.Map Int Int -> [Int] -> [String] -> Bool -> Either String (Maybe Value, Map.Map String Value, Map.Map String ([String], [(String, [Instruction])], [Instruction]), [String])) ->
   String ->
   Position ->
   Map.Map String Value ->
@@ -44,7 +44,7 @@ evaluateUserArgs executeFn callName callPos currentLocalEnv remainingArgs curren
   where
     evalArgCode argCode globalsNow functionsNow outputsNow = do
       (maybeArgValue, globalsAfterArg, functionsAfterArg, outputsAfterArg) <-
-        executeFn (argCode ++ [ReturnTop]) 0 [] globalsNow currentLocalEnv functionsNow Set.empty Map.empty Map.empty outputsNow False
+        executeFn (argCode ++ [ReturnTop]) 0 [] globalsNow currentLocalEnv functionsNow Set.empty Map.empty Map.empty [] outputsNow False
       let argValue =
             case maybeArgValue of
               Just value -> value
