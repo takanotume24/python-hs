@@ -148,5 +148,6 @@ test-suite python-hs-test
   build-tool-depends:
     hspec-discover:hspec-discover
     , python-hs:python-hs
+    , python-hs:check-runner-case-coverage
   default-language:    Haskell2010
   ghc-options:         -Wall

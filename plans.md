@@ -80,6 +80,7 @@
 - [x] VM 実装: `IntValue` を `Integer` へ置換し、算術・比較・builtin の整合を取る
 - [x] VM 実装: `math` 組み込みの最小セット（`sqrt/sin/cos/tan/log/exp/pi/e`）を追加
 - [x] 品質ゲート再実行（`cabal test` / `cabal run check-structure` / warning 0）
+- [x] CI修正: `RunnerCaseCoverageReportSpec` 実行時に `check-runner-case-coverage` 実行ファイルを解決できるよう、test-suite の `build-tool-depends` に `python-hs:check-runner-case-coverage` を追加
 
 ### 運用メモ
 - 受け入れテストは MVP 最小（`MvpScenarioSpec`）を維持し、詳細仕様は Runner/Eval の回帰テストで固定する。
