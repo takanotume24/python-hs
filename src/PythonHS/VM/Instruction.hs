@@ -8,6 +8,11 @@ data Instruction
   = PushConst Value
   | LoadName String Position
   | StoreName String
+  | BuildList Int
+  | BuildDict Int
+  | LoopGuard Position
+  | ForSetup Int Position
+  | ForNext String Int Position
   | ApplyUnaryMinus Position
   | ApplyNot Position
   | ApplyBinary BinaryOperator Position

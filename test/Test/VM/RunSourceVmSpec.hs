@@ -31,3 +31,22 @@ spec = describe "runSourceVm (vm mvp)" $ do
 
   it "evaluates unary minus and not expressions" $ do
     runSourceVm "x = 2\nprint -x\nprint not 0\nprint not 1\nprint not None\n" `shouldBe` Right ["-2", "1", "0", "1"]
+
+  it "evaluates for loop over int, list, and dict keys" $ do
+    runSourceVm "for i in 3:\n  print i\nfor x in [10, 20]:\n  print x\nfor k in {3: 30, 1: 10}:\n  print k\n" `shouldBe` Right ["0", "1", "2", "10", "20", "3", "1"]
+
+  it "reports for-loop iterable type error" $ do
+    runSourceVm "for i in \"abc\":\n  print i\n" `shouldBe` Left "Type error: for expects iterable (int range, list, or dict) at 1:10"
+
+  it "supports break and continue in while loop" $ do
+    runSourceVm "x = 0\nwhile x < 5:\n  x = x + 1\n  if x == 2:\n    continue\n  if x == 4:\n    break\n  print x\n" `shouldBe` Right ["1", "3"]
+
+  it "reports break and continue outside loop" $ do
+    runSourceVm "break\n" `shouldBe` Left "Break outside loop at 1:1"
+    runSourceVm "continue\n" `shouldBe` Left "Continue outside loop at 1:1"
+
+  it "enforces iteration limit boundary for while and for loops" $ do
+    runSourceVm "x = 0\nwhile x < 2000:\n  x = x + 1\nprint x\n" `shouldBe` Right ["2000"]
+    runSourceVm "x = 0\nwhile x < 2001:\n  x = x + 1\nprint x\n" `shouldBe` Left "Value error: iteration limit exceeded at 2:1"
+    runSourceVm "for i in 2000:\n  pass\nprint 1\n" `shouldBe` Right ["1"]
+    runSourceVm "for i in 2001:\n  pass\n" `shouldBe` Left "Value error: iteration limit exceeded at 1:1"

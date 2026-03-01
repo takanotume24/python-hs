@@ -48,7 +48,9 @@ library
     , PythonHS.Evaluator.EvalCallExpr
     , PythonHS.Evaluator.EvalBuiltinExpr
     , PythonHS.Evaluator.MaxLoopIterations
+    , PythonHS.VM.CompileExprItemsAt
     , PythonHS.VM.EvalBinaryOp
+    , PythonHS.VM.ExprPosition
     , PythonHS.VM.Instruction
     , PythonHS.VM.CompileProgram
     , PythonHS.VM.RunInstructions

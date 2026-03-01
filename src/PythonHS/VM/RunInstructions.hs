@@ -1,25 +1,26 @@
 module PythonHS.VM.RunInstructions (runInstructions) where
 
 import qualified Data.Map.Strict as Map
+import PythonHS.Evaluator.MaxLoopIterations (maxLoopIterations)
 import PythonHS.Evaluator.ShowPos (showPos)
 import PythonHS.Evaluator.Value (Value (BreakValue, ContinueValue, DictValue, FloatValue, IntValue, ListValue, NoneValue, StringValue))
 import PythonHS.Evaluator.ValueToOutput (valueToOutput)
 import PythonHS.VM.EvalBinaryOp (evalBinaryOp)
-import PythonHS.VM.Instruction (Instruction (ApplyBinary, ApplyNot, ApplyUnaryMinus, CallFunction, DefineFunction, Halt, Jump, JumpIfFalse, LoadName, PrintTop, PushConst, ReturnTop, StoreName))
+import PythonHS.VM.Instruction (Instruction (ApplyBinary, ApplyNot, ApplyUnaryMinus, BuildDict, BuildList, CallFunction, DefineFunction, ForNext, ForSetup, Halt, Jump, JumpIfFalse, LoadName, LoopGuard, PrintTop, PushConst, ReturnTop, StoreName))
 
 runInstructions :: [Instruction] -> Either String [String]
 runInstructions instructions = do
-  (_, _, _, outputs) <- execute instructions 0 [] Map.empty Map.empty Map.empty [] True
+  (_, _, _, outputs) <- execute instructions 0 [] Map.empty Map.empty Map.empty Map.empty Map.empty [] True
   pure outputs
   where
-    execute code ip stack globalsEnv localEnv functions outputs isTopLevel
+    execute code ip stack globalsEnv localEnv functions forStates loopCounts outputs isTopLevel
       | ip < 0 || ip >= length code = Right (Nothing, globalsEnv, functions, outputs)
       | otherwise =
           case code !! ip of
-            PushConst value -> execute code (ip + 1) (value : stack) globalsEnv localEnv functions outputs isTopLevel
+            PushConst value -> execute code (ip + 1) (value : stack) globalsEnv localEnv functions forStates loopCounts outputs isTopLevel
             LoadName name pos ->
               case lookupName name localEnv globalsEnv of
-                Just value -> execute code (ip + 1) (value : stack) globalsEnv localEnv functions outputs isTopLevel
+                Just value -> execute code (ip + 1) (value : stack) globalsEnv localEnv functions forStates loopCounts outputs isTopLevel
                 Nothing -> Left ("Name error: undefined variable " ++ name ++ " at " ++ showPos pos)
             StoreName name ->
               case stack of
@@ -27,22 +28,64 @@ runInstructions instructions = do
                   if isTopLevel
                     then
                       let newGlobals = Map.insert name value globalsEnv
-                       in execute code (ip + 1) rest newGlobals newGlobals functions outputs isTopLevel
+                       in execute code (ip + 1) rest newGlobals newGlobals functions forStates loopCounts outputs isTopLevel
                     else
                       let newLocals = Map.insert name value localEnv
-                       in execute code (ip + 1) rest globalsEnv newLocals functions outputs isTopLevel
+                       in execute code (ip + 1) rest globalsEnv newLocals functions forStates loopCounts outputs isTopLevel
                 _ -> Left "VM runtime error: store requires one value on stack"
-            Jump target -> execute code target stack globalsEnv localEnv functions outputs isTopLevel
+            BuildList count ->
+              case popValues count stack of
+                Left err -> Left err
+                Right (values, rest) ->
+                  execute code (ip + 1) (ListValue values : rest) globalsEnv localEnv functions forStates loopCounts outputs isTopLevel
+            BuildDict count ->
+              case popValues (count * 2) stack of
+                Left err -> Left err
+                Right (flatValues, rest) ->
+                  case toPairs flatValues of
+                    Left err -> Left err
+                    Right pairs -> execute code (ip + 1) (DictValue pairs : rest) globalsEnv localEnv functions forStates loopCounts outputs isTopLevel
+            Jump target -> execute code target stack globalsEnv localEnv functions forStates loopCounts outputs isTopLevel
             JumpIfFalse target ->
               case stack of
                 value : rest ->
                   if isTruthy value
-                    then execute code (ip + 1) rest globalsEnv localEnv functions outputs isTopLevel
-                    else execute code target rest globalsEnv localEnv functions outputs isTopLevel
+                    then execute code (ip + 1) rest globalsEnv localEnv functions forStates loopCounts outputs isTopLevel
+                    else execute code target rest globalsEnv localEnv functions forStates loopCounts outputs isTopLevel
                 _ -> Left "VM runtime error: conditional jump requires one value on stack"
+            LoopGuard pos ->
+              let currentCount = Map.findWithDefault 0 ip loopCounts
+               in if currentCount >= maxLoopIterations
+                    then Left ("Value error: iteration limit exceeded at " ++ showPos pos)
+                    else
+                      let newCounts = Map.insert ip (currentCount + 1) loopCounts
+                       in execute code (ip + 1) stack globalsEnv localEnv functions forStates newCounts outputs isTopLevel
+            ForSetup forNextIndex pos ->
+              case stack of
+                iterableValue : rest -> do
+                  iterableValues <- toForIterable iterableValue pos
+                  let newForStates = Map.insert forNextIndex iterableValues forStates
+                  execute code (ip + 1) rest globalsEnv localEnv functions newForStates loopCounts outputs isTopLevel
+                _ -> Left "VM runtime error: for setup requires iterable value on stack"
+            ForNext name loopEndIndex _ ->
+              case Map.lookup ip forStates of
+                Nothing -> Left "VM runtime error: missing for-loop state"
+                Just [] ->
+                  let newForStates = Map.delete ip forStates
+                   in execute code loopEndIndex stack globalsEnv localEnv functions newForStates loopCounts outputs isTopLevel
+                Just (nextValue : remainingValues) ->
+                  if isTopLevel
+                    then
+                      let newGlobals = Map.insert name nextValue globalsEnv
+                          newForStates = Map.insert ip remainingValues forStates
+                       in execute code (ip + 1) stack newGlobals newGlobals functions newForStates loopCounts outputs isTopLevel
+                    else
+                      let newLocals = Map.insert name nextValue localEnv
+                          newForStates = Map.insert ip remainingValues forStates
+                       in execute code (ip + 1) stack globalsEnv newLocals functions newForStates loopCounts outputs isTopLevel
             DefineFunction name params functionCode ->
               let newFunctions = Map.insert name (params, functionCode) functions
-               in execute code (ip + 1) stack globalsEnv localEnv newFunctions outputs isTopLevel
+               in execute code (ip + 1) stack globalsEnv localEnv newFunctions forStates loopCounts outputs isTopLevel
             CallFunction fname argCount pos ->
               case popArgs argCount stack of
                 Left err -> Left err
@@ -55,32 +98,32 @@ runInstructions instructions = do
                         else do
                           let functionLocals = Map.fromList (zip params args)
                           (maybeValue, newGlobals, newFunctions, newOutputs) <-
-                            execute functionCode 0 [] globalsEnv functionLocals functions outputs False
+                            execute functionCode 0 [] globalsEnv functionLocals functions Map.empty Map.empty outputs False
                           let returnValue =
                                 case maybeValue of
                                   Just value -> value
                                   Nothing -> NoneValue
-                          execute code (ip + 1) (returnValue : rest) newGlobals localEnv newFunctions newOutputs isTopLevel
+                          execute code (ip + 1) (returnValue : rest) newGlobals localEnv newFunctions forStates loopCounts newOutputs isTopLevel
             ApplyBinary op pos ->
               case stack of
                 right : left : rest ->
                   case evalBinaryOp op left right pos of
                     Left err -> Left err
-                    Right value -> execute code (ip + 1) (value : rest) globalsEnv localEnv functions outputs isTopLevel
+                    Right value -> execute code (ip + 1) (value : rest) globalsEnv localEnv functions forStates loopCounts outputs isTopLevel
                 _ -> Left "VM runtime error: add requires two values on stack"
             ApplyUnaryMinus pos ->
               case stack of
                 value : rest ->
                   case value of
-                    IntValue n -> execute code (ip + 1) (IntValue (negate n) : rest) globalsEnv localEnv functions outputs isTopLevel
-                    FloatValue n -> execute code (ip + 1) (FloatValue (negate n) : rest) globalsEnv localEnv functions outputs isTopLevel
+                    IntValue n -> execute code (ip + 1) (IntValue (negate n) : rest) globalsEnv localEnv functions forStates loopCounts outputs isTopLevel
+                    FloatValue n -> execute code (ip + 1) (FloatValue (negate n) : rest) globalsEnv localEnv functions forStates loopCounts outputs isTopLevel
                     _ -> Left ("Type error: unary - expects int at " ++ showPos pos)
                 _ -> Left "VM runtime error: unary - requires one value on stack"
             ApplyNot _ ->
               case stack of
                 value : rest ->
                   let result = if isTruthy value then 0 else 1
-                   in execute code (ip + 1) (IntValue result : rest) globalsEnv localEnv functions outputs isTopLevel
+                   in execute code (ip + 1) (IntValue result : rest) globalsEnv localEnv functions forStates loopCounts outputs isTopLevel
                 _ -> Left "VM runtime error: not requires one value on stack"
             ReturnTop ->
               case stack of
@@ -88,7 +131,7 @@ runInstructions instructions = do
                 _ -> Left "VM runtime error: return requires one value on stack"
             PrintTop ->
               case stack of
-                value : rest -> execute code (ip + 1) rest globalsEnv localEnv functions (outputs ++ [valueToOutput value]) isTopLevel
+                value : rest -> execute code (ip + 1) rest globalsEnv localEnv functions forStates loopCounts (outputs ++ [valueToOutput value]) isTopLevel
                 _ -> Left "VM runtime error: print requires one value on stack"
             Halt -> Right (Nothing, globalsEnv, functions, outputs)
 
@@ -102,6 +145,29 @@ runInstructions instructions = do
        in if length popped /= argCount
             then Left "VM runtime error: call requires enough argument values on stack"
             else Right (reverse popped, rest)
+
+    popValues count stack =
+      let (popped, rest) = splitAt count stack
+       in if length popped /= count
+            then Left "VM runtime error: collection build requires enough values on stack"
+            else Right (reverse popped, rest)
+
+    toPairs values =
+      case values of
+        [] -> Right []
+        key : value : rest -> do
+          remaining <- toPairs rest
+          Right ((key, value) : remaining)
+        _ -> Left "VM runtime error: dictionary build expects key/value pairs"
+
+    toForIterable iterableValue pos =
+      case iterableValue of
+        IntValue maxN ->
+          let upper = max 0 maxN
+           in Right (map IntValue [0 .. upper - 1])
+        ListValue vals -> Right vals
+        DictValue pairs -> Right (map fst pairs)
+        _ -> Left ("Type error: for expects iterable (int range, list, or dict) at " ++ showPos pos)
 
     isTruthy value =
       case value of
