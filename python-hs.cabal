@@ -41,9 +41,11 @@ library
     , PythonHS.Lexer.ScanTokenStep
     , PythonHS.Parser.ParseExpr
     , PythonHS.Parser.ParseStatement
+    , PythonHS.Parser.ParseIfTail
     , PythonHS.Structure.CheckStructureWarnings
     , PythonHS.Evaluator.ValueToOutput
     , PythonHS.Evaluator.ValueToReplOutput
+    , PythonHS.Evaluator.RangeValues
     , PythonHS.Evaluator.EvalWhileStmt
     , PythonHS.Evaluator.EvalForStmt
     , PythonHS.Evaluator.EvalExpr
@@ -55,6 +57,8 @@ library
     , PythonHS.Runner.ResolveRunnerEngine
     , PythonHS.Runner.RunSourceWithEngine
     , PythonHS.VM.CallBuiltin
+    , PythonHS.VM.CallCollectionBuiltin
+    , PythonHS.VM.CallMathBuiltin
     , PythonHS.VM.BindCallArguments
     , PythonHS.VM.CompileCallArgsAt
     , PythonHS.VM.CompileDefaults

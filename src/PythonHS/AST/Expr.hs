@@ -5,7 +5,7 @@ import PythonHS.Lexer.Position (Position)
 
 -- Expressions in the language with source position attached to each node
 data Expr
-  = IntegerExpr Int Position
+  = IntegerExpr Integer Position
   | FloatExpr Double Position
   | StringExpr String Position
   | NoneExpr Position

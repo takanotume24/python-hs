@@ -3,7 +3,7 @@ module Test.Parser.ParseProgramSpec (spec) where
 import PythonHS.AST.BinaryOperator (BinaryOperator (..))
 import PythonHS.AST.Expr (Expr (BinaryExpr, CallExpr, DictExpr, FloatExpr, IdentifierExpr, IntegerExpr, KeywordArgExpr, ListExpr, NoneExpr, NotExpr, StringExpr, UnaryMinusExpr))
 import PythonHS.AST.Program (Program (Program))
-import PythonHS.AST.Stmt (Stmt (AddAssignStmt, AssignStmt, BreakStmt, ContinueStmt, DivAssignStmt, FloorDivAssignStmt, ForStmt, FunctionDefDefaultsStmt, FunctionDefStmt, GlobalStmt, IfStmt, ModAssignStmt, MulAssignStmt, PassStmt, PrintStmt, ReturnStmt, SubAssignStmt, WhileStmt))
+import PythonHS.AST.Stmt (Stmt (AddAssignStmt, AssignStmt, BreakStmt, ContinueStmt, DivAssignStmt, FloorDivAssignStmt, ForStmt, FunctionDefDefaultsStmt, FunctionDefStmt, GlobalStmt, IfStmt, ImportStmt, ModAssignStmt, MulAssignStmt, PassStmt, PrintStmt, ReturnStmt, SubAssignStmt, WhileStmt))
 import PythonHS.Lexer.Token (Token (Token))
 import PythonHS.Lexer.Position (Position (Position))
 import PythonHS.Lexer.TokenType
@@ -27,6 +27,7 @@ import PythonHS.Lexer.TokenType
         FloatToken,
         NoneToken,
         ForToken,
+        ImportToken,
         IdentifierToken,
         InToken,
         IntegerToken,
@@ -66,6 +67,19 @@ import Test.Hspec (Spec, describe, it, shouldBe)
 
 spec :: Spec
 spec = describe "parseProgram" $ do
+  it "parses import statement" $ do
+    parseProgram
+      [ Token ImportToken "import" (Position 1 1),
+        Token IdentifierToken "math" (Position 1 8),
+        Token NewlineToken "\\n" (Position 1 12),
+        Token EOFToken "" (Position 2 1)
+      ]
+      `shouldBe` Right
+        ( Program
+            [ ImportStmt "math" (Position 1 1)
+            ]
+        )
+
   it "parses float literal expressions" $ do
     parseProgram
       [ Token PrintToken "print" (Position 1 1),

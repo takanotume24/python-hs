@@ -46,6 +46,7 @@ data TokenType
   | ContinueToken
   | GlobalToken
   | PassToken
+  | ImportToken
   | EqToken
   | NotEqToken
   | LtToken

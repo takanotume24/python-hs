@@ -72,6 +72,15 @@
 - [x] ドキュメント整合: README に `cabal run python-hs -- --engine vm`（`--` 区切り必須）を追記
 - [x] REPL VM縦スライス3: 単発式入力の表示を repr 互換化（string/list/dict を AST REPL と同形式で表示）
 
+## 現在のスコープ（P7: VM数学機能MVP）
+- [x] P7 開始: 今後の新機能は VM 実装のみを対象とし、AST 側への同等機能追加はスコープ外とする
+- [x] 失敗テスト先行: `import math`（最小）と `math.sqrt/sin/cos/tan/log/exp/pi/e` の VM ケースを追加
+- [x] 失敗テスト先行: 任意精度整数（巨大整数リテラル/演算）の VM ケースを追加
+- [x] `import math` の最小構文を lexer/parser/AST に導入（専用MVP導線、汎用importは後続）
+- [x] VM 実装: `IntValue` を `Integer` へ置換し、算術・比較・builtin の整合を取る
+- [x] VM 実装: `math` 組み込みの最小セット（`sqrt/sin/cos/tan/log/exp/pi/e`）を追加
+- [x] 品質ゲート再実行（`cabal test` / `cabal run check-structure` / warning 0）
+
 ### 運用メモ
 - 受け入れテストは MVP 最小（`MvpScenarioSpec`）を維持し、詳細仕様は Runner/Eval の回帰テストで固定する。
 
@@ -167,6 +176,16 @@
 ## メンテナンス記録（要約）
 - 注記: 以下は時系列ログ。古い日付の「未対応」項目は、その後のエントリで仕様更新済みの場合がある。
 - 2026-03-02
+  - [x] P7継続: `README` に import 範囲（`math` のみ受理、他モジュールは `Import error`）を追記してMVP境界を明確化
+  - [x] P7継続: `CLISpec` に VM `runFile` 経路の負系（`math.sqrt("x")` 型エラー / `import os` 未対応モジュール）を追加し、MVP境界を固定
+  - [x] P7継続: `CLISpec` に VM `runFile` 経路の `math.sin/cos/tan/log/exp/e` 受け入れケースを追加し、math最小セットを実行導線で固定
+  - [x] P7継続: `CLISpec` に VM `runFile` 経路の `import math` 受け入れケースを追加し、実運用導線で仕様を固定
+  - [x] P7開始: VM専用方針を `plans.md` に反映し、AST parity 拡張を今回スコープ外へ明確化
+  - [x] P7継続: 失敗テスト先行で `ScanTokensCoreSpec` / `ParseProgramSpec` / `RunSourceVmSpec` に `import math` と巨大整数ケースを追加
+  - [x] P7継続: `IntValue` を `Integer` へ置換し、巨大整数リテラル/演算を VM 経路で実行可能化
+  - [x] P7継続: `import math` 最小導線（lexer/parser/AST/VM compile）と `math.sqrt/sin/cos/tan/log/exp/pi/e` を実装
+  - [x] P7継続: 構造制約対応として `ParseIfTail` / `RangeValues` / `CallCollectionBuiltin` / `CallMathBuiltin` へ責務分離し、200行制約を回復
+  - [x] P7継続: 品質ゲート再実行（`cabal test` 682 examples green / `cabal run check-structure` pass）を確認
   - [x] P6継続: `processVmSubmission` の単発式フォールバックを `print __python_hs_repl_repr__(expr)` へ変更し、VM REPL の表示を repr 互換化
   - [x] P6継続: VM内部組み込み `__python_hs_repl_repr__` を追加し、`valueToReplOutput` を利用して REPL 表示文字列を生成
   - [x] P6継続: `CLISpec` に VM REPL の repr 表示ケース（string/dict）を追加し、失敗テスト先行でグリーン化

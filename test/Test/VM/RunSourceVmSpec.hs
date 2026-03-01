@@ -5,6 +5,12 @@ import Test.Hspec (Spec, describe, it, shouldBe)
 
 spec :: Spec
 spec = describe "runSourceVm (vm mvp)" $ do
+  it "supports import math with MVP functions" $ do
+    runSourceVm "import math\nprint math.sqrt(9)\nprint math.sin(0)\nprint math.pi()\nprint math.e()\n" `shouldBe` Right ["3.0", "0.0", "3.141592653589793", "2.718281828459045"]
+
+  it "handles arbitrary-size integer arithmetic" $ do
+    runSourceVm "x = 123456789012345678901234567890\nprint x + 1\n" `shouldBe` Right ["123456789012345678901234567891"]
+
   it "runs assignment and print with integer addition" $ do
     runSourceVm "x = 1\nprint x + 2\n" `shouldBe` Right ["3"]
 

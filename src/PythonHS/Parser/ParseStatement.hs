@@ -1,7 +1,7 @@
 module PythonHS.Parser.ParseStatement (parseStatement) where
 import qualified Data.Set as Set
 import PythonHS.AST.Expr (Expr (NoneExpr))
-import PythonHS.AST.Stmt (Stmt (AddAssignStmt, AssignStmt, BreakStmt, ContinueStmt, DivAssignStmt, FloorDivAssignStmt, ForStmt, FunctionDefDefaultsStmt, FunctionDefStmt, GlobalStmt, IfStmt, ModAssignStmt, MulAssignStmt, PassStmt, PrintStmt, ReturnStmt, SubAssignStmt, WhileStmt))
+import PythonHS.AST.Stmt (Stmt (AddAssignStmt, AssignStmt, BreakStmt, ContinueStmt, DivAssignStmt, FloorDivAssignStmt, ForStmt, FunctionDefDefaultsStmt, FunctionDefStmt, GlobalStmt, IfStmt, ImportStmt, ModAssignStmt, MulAssignStmt, PassStmt, PrintStmt, ReturnStmt, SubAssignStmt, WhileStmt))
 import PythonHS.Lexer.Position (Position (Position))
 import PythonHS.Lexer.Token (Token (Token), position)
 import PythonHS.Lexer.TokenType
@@ -14,11 +14,10 @@ import PythonHS.Lexer.TokenType
         DedentToken,
         DefToken,
         DoubleSlashAssignToken,
-        ElifToken,
-        ElseToken,
         ForToken,
         GlobalToken,
         IdentifierToken,
+        ImportToken,
         IfToken,
         InToken,
         IndentToken,
@@ -38,6 +37,7 @@ import PythonHS.Lexer.TokenType
   )
 import PythonHS.Parser.ParseError (ParseError (ExpectedAssignAfterIdentifier, ExpectedExpression, ExpectedNewlineAfterStatement))
 import PythonHS.Parser.ParseExpr (parseExpr)
+import PythonHS.Parser.ParseIfTail (parseIfTail)
 parseStatement :: [Token] -> Either ParseError (Stmt, [Token])
 parseStatement tokenStream =
   case tokenStream of
@@ -54,6 +54,8 @@ parseStatement tokenStream =
     Token PassToken _ pos : rest -> Right (PassStmt pos, rest)
     Token GlobalToken _ pos : Token IdentifierToken name _ : rest ->
       Right (GlobalStmt name pos, rest)
+    Token ImportToken _ pos : Token IdentifierToken name _ : rest ->
+      Right (ImportStmt name pos, rest)
     Token IdentifierToken name pos : Token AssignToken _ _ : rest -> do
       (valueExpr, remaining) <- parseExpr rest
       Right (AssignStmt name valueExpr pos, remaining)
@@ -80,7 +82,7 @@ parseStatement tokenStream =
       case afterCond of
         Token ColonToken _ _ : afterColon -> do
           (thenSuite, afterThen) <- parseSuite afterColon
-          (elseBranch, finalRest) <- parseIfTail afterThen
+          (elseBranch, finalRest) <- parseIfTail parseSuite afterThen
           Right (IfStmt cond thenSuite elseBranch pos, finalRest)
         Token _ _ pos' : _ -> Left (ExpectedExpression pos')
         _ -> Left (ExpectedExpression (Position 0 0))
@@ -165,36 +167,3 @@ parseStatement tokenStream =
     parseSingleParameter _ = Left (ExpectedExpression (Position 0 0))
     paramDefaultPair _ Nothing = []
     paramDefaultPair name (Just defaultExpr) = [(name, defaultExpr)]
-    dropLeadingNewlines (Token NewlineToken _ _ : rest) = dropLeadingNewlines rest
-    dropLeadingNewlines ts = ts
-
-    parseIfTail ts =
-      case ts of
-        Token ElseToken _ _ : Token ColonToken _ _ : afterElse -> do
-          (elseSuite, finalRest) <- parseSuite afterElse
-          Right (Just elseSuite, finalRest)
-        Token ElifToken _ elifPos : afterElif -> do
-          (elifCond, afterElifCond) <- parseExpr afterElif
-          case afterElifCond of
-            Token ColonToken _ _ : afterElifColon -> do
-              (elifThenSuite, afterElifThen) <- parseSuite afterElifColon
-              (elifElseBranch, finalRest) <- parseIfTail afterElifThen
-              Right (Just [IfStmt elifCond elifThenSuite elifElseBranch elifPos], finalRest)
-            Token _ _ pos : _ -> Left (ExpectedExpression pos)
-            _ -> Left (ExpectedExpression (Position 0 0))
-        Token NewlineToken _ _ : _ ->
-          case dropLeadingNewlines ts of
-            Token ElseToken _ _ : Token ColonToken _ _ : afterElse -> do
-              (elseSuite, finalRest) <- parseSuite afterElse
-              Right (Just elseSuite, finalRest)
-            Token ElifToken _ elifPos : afterElif -> do
-              (elifCond, afterElifCond) <- parseExpr afterElif
-              case afterElifCond of
-                Token ColonToken _ _ : afterElifColon -> do
-                  (elifThenSuite, afterElifThen) <- parseSuite afterElifColon
-                  (elifElseBranch, finalRest) <- parseIfTail afterElifThen
-                  Right (Just [IfStmt elifCond elifThenSuite elifElseBranch elifPos], finalRest)
-                Token _ _ pos : _ -> Left (ExpectedExpression pos)
-                _ -> Left (ExpectedExpression (Position 0 0))
-            _ -> Right (Nothing, ts)
-        _ -> Right (Nothing, ts)

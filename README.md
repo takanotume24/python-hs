@@ -5,7 +5,7 @@ TDD（`hspec`）で機能を拡張し、`Lexer -> Parser -> Evaluator -> Runner/
 
 このプログラムは、GitHub Copilotによって生成されたコード、及びtakanotume24が手動で修正したコードを含みます。
 
-## 現在の実装状況（2026-03-01）
+## 現在の実装状況（2026-03-02）
 
 ### 実行基盤
 - [x] ソース文字列実行（`runSource`）
@@ -21,10 +21,11 @@ TDD（`hspec`）で機能を拡張し、`Lexer -> Parser -> Evaluator -> Runner/
 - [x] 複合代入（`+= -= *= /= %= //=`）
 - [x] 制御構文キーワード（`if/elif/else`, `while`, `for/in`, `break`, `continue`）
 - [x] 関数関連（`def`, `return`, `global`, `pass`）
+- [x] `import` キーワード（最小: `import math`）
 - [x] `INDENT`/`DEDENT` トークン生成（複文ブロック）
 
 ### 構文解析（Parser）
-- [x] 文: `print`, 代入, 複合代入, `return`, `global`, `pass`
+- [x] 文: `print`, 代入, 複合代入, `return`, `global`, `pass`, `import`
 - [x] 制御構文: `if/elif/else`, `while`, `for`
 - [x] 関数定義: `def name(args): ...`
 - [x] 式: 四則演算（`+ - * / % //`）, 比較, `not`, 関数呼び出し
@@ -37,6 +38,7 @@ TDD（`hspec`）で機能を拡張し、`Lexer -> Parser -> Evaluator -> Runner/
 - [x] 文字列連結（`"a" + "b"`）
 - [x] 数値演算の暗黙昇格（int/float 混在）
 - [x] `/` 実数除算 / `//` 床除算 / `%` 数値同士対応
+- [x] 整数は任意精度（`Integer`）
 - [x] 条件分岐・ループ実行
 - [x] `break` / `continue` の制御伝播
 - [x] 関数呼び出し（再帰を含む）
@@ -61,11 +63,17 @@ TDD（`hspec`）で機能を拡張し、`Lexer -> Parser -> Evaluator -> Runner/
 - [x] `get(dict, key)` / `get(dict, key, default)`
 - [x] `update(dict, key, value)` / `update(dict, otherDict)`
 - [x] `setdefault(dict, key)` / `setdefault(dict, key, default)`
+- [x] VM最小 math 導線: `import math` + `math.sqrt/sin/cos/tan/log/exp/pi/e`
+
+補足:
+- `math` は現時点で VM 実行経路を対象にした MVP 実装です。
+- `import` は現時点で `math` のみを受理し、`import os` など他モジュールは `Import error` になります。
+- `math.pi` / `math.e` は現仕様では関数形式（`math.pi()` / `math.e()`）で利用します。
 
 ## MVP外・未対応（明示）
 - [ ] Python完全互換（あくまでサブセット）
 - [ ] 任意オブジェクトの一般メソッド解決（現状は組み込み相当の構文糖衣のみ）
-- [ ] 例外処理、クラス、import など高度機能
+- [ ] 例外処理、クラス、汎用import（任意モジュール読み込み）など高度機能
 
 ## 開発環境（Nix Flakes）
 

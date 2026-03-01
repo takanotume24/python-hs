@@ -39,6 +39,42 @@ spec = describe "runFile / replEvalLines" $ do
         res <- runFile path
         res `shouldBe` Right ["3"]
 
+  it "runs import math script in vm engine for runFile" $
+    withSystemTempFile "vm-math.pyhs" $ \path h -> do
+      hPutStr h "import math\nprint math.sqrt(9)\nprint math.pi()\n"
+      hClose h
+      bracket (lookupEnv "PYTHON_HS_RUNNER_ENGINE") restoreRunnerEngine $ \_ -> do
+        setEnv "PYTHON_HS_RUNNER_ENGINE" "vm"
+        res <- runFile path
+        res `shouldBe` Right ["3.0", "3.141592653589793"]
+
+  it "runs remaining math functions in vm engine for runFile" $
+    withSystemTempFile "vm-math-more.pyhs" $ \path h -> do
+      hPutStr h "import math\nprint math.sin(0)\nprint math.cos(0)\nprint math.tan(0)\nprint math.log(1)\nprint math.exp(1)\nprint math.e()\n"
+      hClose h
+      bracket (lookupEnv "PYTHON_HS_RUNNER_ENGINE") restoreRunnerEngine $ \_ -> do
+        setEnv "PYTHON_HS_RUNNER_ENGINE" "vm"
+        res <- runFile path
+        res `shouldBe` Right ["0.0", "1.0", "0.0", "0.0", "2.718281828459045", "2.718281828459045"]
+
+  it "reports math type error in vm engine for runFile" $
+    withSystemTempFile "vm-math-type-error.pyhs" $ \path h -> do
+      hPutStr h "import math\nprint math.sqrt(\"x\")\n"
+      hClose h
+      bracket (lookupEnv "PYTHON_HS_RUNNER_ENGINE") restoreRunnerEngine $ \_ -> do
+        setEnv "PYTHON_HS_RUNNER_ENGINE" "vm"
+        res <- runFile path
+        res `shouldSatisfy` (== Left "Type error: sqrt expects number at 2:12")
+
+  it "reports unsupported import module in vm engine for runFile" $
+    withSystemTempFile "vm-import-unsupported.pyhs" $ \path h -> do
+      hPutStr h "import os\n"
+      hClose h
+      bracket (lookupEnv "PYTHON_HS_RUNNER_ENGINE") restoreRunnerEngine $ \_ -> do
+        setEnv "PYTHON_HS_RUNNER_ENGINE" "vm"
+        res <- runFile path
+        res `shouldBe` Left "Import error: unsupported module os at 1:1"
+
   it "falls back to ast engine when PYTHON_HS_RUNNER_ENGINE is unknown" $
     withSystemTempFile "ast-fallback.pyhs" $ \path h -> do
       hPutStr h "def add(a, b = 2):\n  return a + b\nprint add(1)\n"

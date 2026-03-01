@@ -1,7 +1,7 @@
 module PythonHS.Evaluator.Value (Value (..)) where
 
 data Value
-  = IntValue Int
+  = IntValue Integer
   | FloatValue Double
   | StringValue String
   | NoneValue

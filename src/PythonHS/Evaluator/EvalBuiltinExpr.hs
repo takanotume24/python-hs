@@ -4,6 +4,7 @@ import Data.List (sortOn)
 import PythonHS.AST.Expr (Expr)
 import PythonHS.Evaluator.Env (Env)
 import PythonHS.Evaluator.FuncEnv (FuncEnv)
+import PythonHS.Evaluator.RangeValues (rangeValues)
 import PythonHS.Evaluator.ShowPos (showPos)
 import PythonHS.Evaluator.Value (Value (DictValue, FloatValue, IntValue, ListValue, NoneValue, StringValue))
 import PythonHS.Lexer.Position (Position)
@@ -14,8 +15,8 @@ evalBuiltinExpr evalExprFn env fenv fname args pos =
     "len" -> Just $ do
       (argVals, argOuts, envAfterArgs) <- evalArgs env fenv args
       case argVals of
-        [StringValue s] -> Right (IntValue (length s), argOuts, envAfterArgs)
-        [ListValue vals] -> Right (IntValue (length vals), argOuts, envAfterArgs)
+        [StringValue s] -> Right (IntValue (fromIntegral (length s)), argOuts, envAfterArgs)
+        [ListValue vals] -> Right (IntValue (fromIntegral (length vals)), argOuts, envAfterArgs)
         [_] -> Left $ "Type error: len expects string or list at " ++ showPos pos
         _ -> Left $ "Argument count mismatch when calling len at " ++ showPos pos
     "bool" -> Just $ do
@@ -32,11 +33,11 @@ evalBuiltinExpr evalExprFn env fenv fname args pos =
       (argVals, argOuts, envAfterArgs) <- evalArgs env fenv args
       case argVals of
         [IntValue n] -> Right (ListValue (map IntValue (rangeOne n)), argOuts, envAfterArgs)
-        [IntValue start, IntValue stop] -> Right (ListValue (map IntValue (rangeWithStep start stop 1)), argOuts, envAfterArgs)
+        [IntValue start, IntValue stop] -> Right (ListValue (map IntValue (rangeValues start stop 1)), argOuts, envAfterArgs)
         [IntValue start, IntValue stop, IntValue step] ->
           if step == 0
             then Left $ "Value error: range step must not be zero at " ++ showPos pos
-            else Right (ListValue (map IntValue (rangeWithStep start stop step)), argOuts, envAfterArgs)
+            else Right (ListValue (map IntValue (rangeValues start stop step)), argOuts, envAfterArgs)
         [_] -> Left $ "Type error: range expects int at " ++ showPos pos
         [_, _] -> Left $ "Type error: range expects int arguments at " ++ showPos pos
         [_, _, _] -> Left $ "Type error: range expects int arguments at " ++ showPos pos
@@ -186,15 +187,13 @@ evalBuiltinExpr evalExprFn env fenv fname args pos =
     numberPairs (_ : _) = Nothing
 
     insertAtIndex values index value =
-      let clampedIndex = max 0 (min index (length values))
-          (leftValues, rightValues) = splitAt clampedIndex values
+      let maxIndex = fromIntegral (length values)
+          clampedIndex = max 0 (min index maxIndex)
+          splitIndex = fromIntegral clampedIndex
+          (leftValues, rightValues) = splitAt splitIndex values
        in leftValues ++ (value : rightValues)
 
     pairToList (k, v) = ListValue [k, v]
     rangeOne n
       | n <= 0 = []
       | otherwise = [0 .. n - 1]
-    rangeWithStep start stop step
-      | step > 0 = takeWhile (< stop) [start, start + step ..]
-      | step < 0 = takeWhile (> stop) [start, start + step ..]
-      | otherwise = []

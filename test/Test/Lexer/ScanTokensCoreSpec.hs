@@ -3,7 +3,7 @@ module Test.Lexer.ScanTokensCoreSpec (spec) where
 import PythonHS.Lexer.Position (Position (Position))
 import PythonHS.Lexer.ScanTokens (scanTokens)
 import PythonHS.Lexer.Token (Token (Token))
-import PythonHS.Lexer.TokenType (TokenType (AssignToken, BreakToken, ContinueToken, DotToken, DoubleSlashAssignToken, DoubleSlashToken, EOFToken, ElifToken, FalseToken, FloatToken, ForToken, GlobalToken, IdentifierToken, IfToken, InToken, IntegerToken, LParenToken, MinusAssignToken, NewlineToken, NoneToken, PassToken, PercentAssignToken, PercentToken, PlusAssignToken, PlusToken, PrintToken, ReturnToken, RParenToken, SlashAssignToken, SlashToken, StarAssignToken, StarToken, TrueToken))
+import PythonHS.Lexer.TokenType (TokenType (AssignToken, BreakToken, ContinueToken, DotToken, DoubleSlashAssignToken, DoubleSlashToken, EOFToken, ElifToken, FalseToken, FloatToken, ForToken, GlobalToken, IdentifierToken, IfToken, ImportToken, InToken, IntegerToken, LParenToken, MinusAssignToken, NewlineToken, NoneToken, PassToken, PercentAssignToken, PercentToken, PlusAssignToken, PlusToken, PrintToken, ReturnToken, RParenToken, SlashAssignToken, SlashToken, StarAssignToken, StarToken, TrueToken))
 import Test.Hspec (Spec, describe, it, shouldBe)
 
 spec :: Spec
@@ -182,6 +182,15 @@ spec = describe "scanTokens core tokens" $ do
       Right
         [ Token PassToken "pass" (Position 1 1),
           Token NewlineToken "\\n" (Position 1 5),
+          Token EOFToken "" (Position 2 1)
+        ]
+
+  it "recognizes import keyword" $ do
+    scanTokens "import math\n" `shouldBe`
+      Right
+        [ Token ImportToken "import" (Position 1 1),
+          Token IdentifierToken "math" (Position 1 8),
+          Token NewlineToken "\\n" (Position 1 12),
           Token EOFToken "" (Position 2 1)
         ]
 

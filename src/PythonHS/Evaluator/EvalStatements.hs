@@ -54,6 +54,7 @@ evalStatements env fenv outputs (stmt : rest) =
     BreakStmt pos -> Right (env, fenv, outputs, Just (BreakValue, pos))
     ContinueStmt pos -> Right (env, fenv, outputs, Just (ContinueValue, pos))
     GlobalStmt _ _ -> evalStatements env fenv outputs rest
+    ImportStmt _ _ -> evalStatements env fenv outputs rest
     PassStmt _ -> evalStatements env fenv outputs rest
 
     IfStmt cond thenBranch maybeElse _ -> do
