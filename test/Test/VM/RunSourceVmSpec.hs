@@ -50,3 +50,55 @@ spec = describe "runSourceVm (vm mvp)" $ do
     runSourceVm "x = 0\nwhile x < 2001:\n  x = x + 1\nprint x\n" `shouldBe` Left "Value error: iteration limit exceeded at 2:1"
     runSourceVm "for i in 2000:\n  pass\nprint 1\n" `shouldBe` Right ["1"]
     runSourceVm "for i in 2001:\n  pass\n" `shouldBe` Left "Value error: iteration limit exceeded at 1:1"
+
+  it "evaluates compound assignment operators" $ do
+    runSourceVm "x = 1\nx += 2\nx -= 1\nx *= 3\nx /= 2\nx %= 2\nx //= 1\nprint x\n" `shouldBe` Right ["1.0"]
+
+  it "updates global variable when declared with global inside function" $ do
+    runSourceVm "x = 10\ndef setGlobal():\n  global x\n  x = 99\n  return x\nprint setGlobal()\nprint x\n" `shouldBe` Right ["99", "99"]
+
+  it "evaluates len and bool builtins" $ do
+    runSourceVm "print len([1, 2, 3])\nprint bool(0)\nprint bool([1])\n" `shouldBe` Right ["3", "0", "1"]
+
+  it "evaluates range builtin with one two and three args" $ do
+    runSourceVm "print range(3)\nprint range(1, 5)\nprint range(5, 1, -2)\n" `shouldBe` Right ["[0, 1, 2]", "[1, 2, 3, 4]", "[5, 3]"]
+
+  it "reports builtin argument and type errors" $ do
+    runSourceVm "print len(1)\n" `shouldBe` Left "Type error: len expects string or list at 1:7"
+    runSourceVm "print bool()\n" `shouldBe` Left "Argument count mismatch when calling bool at 1:7"
+    runSourceVm "print range(1, 2, 0)\n" `shouldBe` Left "Value error: range step must not be zero at 1:7"
+
+  it "evaluates append sort and reverse builtins" $ do
+    runSourceVm "print append([1, 2], 3)\nprint sort([3, 1.5, 2])\nprint reverse([1, 2, 3])\n" `shouldBe` Right ["[1, 2, 3]", "[1.5, 2, 3]", "[3, 2, 1]"]
+
+  it "reports append sort and reverse builtin errors" $ do
+    runSourceVm "print append(1, 2)\n" `shouldBe` Left "Type error: append expects list as first argument at 1:7"
+    runSourceVm "print append([1])\n" `shouldBe` Left "Argument count mismatch when calling append at 1:7"
+    runSourceVm "print sort([1, \"x\"])\n" `shouldBe` Left "Type error: sort expects list of number at 1:7"
+    runSourceVm "print reverse(1)\n" `shouldBe` Left "Type error: reverse expects list as first argument at 1:7"
+
+  it "evaluates remove insert and pop builtins" $ do
+    runSourceVm "print remove([1, 2, 1], 1)\nprint insert([1, 3], 1, 2)\nprint pop([1, 2, 3])\nprint pop({1: 10}, 1)\nprint pop({}, 1, 99)\n" `shouldBe` Right ["[2, 1]", "[1, 2, 3]", "3", "10", "99"]
+
+  it "reports remove insert and pop builtin errors" $ do
+    runSourceVm "print remove([1], 2)\n" `shouldBe` Left "Value error: remove value not found at 1:7"
+    runSourceVm "print remove(1, 2)\n" `shouldBe` Left "Type error: remove expects list as first argument at 1:7"
+    runSourceVm "print insert([1], \"0\", 2)\n" `shouldBe` Left "Type error: insert expects int index at 1:7"
+    runSourceVm "print insert([1], 0)\n" `shouldBe` Left "Argument count mismatch when calling insert at 1:7"
+    runSourceVm "print pop([])\n" `shouldBe` Left "Value error: pop from empty list at 1:7"
+    runSourceVm "print pop({}, 1)\n" `shouldBe` Left "Key not found in pop at 1:7"
+    runSourceVm "print pop(1)\n" `shouldBe` Left "Type error: pop expects list at 1:7"
+
+  it "evaluates dict-family builtins" $ do
+    runSourceVm "print clear([1, 2])\nprint clear({1: 10})\nprint keys({2: 20, 1: 10})\nprint get({1: 10}, 1)\nprint get({}, 1, 99)\nprint update({1: 10}, 2, 20)\nprint update({1: 10}, {2: 20})\nprint setdefault({1: 10}, 2)\nprint setdefault({1: 10}, 1, 99)\nprint values({2: 20, 1: 10})\nprint items({2: 20, 1: 10})\n" `shouldBe` Right ["[]", "{}", "[2, 1]", "10", "99", "{1: 10, 2: 20}", "{1: 10, 2: 20}", "{1: 10, 2: None}", "{1: 10}", "[20, 10]", "[[2, 20], [1, 10]]"]
+
+  it "reports dict-family builtin errors" $ do
+    runSourceVm "print clear(1)\n" `shouldBe` Left "Type error: clear expects list or dict at 1:7"
+    runSourceVm "print keys(1)\n" `shouldBe` Left "Type error: keys expects dict at 1:7"
+    runSourceVm "print get([], 1)\n" `shouldBe` Left "Type error: get expects dict as first argument at 1:7"
+    runSourceVm "print get({1: 10}, 2)\n" `shouldBe` Left "Key not found in get at 1:7"
+    runSourceVm "print update({1: 10}, [])\n" `shouldBe` Left "Type error: update expects dict as second argument at 1:7"
+    runSourceVm "print update([], {1: 10})\n" `shouldBe` Left "Type error: update expects dict as first argument at 1:7"
+    runSourceVm "print setdefault([], 1)\n" `shouldBe` Left "Type error: setdefault expects dict as first argument at 1:7"
+    runSourceVm "print values(1)\n" `shouldBe` Left "Type error: values expects dict at 1:7"
+    runSourceVm "print items(1)\n" `shouldBe` Left "Type error: items expects dict at 1:7"

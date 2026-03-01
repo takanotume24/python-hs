@@ -10,6 +10,7 @@ data Instruction
   | StoreName String
   | BuildList Int
   | BuildDict Int
+  | DeclareGlobal String
   | LoopGuard Position
   | ForSetup Int Position
   | ForNext String Int Position

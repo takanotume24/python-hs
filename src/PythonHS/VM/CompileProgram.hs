@@ -1,15 +1,15 @@
 module PythonHS.VM.CompileProgram (compileProgram) where
 
-import PythonHS.AST.BinaryOperator (BinaryOperator (AndOperator, OrOperator))
+import PythonHS.AST.BinaryOperator (BinaryOperator (AddOperator, AndOperator, DivideOperator, FloorDivideOperator, ModuloOperator, MultiplyOperator, OrOperator, SubtractOperator))
 import PythonHS.AST.Expr (Expr (BinaryExpr, CallExpr, DictExpr, FloatExpr, IdentifierExpr, IntegerExpr, ListExpr, NoneExpr, NotExpr, StringExpr, UnaryMinusExpr))
 import PythonHS.AST.Program (Program (Program))
-import PythonHS.AST.Stmt (Stmt (AssignStmt, BreakStmt, ContinueStmt, ForStmt, FunctionDefDefaultsStmt, FunctionDefStmt, IfStmt, PassStmt, PrintStmt, ReturnStmt, WhileStmt))
+import PythonHS.AST.Stmt (Stmt (AddAssignStmt, AssignStmt, BreakStmt, ContinueStmt, DivAssignStmt, FloorDivAssignStmt, ForStmt, FunctionDefDefaultsStmt, FunctionDefStmt, GlobalStmt, IfStmt, ModAssignStmt, MulAssignStmt, PassStmt, PrintStmt, ReturnStmt, SubAssignStmt, WhileStmt))
 import PythonHS.Evaluator.ShowPos (showPos)
 import PythonHS.Evaluator.Value (Value (FloatValue, IntValue, NoneValue, StringValue))
-import PythonHS.Lexer.Position (Position (Position))
 import PythonHS.VM.CompileExprItemsAt (compileExprItemsAt)
 import PythonHS.VM.ExprPosition (exprPosition)
-import PythonHS.VM.Instruction (Instruction (ApplyBinary, ApplyNot, ApplyUnaryMinus, BuildDict, BuildList, CallFunction, DefineFunction, ForNext, ForSetup, Halt, Jump, JumpIfFalse, LoadName, LoopGuard, PrintTop, PushConst, ReturnTop, StoreName))
+import PythonHS.VM.Instruction (Instruction (ApplyBinary, ApplyNot, ApplyUnaryMinus, BuildDict, BuildList, CallFunction, DeclareGlobal, DefineFunction, ForNext, ForSetup, Halt, Jump, JumpIfFalse, LoadName, LoopGuard, PrintTop, PushConst, ReturnTop, StoreName))
+import PythonHS.VM.StmtPosition (stmtPosition)
 
 compileProgram :: Program -> Either String [Instruction]
 compileProgram (Program stmts) = do
@@ -29,10 +29,17 @@ compileProgram (Program stmts) = do
     compileStmt baseIndex inFunction maybeLoop stmt =
       case stmt of
         PassStmt _ -> Right ([], baseIndex)
+        GlobalStmt name _ -> Right ([DeclareGlobal name], baseIndex + 1)
         AssignStmt name expr _ -> do
           (exprCode, exprEnd) <- compileExprAt baseIndex expr
           let code = exprCode ++ [StoreName name]
           pure (code, exprEnd + 1)
+        AddAssignStmt name expr pos -> compileCompoundAssign baseIndex name expr pos AddOperator
+        SubAssignStmt name expr pos -> compileCompoundAssign baseIndex name expr pos SubtractOperator
+        MulAssignStmt name expr pos -> compileCompoundAssign baseIndex name expr pos MultiplyOperator
+        DivAssignStmt name expr pos -> compileCompoundAssign baseIndex name expr pos DivideOperator
+        ModAssignStmt name expr pos -> compileCompoundAssign baseIndex name expr pos ModuloOperator
+        FloorDivAssignStmt name expr pos -> compileCompoundAssign baseIndex name expr pos FloorDivideOperator
         PrintStmt expr _ -> do
           (exprCode, exprEnd) <- compileExprAt baseIndex expr
           let code = exprCode ++ [PrintTop]
@@ -100,7 +107,11 @@ compileProgram (Program stmts) = do
           case maybeLoop of
             Just (_, continueTarget) -> Right ([Jump continueTarget], baseIndex + 1)
             Nothing -> Left ("Continue outside loop at " ++ showPos pos)
-        _ -> Left ("VM compile error: unsupported statement at " ++ showPos (stmtPosition stmt))
+
+    compileCompoundAssign baseIndex name expr pos op = do
+      (exprCode, exprEnd) <- compileExprAt (baseIndex + 1) expr
+      let code = [LoadName name pos] ++ exprCode ++ [ApplyBinary op pos, StoreName name]
+      pure (code, exprEnd + 2)
 
     compileExprAt baseIndex expr =
       case expr of
@@ -176,18 +187,3 @@ compileProgram (Program stmts) = do
               ++ rightCode
               ++ [JumpIfFalse falsePushIndex, PushConst (IntValue 1), Jump endIndex, PushConst (IntValue 0)]
       pure (code, endIndex)
-
-    stmtPosition stmt =
-      case stmt of
-        AssignStmt _ _ pos -> pos
-        FunctionDefStmt _ _ _ pos -> pos
-        FunctionDefDefaultsStmt _ _ _ _ pos -> pos
-        BreakStmt pos -> pos
-        ContinueStmt pos -> pos
-        ForStmt _ _ _ pos -> pos
-        IfStmt _ _ _ pos -> pos
-        PassStmt pos -> pos
-        ReturnStmt _ pos -> pos
-        WhileStmt _ _ pos -> pos
-        PrintStmt _ pos -> pos
-        _ -> Position 1 1

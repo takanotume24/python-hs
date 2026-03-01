@@ -29,6 +29,11 @@
 - [x] VM縦スライス6: 単項演算（`UnaryMinus` / `not`）をVM式評価へ導入
 - [x] VM縦スライス7: `for` 文（`int/list/dict` 反復）をVM実行へ導入
 - [x] VM縦スライス8: `break` / `continue` と反復上限ガード（2000）をVMへ導入
+- [x] VM縦スライス9: `global` 文と複合代入（`+= -= *= /= %= //=`）をVMへ導入
+- [x] VM縦スライス10: `len` / `bool` / `range` 組み込みをVM `CallFunction` 経路へ導入
+- [x] VM縦スライス11: `append` / `sort` / `reverse` 組み込みをVM `CallFunction` 経路へ導入
+- [x] VM縦スライス12: `remove` / `insert` / `pop` 組み込みをVM `CallFunction` 経路へ導入
+- [x] VM縦スライス13: `clear` / `keys` / `get` / `update` / `setdefault` / `values` / `items` 組み込みをVM `CallFunction` 経路へ導入
 
 ### 運用メモ
 - 受け入れテストは MVP 最小（`MvpScenarioSpec`）を維持し、詳細仕様は Runner/Eval の回帰テストで固定する。
@@ -125,6 +130,18 @@
 ## メンテナンス記録（要約）
 - 注記: 以下は時系列ログ。古い日付の「未対応」項目は、その後のエントリで仕様更新済みの場合がある。
 - 2026-03-01
+  - [x] P5継続: VM縦スライス13として dict 系 builtin（`clear` / `keys` / `get` / `update` / `setdefault` / `values` / `items`）を追加
+  - [x] P5継続: `RunSourceVmSpec` に dict 系 builtin の成功系・代表エラー系を追加し、失敗テスト先行でグリーン化
+  - [x] P5継続: VM縦スライス12として `remove` / `insert` / `pop` の builtin dispatch を追加
+  - [x] P5継続: `RunSourceVmSpec` に list/dict の `pop` と `remove`/`insert` 成功系・代表エラー系を追加し、失敗テスト先行でグリーン化
+  - [x] P5継続: VM縦スライス11として `append` / `sort` / `reverse` の builtin dispatch を追加
+  - [x] P5継続: `RunSourceVmSpec` に list builtin 成功系と型/引数エラーの代表ケースを追加し、失敗テスト先行でグリーン化
+  - [x] P5継続: VM縦スライス10として `len` / `bool` / `range` の builtin dispatch を `CallFunction` に追加
+  - [x] P5継続: `PythonHS.VM.CallBuiltin` を新設し、引数個数/型エラー文言と `range` step=0 エラーを既存規約へ整合
+  - [x] P5継続: `RunSourceVmSpec` に builtin 成功系（`len`/`bool`/`range`）と代表エラー系を追加し、失敗テスト先行でグリーン化
+  - [x] P5継続: VM縦スライス9として `DeclareGlobal` を導入し、関数内 `global` 宣言の代入先をグローバル環境へ反映
+  - [x] P5継続: 複合代入文を `LoadName + ApplyBinary + StoreName` へコンパイルし、VM実行器で評価可能化
+  - [x] P5継続: `RunSourceVmSpec` に複合代入と関数内 `global` 更新ケースを追加し、失敗テスト先行でグリーン化
   - [x] P5継続: VM縦スライス8として `break` / `continue` をループ文脈付きコンパイルで導入し、ループ外使用時のエラー文言を互換化
   - [x] P5継続: `LoopGuard` 命令を導入し、`while` / `for` の反復上限（`maxLoopIterations`）をVM実行器で強制
   - [x] P5継続: `RunSourceVmSpec` に `break/continue` 制御と反復上限境界（2000/2001）ケースを追加し、失敗テスト先行でグリーン化
