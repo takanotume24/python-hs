@@ -4,9 +4,16 @@ import Data.Char (isSpace)
 import qualified Data.Map.Strict as Map
 import System.Console.Haskeline (defaultSettings, getInputLine, outputStrLn, runInputT)
 import PythonHS.CLI.ProcessSubmission (processSubmission)
+import PythonHS.Runner.RunnerEngine (RunnerEngine (AstEngine, VmEngine))
+import PythonHS.Runner.ResolveRunnerEngine (resolveRunnerEngine)
+import System.Environment (lookupEnv)
 
 startRepl :: IO ()
-startRepl = runInputT defaultSettings (loop Map.empty Map.empty [])
+startRepl = do
+  envEngine <- lookupEnv "PYTHON_HS_RUNNER_ENGINE"
+  case resolveRunnerEngine envEngine of
+    AstEngine -> runInputT defaultSettings (loop Map.empty Map.empty [])
+    VmEngine -> putStrLn "Error: VM engine is not supported in REPL yet"
   where
     trimRight = reverse . dropWhile isSpace . reverse
     trim = dropWhile isSpace . trimRight

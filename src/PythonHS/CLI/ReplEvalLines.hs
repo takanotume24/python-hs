@@ -3,9 +3,16 @@ module PythonHS.CLI.ReplEvalLines (replEvalLines) where
 import Data.Char (isSpace)
 import qualified Data.Map.Strict as Map
 import PythonHS.CLI.ProcessSubmission (processSubmission)
+import PythonHS.Runner.RunnerEngine (RunnerEngine (AstEngine, VmEngine))
+import PythonHS.Runner.ResolveRunnerEngine (resolveRunnerEngine)
+import System.Environment (lookupEnv)
 
 replEvalLines :: [String] -> IO [String]
-replEvalLines inputs = go inputs Map.empty Map.empty [] []
+replEvalLines inputs = do
+  envEngine <- lookupEnv "PYTHON_HS_RUNNER_ENGINE"
+  case resolveRunnerEngine envEngine of
+    AstEngine -> go inputs Map.empty Map.empty [] []
+    VmEngine -> return ["Error: VM engine is not supported in REPL yet"]
   where
     trimRight = reverse . dropWhile isSpace . reverse
     trim = dropWhile isSpace . trimRight

@@ -34,6 +34,11 @@
 - [x] VM縦スライス11: `append` / `sort` / `reverse` 組み込みをVM `CallFunction` 経路へ導入
 - [x] VM縦スライス12: `remove` / `insert` / `pop` 組み込みをVM `CallFunction` 経路へ導入
 - [x] VM縦スライス13: `clear` / `keys` / `get` / `update` / `setdefault` / `values` / `items` 組み込みをVM `CallFunction` 経路へ導入
+- [x] VM縦スライス14: `runSource` と `runSourceVm` の parity テスト（MVPサブセット）を追加
+- [x] VM縦スライス14: parity 対象を float / method-call style builtin / lexer-parse error まで拡張
+- [x] VM縦スライス14: parity ケースを 20 件へ拡張（truthiness/global-pass/インデント複文/辞書順序/追加 runtime error）
+- [x] VM縦スライス15: `runFile` に実行エンジンスイッチ（`PYTHON_HS_RUNNER_ENGINE=ast|vm`）を導入
+- [x] VM縦スライス15: REPL経路は `vm` 指定時に未対応メッセージを返す保護動作を導入
 
 ### 運用メモ
 - 受け入れテストは MVP 最小（`MvpScenarioSpec`）を維持し、詳細仕様は Runner/Eval の回帰テストで固定する。
@@ -130,6 +135,16 @@
 ## メンテナンス記録（要約）
 - 注記: 以下は時系列ログ。古い日付の「未対応」項目は、その後のエントリで仕様更新済みの場合がある。
 - 2026-03-01
+  - [x] P5継続: `ResolveRunnerEngine` を追加して engine 解決ロジックを共有化（`runFile` / REPL）
+  - [x] P5継続: `replEvalLines` / `startRepl` は `PYTHON_HS_RUNNER_ENGINE=vm` で未対応メッセージを返すガードを追加（REPLの環境保持・repr互換維持のため）
+  - [x] P5継続: `CLISpec` に REPL `vm` 指定時の未対応メッセージケースを追加
+  - [x] P5継続: `RunnerEngine` / `runSourceWithEngine` を追加し、AST/VM 実行経路を関数レベルで切替可能化
+  - [x] P5継続: `CLI.RunFile` が `PYTHON_HS_RUNNER_ENGINE` を参照して `ast`（既定）/`vm` を切替する最小スイッチを導入
+  - [x] P5継続: `CLISpec` に runFile の `vm` 切替ケースと未知値時の `ast` フォールバックケースを追加
+  - [x] P5継続: `RunnerVmParitySpec` を20ケースへ拡張し、`runSource` と `runSourceVm` の一致範囲を RunnerCore/Edge 対応済み領域へ拡大
+  - [x] P5継続: `RunnerVmParitySpec` のケースを15件へ拡張（trailing comma, float, nested pass, method-call style builtin, range拡張, runtime/lexer/parse error）
+  - [x] P5継続: VM縦スライス14として `Test.Runner.RunnerVmParitySpec` を追加し、`runSource` と `runSourceVm` の結果一致をMVPサブセットで固定
+  - [x] P5継続: parity 対象を代入/制御構文/関数/for/break-continue/global/複合代入/list・dict builtin/代表エラーへ拡張
   - [x] P5継続: VM縦スライス13として dict 系 builtin（`clear` / `keys` / `get` / `update` / `setdefault` / `values` / `items`）を追加
   - [x] P5継続: `RunSourceVmSpec` に dict 系 builtin の成功系・代表エラー系を追加し、失敗テスト先行でグリーン化
   - [x] P5継続: VM縦スライス12として `remove` / `insert` / `pop` の builtin dispatch を追加

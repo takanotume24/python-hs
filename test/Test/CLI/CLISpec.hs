@@ -1,6 +1,8 @@
 module Test.CLI.CLISpec (spec) where
 
+import Control.Exception (bracket)
 import Data.List (isInfixOf, isPrefixOf)
+import System.Environment (lookupEnv, setEnv, unsetEnv)
 import System.Exit (ExitCode (ExitSuccess))
 import System.IO.Temp (withSystemTempFile)
 import System.IO (hPutStr, hClose)
@@ -23,6 +25,33 @@ spec = describe "runFile / replEvalLines" $ do
       hClose h
       res <- runFile path
       res `shouldBe` Right ["10", "3"]
+
+  it "uses vm engine for runFile when PYTHON_HS_RUNNER_ENGINE=vm" $
+    withSystemTempFile "vm-engine.pyhs" $ \path h -> do
+      hPutStr h "def add(a, b = 2):\n  return a + b\nprint add(1)\n"
+      hClose h
+      bracket (lookupEnv "PYTHON_HS_RUNNER_ENGINE") restoreRunnerEngine $ \_ -> do
+        setEnv "PYTHON_HS_RUNNER_ENGINE" "vm"
+        res <- runFile path
+        res `shouldSatisfy` \result ->
+          case result of
+            Left msg -> "VM compile error: unsupported statement" `isInfixOf` msg
+            Right _ -> False
+
+  it "falls back to ast engine when PYTHON_HS_RUNNER_ENGINE is unknown" $
+    withSystemTempFile "ast-fallback.pyhs" $ \path h -> do
+      hPutStr h "def add(a, b = 2):\n  return a + b\nprint add(1)\n"
+      hClose h
+      bracket (lookupEnv "PYTHON_HS_RUNNER_ENGINE") restoreRunnerEngine $ \_ -> do
+        setEnv "PYTHON_HS_RUNNER_ENGINE" "unknown"
+        res <- runFile path
+        res `shouldBe` Right ["3"]
+
+  it "reports unsupported mode for replEvalLines when PYTHON_HS_RUNNER_ENGINE=vm" $
+    bracket (lookupEnv "PYTHON_HS_RUNNER_ENGINE") restoreRunnerEngine $ \_ -> do
+      setEnv "PYTHON_HS_RUNNER_ENGINE" "vm"
+      outs <- replEvalLines ["print 1", ""]
+      outs `shouldBe` ["Error: VM engine is not supported in REPL yet"]
 
   it "returns an IO error for missing file" $ do
     res <- runFile "this-file-does-not-exist-xyz"
@@ -150,3 +179,8 @@ spec = describe "runFile / replEvalLines" $ do
     (code, out, _err) <- readCreateProcessWithExitCode (proc "cabal" ["run", "-v0", "exe:python-hs"]) "{\"k\": 1}\n"
     code `shouldBe` ExitSuccess
     (">>> {'k': 1}" `isInfixOf` out) `shouldBe` True
+  where
+    restoreRunnerEngine previous =
+      case previous of
+        Nothing -> unsetEnv "PYTHON_HS_RUNNER_ENGINE"
+        Just value -> setEnv "PYTHON_HS_RUNNER_ENGINE" value

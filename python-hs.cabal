@@ -48,6 +48,9 @@ library
     , PythonHS.Evaluator.EvalCallExpr
     , PythonHS.Evaluator.EvalBuiltinExpr
     , PythonHS.Evaluator.MaxLoopIterations
+    , PythonHS.Runner.RunnerEngine
+    , PythonHS.Runner.ResolveRunnerEngine
+    , PythonHS.Runner.RunSourceWithEngine
     , PythonHS.VM.CallBuiltin
     , PythonHS.VM.CompileExprItemsAt
     , PythonHS.VM.EvalBinaryOp
@@ -98,6 +101,7 @@ test-suite python-hs-test
     , Test.Eval.RuntimeErrorSpec
     , Test.Runner.RunnerCoreSpec
     , Test.Runner.RunnerEdgeSpec
+    , Test.Runner.RunnerVmParitySpec
     , Test.CLI.CLISpec
     , Test.VM.RunSourceVmSpec
     , Test.Structure.CheckStructureSpec
