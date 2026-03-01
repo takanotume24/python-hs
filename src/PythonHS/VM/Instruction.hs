@@ -20,7 +20,7 @@ data Instruction
   | JumpIfFalse Int
   | Jump Int
   | DefineFunction String [String] [(String, [Instruction])] [Instruction]
-  | CallFunction String [(Maybe String, Position)] Position
+  | CallFunction String [([Instruction], Maybe String, Position)] Position
   | ReturnTop
   | PrintTop
   | Halt

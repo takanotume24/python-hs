@@ -5,17 +5,17 @@ import PythonHS.Lexer.Position (Position)
 import PythonHS.VM.ExprPosition (exprPosition)
 import PythonHS.VM.Instruction (Instruction)
 
-compileCallArgsAt :: (Int -> Expr -> Either String ([Instruction], Int)) -> Int -> [Expr] -> Either String ([Instruction], [(Maybe String, Position)], Int)
-compileCallArgsAt compileExprAt baseIndex args =
+compileCallArgsAt :: (Int -> Expr -> Either String ([Instruction], Int)) -> [Expr] -> Either String [([Instruction], Maybe String, Position)]
+compileCallArgsAt compileExprAt args =
   case args of
-    [] -> Right ([], [], baseIndex)
+    [] -> Right []
     argExpr : restArgs ->
       case argExpr of
         KeywordArgExpr argName valueExpr argPos -> do
-          (argCode, argEnd) <- compileExprAt baseIndex valueExpr
-          (restCode, restKinds, restEnd) <- compileCallArgsAt compileExprAt argEnd restArgs
-          pure (argCode ++ restCode, (Just argName, argPos) : restKinds, restEnd)
+          (argCode, _) <- compileExprAt 0 valueExpr
+          restCompiledArgs <- compileCallArgsAt compileExprAt restArgs
+          pure ((argCode, Just argName, argPos) : restCompiledArgs)
         _ -> do
-          (argCode, argEnd) <- compileExprAt baseIndex argExpr
-          (restCode, restKinds, restEnd) <- compileCallArgsAt compileExprAt argEnd restArgs
-          pure (argCode ++ restCode, (Nothing, exprPosition argExpr) : restKinds, restEnd)
+          (argCode, _) <- compileExprAt 0 argExpr
+          restCompiledArgs <- compileCallArgsAt compileExprAt restArgs
+          pure ((argCode, Nothing, exprPosition argExpr) : restCompiledArgs)

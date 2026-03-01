@@ -41,6 +41,8 @@
 - [x] VM縦スライス15: REPL経路は `vm` 指定時に未対応メッセージを返す保護動作を導入
 - [x] VM縦スライス16: default 引数付き関数定義/呼び出しをVMで実行可能化
 - [x] VM縦スライス17: keyword 引数付き関数呼び出し（ユーザー定義関数）をVMで実行可能化
+- [x] VM縦スライス18: keyword 引数エラー系（duplicate/unexpected/multiple values/builtin keyword拒否）のVM回帰とparityを拡張
+- [x] VM縦スライス19: keyword 引数の優先順位互換（builtin keyword拒否の先行判定、duplicate検出順）をVMで整合
 
 ### 運用メモ
 - 受け入れテストは MVP 最小（`MvpScenarioSpec`）を維持し、詳細仕様は Runner/Eval の回帰テストで固定する。
@@ -137,6 +139,14 @@
 ## メンテナンス記録（要約）
 - 注記: 以下は時系列ログ。古い日付の「未対応」項目は、その後のエントリで仕様更新済みの場合がある。
 - 2026-03-01
+  - [x] P5継続: VM縦スライス19として `CallExpr` の引数コードを `CallFunction` 命令へ遅延保持し、実行時に左から評価する方式へ更新
+  - [x] P5継続: builtin 呼び出しで keyword 引数を検出した場合、引数式評価より先に rejection を返す優先順位へ整合
+  - [x] P5継続: user-defined 呼び出しで duplicate keyword を値式評価前に検出する優先順位へ整合
+  - [x] P5継続: `EvaluateBuiltinArgs` / `EvaluateUserArgs` に責務分離し、構造制約（1ファイル1トップレベル関数/200行）と警告ゼロを維持
+  - [x] P5継続: `RunSourceVmSpec` / `RunnerVmParitySpec` に precedence ケース（`len(x=len(1))`, `f(a=1, a=len(1))`）を追加して失敗テスト先行でグリーン化
+  - [x] P5継続: VM縦スライス18として keyword 引数エラー系（duplicate/unexpected/multiple values/builtin keyword拒否）を `RunSourceVmSpec` に追加
+  - [x] P5継続: `RunnerVmParitySpec` に keyword 引数エラー系ケースを追加し、AST/VM のエラー互換を固定
+  - [x] P5継続: 重点実行（`--match "keyword argument"`, `--match "multiple values for parameter"`）で失敗テスト先行を確認し、そのままグリーンを維持
   - [x] P5継続: VM縦スライス17として `CallFunction` 命令に引数種別メタデータ（positional/keyword）を追加し、keyword 呼び出し束縛をVM実行器で実装
   - [x] P5継続: `PythonHS.VM.BindCallArguments` を追加し、duplicate/unexpected/multiple values/count mismatch の束縛エラー規約をVM経路へ導入
   - [x] P5継続: `PythonHS.VM.CompileCallArgsAt` / `PythonHS.VM.FirstKeywordArg` へ責務分離し、`check-structure` の200行制約を維持

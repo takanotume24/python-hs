@@ -145,8 +145,8 @@ compileProgram (Program stmts) = do
           (rightCode, rightEnd) <- compileExprAt leftEnd right
           pure (leftCode ++ rightCode ++ [ApplyBinary op pos], rightEnd + 1)
         CallExpr fname args pos -> do
-          (argsCode, argKinds, argsEnd) <- compileCallArgsAt compileExprAt baseIndex args
-          pure (argsCode ++ [CallFunction fname argKinds pos], argsEnd + 1)
+          compiledArgs <- compileCallArgsAt compileExprAt args
+          pure ([CallFunction fname compiledArgs pos], baseIndex + 1)
         _ -> Left ("VM compile error: unsupported expression at " ++ showPos (exprPosition expr))
 
     compileDictEntriesAt baseIndex entries =

@@ -23,6 +23,24 @@ spec = describe "runSourceVm (vm mvp)" $ do
   it "runs function call with keyword arguments" $ do
     runSourceVm "def add(a, b):\n  return a + b\nprint add(a=1, b=2)\n" `shouldBe` Right ["3"]
 
+  it "reports duplicate keyword argument" $ do
+    runSourceVm "def f(a):\n  return a\nprint f(a=1, a=2)\n" `shouldBe` Left "Argument error: duplicate keyword argument a at 3:14"
+
+  it "reports unexpected keyword argument" $ do
+    runSourceVm "def f(a):\n  return a\nprint f(b=2)\n" `shouldBe` Left "Argument error: unexpected keyword argument b at 3:9"
+
+  it "reports multiple values for parameter" $ do
+    runSourceVm "def f(a):\n  return a\nprint f(1, a=2)\n" `shouldBe` Left "Argument error: multiple values for parameter a at 3:12"
+
+  it "rejects keyword arguments for builtin call" $ do
+    runSourceVm "print len(x=[1])\n" `shouldBe` Left "Argument error: keyword arguments are not supported for builtin len at 1:11"
+
+  it "prioritizes builtin keyword rejection over keyword expression error" $ do
+    runSourceVm "print len(x=len(1))\n" `shouldBe` Left "Argument error: keyword arguments are not supported for builtin len at 1:11"
+
+  it "prioritizes duplicate keyword detection over second keyword evaluation error" $ do
+    runSourceVm "def f(a):\n  return a\nprint f(a=1, a=len(1))\n" `shouldBe` Left "Argument error: duplicate keyword argument a at 3:14"
+
   it "evaluates float and multiplicative operators" $ do
     runSourceVm "print 1.5 + 2\nprint 7 / 2\nprint 7 // 2\nprint 7 % 4\n" `shouldBe` Right ["3.5", "3.5", "3", "3"]
 

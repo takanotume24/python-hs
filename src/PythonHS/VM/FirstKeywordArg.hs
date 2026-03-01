@@ -1,12 +1,13 @@
 module PythonHS.VM.FirstKeywordArg (firstKeywordArg) where
 
+import PythonHS.VM.Instruction (Instruction)
 import PythonHS.Lexer.Position (Position)
 
-firstKeywordArg :: [(Maybe String, Position)] -> Maybe (String, Position)
-firstKeywordArg kinds =
-  case kinds of
+firstKeywordArg :: [([Instruction], Maybe String, Position)] -> Maybe (String, Position)
+firstKeywordArg compiledArgs =
+  case compiledArgs of
     [] -> Nothing
-    (argKind, argPos) : restKinds ->
+    (_, argKind, argPos) : restCompiledArgs ->
       case argKind of
-        Nothing -> firstKeywordArg restKinds
+        Nothing -> firstKeywordArg restCompiledArgs
         Just argName -> Just (argName, argPos)

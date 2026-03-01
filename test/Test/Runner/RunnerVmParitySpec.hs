@@ -21,6 +21,16 @@ spec = describe "runSource and runSourceVm parity (mvp subset)" $ do
   it "matches for function call with keyword arguments" $ do
     shouldMatchVm "def add(a, b):\n  return a + b\nprint add(a=1, b=2)\n"
 
+  it "matches for keyword argument error behaviors" $ do
+    shouldMatchVm "def f(a):\n  return a\nprint f(a=1, a=2)\n"
+    shouldMatchVm "def f(a):\n  return a\nprint f(b=2)\n"
+    shouldMatchVm "def f(a):\n  return a\nprint f(1, a=2)\n"
+    shouldMatchVm "print len(x=[1])\n"
+
+  it "matches for keyword argument error precedence behaviors" $ do
+    shouldMatchVm "print len(x=len(1))\n"
+    shouldMatchVm "def f(a):\n  return a\nprint f(a=1, a=len(1))\n"
+
   it "matches for trailing commas in function definition and call" $ do
     shouldMatchVm "def add(a, b,):\n  return a + b\nprint add(1, 2,)\n"
 

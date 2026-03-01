@@ -57,6 +57,8 @@ library
     , PythonHS.VM.CompileDefaults
     , PythonHS.VM.CompileExprItemsAt
     , PythonHS.VM.EvalBinaryOp
+    , PythonHS.VM.EvaluateBuiltinArgs
+    , PythonHS.VM.EvaluateUserArgs
     , PythonHS.VM.ExprPosition
     , PythonHS.VM.FirstKeywordArg
     , PythonHS.VM.StmtPosition

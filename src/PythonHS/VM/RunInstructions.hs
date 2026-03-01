@@ -9,6 +9,8 @@ import PythonHS.Evaluator.ValueToOutput (valueToOutput)
 import PythonHS.VM.BindCallArguments (bindCallArguments)
 import PythonHS.VM.CallBuiltin (callBuiltin)
 import PythonHS.VM.EvalBinaryOp (evalBinaryOp)
+import PythonHS.VM.EvaluateBuiltinArgs (evaluateBuiltinArgs)
+import PythonHS.VM.EvaluateUserArgs (evaluateUserArgs)
 import PythonHS.VM.FirstKeywordArg (firstKeywordArg)
 import PythonHS.VM.Instruction (Instruction (ApplyBinary, ApplyNot, ApplyUnaryMinus, BuildDict, BuildList, CallFunction, DeclareGlobal, DefineFunction, ForNext, ForSetup, Halt, Jump, JumpIfFalse, LoadName, LoopGuard, PrintTop, PushConst, ReturnTop, StoreName))
 import PythonHS.VM.IsTruthy (isTruthy)
@@ -98,33 +100,35 @@ runInstructions instructions = do
             DefineFunction name params defaultCodes functionCode ->
               let newFunctions = Map.insert name (params, defaultCodes, functionCode) functions
                in execute code (ip + 1) stack globalsEnv localEnv newFunctions globalDecls forStates loopCounts outputs isTopLevel
-            CallFunction fname argKinds pos ->
-              case popArgs (length argKinds) stack of
-                Left err -> Left err
-                Right (args, rest) ->
-                  case Map.lookup fname functions of
-                    Nothing ->
-                      case firstKeywordArg argKinds of
-                        Just (_, argPos) -> Left ("Argument error: keyword arguments are not supported for builtin " ++ fname ++ " at " ++ showPos argPos)
-                        Nothing ->
-                          case callBuiltin fname args pos of
-                            Just (Left err) -> Left err
-                            Just (Right builtinValue) ->
-                              execute code (ip + 1) (builtinValue : rest) globalsEnv localEnv functions globalDecls forStates loopCounts outputs isTopLevel
-                            Nothing -> Left ("Name error: undefined function " ++ fname ++ " at " ++ showPos pos)
-                    Just (params, defaultCodes, functionCode) ->
-                      do
-                        initialLocals <- bindCallArguments fname pos params args argKinds
-                        (functionLocals, globalsAfterDefaults, functionsAfterDefaults, outputsAfterDefaults) <-
-                          bindDefaults fname pos params defaultCodes initialLocals globalsEnv functions outputs
-                        (maybeValue, newGlobals, newFunctions, newOutputs) <-
-                          execute functionCode 0 [] globalsAfterDefaults functionLocals functionsAfterDefaults Set.empty Map.empty Map.empty outputsAfterDefaults False
-                        let returnValue =
-                              case maybeValue of
-                                Just value -> value
-                                Nothing -> NoneValue
-                        let newLocalEnv = if isTopLevel then newGlobals else localEnv
-                        execute code (ip + 1) (returnValue : rest) newGlobals newLocalEnv newFunctions globalDecls forStates loopCounts newOutputs isTopLevel
+            CallFunction fname compiledArgs pos ->
+              case Map.lookup fname functions of
+                Nothing ->
+                  case firstKeywordArg compiledArgs of
+                    Just (_, argPos) -> Left ("Argument error: keyword arguments are not supported for builtin " ++ fname ++ " at " ++ showPos argPos)
+                    Nothing -> do
+                      (args, globalsAfterArgs, functionsAfterArgs, outputsAfterArgs) <-
+                        evaluateBuiltinArgs execute localEnv compiledArgs globalsEnv functions outputs []
+                      case callBuiltin fname args pos of
+                        Just (Left err) -> Left err
+                        Just (Right builtinValue) ->
+                          let newLocalEnv = if isTopLevel then globalsAfterArgs else localEnv
+                           in execute code (ip + 1) (builtinValue : stack) globalsAfterArgs newLocalEnv functionsAfterArgs globalDecls forStates loopCounts outputsAfterArgs isTopLevel
+                        Nothing -> Left ("Name error: undefined function " ++ fname ++ " at " ++ showPos pos)
+                Just (params, defaultCodes, functionCode) ->
+                  do
+                    (argValues, argKinds, globalsAfterArgs, functionsAfterArgs, outputsAfterArgs) <-
+                      evaluateUserArgs execute fname pos localEnv compiledArgs globalsEnv functions outputs False Set.empty [] []
+                    initialLocals <- bindCallArguments fname pos params argValues argKinds
+                    (functionLocals, globalsAfterDefaults, functionsAfterDefaults, outputsAfterDefaults) <-
+                      bindDefaults fname pos params defaultCodes initialLocals globalsAfterArgs functionsAfterArgs outputsAfterArgs
+                    (maybeValue, newGlobals, newFunctions, newOutputs) <-
+                      execute functionCode 0 [] globalsAfterDefaults functionLocals functionsAfterDefaults Set.empty Map.empty Map.empty outputsAfterDefaults False
+                    let returnValue =
+                          case maybeValue of
+                            Just value -> value
+                            Nothing -> NoneValue
+                    let newLocalEnv = if isTopLevel then newGlobals else localEnv
+                    execute code (ip + 1) (returnValue : stack) newGlobals newLocalEnv newFunctions globalDecls forStates loopCounts newOutputs isTopLevel
             ApplyBinary op pos ->
               case stack of
                 right : left : rest ->
@@ -160,12 +164,6 @@ runInstructions instructions = do
       case Map.lookup name localEnv of
         Just value -> Just value
         Nothing -> Map.lookup name globalsEnv
-
-    popArgs argCount stack =
-      let (popped, rest) = splitAt argCount stack
-       in if length popped /= argCount
-            then Left "VM runtime error: call requires enough argument values on stack"
-            else Right (reverse popped, rest)
 
     popValues count stack =
       let (popped, rest) = splitAt count stack
