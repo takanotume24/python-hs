@@ -96,6 +96,7 @@
 - [x] 失敗テスト先行: `try` / `except` / `raise` の lexer/parser ケースを追加
 - [x] 失敗テスト先行: VM/CLI で `raise` 送出と `try/except` 捕捉ケースを追加
 - [x] VM 実装: `raise` 命令と `try/except` ハンドラ制御を追加
+- [x] P9追補: `raise` 以外の runtime error（例: `division by zero`）も `try/except` で捕捉するよう VM 実行器を更新
 - [x] 品質ゲート再実行（`cabal test` / `cabal run check-structure` / warning 0）
 
 ### 運用メモ
@@ -243,6 +244,9 @@
   - [x] P5継続: `README` の Flake check 説明を更新し、検証内容を「テスト + 構造チェック + runner case coverage」へ同期
   - [x] P5継続: `nix flake check` 実行でNix経路の品質ゲートを確認
 - 2026-03-01
+  - [x] P9追補: `try/except` が `raise` 以外の runtime error（`print 1 / 0`）も捕捉できるよう `RunInstructions` のエラー捕捉経路を拡張
+  - [x] P9追補: 失敗テスト先行で `RunSourceVmSpec` / `CLISpec` に非`raise` runtime error捕捉ケースを追加してグリーン化
+  - [x] P9追補: 品質ゲート再実行（`cabal test` 704 examples green / `cabal run check-structure` pass / warning 0）を確認
   - [x] P9開始/完了: VM専用で `try/except` + `raise <expr>` のMVPスコープを開始し、同日内に実装と品質ゲートまで完了
   - [x] P9継続: 失敗テスト先行で `ScanTokensCoreSpec` / `ParseProgramSpec` / `RunSourceVmSpec` / `CLISpec` に `try` / `except` / `raise` ケースを追加
   - [x] P9継続: lexer/parser/AST/VM（命令追加とハンドラ制御）を実装し、`raise` 送出と `try/except` 捕捉をVM経路で有効化

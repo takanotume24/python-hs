@@ -29,7 +29,8 @@ runInstructions instructions = do
     execute code ip stack globalsEnv localEnv functions globalDecls forStates loopCounts exceptionHandlers outputs isTopLevel
       | ip < 0 || ip >= length code = Right (Nothing, globalsEnv, functions, outputs)
       | otherwise =
-          case code !! ip of
+          handleRuntimeError code stack globalsEnv localEnv functions globalDecls forStates loopCounts exceptionHandlers outputs isTopLevel $
+            case code !! ip of
             PushConst value -> execute code (ip + 1) (value : stack) globalsEnv localEnv functions globalDecls forStates loopCounts exceptionHandlers outputs isTopLevel
             LoadName name pos ->
               case lookupName name localEnv globalsEnv of
@@ -178,3 +179,11 @@ runInstructions instructions = do
                 value : rest -> execute code (ip + 1) rest globalsEnv localEnv functions globalDecls forStates loopCounts exceptionHandlers (outputs ++ [valueToOutput value]) isTopLevel
                 _ -> Left "VM runtime error: print requires one value on stack"
             Halt -> Right (Nothing, globalsEnv, functions, outputs)
+
+    handleRuntimeError code stack globalsEnv localEnv functions globalDecls forStates loopCounts exceptionHandlers outputs isTopLevel result =
+      case result of
+        Right value -> Right value
+        Left err ->
+          case exceptionHandlers of
+            handlerIp : restHandlers -> execute code handlerIp stack globalsEnv localEnv functions globalDecls forStates loopCounts restHandlers outputs isTopLevel
+            [] -> Left err

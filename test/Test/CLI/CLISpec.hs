@@ -124,6 +124,15 @@ spec = describe "runFile / replEvalLines" $ do
         res <- runFile path
         res `shouldBe` Right ["1", "2"]
 
+  it "handles try/except for non-raise runtime error in vm engine for runFile" $
+    withSystemTempFile "vm-try-except-runtime.pyhs" $ \path h -> do
+      hPutStr h "try:\n  print 1 / 0\nexcept:\n  print 7\nprint 8\n"
+      hClose h
+      bracket (lookupEnv "PYTHON_HS_RUNNER_ENGINE") restoreRunnerEngine $ \_ -> do
+        setEnv "PYTHON_HS_RUNNER_ENGINE" "vm"
+        res <- runFile path
+        res `shouldBe` Right ["7", "8"]
+
   it "falls back to ast engine when PYTHON_HS_RUNNER_ENGINE is unknown" $
     withSystemTempFile "ast-fallback.pyhs" $ \path h -> do
       hPutStr h "def add(a, b = 2):\n  return a + b\nprint add(1)\n"

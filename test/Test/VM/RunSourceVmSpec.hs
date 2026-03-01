@@ -11,6 +11,9 @@ spec = describe "runSourceVm (vm mvp)" $ do
   it "catches runtime error with try/except and continues" $ do
     runSourceVm "try:\n  raise \"boom\"\nexcept:\n  print 1\nprint 2\n" `shouldBe` Right ["1", "2"]
 
+  it "catches non-raise runtime error with try/except and continues" $ do
+    runSourceVm "try:\n  print 1 / 0\nexcept:\n  print 7\nprint 8\n" `shouldBe` Right ["7", "8"]
+
   it "skips except block when try body succeeds" $ do
     runSourceVm "try:\n  print 3\nexcept:\n  print 9\n" `shouldBe` Right ["3"]
 
