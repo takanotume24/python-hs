@@ -176,6 +176,14 @@
 ## メンテナンス記録（要約）
 - 注記: 以下は時系列ログ。古い日付の「未対応」項目は、その後のエントリで仕様更新済みの場合がある。
 - 2026-03-02
+  - [x] P4継続: GHC 9.14.1 で `RunnerCaseCoverageReportSpec` が `check-runner-case-coverage` 未検出となる差分を解消するため、test-suite の `build-tool-depends` に `python-hs:check-runner-case-coverage` を追加
+  - [x] P4継続: ツールチェーン最新化のスコープを開始し、`ghcup` で `ghc 9.14.1` / `cabal-install 3.16.1.0` を導入
+  - [x] P4継続: `ghcup set` でデフォルトを `ghc 9.14.1` / `cabal 3.16.1.0` へ切替し、`ghc --version` / `cabal --version` で反映を確認
+  - [x] P4継続: 最新ツールチェーンで品質ゲート（`cabal test` / `cabal run check-structure`）を再実行して互換性を確認
+  - [x] P4継続: 言語仕様最新化のスコープを開始し、`default-language` を `Haskell2010` から `GHC2021` へ更新する方針を確定
+  - [x] P4継続: 互換性を事前検証（`cabal test --ghc-options='-XGHC2021'` 686 examples green / `cabal run check-structure --ghc-options='-XGHC2021'` pass）
+  - [x] P4継続: `python-hs.cabal` の library/executable/test-suite の `default-language` を `GHC2021` に統一
+  - [x] P4継続: 品質ゲート再実行（`cabal test` / `cabal run check-structure`）で更新後のグリーン維持を確認
   - [x] P7継続: `README` に import 範囲（`math` のみ受理、他モジュールは `Import error`）を追記してMVP境界を明確化
   - [x] P7継続: `CLISpec` に VM `runFile` 経路の負系（`math.sqrt("x")` 型エラー / `import os` 未対応モジュール）を追加し、MVP境界を固定
   - [x] P7継続: `CLISpec` に VM `runFile` 経路の `math.sin/cos/tan/log/exp/e` 受け入れケースを追加し、math最小セットを実行導線で固定
