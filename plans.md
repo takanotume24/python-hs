@@ -39,6 +39,8 @@
 - [x] VM縦スライス14: parity ケースを 20 件へ拡張（truthiness/global-pass/インデント複文/辞書順序/追加 runtime error）
 - [x] VM縦スライス15: `runFile` に実行エンジンスイッチ（`PYTHON_HS_RUNNER_ENGINE=ast|vm`）を導入
 - [x] VM縦スライス15: REPL経路は `vm` 指定時に未対応メッセージを返す保護動作を導入
+- [x] VM縦スライス16: default 引数付き関数定義/呼び出しをVMで実行可能化
+- [x] VM縦スライス17: keyword 引数付き関数呼び出し（ユーザー定義関数）をVMで実行可能化
 
 ### 運用メモ
 - 受け入れテストは MVP 最小（`MvpScenarioSpec`）を維持し、詳細仕様は Runner/Eval の回帰テストで固定する。
@@ -135,6 +137,13 @@
 ## メンテナンス記録（要約）
 - 注記: 以下は時系列ログ。古い日付の「未対応」項目は、その後のエントリで仕様更新済みの場合がある。
 - 2026-03-01
+  - [x] P5継続: VM縦スライス17として `CallFunction` 命令に引数種別メタデータ（positional/keyword）を追加し、keyword 呼び出し束縛をVM実行器で実装
+  - [x] P5継続: `PythonHS.VM.BindCallArguments` を追加し、duplicate/unexpected/multiple values/count mismatch の束縛エラー規約をVM経路へ導入
+  - [x] P5継続: `PythonHS.VM.CompileCallArgsAt` / `PythonHS.VM.FirstKeywordArg` へ責務分離し、`check-structure` の200行制約を維持
+  - [x] P5継続: `RunSourceVmSpec` / `RunnerVmParitySpec` に keyword 呼び出し成功ケースを追加し、失敗テスト先行でグリーン化
+  - [x] P5継続: VM縦スライス16として `FunctionDefDefaultsStmt` を命令化し、default引数の省略呼び出しをVMで実行可能化
+  - [x] P5継続: `CallFunction` 実行で default 式評価（呼び出し時評価・前段引数参照・副作用出力伝播）を追加
+  - [x] P5継続: `RunSourceVmSpec` / `RunnerVmParitySpec` / `CLISpec` に default 引数ケースを追加・更新し、失敗テスト先行でグリーン化
   - [x] P5継続: `ResolveRunnerEngine` を追加して engine 解決ロジックを共有化（`runFile` / REPL）
   - [x] P5継続: `replEvalLines` / `startRepl` は `PYTHON_HS_RUNNER_ENGINE=vm` で未対応メッセージを返すガードを追加（REPLの環境保持・repr互換維持のため）
   - [x] P5継続: `CLISpec` に REPL `vm` 指定時の未対応メッセージケースを追加

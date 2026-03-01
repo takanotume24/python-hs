@@ -4,11 +4,16 @@ import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import PythonHS.Evaluator.MaxLoopIterations (maxLoopIterations)
 import PythonHS.Evaluator.ShowPos (showPos)
-import PythonHS.Evaluator.Value (Value (BreakValue, ContinueValue, DictValue, FloatValue, IntValue, ListValue, NoneValue, StringValue))
+import PythonHS.Evaluator.Value (Value (DictValue, FloatValue, IntValue, ListValue, NoneValue))
 import PythonHS.Evaluator.ValueToOutput (valueToOutput)
+import PythonHS.VM.BindCallArguments (bindCallArguments)
 import PythonHS.VM.CallBuiltin (callBuiltin)
 import PythonHS.VM.EvalBinaryOp (evalBinaryOp)
+import PythonHS.VM.FirstKeywordArg (firstKeywordArg)
 import PythonHS.VM.Instruction (Instruction (ApplyBinary, ApplyNot, ApplyUnaryMinus, BuildDict, BuildList, CallFunction, DeclareGlobal, DefineFunction, ForNext, ForSetup, Halt, Jump, JumpIfFalse, LoadName, LoopGuard, PrintTop, PushConst, ReturnTop, StoreName))
+import PythonHS.VM.IsTruthy (isTruthy)
+import PythonHS.VM.ToForIterable (toForIterable)
+import PythonHS.VM.ToPairs (toPairs)
 
 runInstructions :: [Instruction] -> Either String [String]
 runInstructions instructions = do
@@ -90,33 +95,36 @@ runInstructions instructions = do
                       let newLocals = Map.insert name nextValue localEnv
                           newForStates = Map.insert ip remainingValues forStates
                        in execute code (ip + 1) stack globalsEnv newLocals functions globalDecls newForStates loopCounts outputs isTopLevel
-            DefineFunction name params functionCode ->
-              let newFunctions = Map.insert name (params, functionCode) functions
+            DefineFunction name params defaultCodes functionCode ->
+              let newFunctions = Map.insert name (params, defaultCodes, functionCode) functions
                in execute code (ip + 1) stack globalsEnv localEnv newFunctions globalDecls forStates loopCounts outputs isTopLevel
-            CallFunction fname argCount pos ->
-              case popArgs argCount stack of
+            CallFunction fname argKinds pos ->
+              case popArgs (length argKinds) stack of
                 Left err -> Left err
                 Right (args, rest) ->
                   case Map.lookup fname functions of
                     Nothing ->
-                      case callBuiltin fname args pos of
-                        Just (Left err) -> Left err
-                        Just (Right builtinValue) ->
-                          execute code (ip + 1) (builtinValue : rest) globalsEnv localEnv functions globalDecls forStates loopCounts outputs isTopLevel
-                        Nothing -> Left ("Name error: undefined function " ++ fname ++ " at " ++ showPos pos)
-                    Just (params, functionCode) ->
-                      if length params /= length args
-                        then Left ("Argument count mismatch when calling " ++ fname ++ " at " ++ showPos pos)
-                        else do
-                          let functionLocals = Map.fromList (zip params args)
-                          (maybeValue, newGlobals, newFunctions, newOutputs) <-
-                            execute functionCode 0 [] globalsEnv functionLocals functions Set.empty Map.empty Map.empty outputs False
-                          let returnValue =
-                                case maybeValue of
-                                  Just value -> value
-                                  Nothing -> NoneValue
-                          let newLocalEnv = if isTopLevel then newGlobals else localEnv
-                          execute code (ip + 1) (returnValue : rest) newGlobals newLocalEnv newFunctions globalDecls forStates loopCounts newOutputs isTopLevel
+                      case firstKeywordArg argKinds of
+                        Just (_, argPos) -> Left ("Argument error: keyword arguments are not supported for builtin " ++ fname ++ " at " ++ showPos argPos)
+                        Nothing ->
+                          case callBuiltin fname args pos of
+                            Just (Left err) -> Left err
+                            Just (Right builtinValue) ->
+                              execute code (ip + 1) (builtinValue : rest) globalsEnv localEnv functions globalDecls forStates loopCounts outputs isTopLevel
+                            Nothing -> Left ("Name error: undefined function " ++ fname ++ " at " ++ showPos pos)
+                    Just (params, defaultCodes, functionCode) ->
+                      do
+                        initialLocals <- bindCallArguments fname pos params args argKinds
+                        (functionLocals, globalsAfterDefaults, functionsAfterDefaults, outputsAfterDefaults) <-
+                          bindDefaults fname pos params defaultCodes initialLocals globalsEnv functions outputs
+                        (maybeValue, newGlobals, newFunctions, newOutputs) <-
+                          execute functionCode 0 [] globalsAfterDefaults functionLocals functionsAfterDefaults Set.empty Map.empty Map.empty outputsAfterDefaults False
+                        let returnValue =
+                              case maybeValue of
+                                Just value -> value
+                                Nothing -> NoneValue
+                        let newLocalEnv = if isTopLevel then newGlobals else localEnv
+                        execute code (ip + 1) (returnValue : rest) newGlobals newLocalEnv newFunctions globalDecls forStates loopCounts newOutputs isTopLevel
             ApplyBinary op pos ->
               case stack of
                 right : left : rest ->
@@ -165,30 +173,26 @@ runInstructions instructions = do
             then Left "VM runtime error: collection build requires enough values on stack"
             else Right (reverse popped, rest)
 
-    toPairs values =
-      case values of
-        [] -> Right []
-        key : value : rest -> do
-          remaining <- toPairs rest
-          Right ((key, value) : remaining)
-        _ -> Left "VM runtime error: dictionary build expects key/value pairs"
+    bindDefaults fname pos params defaultCodes initialLocals globalsNow functionsNow outputsNow =
+      fill params initialLocals globalsNow functionsNow outputsNow
+      where
+        defaultMap = Map.fromList defaultCodes
 
-    toForIterable iterableValue pos =
-      case iterableValue of
-        IntValue maxN ->
-          let upper = max 0 maxN
-           in Right (map IntValue [0 .. upper - 1])
-        ListValue vals -> Right vals
-        DictValue pairs -> Right (map fst pairs)
-        _ -> Left ("Type error: for expects iterable (int range, list, or dict) at " ++ showPos pos)
-
-    isTruthy value =
-      case value of
-        IntValue n -> n /= 0
-        FloatValue n -> n /= 0
-        StringValue s -> not (null s)
-        NoneValue -> False
-        ListValue vals -> not (null vals)
-        DictValue pairs -> not (null pairs)
-        BreakValue -> True
-        ContinueValue -> True
+        fill remainingParams currentLocals currentGlobals currentFunctions currentOutputs =
+          case remainingParams of
+            [] -> Right (currentLocals, currentGlobals, currentFunctions, currentOutputs)
+            paramName : restParams ->
+              case Map.lookup paramName currentLocals of
+                Just _ -> fill restParams currentLocals currentGlobals currentFunctions currentOutputs
+                Nothing ->
+                  case Map.lookup paramName defaultMap of
+                    Nothing -> Left ("Argument count mismatch when calling " ++ fname ++ " at " ++ showPos pos)
+                    Just defaultCode -> do
+                      (maybeDefaultValue, globalsAfterDefault, functionsAfterDefault, outputsAfterDefault) <-
+                        execute defaultCode 0 [] currentGlobals currentLocals currentFunctions Set.empty Map.empty Map.empty currentOutputs False
+                      let defaultValue =
+                            case maybeDefaultValue of
+                              Just value -> value
+                              Nothing -> NoneValue
+                      let newLocals = Map.insert paramName defaultValue currentLocals
+                      fill restParams newLocals globalsAfterDefault functionsAfterDefault outputsAfterDefault

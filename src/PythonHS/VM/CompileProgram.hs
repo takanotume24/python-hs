@@ -6,6 +6,8 @@ import PythonHS.AST.Program (Program (Program))
 import PythonHS.AST.Stmt (Stmt (AddAssignStmt, AssignStmt, BreakStmt, ContinueStmt, DivAssignStmt, FloorDivAssignStmt, ForStmt, FunctionDefDefaultsStmt, FunctionDefStmt, GlobalStmt, IfStmt, ModAssignStmt, MulAssignStmt, PassStmt, PrintStmt, ReturnStmt, SubAssignStmt, WhileStmt))
 import PythonHS.Evaluator.ShowPos (showPos)
 import PythonHS.Evaluator.Value (Value (FloatValue, IntValue, NoneValue, StringValue))
+import PythonHS.VM.CompileCallArgsAt (compileCallArgsAt)
+import PythonHS.VM.CompileDefaults (compileDefaults)
 import PythonHS.VM.CompileExprItemsAt (compileExprItemsAt)
 import PythonHS.VM.ExprPosition (exprPosition)
 import PythonHS.VM.Instruction (Instruction (ApplyBinary, ApplyNot, ApplyUnaryMinus, BuildDict, BuildList, CallFunction, DeclareGlobal, DefineFunction, ForNext, ForSetup, Halt, Jump, JumpIfFalse, LoadName, LoopGuard, PrintTop, PushConst, ReturnTop, StoreName))
@@ -90,8 +92,12 @@ compileProgram (Program stmts) = do
         FunctionDefStmt name params body _ -> do
           (bodyCode, _) <- compileStatements 0 True Nothing body
           let functionCode = bodyCode ++ [PushConst NoneValue, ReturnTop]
-          pure ([DefineFunction name params functionCode], baseIndex + 1)
-        FunctionDefDefaultsStmt _ _ _ _ pos -> Left ("VM compile error: unsupported statement at " ++ showPos pos)
+          pure ([DefineFunction name params [] functionCode], baseIndex + 1)
+        FunctionDefDefaultsStmt name params defaults body _ -> do
+          (defaultCodes, _) <- compileDefaults compileExprAt defaults
+          (bodyCode, _) <- compileStatements 0 True Nothing body
+          let functionCode = bodyCode ++ [PushConst NoneValue, ReturnTop]
+          pure ([DefineFunction name params defaultCodes functionCode], baseIndex + 1)
         ReturnStmt expr _ ->
           if inFunction
             then do
@@ -139,8 +145,8 @@ compileProgram (Program stmts) = do
           (rightCode, rightEnd) <- compileExprAt leftEnd right
           pure (leftCode ++ rightCode ++ [ApplyBinary op pos], rightEnd + 1)
         CallExpr fname args pos -> do
-          (argsCode, argsEnd) <- compileExprItemsAt compileExprAt baseIndex args
-          pure (argsCode ++ [CallFunction fname (length args) pos], argsEnd + 1)
+          (argsCode, argKinds, argsEnd) <- compileCallArgsAt compileExprAt baseIndex args
+          pure (argsCode ++ [CallFunction fname argKinds pos], argsEnd + 1)
         _ -> Left ("VM compile error: unsupported expression at " ++ showPos (exprPosition expr))
 
     compileDictEntriesAt baseIndex entries =

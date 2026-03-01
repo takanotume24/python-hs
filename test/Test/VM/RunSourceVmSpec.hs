@@ -17,6 +17,12 @@ spec = describe "runSourceVm (vm mvp)" $ do
   it "runs function definition and call with parameters" $ do
     runSourceVm "def add(a, b):\n  return a + b\nprint add(1, 2)\n" `shouldBe` Right ["3"]
 
+  it "runs function definition and call with default parameters" $ do
+    runSourceVm "def add(a, b = 2):\n  return a + b\nprint add(1)\nprint add(1, 3)\n" `shouldBe` Right ["3", "4"]
+
+  it "runs function call with keyword arguments" $ do
+    runSourceVm "def add(a, b):\n  return a + b\nprint add(a=1, b=2)\n" `shouldBe` Right ["3"]
+
   it "evaluates float and multiplicative operators" $ do
     runSourceVm "print 1.5 + 2\nprint 7 / 2\nprint 7 // 2\nprint 7 % 4\n" `shouldBe` Right ["3.5", "3.5", "3", "3"]
 

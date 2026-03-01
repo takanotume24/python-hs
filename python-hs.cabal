@@ -52,11 +52,18 @@ library
     , PythonHS.Runner.ResolveRunnerEngine
     , PythonHS.Runner.RunSourceWithEngine
     , PythonHS.VM.CallBuiltin
+    , PythonHS.VM.BindCallArguments
+    , PythonHS.VM.CompileCallArgsAt
+    , PythonHS.VM.CompileDefaults
     , PythonHS.VM.CompileExprItemsAt
     , PythonHS.VM.EvalBinaryOp
     , PythonHS.VM.ExprPosition
+    , PythonHS.VM.FirstKeywordArg
     , PythonHS.VM.StmtPosition
     , PythonHS.VM.Instruction
+    , PythonHS.VM.IsTruthy
+    , PythonHS.VM.ToForIterable
+    , PythonHS.VM.ToPairs
     , PythonHS.VM.CompileProgram
     , PythonHS.VM.RunInstructions
   build-depends:

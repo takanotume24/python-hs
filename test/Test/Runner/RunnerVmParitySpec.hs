@@ -15,6 +15,12 @@ spec = describe "runSource and runSourceVm parity (mvp subset)" $ do
   it "matches for function call with return" $ do
     shouldMatchVm "def add(a, b):\n  return a + b\nprint add(1, 2)\n"
 
+  it "matches for function call with default parameter" $ do
+    shouldMatchVm "def add(a, b = 2):\n  return a + b\nprint add(1)\nprint add(1, 3)\n"
+
+  it "matches for function call with keyword arguments" $ do
+    shouldMatchVm "def add(a, b):\n  return a + b\nprint add(a=1, b=2)\n"
+
   it "matches for trailing commas in function definition and call" $ do
     shouldMatchVm "def add(a, b,):\n  return a + b\nprint add(1, 2,)\n"
 

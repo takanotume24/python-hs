@@ -33,10 +33,7 @@ spec = describe "runFile / replEvalLines" $ do
       bracket (lookupEnv "PYTHON_HS_RUNNER_ENGINE") restoreRunnerEngine $ \_ -> do
         setEnv "PYTHON_HS_RUNNER_ENGINE" "vm"
         res <- runFile path
-        res `shouldSatisfy` \result ->
-          case result of
-            Left msg -> "VM compile error: unsupported statement" `isInfixOf` msg
-            Right _ -> False
+        res `shouldBe` Right ["3"]
 
   it "falls back to ast engine when PYTHON_HS_RUNNER_ENGINE is unknown" $
     withSystemTempFile "ast-fallback.pyhs" $ \path h -> do

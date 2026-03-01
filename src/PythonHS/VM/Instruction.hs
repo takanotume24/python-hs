@@ -19,8 +19,8 @@ data Instruction
   | ApplyBinary BinaryOperator Position
   | JumpIfFalse Int
   | Jump Int
-  | DefineFunction String [String] [Instruction]
-  | CallFunction String Int Position
+  | DefineFunction String [String] [(String, [Instruction])] [Instruction]
+  | CallFunction String [(Maybe String, Position)] Position
   | ReturnTop
   | PrintTop
   | Halt
