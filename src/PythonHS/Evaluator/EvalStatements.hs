@@ -56,7 +56,7 @@ evalStatements env fenv outputs (stmt : rest) =
     GlobalStmt _ _ -> evalStatements env fenv outputs rest
     ImportStmt _ _ -> evalStatements env fenv outputs rest
     FromImportStmt _ _ _ -> evalStatements env fenv outputs rest
-    TryExceptStmt _ _ pos -> Left $ "Runtime error: try/except is only supported in vm engine at " ++ showPos pos
+    TryExceptStmt _ _ _ pos -> Left $ "Runtime error: try/except is only supported in vm engine at " ++ showPos pos
     RaiseStmt expr pos -> do
       (val, _, _) <- evalExpr evalStatements env fenv expr
       Left $ "Runtime error: " ++ valueToOutput val ++ " at " ++ showPos pos

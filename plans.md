@@ -99,6 +99,13 @@
 - [x] P9追補: `raise` 以外の runtime error（例: `division by zero`）も `try/except` で捕捉するよう VM 実行器を更新
 - [x] 品質ゲート再実行（`cabal test` / `cabal run check-structure` / warning 0）
 
+## 現在のスコープ（P10: VM finally 導入）
+- [x] P10 開始: `try/except/finally` の `finally` を VM 専用で導入するスコープを開始
+- [x] 失敗テスト先行: lexer/parser/VM/CLI に `finally` ケースを追加
+- [x] VM 実装: `TryExceptStmt` を `finally` 保持対応に拡張し、VM命令へ `PushFinallyHandler` / `RaisePendingError` を追加
+- [x] 構造制約対応: `CompileTryExcept` / `HandleRuntimeError` へ責務分離し、200行制約を維持
+- [x] 品質ゲート再実行（`cabal test` / `cabal run check-structure` / warning 0）
+
 ### 運用メモ
 - 受け入れテストは MVP 最小（`MvpScenarioSpec`）を維持し、詳細仕様は Runner/Eval の回帰テストで固定する。
 
@@ -244,6 +251,9 @@
   - [x] P5継続: `README` の Flake check 説明を更新し、検証内容を「テスト + 構造チェック + runner case coverage」へ同期
   - [x] P5継続: `nix flake check` 実行でNix経路の品質ゲートを確認
 - 2026-03-01
+  - [x] P10開始/完了: VM専用で `try/except/finally` の `finally` を導入し、同日内にテスト・実装・品質ゲートまで完了
+  - [x] P10継続: `TryExceptStmt` を finally保持対応へ拡張し、`CompileProgram` / `RunInstructions` に finally制御（`PushFinallyHandler` / `RaisePendingError`）を追加
+  - [x] P10継続: 失敗テスト先行で `ScanTokensCoreSpec` / `ParseProgramSpec` / `RunSourceVmSpec` / `CLISpec` に finally ケースを追加し、品質ゲート（`cabal test` 708 examples green / `cabal run check-structure` pass / warning 0）を確認
   - [x] P9追補: `try/except` が `raise` 以外の runtime error（`print 1 / 0`）も捕捉できるよう `RunInstructions` のエラー捕捉経路を拡張
   - [x] P9追補: 失敗テスト先行で `RunSourceVmSpec` / `CLISpec` に非`raise` runtime error捕捉ケースを追加してグリーン化
   - [x] P9追補: 品質ゲート再実行（`cabal test` 704 examples green / `cabal run check-structure` pass / warning 0）を確認

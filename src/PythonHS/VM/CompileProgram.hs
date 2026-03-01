@@ -11,8 +11,9 @@ import PythonHS.VM.CompileDefaults (compileDefaults)
 import PythonHS.VM.CompileExprItemsAt (compileExprItemsAt)
 import PythonHS.VM.CompileImportStmt (compileImportStmt)
 import PythonHS.VM.CompileLogicalExpr (compileLogicalExpr)
+import PythonHS.VM.CompileTryExcept (compileTryExcept)
 import PythonHS.VM.ExprPosition (exprPosition)
-import PythonHS.VM.Instruction (Instruction (ApplyBinary, ApplyNot, ApplyUnaryMinus, BuildDict, BuildList, CallFunction, DeclareGlobal, DefineFunction, ForNext, ForSetup, Halt, Jump, JumpIfFalse, LoadName, LoopGuard, PopExceptionHandler, PrintTop, PushConst, PushExceptionHandler, RaiseTop, ReturnTop, StoreName))
+import PythonHS.VM.Instruction (Instruction (ApplyBinary, ApplyNot, ApplyUnaryMinus, BuildDict, BuildList, CallFunction, DeclareGlobal, DefineFunction, ForNext, ForSetup, Halt, Jump, JumpIfFalse, LoadName, LoopGuard, PrintTop, PushConst, RaiseTop, ReturnTop, StoreName))
 import PythonHS.VM.StmtPosition (stmtPosition)
 
 compileProgram :: Program -> Either String [Instruction]
@@ -38,19 +39,8 @@ compileProgram (Program stmts) = do
           (exprCode, exprEnd) <- compileExprAt baseIndex expr
           let code = exprCode ++ [RaiseTop pos]
           pure (code, exprEnd + 1)
-        TryExceptStmt tryStmts exceptStmts _ -> do
-          let tryStartIndex = baseIndex + 1
-          (tryCode, tryEndIndex) <- compileStatements tryStartIndex inFunction maybeLoop tryStmts
-          let popHandlerIndex = tryEndIndex
-          let jumpEndIndex = popHandlerIndex + 1
-          let exceptStartIndex = jumpEndIndex + 1
-          (exceptCode, exceptEndIndex) <- compileStatements exceptStartIndex inFunction maybeLoop exceptStmts
-          let code =
-                [PushExceptionHandler exceptStartIndex]
-                  ++ tryCode
-                  ++ [PopExceptionHandler, Jump exceptEndIndex]
-                  ++ exceptCode
-          pure (code, exceptEndIndex)
+        TryExceptStmt tryStmts exceptStmts maybeFinally _ ->
+          compileTryExcept compileStatements baseIndex inFunction maybeLoop tryStmts exceptStmts maybeFinally
         ImportStmt _ _ ->
           compileImportStmt baseIndex stmt
         FromImportStmt _ _ _ ->

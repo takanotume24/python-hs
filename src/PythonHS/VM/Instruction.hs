@@ -15,6 +15,7 @@ data Instruction
   | ForSetup Int Position
   | ForNext String Int Position
   | PushExceptionHandler Int
+  | PushFinallyHandler Int
   | PopExceptionHandler
   | ApplyUnaryMinus Position
   | ApplyNot Position
@@ -24,6 +25,7 @@ data Instruction
   | DefineFunction String [String] [(String, [Instruction])] [Instruction]
   | CallFunction String [([Instruction], Maybe String, Position)] Position
   | RaiseTop Position
+  | RaisePendingError
   | ReturnTop
   | PrintTop
   | Halt

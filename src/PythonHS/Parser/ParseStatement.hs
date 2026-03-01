@@ -21,6 +21,7 @@ import PythonHS.Lexer.TokenType
          ImportToken,
          TryToken,
          ExceptToken,
+         FinallyToken,
          RaiseToken,
          IfToken,
         InToken,
@@ -100,8 +101,12 @@ parseStatement tokenStream =
           (trySuite, afterTrySuite) <- parseSuite afterColon
           case dropLeadingNewlines afterTrySuite of
             Token ExceptToken _ _ : Token ColonToken _ _ : afterExceptColon -> do
-              (exceptSuite, finalRest) <- parseSuite afterExceptColon
-              Right (TryExceptStmt trySuite exceptSuite pos, finalRest)
+              (exceptSuite, afterExceptSuite) <- parseSuite afterExceptColon
+              case dropLeadingNewlines afterExceptSuite of
+                Token FinallyToken _ _ : Token ColonToken _ _ : afterFinallyColon -> do
+                  (finallySuite, finalRest) <- parseSuite afterFinallyColon
+                  Right (TryExceptStmt trySuite exceptSuite (Just finallySuite) pos, finalRest)
+                _ -> Right (TryExceptStmt trySuite exceptSuite Nothing pos, afterExceptSuite)
             Token _ _ pos' : _ -> Left (ExpectedExpression pos')
             _ -> Left (ExpectedExpression (Position 0 0))
         Token _ _ pos' : _ -> Left (ExpectedExpression pos')

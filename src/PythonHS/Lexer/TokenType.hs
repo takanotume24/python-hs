@@ -51,6 +51,7 @@ data TokenType
   | ImportToken
   | TryToken
   | ExceptToken
+  | FinallyToken
   | RaiseToken
   | EqToken
   | NotEqToken

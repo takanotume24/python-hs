@@ -10,6 +10,7 @@ import PythonHS.Lexer.TokenType
         ElifToken,
         ElseToken,
         ExceptToken,
+        FinallyToken,
         FalseToken,
         ForToken,
         FromToken,
@@ -54,6 +55,7 @@ keywordOrIdentifier value
   | value == "import" = ImportToken
   | value == "try" = TryToken
   | value == "except" = ExceptToken
+  | value == "finally" = FinallyToken
   | value == "raise" = RaiseToken
   | value == "and" = AndToken
   | value == "or" = OrToken

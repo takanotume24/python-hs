@@ -21,7 +21,7 @@ stmtPosition stmt =
     GlobalStmt _ pos -> pos
     ImportStmt _ pos -> pos
     FromImportStmt _ _ pos -> pos
-    TryExceptStmt _ _ pos -> pos
+    TryExceptStmt _ _ _ pos -> pos
     RaiseStmt _ pos -> pos
     IfStmt _ _ _ pos -> pos
     PassStmt pos -> pos

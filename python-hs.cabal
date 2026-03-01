@@ -70,6 +70,7 @@ library
     , PythonHS.VM.CompileExprItemsAt
     , PythonHS.VM.CompileImportStmt
     , PythonHS.VM.CompileLogicalExpr
+    , PythonHS.VM.CompileTryExcept
     , PythonHS.VM.EvalBinaryOp
     , PythonHS.VM.ResolveLocalImports
     , PythonHS.VM.TransformImportAliases
@@ -78,6 +79,7 @@ library
     , PythonHS.VM.EvaluateUserArgs
     , PythonHS.VM.ExprPosition
     , PythonHS.VM.FirstKeywordArg
+    , PythonHS.VM.HandleRuntimeError
     , PythonHS.VM.StmtPosition
     , PythonHS.VM.Instruction
     , PythonHS.VM.IsTruthy
