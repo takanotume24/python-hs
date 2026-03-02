@@ -6,6 +6,7 @@ import PythonHS.Lexer.TokenType
         AsToken,
         BreakToken,
         ContinueToken,
+        ClassToken,
         DefToken,
         ElifToken,
         ElseToken,
@@ -47,6 +48,7 @@ keywordOrIdentifier value
   | value == "for" = ForToken
   | value == "in" = InToken
   | value == "def" = DefToken
+  | value == "class" = ClassToken
   | value == "return" = ReturnToken
   | value == "break" = BreakToken
   | value == "continue" = ContinueToken

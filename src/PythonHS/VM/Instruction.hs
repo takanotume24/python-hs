@@ -25,6 +25,7 @@ data Instruction
   | JumpIfFalse Int
   | Jump Int
   | DefineFunction String [String] [(String, [Instruction])] [Instruction]
+  | DefineClass String (Maybe String) [(String, String)]
   | CallFunction String [([Instruction], Maybe String, Position)] Position
   | RaiseTop Position
   | RaisePendingError

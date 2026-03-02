@@ -120,6 +120,12 @@
 - [x] 構造制約対応: `ExecuteMatchPattern` を分離して `RunInstructions` の 200 行制約を維持
 - [x] 品質ゲート再実行（`cabal test` / `cabal run check-structure` / warning 0）
 
+## 現在のスコープ（P13: VM class 導入）
+- [x] P13 開始: VM 専用で `class` を導入するスコープを開始
+- [x] 失敗テスト先行: lexer/parser/vm に `class` / 単一継承 / `__init__` / メソッド呼び出しケースを追加
+- [x] VM 実装: class 定義、インスタンス生成、属性読書き、単一継承メソッド解決を導入
+- [x] 品質ゲート再実行（`cabal test` / `cabal run check-structure` / warning 0）
+
 ### 運用メモ
 - 受け入れテストは MVP 最小（`MvpScenarioSpec`）を維持し、詳細仕様は Runner/Eval の回帰テストで固定する。
 

@@ -1,5 +1,4 @@
 module PythonHS.Parser.ParseStatement (parseStatement) where
-import qualified Data.Set as Set
 import PythonHS.AST.Expr (Expr (NoneExpr))
 import PythonHS.AST.Stmt (Stmt (AddAssignStmt, AssignStmt, BreakStmt, ContinueStmt, DivAssignStmt, FloorDivAssignStmt, ForStmt, FunctionDefDefaultsStmt, FunctionDefStmt, GlobalStmt, IfStmt, ModAssignStmt, MulAssignStmt, PassStmt, PrintStmt, RaiseStmt, ReturnStmt, SubAssignStmt, TryExceptStmt, WhileStmt))
 import PythonHS.Lexer.Position (Position (Position))
@@ -9,11 +8,12 @@ import PythonHS.Lexer.TokenType
       ( AssignToken,
         BreakToken,
         ColonToken,
-        CommaToken,
         ContinueToken,
+        ClassToken,
         DedentToken,
         DefToken,
         DoubleSlashAssignToken,
+        DotToken,
         ForToken,
         FromToken,
         GlobalToken,
@@ -33,7 +33,6 @@ import PythonHS.Lexer.TokenType
         PercentAssignToken,
         PlusAssignToken,
         PrintToken,
-        RParenToken,
         ReturnToken,
         SlashAssignToken,
         StarAssignToken,
@@ -42,7 +41,9 @@ import PythonHS.Lexer.TokenType
   )
 import PythonHS.Parser.ParseError (ParseError (ExpectedAssignAfterIdentifier, ExpectedExpression, ExpectedNewlineAfterStatement))
 import PythonHS.Parser.ParseExceptSuites (parseExceptSuites)
+import PythonHS.Parser.ParseClassStmt (parseClassStmt)
 import PythonHS.Parser.ParseExpr (parseExpr)
+import PythonHS.Parser.ParseParameters (parseParameters)
 import PythonHS.Parser.ParseIfTail (parseIfTail)
 import PythonHS.Parser.ParseImportStmt (parseImportStmt)
 import PythonHS.Parser.ParseMatchStmt (parseMatchStmt)
@@ -67,6 +68,9 @@ parseStatement tokenStream =
       Right (GlobalStmt name pos, rest)
     Token ImportToken _ _ : _ -> parseImportStmt tokenStream
     Token FromToken _ _ : _ -> parseImportStmt tokenStream
+    Token IdentifierToken obj pos : Token DotToken _ _ : Token IdentifierToken attr _ : Token AssignToken _ _ : rest -> do
+      (valueExpr, remaining) <- parseExpr rest
+      Right (AssignStmt (obj ++ "." ++ attr) valueExpr pos, remaining)
     Token IdentifierToken name pos : Token AssignToken _ _ : rest -> do
       (valueExpr, remaining) <- parseExpr rest
       Right (AssignStmt name valueExpr pos, remaining)
@@ -130,7 +134,7 @@ parseStatement tokenStream =
         Token _ _ pos' : _ -> Left (ExpectedExpression pos')
         _ -> Left (ExpectedExpression (Position 0 0))
     Token DefToken _ posDef : Token IdentifierToken name _ : Token LParenToken _ _ : rest -> do
-      (params, defaults, afterParams) <- parseParameters rest
+      (params, defaults, afterParams) <- parseParameters parseExpr rest
       case afterParams of
         Token ColonToken _ _ : afterColon -> do
           (bodySuite, finalRest) <- parseSuite afterColon
@@ -139,6 +143,8 @@ parseStatement tokenStream =
             else Right (FunctionDefDefaultsStmt name params defaults bodySuite posDef, finalRest)
         Token _ _ pos' : _ -> Left (ExpectedExpression pos')
         _ -> Left (ExpectedExpression (Position 0 0))
+    Token ClassToken _ posClass : Token IdentifierToken name _ : rest ->
+      parseClassStmt parseSuite posClass name rest
     Token IdentifierToken _ pos : _ -> Left (ExpectedAssignAfterIdentifier pos)
     tok : _ -> Left (ExpectedExpression (position tok))
     [] -> Left (ExpectedExpression (Position 0 0))
@@ -171,29 +177,3 @@ parseStatement tokenStream =
 
     dropLeadingNewlines (Token NewlineToken _ _ : rest) = dropLeadingNewlines rest
     dropLeadingNewlines rest = rest
-
-    parseParameters ts = parseParametersWithState False Set.empty ts
-    parseParametersWithState _ _ (Token RParenToken _ _ : rest) = Right ([], [], rest)
-    parseParametersWithState seenDefault seenNames ts = do
-      ((paramName, paramDefault, paramPos), afterParam) <- parseSingleParameter ts
-      if seenDefault && paramDefault == Nothing
-        then Left (ExpectedExpression paramPos)
-        else if Set.member paramName seenNames
-          then Left (ExpectedExpression paramPos)
-        else case afterParam of
-          Token RParenToken _ _ : rest ->
-            Right ([paramName], paramDefaultPair paramName paramDefault, rest)
-          Token CommaToken _ _ : rest -> do
-            (otherParams, otherDefaults, after) <- parseParametersWithState (seenDefault || paramDefault /= Nothing) (Set.insert paramName seenNames) rest
-            Right (paramName : otherParams, paramDefaultPair paramName paramDefault ++ otherDefaults, after)
-          tok : _ -> Left (ExpectedExpression (position tok))
-          _ -> Left (ExpectedExpression (Position 0 0))
-
-    parseSingleParameter (Token IdentifierToken p pPos : Token AssignToken _ _ : rest) = do
-      (defaultExpr, afterDefault) <- parseExpr rest
-      Right ((p, Just defaultExpr, pPos), afterDefault)
-    parseSingleParameter (Token IdentifierToken p pPos : rest) = Right ((p, Nothing, pPos), rest)
-    parseSingleParameter (tok : _) = Left (ExpectedExpression (position tok))
-    parseSingleParameter _ = Left (ExpectedExpression (Position 0 0))
-    paramDefaultPair _ Nothing = []
-    paramDefaultPair name (Just defaultExpr) = [(name, defaultExpr)]

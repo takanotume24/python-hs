@@ -28,6 +28,7 @@ data Stmt
   | IfStmt Expr [Stmt] (Maybe [Stmt]) Position      -- condition, then-branch, optional else-branch
   | WhileStmt Expr [Stmt] Position                  -- condition, body
   | ForStmt String Expr [Stmt] Position             -- loop variable, iterable expression, body
+  | ClassDefStmt String (Maybe String) [Stmt] Position -- class name, optional base, body
   | FunctionDefStmt String [String] [Stmt] Position -- name, params, body
   | FunctionDefDefaultsStmt String [String] [(String, Expr)] [Stmt] Position -- name, params, defaults, body
   deriving (Eq, Show)

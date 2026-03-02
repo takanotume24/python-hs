@@ -41,6 +41,7 @@ data TokenType
   | ForToken
   | InToken
   | DefToken
+  | ClassToken
   | ReturnToken
   | BreakToken
   | ContinueToken

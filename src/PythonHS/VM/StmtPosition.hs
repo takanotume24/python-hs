@@ -1,6 +1,6 @@
 module PythonHS.VM.StmtPosition (stmtPosition) where
 
-import PythonHS.AST.Stmt (Stmt (AddAssignStmt, AssignStmt, BreakStmt, ContinueStmt, DivAssignStmt, FloorDivAssignStmt, ForStmt, FromImportStmt, FunctionDefDefaultsStmt, FunctionDefStmt, GlobalStmt, IfStmt, ImportStmt, MatchStmt, ModAssignStmt, MulAssignStmt, PassStmt, PrintStmt, RaiseStmt, ReturnStmt, SubAssignStmt, TryExceptStmt, WhileStmt))
+import PythonHS.AST.Stmt (Stmt (AddAssignStmt, AssignStmt, BreakStmt, ClassDefStmt, ContinueStmt, DivAssignStmt, FloorDivAssignStmt, ForStmt, FromImportStmt, FunctionDefDefaultsStmt, FunctionDefStmt, GlobalStmt, IfStmt, ImportStmt, MatchStmt, ModAssignStmt, MulAssignStmt, PassStmt, PrintStmt, RaiseStmt, ReturnStmt, SubAssignStmt, TryExceptStmt, WhileStmt))
 import PythonHS.Lexer.Position (Position)
 
 stmtPosition :: Stmt -> Position
@@ -18,6 +18,7 @@ stmtPosition stmt =
     BreakStmt pos -> pos
     ContinueStmt pos -> pos
     ForStmt _ _ _ pos -> pos
+    ClassDefStmt _ _ _ pos -> pos
     GlobalStmt _ pos -> pos
     ImportStmt _ pos -> pos
     FromImportStmt _ _ pos -> pos

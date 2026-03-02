@@ -4,7 +4,9 @@ import PythonHS.AST.Expr (Expr (BinaryExpr, CallExpr, DictExpr, FloatExpr, Ident
 import PythonHS.Lexer.Position (Position (Position))
 import PythonHS.Lexer.Token (Token (Token), position)
 import PythonHS.Lexer.TokenType (TokenType (AndToken, AssignToken, ColonToken, CommaToken, DotToken, DoubleSlashToken, EqToken, FalseToken, FloatToken, GtToken, GteToken, IdentifierToken, IntegerToken, LBraceToken, LBracketToken, LParenToken, LtToken, LteToken, MinusToken, NoneToken, NotEqToken, NotToken, OrToken, PercentToken, PlusToken, RBraceToken, RBracketToken, RParenToken, SlashToken, StarToken, StringToken, TrueToken))
+import PythonHS.Parser.ExprPos (exprPos)
 import PythonHS.Parser.ParseError (ParseError (ExpectedExpression))
+import PythonHS.Parser.NormalizeFloatLiteral (normalizeFloatLiteral)
 
 parseExpr :: [Token] -> Either ParseError (Expr, [Token])
 parseExpr = parseOr
@@ -119,6 +121,8 @@ parseExpr = parseOr
     parsePostfix receiverExpr (Token DotToken _ _ : Token IdentifierToken methodName methodPos : Token LParenToken _ _ : rest) = do
       (args, afterArgs) <- parseArguments rest
       parsePostfix (CallExpr methodName (receiverExpr : args) methodPos) afterArgs
+    parsePostfix (IdentifierExpr receiverName receiverPos) (Token DotToken _ _ : Token IdentifierToken attrName _ : rest) =
+      parsePostfix (IdentifierExpr (receiverName ++ "." ++ attrName) receiverPos) rest
     parsePostfix expr rest = Right (expr, rest)
     parseListElements listPos (Token RBracketToken _ _ : rest) =
       Right (ListExpr [] listPos, rest)
@@ -182,19 +186,3 @@ parseExpr = parseOr
     parseCallArgument tokenStream = do
       (argExpr, afterArg) <- parseExpr tokenStream
       Right (argExpr, False, exprPos argExpr, afterArg)
-    normalizeFloatLiteral literal =
-      let withLeading = if take 1 literal == "." then '0' : literal else literal
-       in if not (null withLeading) && last withLeading == '.' then withLeading ++ "0" else withLeading
-
-    exprPos (IntegerExpr _ pos) = pos
-    exprPos (FloatExpr _ pos) = pos
-    exprPos (StringExpr _ pos) = pos
-    exprPos (NoneExpr pos) = pos
-    exprPos (ListExpr _ pos) = pos
-    exprPos (DictExpr _ pos) = pos
-    exprPos (IdentifierExpr _ pos) = pos
-    exprPos (KeywordArgExpr _ _ pos) = pos
-    exprPos (UnaryMinusExpr _ pos) = pos
-    exprPos (NotExpr _ pos) = pos
-    exprPos (BinaryExpr _ _ _ pos) = pos
-    exprPos (CallExpr _ _ pos) = pos

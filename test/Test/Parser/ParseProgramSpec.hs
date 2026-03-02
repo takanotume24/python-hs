@@ -4,7 +4,7 @@ import PythonHS.AST.BinaryOperator (BinaryOperator (..))
 import PythonHS.AST.Expr (Expr (BinaryExpr, CallExpr, DictExpr, FloatExpr, IdentifierExpr, IntegerExpr, KeywordArgExpr, ListExpr, NoneExpr, NotExpr, StringExpr, UnaryMinusExpr))
 import PythonHS.AST.Pattern (Pattern (CapturePattern, MappingPattern, OrPattern, ValuePattern, WildcardPattern))
 import PythonHS.AST.Program (Program (Program))
-import PythonHS.AST.Stmt (Stmt (AddAssignStmt, AssignStmt, BreakStmt, ContinueStmt, DivAssignStmt, FloorDivAssignStmt, ForStmt, FromImportStmt, FunctionDefDefaultsStmt, FunctionDefStmt, GlobalStmt, IfStmt, ImportStmt, MatchStmt, ModAssignStmt, MulAssignStmt, PassStmt, PrintStmt, RaiseStmt, ReturnStmt, SubAssignStmt, TryExceptStmt, WhileStmt))
+import PythonHS.AST.Stmt (Stmt (AddAssignStmt, AssignStmt, BreakStmt, ClassDefStmt, ContinueStmt, DivAssignStmt, FloorDivAssignStmt, ForStmt, FromImportStmt, FunctionDefDefaultsStmt, FunctionDefStmt, GlobalStmt, IfStmt, ImportStmt, MatchStmt, ModAssignStmt, MulAssignStmt, PassStmt, PrintStmt, RaiseStmt, ReturnStmt, SubAssignStmt, TryExceptStmt, WhileStmt))
 import PythonHS.Lexer.Token (Token (Token))
 import PythonHS.Lexer.Position (Position (Position))
 import PythonHS.Lexer.TokenType
@@ -19,7 +19,8 @@ import PythonHS.Lexer.TokenType
         ColonToken,
         CommaToken,
         DotToken,
-        DefToken,
+         DefToken,
+         ClassToken,
         EOFToken,
         ElseToken,
         ElifToken,
@@ -77,6 +78,57 @@ import Test.Hspec (Spec, describe, it, shouldBe)
 
 spec :: Spec
 spec = describe "parseProgram" $ do
+  it "parses class statement with single inheritance and method" $ do
+    parseProgram
+      [ Token ClassToken "class" (Position 1 1),
+        Token IdentifierToken "B" (Position 1 7),
+        Token LParenToken "(" (Position 1 8),
+        Token IdentifierToken "A" (Position 1 9),
+        Token RParenToken ")" (Position 1 10),
+        Token ColonToken ":" (Position 1 11),
+        Token NewlineToken "\\n" (Position 1 12),
+        Token IndentToken "<INDENT>" (Position 2 1),
+        Token DefToken "def" (Position 2 3),
+        Token IdentifierToken "f" (Position 2 7),
+        Token LParenToken "(" (Position 2 8),
+        Token IdentifierToken "self" (Position 2 9),
+        Token RParenToken ")" (Position 2 13),
+        Token ColonToken ":" (Position 2 14),
+        Token NewlineToken "\\n" (Position 2 15),
+        Token IndentToken "<INDENT>" (Position 3 1),
+        Token ReturnToken "return" (Position 3 5),
+        Token IntegerToken "1" (Position 3 12),
+        Token NewlineToken "\\n" (Position 3 13),
+        Token DedentToken "<DEDENT>" (Position 4 1),
+        Token DedentToken "<DEDENT>" (Position 4 1),
+        Token EOFToken "" (Position 4 1)
+      ]
+      `shouldBe` Right
+        ( Program
+            [ ClassDefStmt
+                "B"
+                (Just "A")
+                [FunctionDefStmt "f" ["self"] [ReturnStmt (IntegerExpr 1 (Position 3 12)) (Position 3 5)] (Position 2 3)]
+                (Position 1 1)
+            ]
+        )
+
+  it "parses dotted assignment target as assign stmt name" $ do
+    parseProgram
+      [ Token IdentifierToken "self" (Position 1 1),
+        Token DotToken "." (Position 1 5),
+        Token IdentifierToken "x" (Position 1 6),
+        Token AssignToken "=" (Position 1 8),
+        Token IntegerToken "1" (Position 1 10),
+        Token NewlineToken "\\n" (Position 1 11),
+        Token EOFToken "" (Position 2 1)
+      ]
+      `shouldBe` Right
+        ( Program
+            [ AssignStmt "self.x" (IntegerExpr 1 (Position 1 10)) (Position 1 1)
+            ]
+        )
+
   it "parses import statement" $ do
     parseProgram
       [ Token ImportToken "import" (Position 1 1),

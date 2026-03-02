@@ -30,6 +30,7 @@ TDD（`hspec`）で機能を拡張し、`Lexer -> Parser -> Evaluator -> Runner/
 - [x] 文: `print`, 代入, 複合代入, `return`, `global`, `pass`, `import`
 - [x] 文: `try/except`（複数 `except` 節対応）、`try/except/finally`、`raise`
 - [x] 文: `match/case`（値/OR/シーケンス/マッピング/ガードの最小対応）
+- [x] 文: `class`（単一継承ヘッダ + クラスボディの最小対応）
 - [x] 制御構文: `if/elif/else`, `while`, `for`
 - [x] 関数定義: `def name(args): ...`
 - [x] 式: 四則演算（`+ - * / % //`）, 比較, `not`, 関数呼び出し
@@ -75,11 +76,12 @@ TDD（`hspec`）で機能を拡張し、`Lexer -> Parser -> Evaluator -> Runner/
 - `math.pi` / `math.e` は現仕様では関数形式（`math.pi()` / `math.e()`）で利用します。
 - 例外処理（`try/except/finally`, `raise`）は現時点で VM 実行経路のみを対象にした MVP 実装です。
 - `match/case` は現時点で VM 実行経路のみを対象にした MVP 実装です。
+- `class`（`__init__` / メソッド呼び出し / 単一継承）は現時点で VM 実行経路のみを対象にした MVP 実装です。
 
 ## MVP外・未対応（明示）
 - [ ] Python完全互換（あくまでサブセット）
 - [ ] 任意オブジェクトの一般メソッド解決（現状は組み込み相当の構文糖衣のみ）
-- [ ] 高度な例外処理（型指定except など）、`match/case` の完全CPython互換、クラス、汎用import（任意モジュール読み込み）など
+- [ ] 高度な例外処理（型指定except など）、`match/case` の完全CPython互換、汎用import（任意モジュール読み込み）など
 
 ## 開発環境（Nix Flakes）
 

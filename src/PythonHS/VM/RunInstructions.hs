@@ -4,22 +4,17 @@ import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import PythonHS.Evaluator.MaxLoopIterations (maxLoopIterations)
 import PythonHS.Evaluator.ShowPos (showPos)
-import PythonHS.Evaluator.Value (Value (DictValue, FloatValue, IntValue, ListValue, StringValue))
+import PythonHS.Evaluator.Value (Value (ClassValue, DictValue, FloatValue, IntValue, ListValue, StringValue))
 import PythonHS.Evaluator.ValueToOutput (valueToOutput)
-import PythonHS.VM.BindCallArguments (bindCallArguments)
-import PythonHS.VM.BindDefaults (bindDefaults)
-import PythonHS.VM.CallBuiltin (callBuiltin)
-import PythonHS.VM.CollectFunctionGlobalDecls (collectFunctionGlobalDecls)
 import PythonHS.VM.EvalBinaryOp (evalBinaryOp)
-import PythonHS.VM.EvaluateBuiltinArgs (evaluateBuiltinArgs)
+import PythonHS.VM.ExecuteCallFunction (executeCallFunction)
 import PythonHS.VM.ExecuteMatchPattern (executeMatchPattern)
-import PythonHS.VM.EvaluateUserArgs (evaluateUserArgs)
-import PythonHS.VM.FirstKeywordArg (firstKeywordArg)
 import PythonHS.VM.HandleRuntimeError (handleRuntimeError)
-import PythonHS.VM.Instruction (Instruction (ApplyBinary, ApplyNot, ApplyUnaryMinus, BuildDict, BuildList, CallFunction, DeclareGlobal, DefineFunction, ForNext, ForSetup, Halt, Jump, JumpIfFalse, LoadName, LoopGuard, MatchPattern, PopExceptionHandler, PrintTop, PushConst, PushExceptionHandler, PushFinallyHandler, RaisePendingError, RaiseTop, ReturnTop, StoreName))
+import PythonHS.VM.Instruction (Instruction (ApplyBinary, ApplyNot, ApplyUnaryMinus, BuildDict, BuildList, CallFunction, DeclareGlobal, DefineClass, DefineFunction, ForNext, ForSetup, Halt, Jump, JumpIfFalse, LoadName, LoopGuard, MatchPattern, PopExceptionHandler, PrintTop, PushConst, PushExceptionHandler, PushFinallyHandler, RaisePendingError, RaiseTop, ReturnTop, StoreName))
 import PythonHS.VM.IsTruthy (isTruthy)
-import PythonHS.VM.LookupName (lookupName)
+import PythonHS.VM.LookupNameWithAttr (lookupNameWithAttr)
 import PythonHS.VM.PopValues (popValues)
+import PythonHS.VM.StoreNameWithAttr (storeNameWithAttr)
 import PythonHS.VM.ToForIterable (toForIterable)
 import PythonHS.VM.ToPairs (toPairs)
 
@@ -37,7 +32,7 @@ runInstructions instructions = do
             case code !! ip of
             PushConst value -> execute code (ip + 1) (value : stack) globalsEnv localEnv functions globalDecls forStates loopCounts exceptionHandlers outputs isTopLevel
             LoadName name pos ->
-              case lookupName name localEnv globalsEnv of
+              case lookupNameWithAttr name localEnv globalsEnv of
                 Just value -> execute code (ip + 1) (value : stack) globalsEnv localEnv functions globalDecls forStates loopCounts exceptionHandlers outputs isTopLevel
                 Nothing -> Left ("Name error: undefined identifier " ++ name ++ " at " ++ showPos pos)
             DeclareGlobal name ->
@@ -46,14 +41,10 @@ runInstructions instructions = do
             StoreName name ->
               case stack of
                 value : rest ->
-                  if isTopLevel || Set.member name globalDecls
-                    then
-                      let newGlobals = Map.insert name value globalsEnv
-                          newLocals = if isTopLevel then newGlobals else localEnv
-                       in execute code (ip + 1) rest newGlobals newLocals functions globalDecls forStates loopCounts exceptionHandlers outputs isTopLevel
-                    else
-                      let newLocals = Map.insert name value localEnv
-                       in execute code (ip + 1) rest globalsEnv newLocals functions globalDecls forStates loopCounts exceptionHandlers outputs isTopLevel
+                  case storeNameWithAttr isTopLevel globalDecls name value globalsEnv localEnv of
+                    Left err -> Left err
+                    Right (newGlobals, newLocals) ->
+                      execute code (ip + 1) rest newGlobals newLocals functions globalDecls forStates loopCounts exceptionHandlers outputs isTopLevel
                 _ -> Left "VM runtime error: store requires one value on stack"
             BuildList count ->
               case popValues count stack of
@@ -121,36 +112,21 @@ runInstructions instructions = do
             DefineFunction name params defaultCodes functionCode ->
               let newFunctions = Map.insert name (params, defaultCodes, functionCode) functions
                in execute code (ip + 1) stack globalsEnv localEnv newFunctions globalDecls forStates loopCounts exceptionHandlers outputs isTopLevel
+            DefineClass className maybeBase methods ->
+              let classValue = ClassValue className maybeBase methods
+               in if isTopLevel || Set.member className globalDecls
+                    then
+                      let newGlobals = Map.insert className classValue globalsEnv
+                          newLocals = if isTopLevel then newGlobals else localEnv
+                       in execute code (ip + 1) stack newGlobals newLocals functions globalDecls forStates loopCounts exceptionHandlers outputs isTopLevel
+                    else
+                      let newLocals = Map.insert className classValue localEnv
+                       in execute code (ip + 1) stack globalsEnv newLocals functions globalDecls forStates loopCounts exceptionHandlers outputs isTopLevel
             CallFunction fname compiledArgs pos ->
-              case Map.lookup fname functions of
-                Nothing ->
-                  case firstKeywordArg compiledArgs of
-                    Just (_, argPos) -> Left ("Argument error: keyword arguments are not supported for builtin " ++ fname ++ " at " ++ showPos argPos)
-                    Nothing -> do
-                      (args, globalsAfterArgs, functionsAfterArgs, outputsAfterArgs) <-
-                        evaluateBuiltinArgs execute localEnv compiledArgs globalsEnv functions outputs []
-                      case callBuiltin fname args pos of
-                        Just (Left err) -> Left err
-                        Just (Right builtinValue) ->
-                          let newLocalEnv = if isTopLevel then globalsAfterArgs else localEnv
-                           in execute code (ip + 1) (builtinValue : stack) globalsAfterArgs newLocalEnv functionsAfterArgs globalDecls forStates loopCounts exceptionHandlers outputsAfterArgs isTopLevel
-                        Nothing -> Left ("Name error: undefined function " ++ fname ++ " at " ++ showPos pos)
-                Just (params, defaultCodes, functionCode) ->
-                  do
-                    (argValues, argKinds, globalsAfterArgs, functionsAfterArgs, outputsAfterArgs) <-
-                      evaluateUserArgs execute fname pos localEnv compiledArgs globalsEnv functions outputs False Set.empty [] []
-                    initialLocals <- bindCallArguments fname pos params argValues argKinds
-                    (functionLocals, globalsAfterDefaults, functionsAfterDefaults, outputsAfterDefaults) <-
-                      bindDefaults execute fname pos params defaultCodes initialLocals globalsAfterArgs functionsAfterArgs outputsAfterArgs
-                    let functionGlobalDecls = collectFunctionGlobalDecls functionCode
-                    (maybeValue, newGlobals, newFunctions, newOutputs) <-
-                      execute functionCode 0 [] globalsAfterDefaults functionLocals functionsAfterDefaults functionGlobalDecls Map.empty Map.empty [] outputsAfterDefaults False
-                    let returnValue =
-                          case maybeValue of
-                            Just value -> value
-                            Nothing -> IntValue 0
-                    let newLocalEnv = if isTopLevel then newGlobals else localEnv
-                    execute code (ip + 1) (returnValue : stack) newGlobals newLocalEnv newFunctions globalDecls forStates loopCounts exceptionHandlers newOutputs isTopLevel
+              do
+                (newStack, newGlobals, newLocalEnv, newFunctions, newOutputs) <-
+                  executeCallFunction execute isTopLevel fname compiledArgs pos stack globalsEnv localEnv functions outputs
+                execute code (ip + 1) newStack newGlobals newLocalEnv newFunctions globalDecls forStates loopCounts exceptionHandlers newOutputs isTopLevel
             ApplyBinary op pos ->
               case stack of
                 right : left : rest ->

@@ -3,10 +3,11 @@ module PythonHS.VM.CompileProgram (compileProgram) where
 import PythonHS.AST.BinaryOperator (BinaryOperator (AddOperator, AndOperator, DivideOperator, FloorDivideOperator, ModuloOperator, MultiplyOperator, OrOperator, SubtractOperator))
 import PythonHS.AST.Expr (Expr (BinaryExpr, CallExpr, DictExpr, FloatExpr, IdentifierExpr, IntegerExpr, ListExpr, NoneExpr, NotExpr, StringExpr, UnaryMinusExpr))
 import PythonHS.AST.Program (Program (Program))
-import PythonHS.AST.Stmt (Stmt (AddAssignStmt, AssignStmt, BreakStmt, ContinueStmt, DivAssignStmt, FloorDivAssignStmt, ForStmt, FromImportStmt, FunctionDefDefaultsStmt, FunctionDefStmt, GlobalStmt, IfStmt, ImportStmt, MatchStmt, ModAssignStmt, MulAssignStmt, PassStmt, PrintStmt, RaiseStmt, ReturnStmt, SubAssignStmt, TryExceptStmt, WhileStmt))
+import PythonHS.AST.Stmt (Stmt (AddAssignStmt, AssignStmt, BreakStmt, ClassDefStmt, ContinueStmt, DivAssignStmt, FloorDivAssignStmt, ForStmt, FromImportStmt, FunctionDefDefaultsStmt, FunctionDefStmt, GlobalStmt, IfStmt, ImportStmt, MatchStmt, ModAssignStmt, MulAssignStmt, PassStmt, PrintStmt, RaiseStmt, ReturnStmt, SubAssignStmt, TryExceptStmt, WhileStmt))
 import PythonHS.Evaluator.ShowPos (showPos)
 import PythonHS.Evaluator.Value (Value (FloatValue, IntValue, NoneValue, StringValue))
 import PythonHS.VM.CompileCallArgsAt (compileCallArgsAt)
+import PythonHS.VM.CompileClassStmt (compileClassStmt)
 import PythonHS.VM.CompileDefaults (compileDefaults)
 import PythonHS.VM.CompileExprItemsAt (compileExprItemsAt)
 import PythonHS.VM.CompileImportStmt (compileImportStmt)
@@ -105,6 +106,8 @@ compileProgram (Program stmts) = do
           let iterPos = exprPosition iterExpr
           let code = iterCode ++ [ForSetup nextIndex iterPos, ForNext name loopEndIndex iterPos, LoopGuard forPos] ++ bodyCode ++ [Jump nextIndex]
           pure (code, loopEndIndex)
+        ClassDefStmt className maybeBase body _ ->
+          compileClassStmt compileDefaults compileStatements compileExprAt baseIndex className maybeBase body
         FunctionDefStmt name params body _ -> do
           (bodyCode, _) <- compileStatements 0 True Nothing body
           let functionCode = bodyCode ++ [PushConst (IntValue 0), ReturnTop]
@@ -134,6 +137,7 @@ compileProgram (Program stmts) = do
       (exprCode, exprEnd) <- compileExprAt (baseIndex + 1) expr
       let code = [LoadName name pos] ++ exprCode ++ [ApplyBinary op pos, StoreName name]
       pure (code, exprEnd + 2)
+
 
     compileExprAt baseIndex expr =
       case expr of

@@ -59,6 +59,12 @@ spec = describe "runSourceVm (vm mvp)" $ do
   it "runs function definition and call with parameters" $ do
     runSourceVm "def add(a, b):\n  return a + b\nprint add(1, 2)\n" `shouldBe` Right ["3"]
 
+  it "runs class init and method call" $ do
+    runSourceVm "class A:\n  def __init__(self, v):\n    self.v = v\n  def get(self):\n    return self.v\nx = A(3)\nprint x.get()\n" `shouldBe` Right ["3"]
+
+  it "runs single inheritance method lookup" $ do
+    runSourceVm "class A:\n  def f(self):\n    return 7\nclass B(A):\n  pass\nx = B()\nprint x.f()\n" `shouldBe` Right ["7"]
+
   it "runs function definition and call with default parameters" $ do
     runSourceVm "def add(a, b = 2):\n  return a + b\nprint add(1)\nprint add(1, 3)\n" `shouldBe` Right ["3", "4"]
 

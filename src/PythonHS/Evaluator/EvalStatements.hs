@@ -86,6 +86,8 @@ evalStatements env fenv outputs (stmt : rest) =
     ForStmt name iterExpr body forPos ->
       evalForStmt evalStatements (evalExpr evalStatements) env fenv outputs name iterExpr body forPos rest
 
+    ClassDefStmt _ _ _ pos -> Left $ "Runtime error: class is only supported in vm engine at " ++ showPos pos
+
     FunctionDefStmt name params body _ ->
       evalStatements env (Map.insert name (params, [], body) fenv) outputs rest
 

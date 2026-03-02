@@ -44,7 +44,11 @@ library
     , PythonHS.Lexer.ParseExponent
     , PythonHS.Lexer.ScanTokenStep
     , PythonHS.Parser.ParseExpr
+    , PythonHS.Parser.ExprPos
+    , PythonHS.Parser.NormalizeFloatLiteral
     , PythonHS.Parser.ParseStatement
+    , PythonHS.Parser.ParseClassStmt
+    , PythonHS.Parser.ParseParameters
     , PythonHS.Parser.ParseExceptSuites
     , PythonHS.Parser.ParsePattern
     , PythonHS.Parser.ParseMatchStmt
@@ -70,6 +74,7 @@ library
     , PythonHS.VM.CallMathBuiltin
     , PythonHS.VM.BindCallArguments
     , PythonHS.VM.CompileCallArgsAt
+    , PythonHS.VM.CompileClassStmt
     , PythonHS.VM.CompileDefaults
     , PythonHS.VM.CompileExprItemsAt
     , PythonHS.VM.CompileImportStmt
@@ -81,6 +86,7 @@ library
     , PythonHS.VM.TransformImportAliases
     , PythonHS.VM.CollectFunctionGlobalDecls
     , PythonHS.VM.EvaluateBuiltinArgs
+    , PythonHS.VM.ExecuteCallFunction
     , PythonHS.VM.ExecuteMatchPattern
     , PythonHS.VM.EvaluateUserArgs
     , PythonHS.VM.ExprPosition
@@ -90,6 +96,9 @@ library
     , PythonHS.VM.Instruction
     , PythonHS.VM.IsTruthy
     , PythonHS.VM.LookupName
+    , PythonHS.VM.LookupNameWithAttr
+    , PythonHS.VM.StoreNameWithAttr
+    , PythonHS.VM.FindMethodFunctionName
     , PythonHS.VM.MatchPatternBindings
     , PythonHS.VM.BindPatternCaptures
     , PythonHS.VM.PopValues
