@@ -4,15 +4,17 @@ import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import PythonHS.Evaluator.MaxLoopIterations (maxLoopIterations)
 import PythonHS.Evaluator.ShowPos (showPos)
-import PythonHS.Evaluator.Value (Value (ClassValue, DictValue, FloatValue, FunctionRefValue, IntValue, ListValue, StringValue))
+import PythonHS.Evaluator.Value (Value (ClassValue, DictValue, FloatValue, FunctionRefValue, IntValue, ListValue, StringValue, TupleValue))
 import PythonHS.Evaluator.ValueToOutput (valueToOutput)
 import PythonHS.VM.EvalBinaryOp (evalBinaryOp)
 import PythonHS.VM.ExecuteCallFunction (executeCallFunction)
 import PythonHS.VM.ExecuteCallValueFunction (executeCallValueFunction)
+import PythonHS.VM.ExecuteForNext (executeForNext)
 import PythonHS.VM.ExecuteListComprehension (executeListComprehension)
 import PythonHS.VM.ExecuteMatchPattern (executeMatchPattern)
+import PythonHS.VM.ExecuteUnpackToNames (executeUnpackToNames)
 import PythonHS.VM.HandleRuntimeError (handleRuntimeError)
-import PythonHS.VM.Instruction (Instruction (ApplyBinary, ApplyNot, ApplyUnaryMinus, BuildDict, BuildList, BuildListComprehension, CallFunction, CallValueFunction, CreateLambda, DeclareGlobal, DefineClass, DefineFunction, DupTop, ForNext, ForSetup, Halt, Jump, JumpIfFalse, LoadName, LoopGuard, MatchPattern, PopExceptionHandler, PrintTop, PushConst, PushExceptionHandler, PushFinallyHandler, RaisePendingError, RaiseTop, ReturnTop, StoreName))
+import PythonHS.VM.Instruction (Instruction (ApplyBinary, ApplyNot, ApplyUnaryMinus, BuildDict, BuildList, BuildListComprehension, BuildTuple, CallFunction, CallValueFunction, CreateLambda, DeclareGlobal, DefineClass, DefineFunction, DupTop, ForNext, ForSetup, Halt, Jump, JumpIfFalse, LoadName, LoopGuard, MatchPattern, PopExceptionHandler, PrintTop, PushConst, PushExceptionHandler, PushFinallyHandler, RaisePendingError, RaiseTop, ReturnTop, StoreName, UnpackToNames))
 import PythonHS.VM.IsTruthy (isTruthy)
 import PythonHS.VM.LookupNameWithAttr (lookupNameWithAttr)
 import PythonHS.VM.PopValues (popValues)
@@ -56,6 +58,11 @@ runInstructions instructions = do
                 Left err -> Left err
                 Right (values, rest) ->
                   execute code (ip + 1) (ListValue values : rest) globalsEnv localEnv functions globalDecls forStates loopCounts exceptionHandlers outputs isTopLevel
+            BuildTuple count ->
+              case popValues count stack of
+                Left err -> Left err
+                Right (values, rest) ->
+                  execute code (ip + 1) (TupleValue values : rest) globalsEnv localEnv functions globalDecls forStates loopCounts exceptionHandlers outputs isTopLevel
             BuildDict count ->
               case popValues (count * 2) stack of
                 Left err -> Left err
@@ -90,22 +97,10 @@ runInstructions instructions = do
                   execute code (ip + 1) rest globalsEnv localEnv functions globalDecls newForStates loopCounts exceptionHandlers outputs isTopLevel
                 _ -> Left "VM runtime error: for setup requires iterable value on stack"
             ForNext name loopEndIndex _ ->
-              case Map.lookup ip forStates of
-                Nothing -> Left "VM runtime error: missing for-loop state"
-                Just [] ->
-                  let newForStates = Map.delete ip forStates
-                   in execute code loopEndIndex stack globalsEnv localEnv functions globalDecls newForStates loopCounts exceptionHandlers outputs isTopLevel
-                Just (nextValue : remainingValues) ->
-                  if isTopLevel || Set.member name globalDecls
-                    then
-                      let newGlobals = Map.insert name nextValue globalsEnv
-                          newLocals = if isTopLevel then newGlobals else localEnv
-                          newForStates = Map.insert ip remainingValues forStates
-                       in execute code (ip + 1) stack newGlobals newLocals functions globalDecls newForStates loopCounts exceptionHandlers outputs isTopLevel
-                    else
-                      let newLocals = Map.insert name nextValue localEnv
-                          newForStates = Map.insert ip remainingValues forStates
-                       in execute code (ip + 1) stack globalsEnv newLocals functions globalDecls newForStates loopCounts exceptionHandlers outputs isTopLevel
+              case executeForNext isTopLevel globalDecls ip name loopEndIndex forStates globalsEnv localEnv of
+                Left err -> Left err
+                Right (nextIp, newForStates, newGlobals, newLocals) ->
+                  execute code nextIp stack newGlobals newLocals functions globalDecls newForStates loopCounts exceptionHandlers outputs isTopLevel
             PushExceptionHandler handlerIp ->
               execute code (ip + 1) stack globalsEnv localEnv functions globalDecls forStates loopCounts (handlerIp : exceptionHandlers) outputs isTopLevel
             PushFinallyHandler handlerIp ->
@@ -144,6 +139,14 @@ runInstructions instructions = do
               (newStack, newGlobals, newLocalEnv, newFunctions, newOutputs) <-
                 executeCallValueFunction execute isTopLevel compiledArgs pos stack globalsEnv localEnv functions outputs
               execute code (ip + 1) newStack newGlobals newLocalEnv newFunctions globalDecls forStates loopCounts exceptionHandlers newOutputs isTopLevel
+            UnpackToNames names pos ->
+              case stack of
+                value : rest ->
+                  case executeUnpackToNames isTopLevel globalDecls pos names value globalsEnv localEnv of
+                    Left err -> Left err
+                    Right (newGlobals, newLocals) ->
+                      execute code (ip + 1) rest newGlobals newLocals functions globalDecls forStates loopCounts exceptionHandlers outputs isTopLevel
+                _ -> Left "VM runtime error: unpack requires one value on stack"
             BuildListComprehension clauses valueCode pos -> do
               (listValue, newGlobals, newFunctions, newOutputs) <-
                 executeListComprehension execute clauses valueCode pos globalsEnv localEnv functions outputs

@@ -10,6 +10,7 @@ data Instruction
   | LoadName String Position
   | StoreName String
   | BuildList Int
+  | BuildTuple Int
   | BuildDict Int
   | DeclareGlobal String
   | LoopGuard Position
@@ -31,6 +32,7 @@ data Instruction
   | BuildListComprehension [([String], [Instruction], [[Instruction]])] [Instruction] Position
   | CallFunction String [([Instruction], Maybe String, Position)] Position
   | CallValueFunction [([Instruction], Maybe String, Position)] Position
+  | UnpackToNames [String] Position
   | RaiseTop Position
   | RaisePendingError
   | ReturnTop

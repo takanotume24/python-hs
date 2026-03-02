@@ -35,6 +35,7 @@ TDD（`hspec`）で機能を拡張し、`Lexer -> Parser -> Evaluator -> Runner/
 - [x] 制御構文: `if/elif/else`, `while`, `for`
 - [x] 関数定義: `def name(args): ...`
 - [x] 式: 四則演算（`+ - * / % //`）, 比較, `not`, 関数呼び出し
+- [x] 式: tuple（literal, index/slice）
 - [x] 組み込みのメソッド呼び出し構文（例: `x.append(3)` を関数呼び出しへデシュガー）
 - [x] リテラル: int/float/string/list/dict/None
 - [x] インラインsuiteとインデントsuiteの両対応
@@ -51,11 +52,13 @@ TDD（`hspec`）で機能を拡張し、`Lexer -> Parser -> Evaluator -> Runner/
 - [x] 関数スコープ（引数優先・グローバル参照可）
 - [x] `global` は関数内代入をグローバルへ反映、`pass` は no-op として評価
 - [x] truthiness（`None`、空文字、空リスト、空辞書）
+- [x] truthiness（tuple を含む）
 - [x] 反復回数ガード（2000超で `Value error`）
 - [x] 位置情報つきエラー報告（Name/Type/Value/Argument count など）
 
 ### 組み込み関数（実装済み）
 - [x] `len(x)`（string/list）
+- [x] `len(x)`（string/list/tuple）
 - [x] `bool(x)`（int/float/None/string/list/dictのtruthiness）
 - [x] `range(stop)` / `range(start, stop)` / `range(start, stop, step)`
 - [x] `append(list, value)`
@@ -71,6 +74,7 @@ TDD（`hspec`）で機能を拡張し、`Lexer -> Parser -> Evaluator -> Runner/
 - [x] `setdefault(dict, key)` / `setdefault(dict, key, default)`
 - [x] VM最小 math 導線: `import math` + `math.sqrt/sin/cos/tan/log/exp/pi/e`
 - [x] VM最小 dataclass 導線: `from dataclasses import dataclass, field` + `@dataclass(order=..., frozen=...)`
+- [x] VM tuple 導線: tuple literal / 比較 / index・slice / unpack / match sequence / for反復
 
 補足:
 - `math` は現時点で VM 実行経路を対象にした MVP 実装です。

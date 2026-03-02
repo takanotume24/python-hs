@@ -7,7 +7,7 @@ import PythonHS.Evaluator.Env (Env)
 import PythonHS.Evaluator.FuncEnv (FuncEnv)
 import PythonHS.Evaluator.MaxLoopIterations (maxLoopIterations)
 import PythonHS.Evaluator.ShowPos (showPos)
-import PythonHS.Evaluator.Value (Value (BreakValue, ContinueValue, DictValue, IntValue, ListValue))
+import PythonHS.Evaluator.Value (Value (BreakValue, ContinueValue, DictValue, IntValue, ListValue, TupleValue))
 import PythonHS.Lexer.Position (Position)
 
 evalForStmt ::
@@ -29,6 +29,8 @@ evalForStmt evalStatementsFn evalExprFn env fenv outputs name iterExpr body forP
       let upper = max 0 maxN
        in loopRange envAfterIter fenv 0 upper ((outputs ++) . (iterOuts ++)) 0
     ListValue vals ->
+      loopList envAfterIter fenv vals ((outputs ++) . (iterOuts ++)) 0
+    TupleValue vals ->
       loopList envAfterIter fenv vals ((outputs ++) . (iterOuts ++)) 0
     DictValue pairs ->
       loopList envAfterIter fenv (map fst pairs) ((outputs ++) . (iterOuts ++)) 0
@@ -67,6 +69,7 @@ evalForStmt evalStatementsFn evalExprFn env fenv outputs name iterExpr body forP
     exprPos (StringExpr _ pos) = pos
     exprPos (NoneExpr pos) = pos
     exprPos (ListExpr _ pos) = pos
+    exprPos (TupleExpr _ pos) = pos
     exprPos (ListComprehensionExpr _ _ _ pos) = pos
     exprPos (ListComprehensionClausesExpr _ _ pos) = pos
     exprPos (DictExpr _ pos) = pos
@@ -82,3 +85,5 @@ evalForStmt evalStatementsFn evalExprFn env fenv outputs name iterExpr body forP
     exprPos (BinaryExpr _ _ _ pos) = pos
     exprPos (CallExpr _ _ pos) = pos
     exprPos (CallValueExpr _ _ pos) = pos
+    exprPos (IndexExpr _ _ pos) = pos
+    exprPos (SliceExpr _ _ _ pos) = pos

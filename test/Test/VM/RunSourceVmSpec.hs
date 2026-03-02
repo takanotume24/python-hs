@@ -86,6 +86,15 @@ spec = describe "runSourceVm (vm mvp)" $ do
   it "rejects assignment to frozen dataclass field" $ do
     runSourceVm "from dataclasses import dataclass\n@dataclass(frozen=1)\nclass Point:\n  x: int\np = Point(1)\np.x = 2\n" `shouldBe` Left "Type error: cannot assign to frozen dataclass field x at 0:0"
 
+  it "runs tuple literal, singleton tuple, len, bool, and for iteration" $ do
+    runSourceVm "print (1, 2)\nprint (1,)\nprint len((1, 2, 3))\nprint bool(())\nfor x in (3, 4):\n  print x\n" `shouldBe` Right ["(1, 2)", "(1,)", "3", "0", "3", "4"]
+
+  it "runs tuple comparison and indexing/slicing" $ do
+    runSourceVm "print (1, 2) == (1, 2)\nprint (1, 2) < (1, 3)\nprint (1, 2, 3)[0]\nprint (1, 2, 3)[1:]\nprint (1, 2, 3)[:2]\n" `shouldBe` Right ["1", "1", "1", "(2, 3)", "(1, 2)"]
+
+  it "runs tuple unpacking assignment and tuple match sequence pattern" $ do
+    runSourceVm "a, b = (1, 2)\nprint a\nprint b\nx = (7, 8)\nmatch x:\n  case [p, q]:\n    print p\n    print q\n  case _:\n    print 0\n" `shouldBe` Right ["1", "2", "7", "8"]
+
   it "runs generator function with yield in for loop" $ do
     runSourceVm "def gen():\n  yield 1\n  yield 2\nfor x in gen():\n  print x\n" `shouldBe` Right ["1", "2"]
 

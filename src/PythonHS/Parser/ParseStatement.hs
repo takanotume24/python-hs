@@ -1,6 +1,6 @@
 module PythonHS.Parser.ParseStatement (parseStatement) where
 import PythonHS.AST.Expr (Expr (NoneExpr))
-import PythonHS.AST.Stmt (Stmt (AddAssignStmt, AssignStmt, BreakStmt, ContinueStmt, DivAssignStmt, FloorDivAssignStmt, ForStmt, FunctionDefDefaultsStmt, FunctionDefStmt, GlobalStmt, IfStmt, ModAssignStmt, MulAssignStmt, PassStmt, PrintStmt, RaiseStmt, ReturnStmt, SubAssignStmt, TryExceptStmt, WhileStmt))
+import PythonHS.AST.Stmt (Stmt (AddAssignStmt, AssignStmt, AssignUnpackStmt, BreakStmt, ContinueStmt, DivAssignStmt, FloorDivAssignStmt, ForStmt, FunctionDefDefaultsStmt, FunctionDefStmt, GlobalStmt, IfStmt, ModAssignStmt, MulAssignStmt, PassStmt, PrintStmt, RaiseStmt, ReturnStmt, SubAssignStmt, TryExceptStmt, WhileStmt))
 import PythonHS.Lexer.Position (Position (Position))
 import PythonHS.Lexer.Token (Token (Token), position)
 import PythonHS.Lexer.TokenType
@@ -8,6 +8,7 @@ import PythonHS.Lexer.TokenType
       ( AssignToken,
         AtToken,
         BreakToken,
+        CommaToken,
         ColonToken,
         ContinueToken,
         ClassToken,
@@ -83,6 +84,8 @@ parseStatement tokenStream =
     Token IdentifierToken obj pos : Token DotToken _ _ : Token IdentifierToken attr _ : Token AssignToken _ _ : rest -> do
       (valueExpr, remaining) <- parseExpr rest
       Right (AssignStmt (obj ++ "." ++ attr) valueExpr pos, remaining)
+    Token IdentifierToken firstName pos : Token CommaToken _ _ : rest ->
+      parseUnpackAssign firstName pos rest
     Token IdentifierToken name pos : Token ColonToken _ _ : rest ->
       parseAnnAssignStmt parseExpr name pos rest
     Token IdentifierToken name pos : Token AssignToken _ _ : rest -> do
@@ -173,5 +176,21 @@ parseStatement tokenStream =
     tok : _ -> Left (ExpectedExpression (position tok))
     [] -> Left (ExpectedExpression (Position 0 0))
   where
+    parseUnpackAssign firstName pos rest = do
+      (names, afterNames) <- parseUnpackNames [firstName] rest
+      case afterNames of
+        Token AssignToken _ _ : afterAssign -> do
+          (valueExpr, remaining) <- parseExpr afterAssign
+          Right (AssignUnpackStmt names valueExpr pos, remaining)
+        Token _ _ pos' : _ -> Left (ExpectedExpression pos')
+        _ -> Left (ExpectedExpression (Position 0 0))
+
+    parseUnpackNames acc (Token IdentifierToken name _ : Token CommaToken _ _ : rest) =
+      parseUnpackNames (acc ++ [name]) rest
+    parseUnpackNames acc (Token IdentifierToken name _ : rest) =
+      Right (acc ++ [name], rest)
+    parseUnpackNames _ (Token _ _ pos' : _) = Left (ExpectedExpression pos')
+    parseUnpackNames _ _ = Left (ExpectedExpression (Position 0 0))
+
     dropLeadingNewlines (Token NewlineToken _ _ : rest) = dropLeadingNewlines rest
     dropLeadingNewlines rest = rest

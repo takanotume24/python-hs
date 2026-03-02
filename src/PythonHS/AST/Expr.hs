@@ -10,6 +10,7 @@ data Expr
   | StringExpr String Position
   | NoneExpr Position
   | ListExpr [Expr] Position
+  | TupleExpr [Expr] Position
   | ListComprehensionExpr Expr String Expr Position
   | ListComprehensionClausesExpr Expr [([String], Expr, [Expr])] Position
   | DictExpr [(Expr, Expr)] Position
@@ -25,4 +26,6 @@ data Expr
   | BinaryExpr BinaryOperator Expr Expr Position
   | CallExpr String [Expr] Position -- function call: name(args...)
   | CallValueExpr Expr [Expr] Position
+  | IndexExpr Expr Expr Position
+  | SliceExpr Expr (Maybe Expr) (Maybe Expr) Position
   deriving (Eq, Show)

@@ -2,9 +2,11 @@ module PythonHS.VM.CallCollectionBuiltin (callCollectionBuiltin) where
 
 import Data.List (sortOn)
 import PythonHS.Evaluator.ShowPos (showPos)
-import PythonHS.Evaluator.Value (Value (DictValue, FloatValue, IntValue, ListValue, NoneValue, StringValue))
+import PythonHS.Evaluator.Value (Value (DictValue, FloatValue, IntValue, ListValue, NoneValue, StringValue, TupleValue))
 import PythonHS.Evaluator.ValueToReplOutput (valueToReplOutput)
 import PythonHS.Lexer.Position (Position)
+import PythonHS.VM.GetitemValue (getitemValue)
+import PythonHS.VM.SliceValue (sliceValue)
 
 callCollectionBuiltin :: String -> [Value] -> Position -> Maybe (Either String Value)
 callCollectionBuiltin name args pos =
@@ -12,6 +14,7 @@ callCollectionBuiltin name args pos =
     "len" -> Just $ case args of
       [StringValue s] -> Right (IntValue (fromIntegral (length s)))
       [ListValue vals] -> Right (IntValue (fromIntegral (length vals)))
+      [TupleValue vals] -> Right (IntValue (fromIntegral (length vals)))
       [_] -> Left ("Type error: len expects string or list at " ++ showPos pos)
       _ -> Left ("Argument count mismatch when calling len at " ++ showPos pos)
     "bool" -> Just $ case args of
@@ -20,8 +23,15 @@ callCollectionBuiltin name args pos =
       [NoneValue] -> Right (IntValue 0)
       [StringValue s] -> Right (IntValue (if null s then 0 else 1))
       [ListValue vals] -> Right (IntValue (if null vals then 0 else 1))
+      [TupleValue vals] -> Right (IntValue (if null vals then 0 else 1))
       [DictValue pairs] -> Right (IntValue (if null pairs then 0 else 1))
       _ -> Left ("Argument count mismatch when calling bool at " ++ showPos pos)
+    "__python_hs_getitem__" -> Just $ case args of
+      [seqValue, indexValue] -> getitemValue pos seqValue indexValue
+      _ -> Left ("Argument count mismatch when calling __python_hs_getitem__ at " ++ showPos pos)
+    "__python_hs_slice__" -> Just $ case args of
+      [seqValue, startVal, endVal] -> sliceValue pos seqValue startVal endVal
+      _ -> Left ("Argument count mismatch when calling __python_hs_slice__ at " ++ showPos pos)
     "append" -> Just $ case args of
       [ListValue vals, value] -> Right (ListValue (vals ++ [value]))
       [_, _] -> Left ("Type error: append expects list as first argument at " ++ showPos pos)

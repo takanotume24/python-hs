@@ -48,6 +48,8 @@ library
       , PythonHS.Parser.ParseCallArgument
     , PythonHS.Parser.ParseDecoratedStmt
     , PythonHS.Parser.ParseComprehensionTail
+    , PythonHS.Parser.ParseParenTuple
+    , PythonHS.Parser.ParseSubscriptExpr
     , PythonHS.Parser.ParseLambdaExpr
     , PythonHS.Parser.ParseWalrusExpr
     , PythonHS.Parser.ExprPos
@@ -79,6 +81,8 @@ library
     , PythonHS.VM.CallBuiltin
     , PythonHS.VM.BindDefaults
     , PythonHS.VM.CallCollectionBuiltin
+    , PythonHS.VM.GetitemValue
+    , PythonHS.VM.SliceValue
     , PythonHS.VM.CallMathBuiltin
     , PythonHS.VM.BindCallArguments
       , PythonHS.VM.CompileCallArgsAt
@@ -105,7 +109,9 @@ library
     , PythonHS.VM.EvaluateBuiltinArgs
     , PythonHS.VM.ExecuteCallFunction
     , PythonHS.VM.ExecuteCallValueFunction
+    , PythonHS.VM.ExecuteForNext
     , PythonHS.VM.ExecuteListComprehension
+    , PythonHS.VM.ExecuteUnpackToNames
     , PythonHS.VM.ExecuteMatchPattern
     , PythonHS.VM.EvaluateUserArgs
     , PythonHS.VM.ExprPosition

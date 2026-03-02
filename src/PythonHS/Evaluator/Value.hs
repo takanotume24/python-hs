@@ -6,6 +6,7 @@ data Value
   | StringValue String
   | NoneValue
   | ListValue [Value]
+  | TupleValue [Value]
   | DictValue [(Value, Value)]
   | FunctionRefValue String [(String, Value)]
   | ClassValue String (Maybe String) [(String, String)]

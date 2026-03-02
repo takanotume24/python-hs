@@ -7,6 +7,7 @@ import PythonHS.AST.Stmt
       ( Stmt
       ( AnnAssignStmt,
         AssignStmt,
+        AssignUnpackStmt,
         DecoratedStmt,
         FromImportStmt,
         ImportStmt,
@@ -141,6 +142,7 @@ resolveLocalImports searchPaths (Program rootStmts) = do
         (\acc stmt ->
            case stmt of
               AssignStmt name _ _ -> Map.insert name (moduleMemberName name) acc
+              AssignUnpackStmt names _ _ -> foldl (\m name -> Map.insert name (moduleMemberName name) m) acc names
               AnnAssignStmt name _ (Just _) _ -> Map.insert name (moduleMemberName name) acc
               FunctionDefStmt name _ _ _ -> Map.insert name (moduleMemberName name) acc
               FunctionDefDefaultsStmt name _ _ _ _ -> Map.insert name (moduleMemberName name) acc

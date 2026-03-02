@@ -2,7 +2,7 @@ module PythonHS.VM.CompileProgram (compileProgram) where
 
 import PythonHS.AST.BinaryOperator (BinaryOperator (AddOperator, DivideOperator, FloorDivideOperator, ModuloOperator, MultiplyOperator, SubtractOperator))
 import PythonHS.AST.Program (Program (Program))
-import PythonHS.AST.Stmt (Stmt (AddAssignStmt, AnnAssignStmt, AssignStmt, BreakStmt, ClassDefStmt, ContinueStmt, DecoratedStmt, DivAssignStmt, FloorDivAssignStmt, ForStmt, FromImportStmt, FunctionDefDefaultsStmt, FunctionDefStmt, GlobalStmt, IfStmt, ImportStmt, MatchStmt, ModAssignStmt, MulAssignStmt, PassStmt, PrintStmt, RaiseStmt, ReturnStmt, SubAssignStmt, TryExceptStmt, WhileStmt, YieldFromStmt, YieldStmt))
+import PythonHS.AST.Stmt (Stmt (AddAssignStmt, AnnAssignStmt, AssignStmt, AssignUnpackStmt, BreakStmt, ClassDefStmt, ContinueStmt, DecoratedStmt, DivAssignStmt, FloorDivAssignStmt, ForStmt, FromImportStmt, FunctionDefDefaultsStmt, FunctionDefStmt, GlobalStmt, IfStmt, ImportStmt, MatchStmt, ModAssignStmt, MulAssignStmt, PassStmt, PrintStmt, RaiseStmt, ReturnStmt, SubAssignStmt, TryExceptStmt, WhileStmt, YieldFromStmt, YieldStmt))
 import PythonHS.Evaluator.ShowPos (showPos)
 import PythonHS.VM.CompileClassDefStmt (compileClassDefStmt)
 import PythonHS.VM.CompileCompoundAssign (compileCompoundAssign)
@@ -15,7 +15,7 @@ import PythonHS.VM.CompileMatch (compileMatch)
 import PythonHS.VM.CompileTryExcept (compileTryExcept)
 import PythonHS.VM.ExprPosition (exprPosition)
 import PythonHS.VM.CompileYieldCollectStmt (compileYieldCollectStmt)
-import PythonHS.VM.Instruction (Instruction (DeclareGlobal, DefineFunction, ForNext, ForSetup, Halt, Jump, JumpIfFalse, LoopGuard, PrintTop, RaiseTop, ReturnTop, StoreName))
+import PythonHS.VM.Instruction (Instruction (DeclareGlobal, DefineFunction, ForNext, ForSetup, Halt, Jump, JumpIfFalse, LoopGuard, PrintTop, RaiseTop, ReturnTop, StoreName, UnpackToNames))
 import PythonHS.VM.StmtPosition (stmtPosition)
 
 compileProgram :: Program -> Either String [Instruction]
@@ -62,6 +62,10 @@ compileProgram (Program stmts) = do
         AssignStmt name expr _ -> do
           (exprCode, exprEnd) <- compileExprAt baseIndex expr
           let code = exprCode ++ [StoreName name]
+          pure (code, exprEnd + 1)
+        AssignUnpackStmt names expr pos -> do
+          (exprCode, exprEnd) <- compileExprAt baseIndex expr
+          let code = exprCode ++ [UnpackToNames names pos]
           pure (code, exprEnd + 1)
         AnnAssignStmt name _ maybeExpr _ ->
           case maybeExpr of

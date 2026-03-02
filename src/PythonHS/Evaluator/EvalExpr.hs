@@ -8,7 +8,7 @@ import PythonHS.Evaluator.EvalCallExpr (evalCallExpr)
 import PythonHS.Evaluator.EvalExprBinary (evalExprBinary)
 import PythonHS.Evaluator.FuncEnv (FuncEnv)
 import PythonHS.Evaluator.ShowPos (showPos)
-import PythonHS.Evaluator.Value (Value (DictValue, FloatValue, IntValue, ListValue, NoneValue, StringValue))
+import PythonHS.Evaluator.Value (Value (DictValue, FloatValue, IntValue, ListValue, NoneValue, StringValue, TupleValue))
 import PythonHS.Lexer.Position (Position)
 
 evalExpr ::
@@ -26,6 +26,9 @@ evalExpr evalStatementsFn env fenv expr =
     ListExpr exprs _ -> do
       (vals, outs, envAfterArgs) <- evalArgs env fenv exprs
       Right (ListValue vals, outs, envAfterArgs)
+    TupleExpr exprs _ -> do
+      (vals, outs, envAfterArgs) <- evalArgs env fenv exprs
+      Right (TupleValue vals, outs, envAfterArgs)
     DictExpr entries _ -> do
       (pairs, outs, envAfterEntries) <- evalDictEntries env fenv entries
       Right (DictValue pairs, outs, envAfterEntries)
@@ -65,6 +68,10 @@ evalExpr evalStatementsFn env fenv expr =
       evalCallExpr evalStatementsFn (evalExpr evalStatementsFn) env fenv fname args pos
     CallValueExpr _ _ pos ->
       Left $ "Runtime error: lambda is only supported in vm engine at " ++ showPos pos
+    IndexExpr _ _ pos ->
+      Left $ "Runtime error: indexing is only supported in vm engine at " ++ showPos pos
+    SliceExpr _ _ _ pos ->
+      Left $ "Runtime error: slicing is only supported in vm engine at " ++ showPos pos
   where
     evalArgs currentEnv currentFenv = foldl go (Right ([], [], currentEnv))
       where
@@ -85,6 +92,7 @@ evalExpr evalStatementsFn env fenv expr =
     exprPos (StringExpr _ pos) = pos
     exprPos (NoneExpr pos) = pos
     exprPos (ListExpr _ pos) = pos
+    exprPos (TupleExpr _ pos) = pos
     exprPos (ListComprehensionExpr _ _ _ pos) = pos
     exprPos (ListComprehensionClausesExpr _ _ pos) = pos
     exprPos (DictExpr _ pos) = pos
@@ -100,6 +108,8 @@ evalExpr evalStatementsFn env fenv expr =
     exprPos (BinaryExpr _ _ _ pos) = pos
     exprPos (CallExpr _ _ pos) = pos
     exprPos (CallValueExpr _ _ pos) = pos
+    exprPos (IndexExpr _ _ pos) = pos
+    exprPos (SliceExpr _ _ _ pos) = pos
 
     expectTruthy :: String -> Position -> Value -> Either String Int
     expectTruthy _ _ (IntValue n) = Right (if n == 0 then 0 else 1)
@@ -107,5 +117,6 @@ evalExpr evalStatementsFn env fenv expr =
     expectTruthy _ _ NoneValue = Right 0
     expectTruthy _ _ (StringValue s) = Right (if null s then 0 else 1)
     expectTruthy _ _ (ListValue vals) = Right (if null vals then 0 else 1)
+    expectTruthy _ _ (TupleValue vals) = Right (if null vals then 0 else 1)
     expectTruthy _ _ (DictValue pairs) = Right (if null pairs then 0 else 1)
     expectTruthy context pos _ = Left $ "Type error: expected int in " ++ context ++ " at " ++ showPos pos

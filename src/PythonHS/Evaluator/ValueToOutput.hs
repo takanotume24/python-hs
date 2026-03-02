@@ -1,6 +1,6 @@
 module PythonHS.Evaluator.ValueToOutput (valueToOutput) where
 
-import PythonHS.Evaluator.Value (Value (BreakValue, ClassValue, ContinueValue, DictValue, FloatValue, FunctionRefValue, InstanceValue, IntValue, ListValue, NoneValue, StringValue))
+import PythonHS.Evaluator.Value (Value (BreakValue, ClassValue, ContinueValue, DictValue, FloatValue, FunctionRefValue, InstanceValue, IntValue, ListValue, NoneValue, StringValue, TupleValue))
 
 valueToOutput :: Value -> String
 valueToOutput value =
@@ -10,6 +10,7 @@ valueToOutput value =
     StringValue s -> s
     NoneValue -> "None"
     ListValue vals -> "[" ++ joinWithCommaSpace (map valueToOutput vals) ++ "]"
+    TupleValue vals -> tupleToOutput vals
     DictValue pairs -> "{" ++ joinWithCommaSpace (map pairToOutput pairs) ++ "}"
     FunctionRefValue name _ -> "<function " ++ name ++ ">"
     ClassValue name _ _ -> "<class " ++ name ++ ">"
@@ -22,3 +23,9 @@ valueToOutput value =
     joinWithCommaSpace [] = ""
     joinWithCommaSpace [x] = x
     joinWithCommaSpace (x : xs) = x ++ ", " ++ joinWithCommaSpace xs
+
+    tupleToOutput values =
+      case values of
+        [] -> "()"
+        [single] -> "(" ++ valueToOutput single ++ ",)"
+        _ -> "(" ++ joinWithCommaSpace (map valueToOutput values) ++ ")"

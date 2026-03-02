@@ -2,7 +2,7 @@ module PythonHS.VM.EvalBinaryOp (evalBinaryOp) where
 
 import PythonHS.AST.BinaryOperator (BinaryOperator (..))
 import PythonHS.Evaluator.ShowPos (showPos)
-import PythonHS.Evaluator.Value (Value (DictValue, FloatValue, InstanceValue, IntValue, ListValue, NoneValue, StringValue))
+import PythonHS.Evaluator.Value (Value (DictValue, FloatValue, InstanceValue, IntValue, ListValue, NoneValue, StringValue, TupleValue))
 import PythonHS.Lexer.Position (Position)
 
 evalBinaryOp :: BinaryOperator -> Value -> Value -> Position -> Either String Value
@@ -79,12 +79,14 @@ evalBinaryOp op left right pos =
       case (left', right') of
         (IntValue leftInt, FloatValue rightFloat) -> Right (IntValue (if (fromIntegral leftInt :: Double) == rightFloat then 1 else 0))
         (FloatValue leftFloat, IntValue rightInt) -> Right (IntValue (if leftFloat == (fromIntegral rightInt :: Double) then 1 else 0))
+        (TupleValue leftVals, TupleValue rightVals) -> Right (IntValue (if leftVals == rightVals then 1 else 0))
         _ -> Right (IntValue (if left' == right' then 1 else 0))
 
     evalNotEqComparison left' right' =
       case (left', right') of
         (IntValue leftInt, FloatValue rightFloat) -> Right (IntValue (if (fromIntegral leftInt :: Double) /= rightFloat then 1 else 0))
         (FloatValue leftFloat, IntValue rightInt) -> Right (IntValue (if leftFloat /= (fromIntegral rightInt :: Double) then 1 else 0))
+        (TupleValue leftVals, TupleValue rightVals) -> Right (IntValue (if leftVals /= rightVals then 1 else 0))
         _ -> Right (IntValue (if left' /= right' then 1 else 0))
 
     evalNumericComparison context pos' left' right' cmp = do
@@ -100,6 +102,9 @@ evalBinaryOp op left right pos =
               ordResult <- compareInstanceValues leftAttrs rightAttrs
               Right (IntValue (if cmp ordResult then 1 else 0))
             else Left ("Type error: expected int in " ++ context ++ " at " ++ showPos pos')
+        (TupleValue leftVals, TupleValue rightVals) -> do
+          ordResult <- compareLists leftVals rightVals
+          Right (IntValue (if cmp ordResult then 1 else 0))
         _ -> evalNumericComparison context pos' left' right' (\l r -> cmp (compare l r))
 
     compareInstanceValues leftAttrs rightAttrs =

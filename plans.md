@@ -135,6 +135,14 @@
 - [x] VM 実装: dataclass デコレータ設定を class コンパイルへ反映し、`__init__` / `__repr__` / `__eq__` / `order` 生成と `frozen` 拒否を導入
 - [x] 品質ゲート再実行（`cabal test` / `cabal run check-structure` / warning 0）
 
+## 現在のスコープ（P15: VM tuple 導入）
+- [x] P15 開始: VM 優先で tuple 機能を導入するスコープを開始
+- [x] スコープ確定: tuple literal/表示/比較/for反復/len/bool/indexing/slicing/unpacking/pattern-match を対象にする
+- [x] 失敗テスト先行: tuple コア（literal/表示/len/bool/for）を追加
+- [x] AST/Parser/Value 拡張: tuple 構文・値表現を追加
+- [x] VM 実装: tuple 比較/index/slice/unpack/pattern まで段階導入
+- [x] 品質ゲート再実行（`cabal test` / `cabal run check-structure` / warning 0）
+
 ### 運用メモ
 - 受け入れテストは MVP 最小（`MvpScenarioSpec`）を維持し、詳細仕様は Runner/Eval の回帰テストで固定する。
 

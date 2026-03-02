@@ -1,7 +1,7 @@
 module PythonHS.VM.CompileExprAt (compileExprAt) where
 
 import PythonHS.AST.BinaryOperator (BinaryOperator (AndOperator, OrOperator))
-import PythonHS.AST.Expr (Expr (BinaryExpr, CallExpr, CallValueExpr, DictExpr, FloatExpr, IdentifierExpr, IntegerExpr, LambdaDefaultsExpr, LambdaExpr, ListComprehensionClausesExpr, ListComprehensionExpr, ListExpr, NoneExpr, NotExpr, StringExpr, UnaryMinusExpr, WalrusExpr), Expr)
+import PythonHS.AST.Expr (Expr (BinaryExpr, CallExpr, CallValueExpr, DictExpr, FloatExpr, IdentifierExpr, IndexExpr, IntegerExpr, LambdaDefaultsExpr, LambdaExpr, ListComprehensionClausesExpr, ListComprehensionExpr, ListExpr, NoneExpr, NotExpr, SliceExpr, StringExpr, TupleExpr, UnaryMinusExpr, WalrusExpr), Expr)
 import PythonHS.Evaluator.ShowPos (showPos)
 import PythonHS.Evaluator.Value (Value (FloatValue, IntValue, NoneValue, StringValue))
 import PythonHS.VM.CompileCallArgsAt (compileCallArgsAt)
@@ -11,7 +11,7 @@ import PythonHS.VM.CompileDictEntriesAt (compileDictEntriesAt)
 import PythonHS.VM.CompileExprItemsAt (compileExprItemsAt)
 import PythonHS.VM.CompileLogicalExpr (compileLogicalExpr)
 import PythonHS.VM.ExprPosition (exprPosition)
-import PythonHS.VM.Instruction (Instruction (ApplyBinary, ApplyNot, ApplyUnaryMinus, BuildDict, BuildList, BuildListComprehension, CallFunction, CallValueFunction, CreateLambda, DupTop, LoadName, PushConst, ReturnTop, StoreName), Instruction)
+import PythonHS.VM.Instruction (Instruction (ApplyBinary, ApplyNot, ApplyUnaryMinus, BuildDict, BuildList, BuildListComprehension, BuildTuple, CallFunction, CallValueFunction, CreateLambda, DupTop, LoadName, PushConst, ReturnTop, StoreName), Instruction)
 
 compileExprAt :: Int -> Expr -> Either String ([Instruction], Int)
 compileExprAt baseIndex expr =
@@ -23,6 +23,9 @@ compileExprAt baseIndex expr =
     ListExpr elements _ -> do
       (elementCode, elementEnd) <- compileExprItemsAt compileExprAt baseIndex elements
       pure (elementCode ++ [BuildList (length elements)], elementEnd + 1)
+    TupleExpr elements _ -> do
+      (elementCode, elementEnd) <- compileExprItemsAt compileExprAt baseIndex elements
+      pure (elementCode ++ [BuildTuple (length elements)], elementEnd + 1)
     ListComprehensionExpr valueExpr loopName iterExpr pos -> do
       (iterCode, _) <- compileExprAt 0 iterExpr
       (valueCode, _) <- compileExprAt 0 valueExpr
@@ -67,4 +70,22 @@ compileExprAt baseIndex expr =
       (calleeCode, calleeEnd) <- compileExprAt baseIndex callee
       compiledArgs <- compileCallArgsAt compileExprAt args
       pure (calleeCode ++ [CallValueFunction compiledArgs pos], calleeEnd + 1)
+    IndexExpr containerExpr indexExpr pos -> do
+      (containerCode, _) <- compileExprAt 0 containerExpr
+      (indexCode, _) <- compileExprAt 0 indexExpr
+      let callArgs = [(containerCode, Nothing, pos), (indexCode, Nothing, pos)]
+      pure ([CallFunction "__python_hs_getitem__" callArgs pos], baseIndex + 1)
+    SliceExpr containerExpr maybeStart maybeEnd pos -> do
+      (containerCode, _) <- compileExprAt 0 containerExpr
+      let defaultNone = [PushConst NoneValue]
+      (startCode, _) <-
+        case maybeStart of
+          Just startExpr -> compileExprAt 0 startExpr
+          Nothing -> Right (defaultNone, 1)
+      (endCode, _) <-
+        case maybeEnd of
+          Just endExpr -> compileExprAt 0 endExpr
+          Nothing -> Right (defaultNone, 1)
+      let callArgs = [(containerCode, Nothing, pos), (startCode, Nothing, pos), (endCode, Nothing, pos)]
+      pure ([CallFunction "__python_hs_slice__" callArgs pos], baseIndex + 1)
     _ -> Left ("VM compile error: unsupported expression at " ++ showPos (exprPosition expr))

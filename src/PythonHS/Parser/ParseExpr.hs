@@ -8,7 +8,9 @@ import PythonHS.Parser.ExprPos (exprPos)
 import PythonHS.Parser.ParseCallArgument (parseCallArgument)
 import PythonHS.Parser.ParseComprehensionTail (parseComprehensionTail)
 import PythonHS.Parser.ParseLambdaExpr (parseLambdaExpr)
+import PythonHS.Parser.ParseParenTuple (parseParenTuple)
 import PythonHS.Parser.ParseError (ParseError (ExpectedExpression))
+import PythonHS.Parser.ParseSubscriptExpr (parseSubscriptExpr)
 import PythonHS.Parser.ParseWalrusExpr (parseWalrusExpr)
 import PythonHS.Parser.NormalizeFloatLiteral (normalizeFloatLiteral)
 
@@ -109,12 +111,8 @@ parseExpr = parseLambdaExpr (parseWalrusExpr parseOr)
     parseAtom (Token StringToken value pos : rest) = Right (StringExpr value pos, rest)
     parseAtom (Token LBracketToken _ pos : rest) = parseListElements pos rest
     parseAtom (Token LBraceToken _ pos : rest) = parseDictEntries pos rest
-    parseAtom (Token LParenToken _ _ : rest) = do
-      (expr, afterExpr) <- parseExpr rest
-      case afterExpr of
-        Token RParenToken _ _ : rest' -> Right (expr, rest')
-        Token _ _ pos : _ -> Left (ExpectedExpression pos)
-        _ -> Left (ExpectedExpression (Position 0 0))
+    parseAtom (Token LParenToken _ parenPos : rest) =
+      parseParenTuple parseExpr parenPos rest
     parseAtom (Token IdentifierToken value pos : rest) = Right (IdentifierExpr value pos, rest)
     parseAtom (tok : _) = Left (ExpectedExpression (position tok))
     parseAtom _ = Left (ExpectedExpression (Position 0 0))
@@ -128,9 +126,13 @@ parseExpr = parseLambdaExpr (parseWalrusExpr parseOr)
     parsePostfix receiverExpr (Token DotToken _ _ : Token IdentifierToken methodName methodPos : Token LParenToken _ _ : rest) = do
       (args, afterArgs) <- parseArguments rest
       parsePostfix (CallExpr methodName (receiverExpr : args) methodPos) afterArgs
+    parsePostfix receiverExpr (Token LBracketToken _ pos : rest) = do
+      (subscriptExpr, afterSubscript) <- parseSubscriptExpr parseExpr receiverExpr pos rest
+      parsePostfix subscriptExpr afterSubscript
     parsePostfix (IdentifierExpr receiverName receiverPos) (Token DotToken _ _ : Token IdentifierToken attrName _ : rest) =
       parsePostfix (IdentifierExpr (receiverName ++ "." ++ attrName) receiverPos) rest
     parsePostfix expr rest = Right (expr, rest)
+
     parseListElements listPos (Token RBracketToken _ _ : rest) =
       Right (ListExpr [] listPos, rest)
     parseListElements listPos ts = do

@@ -9,6 +9,7 @@ import PythonHS.AST.Expr
         DictExpr,
         FloatExpr,
         IdentifierExpr,
+        IndexExpr,
         IntegerExpr,
         KeywordArgExpr,
         KwStarArgExpr,
@@ -17,10 +18,12 @@ import PythonHS.AST.Expr
         ListComprehensionClausesExpr,
         ListComprehensionExpr,
          ListExpr,
+         TupleExpr,
          NoneExpr,
          NotExpr,
          StarArgExpr,
          StringExpr,
+         SliceExpr,
          UnaryMinusExpr,
          WalrusExpr
       )
@@ -30,6 +33,7 @@ import PythonHS.AST.Stmt
       ( AddAssignStmt,
         AnnAssignStmt,
         AssignStmt,
+        AssignUnpackStmt,
         DecoratedStmt,
         DivAssignStmt,
         FloorDivAssignStmt,
@@ -52,6 +56,7 @@ transformImportAliases :: Bool -> Map.Map String String -> Map.Map String String
 transformImportAliases renameDefNames moduleAlias callAlias identAlias stmt =
   case stmt of
     AssignStmt name expr pos -> AssignStmt (renameName renameDefNames callAlias name) (transformExpr moduleAlias callAlias identAlias expr) pos
+    AssignUnpackStmt names expr pos -> AssignUnpackStmt (fmap (renameName renameDefNames callAlias) names) (transformExpr moduleAlias callAlias identAlias expr) pos
     AnnAssignStmt name annotation maybeExpr pos ->
       AnnAssignStmt
         (renameName renameDefNames callAlias name)
@@ -101,6 +106,7 @@ transformImportAliases renameDefNames moduleAlias callAlias identAlias stmt =
         NoneExpr _ -> expr
         IdentifierExpr name pos -> IdentifierExpr (Map.findWithDefault name name identAliases) pos
         ListExpr items pos -> ListExpr (fmap (transformExpr moduleAliases callAliases identAliases) items) pos
+        TupleExpr items pos -> TupleExpr (fmap (transformExpr moduleAliases callAliases identAliases) items) pos
         ListComprehensionExpr valueExpr loopName iterExpr pos ->
           ListComprehensionExpr (transformExpr moduleAliases callAliases identAliases valueExpr) loopName (transformExpr moduleAliases callAliases identAliases iterExpr) pos
         ListComprehensionClausesExpr valueExpr clauses pos ->
@@ -130,3 +136,11 @@ transformImportAliases renameDefNames moduleAlias callAlias identAlias stmt =
                 _ -> CallExpr renamedName renamedArgs pos
         CallValueExpr callee args pos ->
           CallValueExpr (transformExpr moduleAliases callAliases identAliases callee) (fmap (transformExpr moduleAliases callAliases identAliases) args) pos
+        IndexExpr baseExpr indexExpr pos ->
+          IndexExpr (transformExpr moduleAliases callAliases identAliases baseExpr) (transformExpr moduleAliases callAliases identAliases indexExpr) pos
+        SliceExpr baseExpr maybeStart maybeEnd pos ->
+          SliceExpr
+            (transformExpr moduleAliases callAliases identAliases baseExpr)
+            (fmap (transformExpr moduleAliases callAliases identAliases) maybeStart)
+            (fmap (transformExpr moduleAliases callAliases identAliases) maybeEnd)
+            pos
