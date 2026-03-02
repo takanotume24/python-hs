@@ -44,6 +44,7 @@ library
     , PythonHS.Lexer.ParseExponent
     , PythonHS.Lexer.ScanTokenStep
     , PythonHS.Parser.ParseExpr
+    , PythonHS.Parser.ParseComprehensionTail
     , PythonHS.Parser.ParseLambdaExpr
     , PythonHS.Parser.ExprPos
     , PythonHS.Parser.NormalizeFloatLiteral
@@ -76,6 +77,8 @@ library
     , PythonHS.VM.BindCallArguments
     , PythonHS.VM.CompileCallArgsAt
     , PythonHS.VM.CompileClassStmt
+    , PythonHS.VM.CompileComprehensionClauses
+    , PythonHS.VM.CompileDictEntriesAt
     , PythonHS.VM.CompileDefaults
     , PythonHS.VM.CompileExprItemsAt
     , PythonHS.VM.CompileImportStmt
@@ -88,6 +91,7 @@ library
     , PythonHS.VM.CollectFunctionGlobalDecls
     , PythonHS.VM.EvaluateBuiltinArgs
     , PythonHS.VM.ExecuteCallFunction
+    , PythonHS.VM.ExecuteCallValueFunction
     , PythonHS.VM.ExecuteListComprehension
     , PythonHS.VM.ExecuteMatchPattern
     , PythonHS.VM.EvaluateUserArgs

@@ -1,10 +1,11 @@
 module PythonHS.Parser.ParseExpr (parseExpr) where
 import PythonHS.AST.BinaryOperator (BinaryOperator (AddOperator, AndOperator, DivideOperator, EqOperator, FloorDivideOperator, GtOperator, GteOperator, LtOperator, LteOperator, ModuloOperator, MultiplyOperator, NotEqOperator, OrOperator, SubtractOperator))
-import PythonHS.AST.Expr (Expr (BinaryExpr, CallExpr, DictExpr, FloatExpr, IdentifierExpr, IntegerExpr, KeywordArgExpr, ListComprehensionExpr, ListExpr, NoneExpr, NotExpr, StringExpr, UnaryMinusExpr))
+import PythonHS.AST.Expr (Expr (BinaryExpr, CallExpr, CallValueExpr, DictExpr, FloatExpr, IdentifierExpr, IntegerExpr, KeywordArgExpr, ListExpr, NoneExpr, NotExpr, StringExpr, UnaryMinusExpr))
 import PythonHS.Lexer.Position (Position (Position))
 import PythonHS.Lexer.Token (Token (Token), position)
 import PythonHS.Lexer.TokenType (TokenType (AndToken, AssignToken, ColonToken, CommaToken, DotToken, DoubleSlashToken, EqToken, FalseToken, FloatToken, ForToken, GtToken, GteToken, IdentifierToken, InToken, IntegerToken, LBraceToken, LBracketToken, LParenToken, LtToken, LteToken, MinusToken, NoneToken, NotEqToken, NotToken, OrToken, PercentToken, PlusToken, RBraceToken, RBracketToken, RParenToken, SlashToken, StarToken, StringToken, TrueToken))
 import PythonHS.Parser.ExprPos (exprPos)
+import PythonHS.Parser.ParseComprehensionTail (parseComprehensionTail)
 import PythonHS.Parser.ParseLambdaExpr (parseLambdaExpr)
 import PythonHS.Parser.ParseError (ParseError (ExpectedExpression))
 import PythonHS.Parser.NormalizeFloatLiteral (normalizeFloatLiteral)
@@ -119,6 +120,9 @@ parseExpr = parseLambdaExpr parseOr
     parsePostfix (IdentifierExpr name pos) (Token LParenToken _ _ : rest) = do
       (args, afterArgs) <- parseArguments rest
       parsePostfix (CallExpr name args pos) afterArgs
+    parsePostfix calleeExpr (Token LParenToken _ _ : rest) = do
+      (args, afterArgs) <- parseArguments rest
+      parsePostfix (CallValueExpr calleeExpr args (exprPos calleeExpr)) afterArgs
     parsePostfix receiverExpr (Token DotToken _ _ : Token IdentifierToken methodName methodPos : Token LParenToken _ _ : rest) = do
       (args, afterArgs) <- parseArguments rest
       parsePostfix (CallExpr methodName (receiverExpr : args) methodPos) afterArgs
@@ -132,10 +136,7 @@ parseExpr = parseLambdaExpr parseOr
       case afterFirst of
         Token ForToken _ _ : Token IdentifierToken loopVar _ : Token InToken _ _ : afterIn -> do
           (iterExpr, afterIter) <- parseExpr afterIn
-          case afterIter of
-            Token RBracketToken _ _ : rest -> Right (ListComprehensionExpr firstExpr loopVar iterExpr listPos, rest)
-            tok : _ -> Left (ExpectedExpression (position tok))
-            _ -> Left (ExpectedExpression (Position 0 0))
+          parseComprehensionTail parseExpr exprPos firstExpr listPos [(loopVar, iterExpr, Nothing)] afterIter
         _ -> parseListTail listPos [firstExpr] afterFirst
 
     parseListTail listPos exprs (Token CommaToken _ _ : rest) = do

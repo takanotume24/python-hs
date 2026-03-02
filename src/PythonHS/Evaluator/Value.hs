@@ -7,7 +7,7 @@ data Value
   | NoneValue
   | ListValue [Value]
   | DictValue [(Value, Value)]
-  | FunctionRefValue String
+  | FunctionRefValue String [(String, Value)]
   | ClassValue String (Maybe String) [(String, String)]
   | InstanceValue String [(String, Value)]
   | BreakValue

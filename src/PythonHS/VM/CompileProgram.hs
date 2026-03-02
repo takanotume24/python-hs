@@ -1,13 +1,14 @@
 module PythonHS.VM.CompileProgram (compileProgram) where
 
 import PythonHS.AST.BinaryOperator (BinaryOperator (AddOperator, AndOperator, DivideOperator, FloorDivideOperator, ModuloOperator, MultiplyOperator, OrOperator, SubtractOperator))
-import PythonHS.AST.Expr (Expr (BinaryExpr, CallExpr, DictExpr, FloatExpr, IdentifierExpr, IntegerExpr, LambdaExpr, ListComprehensionExpr, ListExpr, NoneExpr, NotExpr, StringExpr, UnaryMinusExpr))
+import PythonHS.AST.Expr (Expr (BinaryExpr, CallExpr, CallValueExpr, DictExpr, FloatExpr, IdentifierExpr, IntegerExpr, LambdaDefaultsExpr, LambdaExpr, ListComprehensionClausesExpr, ListComprehensionExpr, ListExpr, NoneExpr, NotExpr, StringExpr, UnaryMinusExpr))
 import PythonHS.AST.Program (Program (Program))
 import PythonHS.AST.Stmt (Stmt (AddAssignStmt, AssignStmt, BreakStmt, ClassDefStmt, ContinueStmt, DivAssignStmt, FloorDivAssignStmt, ForStmt, FromImportStmt, FunctionDefDefaultsStmt, FunctionDefStmt, GlobalStmt, IfStmt, ImportStmt, MatchStmt, ModAssignStmt, MulAssignStmt, PassStmt, PrintStmt, RaiseStmt, ReturnStmt, SubAssignStmt, TryExceptStmt, WhileStmt))
 import PythonHS.Evaluator.ShowPos (showPos)
 import PythonHS.Evaluator.Value (Value (FloatValue, IntValue, NoneValue, StringValue))
 import PythonHS.VM.CompileCallArgsAt (compileCallArgsAt)
 import PythonHS.VM.CompileClassStmt (compileClassStmt)
+import PythonHS.VM.CompileDictEntriesAt (compileDictEntriesAt)
 import PythonHS.VM.CompileDefaults (compileDefaults)
 import PythonHS.VM.CompileExprItemsAt (compileExprItemsAt)
 import PythonHS.VM.CompileImportStmt (compileImportStmt)
@@ -15,7 +16,8 @@ import PythonHS.VM.CompileLogicalExpr (compileLogicalExpr)
 import PythonHS.VM.CompileMatch (compileMatch)
 import PythonHS.VM.CompileTryExcept (compileTryExcept)
 import PythonHS.VM.ExprPosition (exprPosition)
-import PythonHS.VM.Instruction (Instruction (ApplyBinary, ApplyNot, ApplyUnaryMinus, BuildDict, BuildList, BuildListComprehension, CallFunction, CreateLambda, DeclareGlobal, DefineFunction, ForNext, ForSetup, Halt, Jump, JumpIfFalse, LoadName, LoopGuard, PrintTop, PushConst, RaiseTop, ReturnTop, StoreName))
+import PythonHS.VM.CompileComprehensionClauses (compileComprehensionClauses)
+import PythonHS.VM.Instruction (Instruction (ApplyBinary, ApplyNot, ApplyUnaryMinus, BuildDict, BuildList, BuildListComprehension, CallFunction, CallValueFunction, CreateLambda, DeclareGlobal, DefineFunction, ForNext, ForSetup, Halt, Jump, JumpIfFalse, LoadName, LoopGuard, PrintTop, PushConst, RaiseTop, ReturnTop, StoreName))
 import PythonHS.VM.StmtPosition (stmtPosition)
 
 compileProgram :: Program -> Either String [Instruction]
@@ -151,9 +153,14 @@ compileProgram (Program stmts) = do
         ListComprehensionExpr valueExpr loopName iterExpr pos -> do
           (iterCode, _) <- compileExprAt 0 iterExpr
           (valueCode, _) <- compileExprAt 0 valueExpr
-          pure ([BuildListComprehension loopName (iterCode ++ [ReturnTop]) (valueCode ++ [ReturnTop]) pos], baseIndex + 1)
+          let clauses = [(loopName, iterCode ++ [ReturnTop], Nothing)]
+          pure ([BuildListComprehension clauses (valueCode ++ [ReturnTop]) pos], baseIndex + 1)
+        ListComprehensionClausesExpr valueExpr clausesExpr pos -> do
+          clauses <- compileComprehensionClauses compileExprAt clausesExpr
+          (valueCode, _) <- compileExprAt 0 valueExpr
+          pure ([BuildListComprehension clauses (valueCode ++ [ReturnTop]) pos], baseIndex + 1)
         DictExpr entries _ -> do
-          (entryCode, entryEnd) <- compileDictEntriesAt baseIndex entries
+          (entryCode, entryEnd) <- compileDictEntriesAt compileExprAt baseIndex entries
           pure (entryCode ++ [BuildDict (length entries)], entryEnd + 1)
         IdentifierExpr name pos -> Right ([LoadName name pos], baseIndex + 1)
         UnaryMinusExpr unaryExpr pos -> do
@@ -165,7 +172,12 @@ compileProgram (Program stmts) = do
         LambdaExpr params bodyExpr pos -> do
           (bodyCode, _) <- compileExprAt 0 bodyExpr
           let lambdaName = "__lambda_" ++ showPos pos
-          pure ([CreateLambda lambdaName params (bodyCode ++ [ReturnTop])], baseIndex + 1)
+          pure ([CreateLambda lambdaName params [] (bodyCode ++ [ReturnTop])], baseIndex + 1)
+        LambdaDefaultsExpr params defaults bodyExpr pos -> do
+          (defaultCodes, _) <- compileDefaults compileExprAt defaults
+          (bodyCode, _) <- compileExprAt 0 bodyExpr
+          let lambdaName = "__lambda_" ++ showPos pos
+          pure ([CreateLambda lambdaName params defaultCodes (bodyCode ++ [ReturnTop])], baseIndex + 1)
         BinaryExpr AndOperator left right _ -> compileLogicalExpr compileExprAt AndOperator baseIndex left right
         BinaryExpr OrOperator left right _ -> compileLogicalExpr compileExprAt OrOperator baseIndex left right
         BinaryExpr op left right pos -> do
@@ -175,13 +187,8 @@ compileProgram (Program stmts) = do
         CallExpr fname args pos -> do
           compiledArgs <- compileCallArgsAt compileExprAt args
           pure ([CallFunction fname compiledArgs pos], baseIndex + 1)
+        CallValueExpr callee args pos -> do
+          (calleeCode, calleeEnd) <- compileExprAt baseIndex callee
+          compiledArgs <- compileCallArgsAt compileExprAt args
+          pure (calleeCode ++ [CallValueFunction compiledArgs pos], calleeEnd + 1)
         _ -> Left ("VM compile error: unsupported expression at " ++ showPos (exprPosition expr))
-
-    compileDictEntriesAt baseIndex entries =
-      case entries of
-        [] -> Right ([], baseIndex)
-        (keyExpr, valueExpr) : rest -> do
-          (keyCode, keyEnd) <- compileExprAt baseIndex keyExpr
-          (valueCode, valueEnd) <- compileExprAt keyEnd valueExpr
-          (restCode, restEnd) <- compileDictEntriesAt valueEnd rest
-          pure (keyCode ++ valueCode ++ restCode, restEnd)

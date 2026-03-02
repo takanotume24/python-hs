@@ -56,25 +56,30 @@ executeCallFunction execute isTopLevel fname compiledArgs pos stack globalsEnv l
           case lookupName fname localEnv globalsEnv of
             Just (ClassValue className _ _) ->
               createInstance className args globalsAfterArgs functionsAfterArgs outputsAfterArgs
-            Just (FunctionRefValue functionName) ->
-              callUserFunction functionName args globalsAfterArgs functionsAfterArgs outputsAfterArgs
+            Just (FunctionRefValue functionName capturedBindings) ->
+              callUserFunction functionName (Just capturedBindings) args globalsAfterArgs functionsAfterArgs outputsAfterArgs
             _ ->
               case args of
                 InstanceValue className _ : _ ->
                   case findMethodFunctionName globalsAfterArgs localEnv className fname of
                     Just methodFunctionName ->
-                      callUserFunction methodFunctionName args globalsAfterArgs functionsAfterArgs outputsAfterArgs
+                      callUserFunction methodFunctionName Nothing args globalsAfterArgs functionsAfterArgs outputsAfterArgs
                     Nothing -> callBuiltinOrFail args globalsAfterArgs functionsAfterArgs outputsAfterArgs
                 _ -> callBuiltinOrFail args globalsAfterArgs functionsAfterArgs outputsAfterArgs
   where
-    callUserFunction targetName args globalsNow functionsNow outputsNow =
+    callUserFunction targetName maybeCapturedBindings args globalsNow functionsNow outputsNow =
       case Map.lookup targetName functionsNow of
         Nothing -> Left ("Name error: undefined function " ++ targetName ++ " at " ++ showPos pos)
         Just (params, defaultCodes, functionCode) -> do
           let argKinds = map (\_ -> (Nothing, pos)) args
           initialLocals <- bindCallArguments targetName pos params args argKinds
+          let capturedLocals =
+                case maybeCapturedBindings of
+                  Just bindings -> Map.fromList bindings
+                  Nothing -> Map.empty
+              mergedLocals = Map.union initialLocals capturedLocals
           (functionLocals, globalsAfterDefaults, functionsAfterDefaults, outputsAfterDefaults) <-
-            bindDefaults execute targetName pos params defaultCodes initialLocals globalsNow functionsNow outputsNow
+            bindDefaults execute targetName pos params defaultCodes mergedLocals globalsNow functionsNow outputsNow
           let functionGlobalDecls = collectFunctionGlobalDecls functionCode
           (maybeValue, newGlobals, newFunctions, newOutputs) <-
             execute functionCode 0 [] globalsAfterDefaults functionLocals functionsAfterDefaults functionGlobalDecls Map.empty Map.empty [] outputsAfterDefaults False

@@ -8,10 +8,11 @@ import PythonHS.Evaluator.Value (Value (ClassValue, DictValue, FloatValue, Funct
 import PythonHS.Evaluator.ValueToOutput (valueToOutput)
 import PythonHS.VM.EvalBinaryOp (evalBinaryOp)
 import PythonHS.VM.ExecuteCallFunction (executeCallFunction)
+import PythonHS.VM.ExecuteCallValueFunction (executeCallValueFunction)
 import PythonHS.VM.ExecuteListComprehension (executeListComprehension)
 import PythonHS.VM.ExecuteMatchPattern (executeMatchPattern)
 import PythonHS.VM.HandleRuntimeError (handleRuntimeError)
-import PythonHS.VM.Instruction (Instruction (ApplyBinary, ApplyNot, ApplyUnaryMinus, BuildDict, BuildList, BuildListComprehension, CallFunction, CreateLambda, DeclareGlobal, DefineClass, DefineFunction, ForNext, ForSetup, Halt, Jump, JumpIfFalse, LoadName, LoopGuard, MatchPattern, PopExceptionHandler, PrintTop, PushConst, PushExceptionHandler, PushFinallyHandler, RaisePendingError, RaiseTop, ReturnTop, StoreName))
+import PythonHS.VM.Instruction (Instruction (ApplyBinary, ApplyNot, ApplyUnaryMinus, BuildDict, BuildList, BuildListComprehension, CallFunction, CallValueFunction, CreateLambda, DeclareGlobal, DefineClass, DefineFunction, ForNext, ForSetup, Halt, Jump, JumpIfFalse, LoadName, LoopGuard, MatchPattern, PopExceptionHandler, PrintTop, PushConst, PushExceptionHandler, PushFinallyHandler, RaisePendingError, RaiseTop, ReturnTop, StoreName))
 import PythonHS.VM.IsTruthy (isTruthy)
 import PythonHS.VM.LookupNameWithAttr (lookupNameWithAttr)
 import PythonHS.VM.PopValues (popValues)
@@ -113,9 +114,10 @@ runInstructions instructions = do
             DefineFunction name params defaultCodes functionCode ->
               let newFunctions = Map.insert name (params, defaultCodes, functionCode) functions
                in execute code (ip + 1) stack globalsEnv localEnv newFunctions globalDecls forStates loopCounts exceptionHandlers outputs isTopLevel
-            CreateLambda name params functionCode ->
-              let newFunctions = Map.insert name (params, [], functionCode) functions
-               in execute code (ip + 1) (FunctionRefValue name : stack) globalsEnv localEnv newFunctions globalDecls forStates loopCounts exceptionHandlers outputs isTopLevel
+            CreateLambda name params defaultCodes functionCode ->
+              let newFunctions = Map.insert name (params, defaultCodes, functionCode) functions
+                  captured = Map.toList localEnv
+               in execute code (ip + 1) (FunctionRefValue name captured : stack) globalsEnv localEnv newFunctions globalDecls forStates loopCounts exceptionHandlers outputs isTopLevel
             DefineClass className maybeBase methods ->
               let classValue = ClassValue className maybeBase methods
                in if isTopLevel || Set.member className globalDecls
@@ -131,9 +133,13 @@ runInstructions instructions = do
                 (newStack, newGlobals, newLocalEnv, newFunctions, newOutputs) <-
                   executeCallFunction execute isTopLevel fname compiledArgs pos stack globalsEnv localEnv functions outputs
                 execute code (ip + 1) newStack newGlobals newLocalEnv newFunctions globalDecls forStates loopCounts exceptionHandlers newOutputs isTopLevel
-            BuildListComprehension loopName iterCode valueCode pos -> do
+            CallValueFunction compiledArgs pos -> do
+              (newStack, newGlobals, newLocalEnv, newFunctions, newOutputs) <-
+                executeCallValueFunction execute isTopLevel compiledArgs pos stack globalsEnv localEnv functions outputs
+              execute code (ip + 1) newStack newGlobals newLocalEnv newFunctions globalDecls forStates loopCounts exceptionHandlers newOutputs isTopLevel
+            BuildListComprehension clauses valueCode pos -> do
               (listValue, newGlobals, newFunctions, newOutputs) <-
-                executeListComprehension execute loopName iterCode valueCode pos globalsEnv localEnv functions outputs
+                executeListComprehension execute clauses valueCode pos globalsEnv localEnv functions outputs
               execute code (ip + 1) (listValue : stack) newGlobals localEnv newFunctions globalDecls forStates loopCounts exceptionHandlers newOutputs isTopLevel
             ApplyBinary op pos ->
               case stack of

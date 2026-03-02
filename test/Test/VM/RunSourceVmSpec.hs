@@ -68,8 +68,23 @@ spec = describe "runSourceVm (vm mvp)" $ do
   it "runs lambda expression call via variable" $ do
     runSourceVm "f = lambda x: x + 1\nprint f(2)\n" `shouldBe` Right ["3"]
 
+  it "runs lambda with default parameter" $ do
+    runSourceVm "f = lambda x, y=1: x + y\nprint f(2)\nprint f(2, 3)\n" `shouldBe` Right ["3", "5"]
+
+  it "runs immediate lambda invocation" $ do
+    runSourceVm "print (lambda x: x + 1)(2)\n" `shouldBe` Right ["3"]
+
+  it "runs lambda closure capture from outer scope" $ do
+    runSourceVm "def makeAdder(n):\n  return lambda x: x + n\nadd2 = makeAdder(2)\nprint add2(3)\n" `shouldBe` Right ["5"]
+
   it "runs list comprehension with single for clause" $ do
     runSourceVm "print [x * 2 for x in [1, 2, 3]]\n" `shouldBe` Right ["[2, 4, 6]"]
+
+  it "runs list comprehension with if clause" $ do
+    runSourceVm "print [x for x in [1, 2, 3, 4] if x % 2 == 0]\n" `shouldBe` Right ["[2, 4]"]
+
+  it "runs list comprehension with nested for clauses" $ do
+    runSourceVm "print [x + y for x in [1, 2] for y in [10, 20]]\n" `shouldBe` Right ["[11, 21, 12, 22]"]
 
   it "runs function definition and call with default parameters" $ do
     runSourceVm "def add(a, b = 2):\n  return a + b\nprint add(1)\nprint add(1, 3)\n" `shouldBe` Right ["3", "4"]

@@ -25,10 +25,11 @@ data Instruction
   | JumpIfFalse Int
   | Jump Int
   | DefineFunction String [String] [(String, [Instruction])] [Instruction]
-  | CreateLambda String [String] [Instruction]
+  | CreateLambda String [String] [(String, [Instruction])] [Instruction]
   | DefineClass String (Maybe String) [(String, String)]
-  | BuildListComprehension String [Instruction] [Instruction] Position
+  | BuildListComprehension [(String, [Instruction], Maybe [Instruction])] [Instruction] Position
   | CallFunction String [([Instruction], Maybe String, Position)] Position
+  | CallValueFunction [([Instruction], Maybe String, Position)] Position
   | RaiseTop Position
   | RaisePendingError
   | ReturnTop

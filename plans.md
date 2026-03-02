@@ -637,3 +637,6 @@
   - [x] P14 開始: VM 専用で `lambda` 式とリスト内包表記（単一 `for`）を導入
   - [x] P14 実装: `lambda` キーワード、`LambdaExpr`/`ListComprehensionExpr`、VM の `CreateLambda` / `BuildListComprehension` を追加
   - [x] P14 完了: `cabal test -j1`（727 examples）と `cabal run check-structure` 成功
+  - [x] P15 開始: lambda 完全化（default引数・即時呼び出し・closure）と内包表記拡張（if句・ネストfor）
+  - [x] P15 実装: `CallValueExpr`、`LambdaDefaultsExpr`、`ListComprehensionClausesExpr` と VM 実行系拡張を追加
+  - [x] P15 完了: `cabal test -j1`（727 examples）と `cabal run check-structure` 成功

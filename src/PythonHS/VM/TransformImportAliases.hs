@@ -5,13 +5,16 @@ import PythonHS.AST.Expr
   ( Expr
       ( BinaryExpr,
         CallExpr,
+        CallValueExpr,
         DictExpr,
-         FloatExpr,
-         IdentifierExpr,
-         IntegerExpr,
-         KeywordArgExpr,
-         LambdaExpr,
-         ListComprehensionExpr,
+        FloatExpr,
+        IdentifierExpr,
+        IntegerExpr,
+        KeywordArgExpr,
+        LambdaDefaultsExpr,
+        LambdaExpr,
+        ListComprehensionClausesExpr,
+        ListComprehensionExpr,
          ListExpr,
         NoneExpr,
         NotExpr,
@@ -80,9 +83,16 @@ transformImportAliases renameDefNames moduleAlias callAlias identAlias stmt =
         ListExpr items pos -> ListExpr (fmap (transformExpr moduleAliases callAliases identAliases) items) pos
         ListComprehensionExpr valueExpr loopName iterExpr pos ->
           ListComprehensionExpr (transformExpr moduleAliases callAliases identAliases valueExpr) loopName (transformExpr moduleAliases callAliases identAliases iterExpr) pos
+        ListComprehensionClausesExpr valueExpr clauses pos ->
+          ListComprehensionClausesExpr
+            (transformExpr moduleAliases callAliases identAliases valueExpr)
+            (fmap (\(name, iterExpr, maybeCond) -> (name, transformExpr moduleAliases callAliases identAliases iterExpr, fmap (transformExpr moduleAliases callAliases identAliases) maybeCond)) clauses)
+            pos
         DictExpr entries pos -> DictExpr (fmap (\(k, v) -> (transformExpr moduleAliases callAliases identAliases k, transformExpr moduleAliases callAliases identAliases v)) entries) pos
         KeywordArgExpr name value pos -> KeywordArgExpr name (transformExpr moduleAliases callAliases identAliases value) pos
         LambdaExpr params valueExpr pos -> LambdaExpr params (transformExpr moduleAliases callAliases identAliases valueExpr) pos
+        LambdaDefaultsExpr params defaults valueExpr pos ->
+          LambdaDefaultsExpr params (fmap (\(paramName, defaultExpr) -> (paramName, transformExpr moduleAliases callAliases identAliases defaultExpr)) defaults) (transformExpr moduleAliases callAliases identAliases valueExpr) pos
         UnaryMinusExpr value pos -> UnaryMinusExpr (transformExpr moduleAliases callAliases identAliases value) pos
         NotExpr value pos -> NotExpr (transformExpr moduleAliases callAliases identAliases value) pos
         BinaryExpr op left right pos -> BinaryExpr op (transformExpr moduleAliases callAliases identAliases left) (transformExpr moduleAliases callAliases identAliases right) pos
@@ -95,3 +105,5 @@ transformImportAliases renameDefNames moduleAlias callAlias identAlias stmt =
                     Just prefix -> CallExpr (prefix ++ renamedName) restArgs pos
                     Nothing -> CallExpr renamedName renamedArgs pos
                 _ -> CallExpr renamedName renamedArgs pos
+        CallValueExpr callee args pos ->
+          CallValueExpr (transformExpr moduleAliases callAliases identAliases callee) (fmap (transformExpr moduleAliases callAliases identAliases) args) pos

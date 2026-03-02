@@ -11,7 +11,7 @@ valueToReplOutput value =
     NoneValue -> "None"
     ListValue vals -> "[" ++ joinWithCommaSpace (map valueToReplOutput vals) ++ "]"
     DictValue pairs -> "{" ++ joinWithCommaSpace (map pairToOutput pairs) ++ "}"
-    FunctionRefValue name -> "<function " ++ name ++ ">"
+    FunctionRefValue name _ -> "<function " ++ name ++ ">"
     ClassValue name _ _ -> "<class " ++ name ++ ">"
     InstanceValue className _ -> "<" ++ className ++ " instance>"
     BreakValue -> "<break>"
