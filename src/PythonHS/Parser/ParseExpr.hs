@@ -1,15 +1,16 @@
 module PythonHS.Parser.ParseExpr (parseExpr) where
 import PythonHS.AST.BinaryOperator (BinaryOperator (AddOperator, AndOperator, DivideOperator, EqOperator, FloorDivideOperator, GtOperator, GteOperator, LtOperator, LteOperator, ModuloOperator, MultiplyOperator, NotEqOperator, OrOperator, SubtractOperator))
-import PythonHS.AST.Expr (Expr (BinaryExpr, CallExpr, DictExpr, FloatExpr, IdentifierExpr, IntegerExpr, KeywordArgExpr, ListExpr, NoneExpr, NotExpr, StringExpr, UnaryMinusExpr))
+import PythonHS.AST.Expr (Expr (BinaryExpr, CallExpr, DictExpr, FloatExpr, IdentifierExpr, IntegerExpr, KeywordArgExpr, ListComprehensionExpr, ListExpr, NoneExpr, NotExpr, StringExpr, UnaryMinusExpr))
 import PythonHS.Lexer.Position (Position (Position))
 import PythonHS.Lexer.Token (Token (Token), position)
-import PythonHS.Lexer.TokenType (TokenType (AndToken, AssignToken, ColonToken, CommaToken, DotToken, DoubleSlashToken, EqToken, FalseToken, FloatToken, GtToken, GteToken, IdentifierToken, IntegerToken, LBraceToken, LBracketToken, LParenToken, LtToken, LteToken, MinusToken, NoneToken, NotEqToken, NotToken, OrToken, PercentToken, PlusToken, RBraceToken, RBracketToken, RParenToken, SlashToken, StarToken, StringToken, TrueToken))
+import PythonHS.Lexer.TokenType (TokenType (AndToken, AssignToken, ColonToken, CommaToken, DotToken, DoubleSlashToken, EqToken, FalseToken, FloatToken, ForToken, GtToken, GteToken, IdentifierToken, InToken, IntegerToken, LBraceToken, LBracketToken, LParenToken, LtToken, LteToken, MinusToken, NoneToken, NotEqToken, NotToken, OrToken, PercentToken, PlusToken, RBraceToken, RBracketToken, RParenToken, SlashToken, StarToken, StringToken, TrueToken))
 import PythonHS.Parser.ExprPos (exprPos)
+import PythonHS.Parser.ParseLambdaExpr (parseLambdaExpr)
 import PythonHS.Parser.ParseError (ParseError (ExpectedExpression))
 import PythonHS.Parser.NormalizeFloatLiteral (normalizeFloatLiteral)
 
 parseExpr :: [Token] -> Either ParseError (Expr, [Token])
-parseExpr = parseOr
+parseExpr = parseLambdaExpr parseOr
   where
     parseOr ts = do
       (left, rest) <- parseAnd ts
@@ -128,7 +129,14 @@ parseExpr = parseOr
       Right (ListExpr [] listPos, rest)
     parseListElements listPos ts = do
       (firstExpr, afterFirst) <- parseExpr ts
-      parseListTail listPos [firstExpr] afterFirst
+      case afterFirst of
+        Token ForToken _ _ : Token IdentifierToken loopVar _ : Token InToken _ _ : afterIn -> do
+          (iterExpr, afterIter) <- parseExpr afterIn
+          case afterIter of
+            Token RBracketToken _ _ : rest -> Right (ListComprehensionExpr firstExpr loopVar iterExpr listPos, rest)
+            tok : _ -> Left (ExpectedExpression (position tok))
+            _ -> Left (ExpectedExpression (Position 0 0))
+        _ -> parseListTail listPos [firstExpr] afterFirst
 
     parseListTail listPos exprs (Token CommaToken _ _ : rest) = do
       case rest of

@@ -3,7 +3,7 @@ module Test.Lexer.ScanTokensCoreSpec (spec) where
 import PythonHS.Lexer.Position (Position (Position))
 import PythonHS.Lexer.ScanTokens (scanTokens)
 import PythonHS.Lexer.Token (Token (Token))
-import PythonHS.Lexer.TokenType (TokenType (AsToken, AssignToken, BreakToken, CaseToken, ClassToken, ColonToken, ContinueToken, DedentToken, DotToken, DoubleSlashAssignToken, DoubleSlashToken, EOFToken, ElifToken, ExceptToken, FalseToken, FinallyToken, FloatToken, ForToken, FromToken, GlobalToken, IdentifierToken, IfToken, ImportToken, InToken, IndentToken, IntegerToken, LParenToken, MatchToken, MinusAssignToken, NewlineToken, NoneToken, PassToken, PercentAssignToken, PercentToken, PipeToken, PlusAssignToken, PlusToken, PrintToken, RaiseToken, ReturnToken, RParenToken, SlashAssignToken, SlashToken, StarAssignToken, StarToken, StringToken, TrueToken, TryToken))
+import PythonHS.Lexer.TokenType (TokenType (AsToken, AssignToken, BreakToken, CaseToken, ClassToken, ColonToken, ContinueToken, DedentToken, DotToken, DoubleSlashAssignToken, DoubleSlashToken, EOFToken, ElifToken, ExceptToken, FalseToken, FinallyToken, FloatToken, ForToken, FromToken, GlobalToken, IdentifierToken, IfToken, ImportToken, InToken, IndentToken, IntegerToken, LParenToken, LambdaToken, MatchToken, MinusAssignToken, NewlineToken, NoneToken, PassToken, PercentAssignToken, PercentToken, PipeToken, PlusAssignToken, PlusToken, PrintToken, RaiseToken, ReturnToken, RParenToken, SlashAssignToken, SlashToken, StarAssignToken, StarToken, StringToken, TrueToken, TryToken))
 import Test.Hspec (Spec, describe, it, shouldBe)
 
 spec :: Spec
@@ -201,6 +201,19 @@ spec = describe "scanTokens core tokens" $ do
           Token IdentifierToken "A" (Position 1 7),
           Token ColonToken ":" (Position 1 8),
           Token NewlineToken "\\n" (Position 1 9),
+          Token EOFToken "" (Position 2 1)
+        ]
+
+  it "recognizes lambda keyword" $ do
+    scanTokens "f = lambda x: x\n" `shouldBe`
+      Right
+        [ Token IdentifierToken "f" (Position 1 1),
+          Token AssignToken "=" (Position 1 3),
+          Token LambdaToken "lambda" (Position 1 5),
+          Token IdentifierToken "x" (Position 1 12),
+          Token ColonToken ":" (Position 1 13),
+          Token IdentifierToken "x" (Position 1 15),
+          Token NewlineToken "\\n" (Position 1 16),
           Token EOFToken "" (Position 2 1)
         ]
 

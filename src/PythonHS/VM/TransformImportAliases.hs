@@ -6,11 +6,13 @@ import PythonHS.AST.Expr
       ( BinaryExpr,
         CallExpr,
         DictExpr,
-        FloatExpr,
-        IdentifierExpr,
-        IntegerExpr,
-        KeywordArgExpr,
-        ListExpr,
+         FloatExpr,
+         IdentifierExpr,
+         IntegerExpr,
+         KeywordArgExpr,
+         LambdaExpr,
+         ListComprehensionExpr,
+         ListExpr,
         NoneExpr,
         NotExpr,
         StringExpr,
@@ -76,8 +78,11 @@ transformImportAliases renameDefNames moduleAlias callAlias identAlias stmt =
         NoneExpr _ -> expr
         IdentifierExpr name pos -> IdentifierExpr (Map.findWithDefault name name identAliases) pos
         ListExpr items pos -> ListExpr (fmap (transformExpr moduleAliases callAliases identAliases) items) pos
+        ListComprehensionExpr valueExpr loopName iterExpr pos ->
+          ListComprehensionExpr (transformExpr moduleAliases callAliases identAliases valueExpr) loopName (transformExpr moduleAliases callAliases identAliases iterExpr) pos
         DictExpr entries pos -> DictExpr (fmap (\(k, v) -> (transformExpr moduleAliases callAliases identAliases k, transformExpr moduleAliases callAliases identAliases v)) entries) pos
         KeywordArgExpr name value pos -> KeywordArgExpr name (transformExpr moduleAliases callAliases identAliases value) pos
+        LambdaExpr params valueExpr pos -> LambdaExpr params (transformExpr moduleAliases callAliases identAliases valueExpr) pos
         UnaryMinusExpr value pos -> UnaryMinusExpr (transformExpr moduleAliases callAliases identAliases value) pos
         NotExpr value pos -> NotExpr (transformExpr moduleAliases callAliases identAliases value) pos
         BinaryExpr op left right pos -> BinaryExpr op (transformExpr moduleAliases callAliases identAliases left) (transformExpr moduleAliases callAliases identAliases right) pos

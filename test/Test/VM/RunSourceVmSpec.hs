@@ -65,6 +65,12 @@ spec = describe "runSourceVm (vm mvp)" $ do
   it "runs single inheritance method lookup" $ do
     runSourceVm "class A:\n  def f(self):\n    return 7\nclass B(A):\n  pass\nx = B()\nprint x.f()\n" `shouldBe` Right ["7"]
 
+  it "runs lambda expression call via variable" $ do
+    runSourceVm "f = lambda x: x + 1\nprint f(2)\n" `shouldBe` Right ["3"]
+
+  it "runs list comprehension with single for clause" $ do
+    runSourceVm "print [x * 2 for x in [1, 2, 3]]\n" `shouldBe` Right ["[2, 4, 6]"]
+
   it "runs function definition and call with default parameters" $ do
     runSourceVm "def add(a, b = 2):\n  return a + b\nprint add(1)\nprint add(1, 3)\n" `shouldBe` Right ["3", "4"]
 

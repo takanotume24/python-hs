@@ -3,7 +3,7 @@ module PythonHS.VM.ExecuteCallFunction (executeCallFunction) where
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import PythonHS.Evaluator.ShowPos (showPos)
-import PythonHS.Evaluator.Value (Value (ClassValue, InstanceValue, IntValue), Value)
+import PythonHS.Evaluator.Value (Value (ClassValue, FunctionRefValue, InstanceValue, IntValue), Value)
 import PythonHS.Lexer.Position (Position)
 import PythonHS.VM.BindCallArguments (bindCallArguments)
 import PythonHS.VM.BindDefaults (bindDefaults)
@@ -56,6 +56,8 @@ executeCallFunction execute isTopLevel fname compiledArgs pos stack globalsEnv l
           case lookupName fname localEnv globalsEnv of
             Just (ClassValue className _ _) ->
               createInstance className args globalsAfterArgs functionsAfterArgs outputsAfterArgs
+            Just (FunctionRefValue functionName) ->
+              callUserFunction functionName args globalsAfterArgs functionsAfterArgs outputsAfterArgs
             _ ->
               case args of
                 InstanceValue className _ : _ ->

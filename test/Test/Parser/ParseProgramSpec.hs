@@ -1,7 +1,7 @@
 module Test.Parser.ParseProgramSpec (spec) where
 
 import PythonHS.AST.BinaryOperator (BinaryOperator (..))
-import PythonHS.AST.Expr (Expr (BinaryExpr, CallExpr, DictExpr, FloatExpr, IdentifierExpr, IntegerExpr, KeywordArgExpr, ListExpr, NoneExpr, NotExpr, StringExpr, UnaryMinusExpr))
+import PythonHS.AST.Expr (Expr (BinaryExpr, CallExpr, DictExpr, FloatExpr, IdentifierExpr, IntegerExpr, KeywordArgExpr, LambdaExpr, ListComprehensionExpr, ListExpr, NoneExpr, NotExpr, StringExpr, UnaryMinusExpr))
 import PythonHS.AST.Pattern (Pattern (CapturePattern, MappingPattern, OrPattern, ValuePattern, WildcardPattern))
 import PythonHS.AST.Program (Program (Program))
 import PythonHS.AST.Stmt (Stmt (AddAssignStmt, AssignStmt, BreakStmt, ClassDefStmt, ContinueStmt, DivAssignStmt, FloorDivAssignStmt, ForStmt, FromImportStmt, FunctionDefDefaultsStmt, FunctionDefStmt, GlobalStmt, IfStmt, ImportStmt, MatchStmt, ModAssignStmt, MulAssignStmt, PassStmt, PrintStmt, RaiseStmt, ReturnStmt, SubAssignStmt, TryExceptStmt, WhileStmt))
@@ -20,7 +20,8 @@ import PythonHS.Lexer.TokenType
         CommaToken,
         DotToken,
          DefToken,
-         ClassToken,
+          ClassToken,
+          LambdaToken,
         EOFToken,
         ElseToken,
         ElifToken,
@@ -1504,6 +1505,47 @@ spec = describe "parseProgram" $ do
         Token EOFToken "" (Position 2 1)
       ]
       `shouldBe` Right (Program [PrintStmt (ListExpr [IntegerExpr 1 (Position 1 8), IntegerExpr 2 (Position 1 11)] (Position 1 7)) (Position 1 1)])
+
+  it "parses lambda expression" $ do
+    parseProgram
+      [ Token PrintToken "print" (Position 1 1),
+        Token LambdaToken "lambda" (Position 1 7),
+        Token IdentifierToken "x" (Position 1 14),
+        Token ColonToken ":" (Position 1 15),
+        Token IdentifierToken "x" (Position 1 17),
+        Token PlusToken "+" (Position 1 19),
+        Token IntegerToken "1" (Position 1 21),
+        Token NewlineToken "\\n" (Position 1 22),
+        Token EOFToken "" (Position 2 1)
+      ]
+      `shouldBe` Right
+        ( Program
+            [ PrintStmt
+                (LambdaExpr ["x"] (BinaryExpr AddOperator (IdentifierExpr "x" (Position 1 17)) (IntegerExpr 1 (Position 1 21)) (Position 1 19)) (Position 1 7))
+                (Position 1 1)
+            ]
+        )
+
+  it "parses list comprehension expression" $ do
+    parseProgram
+      [ Token PrintToken "print" (Position 1 1),
+        Token LBracketToken "[" (Position 1 7),
+        Token IdentifierToken "x" (Position 1 8),
+        Token ForToken "for" (Position 1 10),
+        Token IdentifierToken "x" (Position 1 14),
+        Token InToken "in" (Position 1 16),
+        Token IdentifierToken "xs" (Position 1 19),
+        Token RBracketToken "]" (Position 1 21),
+        Token NewlineToken "\\n" (Position 1 22),
+        Token EOFToken "" (Position 2 1)
+      ]
+      `shouldBe` Right
+        ( Program
+            [ PrintStmt
+                (ListComprehensionExpr (IdentifierExpr "x" (Position 1 8)) "x" (IdentifierExpr "xs" (Position 1 19)) (Position 1 7))
+                (Position 1 1)
+            ]
+        )
 
   it "parses list literal expression with trailing comma" $ do
     parseProgram

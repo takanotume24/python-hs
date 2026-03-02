@@ -42,6 +42,7 @@ data TokenType
   | InToken
   | DefToken
   | ClassToken
+  | LambdaToken
   | ReturnToken
   | BreakToken
   | ContinueToken

@@ -10,9 +10,11 @@ data Expr
   | StringExpr String Position
   | NoneExpr Position
   | ListExpr [Expr] Position
+  | ListComprehensionExpr Expr String Expr Position
   | DictExpr [(Expr, Expr)] Position
   | IdentifierExpr String Position
   | KeywordArgExpr String Expr Position
+  | LambdaExpr [String] Expr Position
   | UnaryMinusExpr Expr Position
   | NotExpr Expr Position
   | BinaryExpr BinaryOperator Expr Expr Position

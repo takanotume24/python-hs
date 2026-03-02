@@ -20,6 +20,7 @@ import PythonHS.Lexer.TokenType
         IfToken,
         ImportToken,
         InToken,
+        LambdaToken,
         MatchToken,
         CaseToken,
         NoneToken,
@@ -49,6 +50,7 @@ keywordOrIdentifier value
   | value == "in" = InToken
   | value == "def" = DefToken
   | value == "class" = ClassToken
+  | value == "lambda" = LambdaToken
   | value == "return" = ReturnToken
   | value == "break" = BreakToken
   | value == "continue" = ContinueToken

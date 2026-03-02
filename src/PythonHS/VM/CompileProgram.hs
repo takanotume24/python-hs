@@ -1,7 +1,7 @@
 module PythonHS.VM.CompileProgram (compileProgram) where
 
 import PythonHS.AST.BinaryOperator (BinaryOperator (AddOperator, AndOperator, DivideOperator, FloorDivideOperator, ModuloOperator, MultiplyOperator, OrOperator, SubtractOperator))
-import PythonHS.AST.Expr (Expr (BinaryExpr, CallExpr, DictExpr, FloatExpr, IdentifierExpr, IntegerExpr, ListExpr, NoneExpr, NotExpr, StringExpr, UnaryMinusExpr))
+import PythonHS.AST.Expr (Expr (BinaryExpr, CallExpr, DictExpr, FloatExpr, IdentifierExpr, IntegerExpr, LambdaExpr, ListComprehensionExpr, ListExpr, NoneExpr, NotExpr, StringExpr, UnaryMinusExpr))
 import PythonHS.AST.Program (Program (Program))
 import PythonHS.AST.Stmt (Stmt (AddAssignStmt, AssignStmt, BreakStmt, ClassDefStmt, ContinueStmt, DivAssignStmt, FloorDivAssignStmt, ForStmt, FromImportStmt, FunctionDefDefaultsStmt, FunctionDefStmt, GlobalStmt, IfStmt, ImportStmt, MatchStmt, ModAssignStmt, MulAssignStmt, PassStmt, PrintStmt, RaiseStmt, ReturnStmt, SubAssignStmt, TryExceptStmt, WhileStmt))
 import PythonHS.Evaluator.ShowPos (showPos)
@@ -15,7 +15,7 @@ import PythonHS.VM.CompileLogicalExpr (compileLogicalExpr)
 import PythonHS.VM.CompileMatch (compileMatch)
 import PythonHS.VM.CompileTryExcept (compileTryExcept)
 import PythonHS.VM.ExprPosition (exprPosition)
-import PythonHS.VM.Instruction (Instruction (ApplyBinary, ApplyNot, ApplyUnaryMinus, BuildDict, BuildList, CallFunction, DeclareGlobal, DefineFunction, ForNext, ForSetup, Halt, Jump, JumpIfFalse, LoadName, LoopGuard, PrintTop, PushConst, RaiseTop, ReturnTop, StoreName))
+import PythonHS.VM.Instruction (Instruction (ApplyBinary, ApplyNot, ApplyUnaryMinus, BuildDict, BuildList, BuildListComprehension, CallFunction, CreateLambda, DeclareGlobal, DefineFunction, ForNext, ForSetup, Halt, Jump, JumpIfFalse, LoadName, LoopGuard, PrintTop, PushConst, RaiseTop, ReturnTop, StoreName))
 import PythonHS.VM.StmtPosition (stmtPosition)
 
 compileProgram :: Program -> Either String [Instruction]
@@ -148,6 +148,10 @@ compileProgram (Program stmts) = do
         ListExpr elements _ -> do
           (elementCode, elementEnd) <- compileExprItemsAt compileExprAt baseIndex elements
           pure (elementCode ++ [BuildList (length elements)], elementEnd + 1)
+        ListComprehensionExpr valueExpr loopName iterExpr pos -> do
+          (iterCode, _) <- compileExprAt 0 iterExpr
+          (valueCode, _) <- compileExprAt 0 valueExpr
+          pure ([BuildListComprehension loopName (iterCode ++ [ReturnTop]) (valueCode ++ [ReturnTop]) pos], baseIndex + 1)
         DictExpr entries _ -> do
           (entryCode, entryEnd) <- compileDictEntriesAt baseIndex entries
           pure (entryCode ++ [BuildDict (length entries)], entryEnd + 1)
@@ -158,6 +162,10 @@ compileProgram (Program stmts) = do
         NotExpr notExpr pos -> do
           (exprCode, exprEnd) <- compileExprAt baseIndex notExpr
           pure (exprCode ++ [ApplyNot pos], exprEnd + 1)
+        LambdaExpr params bodyExpr pos -> do
+          (bodyCode, _) <- compileExprAt 0 bodyExpr
+          let lambdaName = "__lambda_" ++ showPos pos
+          pure ([CreateLambda lambdaName params (bodyCode ++ [ReturnTop])], baseIndex + 1)
         BinaryExpr AndOperator left right _ -> compileLogicalExpr compileExprAt AndOperator baseIndex left right
         BinaryExpr OrOperator left right _ -> compileLogicalExpr compileExprAt OrOperator baseIndex left right
         BinaryExpr op left right pos -> do

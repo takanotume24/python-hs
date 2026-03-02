@@ -634,3 +634,6 @@
   - [x] P3継続: `pop(dict, key[, default])` を追加（キー存在時は値返却、未存在時はdefault返却/エラーを eval/runner で固定）
   - [x] 最新品質ゲート: `cabal test`（264 examples） / `cabal run check-structure` 成功
   - [x] CI改善: GitHub Actions に Cabal キャッシュ（`~/.cabal/packages`, `~/.cabal/store`, `dist-newstyle`）を追加
+  - [x] P14 開始: VM 専用で `lambda` 式とリスト内包表記（単一 `for`）を導入
+  - [x] P14 実装: `lambda` キーワード、`LambdaExpr`/`ListComprehensionExpr`、VM の `CreateLambda` / `BuildListComprehension` を追加
+  - [x] P14 完了: `cabal test -j1`（727 examples）と `cabal run check-structure` 成功

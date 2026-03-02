@@ -44,6 +44,7 @@ library
     , PythonHS.Lexer.ParseExponent
     , PythonHS.Lexer.ScanTokenStep
     , PythonHS.Parser.ParseExpr
+    , PythonHS.Parser.ParseLambdaExpr
     , PythonHS.Parser.ExprPos
     , PythonHS.Parser.NormalizeFloatLiteral
     , PythonHS.Parser.ParseStatement
@@ -87,6 +88,7 @@ library
     , PythonHS.VM.CollectFunctionGlobalDecls
     , PythonHS.VM.EvaluateBuiltinArgs
     , PythonHS.VM.ExecuteCallFunction
+    , PythonHS.VM.ExecuteListComprehension
     , PythonHS.VM.ExecuteMatchPattern
     , PythonHS.VM.EvaluateUserArgs
     , PythonHS.VM.ExprPosition
