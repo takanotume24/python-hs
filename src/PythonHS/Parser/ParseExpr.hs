@@ -3,15 +3,16 @@ import PythonHS.AST.BinaryOperator (BinaryOperator (AddOperator, AndOperator, Di
 import PythonHS.AST.Expr (Expr (BinaryExpr, CallExpr, CallValueExpr, DictExpr, FloatExpr, IdentifierExpr, IntegerExpr, KeywordArgExpr, ListExpr, NoneExpr, NotExpr, StringExpr, UnaryMinusExpr))
 import PythonHS.Lexer.Position (Position (Position))
 import PythonHS.Lexer.Token (Token (Token), position)
-import PythonHS.Lexer.TokenType (TokenType (AndToken, AssignToken, ColonToken, CommaToken, DotToken, DoubleSlashToken, EqToken, FalseToken, FloatToken, ForToken, GtToken, GteToken, IdentifierToken, InToken, IntegerToken, LBraceToken, LBracketToken, LParenToken, LtToken, LteToken, MinusToken, NoneToken, NotEqToken, NotToken, OrToken, PercentToken, PlusToken, RBraceToken, RBracketToken, RParenToken, SlashToken, StarToken, StringToken, TrueToken))
+import PythonHS.Lexer.TokenType (TokenType (AndToken, AssignToken, ColonToken, CommaToken, DotToken, DoubleSlashToken, EqToken, FalseToken, FloatToken, ForToken, GtToken, GteToken, IdentifierToken, IntegerToken, LBraceToken, LBracketToken, LParenToken, LtToken, LteToken, MinusToken, NoneToken, NotEqToken, NotToken, OrToken, PercentToken, PlusToken, RBraceToken, RBracketToken, RParenToken, SlashToken, StarToken, StringToken, TrueToken))
 import PythonHS.Parser.ExprPos (exprPos)
 import PythonHS.Parser.ParseComprehensionTail (parseComprehensionTail)
 import PythonHS.Parser.ParseLambdaExpr (parseLambdaExpr)
 import PythonHS.Parser.ParseError (ParseError (ExpectedExpression))
+import PythonHS.Parser.ParseWalrusExpr (parseWalrusExpr)
 import PythonHS.Parser.NormalizeFloatLiteral (normalizeFloatLiteral)
 
 parseExpr :: [Token] -> Either ParseError (Expr, [Token])
-parseExpr = parseLambdaExpr parseOr
+parseExpr = parseLambdaExpr (parseWalrusExpr parseOr)
   where
     parseOr ts = do
       (left, rest) <- parseAnd ts
@@ -134,9 +135,8 @@ parseExpr = parseLambdaExpr parseOr
     parseListElements listPos ts = do
       (firstExpr, afterFirst) <- parseExpr ts
       case afterFirst of
-        Token ForToken _ _ : Token IdentifierToken loopVar _ : Token InToken _ _ : afterIn -> do
-          (iterExpr, afterIter) <- parseExpr afterIn
-          parseComprehensionTail parseExpr exprPos firstExpr listPos [(loopVar, iterExpr, Nothing)] afterIter
+        forTokens@(Token ForToken _ _ : _) ->
+          parseComprehensionTail parseExpr firstExpr listPos [] forTokens
         _ -> parseListTail listPos [firstExpr] afterFirst
 
     parseListTail listPos exprs (Token CommaToken _ _ : rest) = do

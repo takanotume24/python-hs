@@ -3,7 +3,7 @@ module Test.Lexer.ScanTokensCoreSpec (spec) where
 import PythonHS.Lexer.Position (Position (Position))
 import PythonHS.Lexer.ScanTokens (scanTokens)
 import PythonHS.Lexer.Token (Token (Token))
-import PythonHS.Lexer.TokenType (TokenType (AsToken, AssignToken, BreakToken, CaseToken, ClassToken, ColonToken, ContinueToken, DedentToken, DotToken, DoubleSlashAssignToken, DoubleSlashToken, EOFToken, ElifToken, ExceptToken, FalseToken, FinallyToken, FloatToken, ForToken, FromToken, GlobalToken, IdentifierToken, IfToken, ImportToken, InToken, IndentToken, IntegerToken, LParenToken, LambdaToken, MatchToken, MinusAssignToken, NewlineToken, NoneToken, PassToken, PercentAssignToken, PercentToken, PipeToken, PlusAssignToken, PlusToken, PrintToken, RaiseToken, ReturnToken, RParenToken, SlashAssignToken, SlashToken, StarAssignToken, StarToken, StringToken, TrueToken, TryToken))
+import PythonHS.Lexer.TokenType (TokenType (AsToken, AssignToken, BreakToken, CaseToken, ClassToken, ColonAssignToken, ColonToken, ContinueToken, DedentToken, DotToken, DoubleSlashAssignToken, DoubleSlashToken, EOFToken, ElifToken, ExceptToken, FalseToken, FinallyToken, FloatToken, ForToken, FromToken, GlobalToken, IdentifierToken, IfToken, ImportToken, InToken, IndentToken, IntegerToken, LParenToken, LambdaToken, MatchToken, MinusAssignToken, NewlineToken, NoneToken, PassToken, PercentAssignToken, PercentToken, PipeToken, PlusAssignToken, PlusToken, PrintToken, RaiseToken, ReturnToken, RParenToken, SlashAssignToken, SlashToken, StarAssignToken, StarToken, StringToken, TrueToken, TryToken))
 import Test.Hspec (Spec, describe, it, shouldBe)
 
 spec :: Spec
@@ -214,6 +214,19 @@ spec = describe "scanTokens core tokens" $ do
           Token ColonToken ":" (Position 1 13),
           Token IdentifierToken "x" (Position 1 15),
           Token NewlineToken "\\n" (Position 1 16),
+          Token EOFToken "" (Position 2 1)
+        ]
+
+  it "recognizes walrus operator token" $ do
+    scanTokens "print (y := 1)\n" `shouldBe`
+      Right
+        [ Token PrintToken "print" (Position 1 1),
+          Token LParenToken "(" (Position 1 7),
+          Token IdentifierToken "y" (Position 1 8),
+          Token ColonAssignToken ":=" (Position 1 10),
+          Token IntegerToken "1" (Position 1 13),
+          Token RParenToken ")" (Position 1 14),
+          Token NewlineToken "\\n" (Position 1 15),
           Token EOFToken "" (Position 2 1)
         ]
 

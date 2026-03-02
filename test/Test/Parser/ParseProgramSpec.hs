@@ -1,7 +1,7 @@
 module Test.Parser.ParseProgramSpec (spec) where
 
 import PythonHS.AST.BinaryOperator (BinaryOperator (..))
-import PythonHS.AST.Expr (Expr (BinaryExpr, CallExpr, DictExpr, FloatExpr, IdentifierExpr, IntegerExpr, KeywordArgExpr, LambdaExpr, ListComprehensionExpr, ListExpr, NoneExpr, NotExpr, StringExpr, UnaryMinusExpr))
+import PythonHS.AST.Expr (Expr (BinaryExpr, CallExpr, DictExpr, FloatExpr, IdentifierExpr, IntegerExpr, KeywordArgExpr, LambdaExpr, ListComprehensionClausesExpr, ListComprehensionExpr, ListExpr, NoneExpr, NotExpr, StringExpr, UnaryMinusExpr, WalrusExpr))
 import PythonHS.AST.Pattern (Pattern (CapturePattern, MappingPattern, OrPattern, ValuePattern, WildcardPattern))
 import PythonHS.AST.Program (Program (Program))
 import PythonHS.AST.Stmt (Stmt (AddAssignStmt, AssignStmt, BreakStmt, ClassDefStmt, ContinueStmt, DivAssignStmt, FloorDivAssignStmt, ForStmt, FromImportStmt, FunctionDefDefaultsStmt, FunctionDefStmt, GlobalStmt, IfStmt, ImportStmt, MatchStmt, ModAssignStmt, MulAssignStmt, PassStmt, PrintStmt, RaiseStmt, ReturnStmt, SubAssignStmt, TryExceptStmt, WhileStmt))
@@ -22,6 +22,7 @@ import PythonHS.Lexer.TokenType
          DefToken,
           ClassToken,
           LambdaToken,
+          ColonAssignToken,
         EOFToken,
         ElseToken,
         ElifToken,
@@ -55,8 +56,9 @@ import PythonHS.Lexer.TokenType
         PassToken,
         IndentToken,
         DedentToken,
-        EqToken,
-        AndToken,
+         EqToken,
+         GtToken,
+         AndToken,
         OrToken,
         NotToken,
           IfToken,
@@ -1543,6 +1545,69 @@ spec = describe "parseProgram" $ do
         ( Program
             [ PrintStmt
                 (ListComprehensionExpr (IdentifierExpr "x" (Position 1 8)) "x" (IdentifierExpr "xs" (Position 1 19)) (Position 1 7))
+                (Position 1 1)
+            ]
+        )
+
+  it "parses list comprehension with unpack target and if clause" $ do
+    parseProgram
+      [ Token PrintToken "print" (Position 1 1),
+        Token LBracketToken "[" (Position 1 7),
+        Token IdentifierToken "a" (Position 1 8),
+        Token PlusToken "+" (Position 1 10),
+        Token IdentifierToken "b" (Position 1 12),
+        Token ForToken "for" (Position 1 14),
+        Token IdentifierToken "a" (Position 1 18),
+        Token CommaToken "," (Position 1 19),
+        Token IdentifierToken "b" (Position 1 21),
+        Token InToken "in" (Position 1 23),
+        Token IdentifierToken "pairs" (Position 1 26),
+        Token IfToken "if" (Position 1 32),
+        Token IdentifierToken "a" (Position 1 35),
+        Token GtToken ">" (Position 1 37),
+        Token IntegerToken "0" (Position 1 39),
+        Token RBracketToken "]" (Position 1 40),
+        Token NewlineToken "\\n" (Position 1 41),
+        Token EOFToken "" (Position 2 1)
+      ]
+      `shouldBe` Right
+        ( Program
+            [ PrintStmt
+                (ListComprehensionClausesExpr
+                   (BinaryExpr AddOperator (IdentifierExpr "a" (Position 1 8)) (IdentifierExpr "b" (Position 1 12)) (Position 1 10))
+                   [ (["a", "b"], IdentifierExpr "pairs" (Position 1 26), [BinaryExpr GtOperator (IdentifierExpr "a" (Position 1 35)) (IntegerExpr 0 (Position 1 39)) (Position 1 37)])
+                   ]
+                   (Position 1 7))
+                (Position 1 1)
+            ]
+        )
+
+  it "parses walrus expression in comprehension condition" $ do
+    parseProgram
+      [ Token PrintToken "print" (Position 1 1),
+        Token LBracketToken "[" (Position 1 7),
+        Token IdentifierToken "x" (Position 1 8),
+        Token ForToken "for" (Position 1 10),
+        Token IdentifierToken "x" (Position 1 14),
+        Token InToken "in" (Position 1 16),
+        Token IdentifierToken "xs" (Position 1 19),
+        Token IfToken "if" (Position 1 22),
+        Token LParenToken "(" (Position 1 25),
+        Token IdentifierToken "y" (Position 1 26),
+        Token ColonAssignToken ":=" (Position 1 28),
+        Token IdentifierToken "x" (Position 1 31),
+        Token RParenToken ")" (Position 1 32),
+        Token RBracketToken "]" (Position 1 33),
+        Token NewlineToken "\\n" (Position 1 34),
+        Token EOFToken "" (Position 2 1)
+      ]
+      `shouldBe` Right
+        ( Program
+            [ PrintStmt
+                (ListComprehensionClausesExpr
+                   (IdentifierExpr "x" (Position 1 8))
+                   [(["x"], IdentifierExpr "xs" (Position 1 19), [WalrusExpr "y" (IdentifierExpr "x" (Position 1 31)) (Position 1 26)])]
+                   (Position 1 7))
                 (Position 1 1)
             ]
         )

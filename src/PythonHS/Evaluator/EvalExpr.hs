@@ -31,13 +31,19 @@ evalExpr evalStatementsFn env fenv expr =
       Right (DictValue pairs, outs, envAfterEntries)
     ListComprehensionExpr _ _ _ pos ->
       Left $ "Runtime error: list comprehension is only supported in vm engine at " ++ showPos pos
+    ListComprehensionClausesExpr _ _ pos ->
+      Left $ "Runtime error: list comprehension is only supported in vm engine at " ++ showPos pos
     IdentifierExpr name pos ->
       case Map.lookup name env of
         Just v -> Right (v, [], env)
         Nothing -> Left $ "Name error: undefined identifier " ++ name ++ " at " ++ showPos pos
     KeywordArgExpr _ valueExpr _ ->
       evalExpr evalStatementsFn env fenv valueExpr
+    WalrusExpr _ _ pos ->
+      Left $ "Runtime error: walrus is only supported in vm engine at " ++ showPos pos
     LambdaExpr _ _ pos ->
+      Left $ "Runtime error: lambda is only supported in vm engine at " ++ showPos pos
+    LambdaDefaultsExpr _ _ _ pos ->
       Left $ "Runtime error: lambda is only supported in vm engine at " ++ showPos pos
     UnaryMinusExpr unaryExpr pos -> do
       (v, outs, envAfterExpr) <- evalExpr evalStatementsFn env fenv unaryExpr
@@ -80,6 +86,7 @@ evalExpr evalStatementsFn env fenv expr =
     exprPos (DictExpr _ pos) = pos
     exprPos (IdentifierExpr _ pos) = pos
     exprPos (KeywordArgExpr _ _ pos) = pos
+    exprPos (WalrusExpr _ _ pos) = pos
     exprPos (LambdaExpr _ _ pos) = pos
     exprPos (LambdaDefaultsExpr _ _ _ pos) = pos
     exprPos (UnaryMinusExpr _ pos) = pos

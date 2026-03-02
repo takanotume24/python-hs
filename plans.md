@@ -640,3 +640,6 @@
   - [x] P15 開始: lambda 完全化（default引数・即時呼び出し・closure）と内包表記拡張（if句・ネストfor）
   - [x] P15 実装: `CallValueExpr`、`LambdaDefaultsExpr`、`ListComprehensionClausesExpr` と VM 実行系拡張を追加
   - [x] P15 完了: `cabal test -j1`（727 examples）と `cabal run check-structure` 成功
+  - [x] P16 開始: 内包表記 完全化（複数 `if` / walrus `:=` / アンパックtarget / 非リーク）を VM 専用で開始
+  - [x] P16 実装: `WalrusExpr`、`ColonAssignToken`、拡張内包 clause（targets + ifs）と VM 実行系（`DupTop` 含む）を導入
+  - [x] P16 完了: `cabal test -j1`（739 examples）と `cabal run check-structure` 成功

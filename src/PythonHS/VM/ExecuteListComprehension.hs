@@ -2,6 +2,7 @@ module PythonHS.VM.ExecuteListComprehension (executeListComprehension) where
 
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
+import PythonHS.Evaluator.ShowPos (showPos)
 import PythonHS.Evaluator.Value (Value (ListValue), Value)
 import PythonHS.VM.IsTruthy (isTruthy)
 import PythonHS.Lexer.Position (Position)
@@ -10,7 +11,7 @@ import PythonHS.VM.ToForIterable (toForIterable)
 
 executeListComprehension ::
   ([Instruction] -> Int -> [Value] -> Map.Map String Value -> Map.Map String Value -> Map.Map String ([String], [(String, [Instruction])], [Instruction]) -> Set.Set String -> Map.Map Int [Value] -> Map.Map Int Int -> [Int] -> [String] -> Bool -> Either String (Maybe Value, Map.Map String Value, Map.Map String ([String], [(String, [Instruction])], [Instruction]), [String])) ->
-  [(String, [Instruction], Maybe [Instruction])] ->
+  [([String], [Instruction], [[Instruction]])] ->
   [Instruction] ->
   Position ->
   Map.Map String Value ->
@@ -37,27 +38,43 @@ executeListComprehension execute clauses valueCode pos globalsEnv localEnv funct
         execute valueCode 0 [] globalsNow localsNow functionsNow Set.empty Map.empty Map.empty [] outputsNow False
       value <- requireElement maybeValue
       Right (acc ++ [value], globalsAfterValue, functionsAfterValue, outputsAfterValue)
-    evalClauses ((loopName, iterCode, maybeCondCode) : restClauses) localsNow acc globalsNow functionsNow outputsNow = do
+    evalClauses ((loopTargets, iterCode, condCodes) : restClauses) localsNow acc globalsNow functionsNow outputsNow = do
       (maybeIter, globalsAfterIter, functionsAfterIter, outputsAfterIter) <-
         execute iterCode 0 [] globalsNow localsNow functionsNow Set.empty Map.empty Map.empty [] outputsNow False
       iterValue <- requireValue maybeIter
       iterItems <- toForIterable iterValue pos
-      evalClauseItems loopName maybeCondCode restClauses localsNow iterItems acc globalsAfterIter functionsAfterIter outputsAfterIter
+      evalClauseItems loopTargets condCodes restClauses localsNow iterItems acc globalsAfterIter functionsAfterIter outputsAfterIter
 
     evalClauseItems _ _ _ _ [] acc globalsNow functionsNow outputsNow =
       Right (acc, globalsNow, functionsNow, outputsNow)
-    evalClauseItems loopName maybeCondCode restClauses localsNow (item : restItems) acc globalsNow functionsNow outputsNow = do
-      let nextLocals = Map.insert loopName item localsNow
+    evalClauseItems loopTargets condCodes restClauses localsNow (item : restItems) acc globalsNow functionsNow outputsNow = do
+      nextLocals <- bindTargets loopTargets item localsNow
       (shouldInclude, globalsAfterCond, functionsAfterCond, outputsAfterCond) <-
-        case maybeCondCode of
-          Nothing -> Right (True, globalsNow, functionsNow, outputsNow)
-          Just condCode -> do
-            (maybeCond, globalsAfterCond, functionsAfterCond, outputsAfterCond) <-
-              execute condCode 0 [] globalsNow nextLocals functionsNow Set.empty Map.empty Map.empty [] outputsNow False
-            condValue <- requireCondition maybeCond
-            Right (isTruthy condValue, globalsAfterCond, functionsAfterCond, outputsAfterCond)
+        evaluateConditions condCodes nextLocals globalsNow functionsNow outputsNow
       (accAfterItem, globalsAfterItem, functionsAfterItem, outputsAfterItem) <-
         if shouldInclude
           then evalClauses restClauses nextLocals acc globalsAfterCond functionsAfterCond outputsAfterCond
           else Right (acc, globalsAfterCond, functionsAfterCond, outputsAfterCond)
-      evalClauseItems loopName maybeCondCode restClauses localsNow restItems accAfterItem globalsAfterItem functionsAfterItem outputsAfterItem
+      evalClauseItems loopTargets condCodes restClauses localsNow restItems accAfterItem globalsAfterItem functionsAfterItem outputsAfterItem
+
+    evaluateConditions [] _ globalsNow functionsNow outputsNow =
+      Right (True, globalsNow, functionsNow, outputsNow)
+    evaluateConditions (condCode : restCodes) localsNow globalsNow functionsNow outputsNow = do
+      (maybeCond, globalsAfterCond, functionsAfterCond, outputsAfterCond) <-
+        execute condCode 0 [] globalsNow localsNow functionsNow Set.empty Map.empty Map.empty [] outputsNow False
+      condValue <- requireCondition maybeCond
+      if isTruthy condValue
+        then evaluateConditions restCodes localsNow globalsAfterCond functionsAfterCond outputsAfterCond
+        else Right (False, globalsAfterCond, functionsAfterCond, outputsAfterCond)
+
+    bindTargets [] _ _ = Left ("Value error: empty comprehension target at " ++ showPos pos)
+    bindTargets [name] value localsNow = Right (Map.insert name value localsNow)
+    bindTargets names value localsNow =
+      case value of
+        ListValue values ->
+          if length values == length names
+            then Right (foldl bindOne localsNow (zip names values))
+            else Left ("Value error: unpacking mismatch in comprehension at " ++ showPos pos)
+        _ -> Left ("Type error: unpacking expects list value in comprehension at " ++ showPos pos)
+
+    bindOne envNow (name, value) = Map.insert name value envNow

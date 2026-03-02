@@ -18,6 +18,7 @@ data Instruction
   | PushExceptionHandler Int
   | PushFinallyHandler Int
   | PopExceptionHandler
+  | DupTop
   | ApplyUnaryMinus Position
   | ApplyNot Position
   | ApplyBinary BinaryOperator Position
@@ -27,7 +28,7 @@ data Instruction
   | DefineFunction String [String] [(String, [Instruction])] [Instruction]
   | CreateLambda String [String] [(String, [Instruction])] [Instruction]
   | DefineClass String (Maybe String) [(String, String)]
-  | BuildListComprehension [(String, [Instruction], Maybe [Instruction])] [Instruction] Position
+  | BuildListComprehension [([String], [Instruction], [[Instruction]])] [Instruction] Position
   | CallFunction String [([Instruction], Maybe String, Position)] Position
   | CallValueFunction [([Instruction], Maybe String, Position)] Position
   | RaiseTop Position

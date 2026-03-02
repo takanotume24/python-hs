@@ -12,7 +12,7 @@ import PythonHS.VM.ExecuteCallValueFunction (executeCallValueFunction)
 import PythonHS.VM.ExecuteListComprehension (executeListComprehension)
 import PythonHS.VM.ExecuteMatchPattern (executeMatchPattern)
 import PythonHS.VM.HandleRuntimeError (handleRuntimeError)
-import PythonHS.VM.Instruction (Instruction (ApplyBinary, ApplyNot, ApplyUnaryMinus, BuildDict, BuildList, BuildListComprehension, CallFunction, CallValueFunction, CreateLambda, DeclareGlobal, DefineClass, DefineFunction, ForNext, ForSetup, Halt, Jump, JumpIfFalse, LoadName, LoopGuard, MatchPattern, PopExceptionHandler, PrintTop, PushConst, PushExceptionHandler, PushFinallyHandler, RaisePendingError, RaiseTop, ReturnTop, StoreName))
+import PythonHS.VM.Instruction (Instruction (ApplyBinary, ApplyNot, ApplyUnaryMinus, BuildDict, BuildList, BuildListComprehension, CallFunction, CallValueFunction, CreateLambda, DeclareGlobal, DefineClass, DefineFunction, DupTop, ForNext, ForSetup, Halt, Jump, JumpIfFalse, LoadName, LoopGuard, MatchPattern, PopExceptionHandler, PrintTop, PushConst, PushExceptionHandler, PushFinallyHandler, RaisePendingError, RaiseTop, ReturnTop, StoreName))
 import PythonHS.VM.IsTruthy (isTruthy)
 import PythonHS.VM.LookupNameWithAttr (lookupNameWithAttr)
 import PythonHS.VM.PopValues (popValues)
@@ -111,6 +111,10 @@ runInstructions instructions = do
               case exceptionHandlers of
                 _ : restHandlers -> execute code (ip + 1) stack globalsEnv localEnv functions globalDecls forStates loopCounts restHandlers outputs isTopLevel
                 [] -> execute code (ip + 1) stack globalsEnv localEnv functions globalDecls forStates loopCounts [] outputs isTopLevel
+            DupTop ->
+              case stack of
+                value : rest -> execute code (ip + 1) (value : value : rest) globalsEnv localEnv functions globalDecls forStates loopCounts exceptionHandlers outputs isTopLevel
+                _ -> Left "VM runtime error: dup requires one value on stack"
             DefineFunction name params defaultCodes functionCode ->
               let newFunctions = Map.insert name (params, defaultCodes, functionCode) functions
                in execute code (ip + 1) stack globalsEnv localEnv newFunctions globalDecls forStates loopCounts exceptionHandlers outputs isTopLevel

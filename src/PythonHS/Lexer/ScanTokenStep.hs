@@ -15,7 +15,8 @@ import PythonHS.Lexer.TokenType
         SlashAssignToken,
         PercentAssignToken,
         DoubleSlashAssignToken,
-        ColonToken,
+         ColonToken,
+         ColonAssignToken,
         CommaToken,
         DotToken,
         IntegerToken,
@@ -93,7 +94,10 @@ scanTokenStep src ln col =
       | c == ']' -> Right (Token RBracketToken "]" (Position ln col), rest, col + 1)
       | c == '{' -> Right (Token LBraceToken "{" (Position ln col), rest, col + 1)
       | c == '}' -> Right (Token RBraceToken "}" (Position ln col), rest, col + 1)
-      | c == ':' -> Right (Token ColonToken ":" (Position ln col), rest, col + 1)
+      | c == ':' ->
+          case rest of
+            ('=' : rest') -> Right (Token ColonAssignToken ":=" (Position ln col), rest', col + 2)
+            _ -> Right (Token ColonToken ":" (Position ln col), rest, col + 1)
       | c == ',' -> Right (Token CommaToken "," (Position ln col), rest, col + 1)
       | c == '.' ->
           case rest of

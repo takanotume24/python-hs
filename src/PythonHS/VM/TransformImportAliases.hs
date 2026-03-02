@@ -16,10 +16,11 @@ import PythonHS.AST.Expr
         ListComprehensionClausesExpr,
         ListComprehensionExpr,
          ListExpr,
-        NoneExpr,
-        NotExpr,
-        StringExpr,
-        UnaryMinusExpr
+         NoneExpr,
+         NotExpr,
+         StringExpr,
+         UnaryMinusExpr,
+         WalrusExpr
       )
   )
 import PythonHS.AST.Stmt
@@ -86,10 +87,11 @@ transformImportAliases renameDefNames moduleAlias callAlias identAlias stmt =
         ListComprehensionClausesExpr valueExpr clauses pos ->
           ListComprehensionClausesExpr
             (transformExpr moduleAliases callAliases identAliases valueExpr)
-            (fmap (\(name, iterExpr, maybeCond) -> (name, transformExpr moduleAliases callAliases identAliases iterExpr, fmap (transformExpr moduleAliases callAliases identAliases) maybeCond)) clauses)
+            (fmap (\(names, iterExpr, conds) -> (names, transformExpr moduleAliases callAliases identAliases iterExpr, fmap (transformExpr moduleAliases callAliases identAliases) conds)) clauses)
             pos
         DictExpr entries pos -> DictExpr (fmap (\(k, v) -> (transformExpr moduleAliases callAliases identAliases k, transformExpr moduleAliases callAliases identAliases v)) entries) pos
         KeywordArgExpr name value pos -> KeywordArgExpr name (transformExpr moduleAliases callAliases identAliases value) pos
+        WalrusExpr name value pos -> WalrusExpr name (transformExpr moduleAliases callAliases identAliases value) pos
         LambdaExpr params valueExpr pos -> LambdaExpr params (transformExpr moduleAliases callAliases identAliases valueExpr) pos
         LambdaDefaultsExpr params defaults valueExpr pos ->
           LambdaDefaultsExpr params (fmap (\(paramName, defaultExpr) -> (paramName, transformExpr moduleAliases callAliases identAliases defaultExpr)) defaults) (transformExpr moduleAliases callAliases identAliases valueExpr) pos

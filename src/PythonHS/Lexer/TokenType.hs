@@ -25,6 +25,7 @@ data TokenType
   | LBraceToken
   | RBraceToken
   | ColonToken
+  | ColonAssignToken
   | CommaToken
   | DotToken
   | NewlineToken

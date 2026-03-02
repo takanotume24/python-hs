@@ -177,6 +177,7 @@ evalStatements env fenv outputs (stmt : rest) =
     exprPos (DictExpr _ pos) = pos
     exprPos (IdentifierExpr _ pos) = pos
     exprPos (KeywordArgExpr _ _ pos) = pos
+    exprPos (WalrusExpr _ _ pos) = pos
     exprPos (LambdaExpr _ _ pos) = pos
     exprPos (LambdaDefaultsExpr _ _ _ pos) = pos
     exprPos (UnaryMinusExpr _ pos) = pos

@@ -1,7 +1,7 @@
 module PythonHS.VM.CompileProgram (compileProgram) where
 
 import PythonHS.AST.BinaryOperator (BinaryOperator (AddOperator, AndOperator, DivideOperator, FloorDivideOperator, ModuloOperator, MultiplyOperator, OrOperator, SubtractOperator))
-import PythonHS.AST.Expr (Expr (BinaryExpr, CallExpr, CallValueExpr, DictExpr, FloatExpr, IdentifierExpr, IntegerExpr, LambdaDefaultsExpr, LambdaExpr, ListComprehensionClausesExpr, ListComprehensionExpr, ListExpr, NoneExpr, NotExpr, StringExpr, UnaryMinusExpr))
+import PythonHS.AST.Expr (Expr (BinaryExpr, CallExpr, CallValueExpr, DictExpr, FloatExpr, IdentifierExpr, IntegerExpr, LambdaDefaultsExpr, LambdaExpr, ListComprehensionClausesExpr, ListComprehensionExpr, ListExpr, NoneExpr, NotExpr, StringExpr, UnaryMinusExpr, WalrusExpr))
 import PythonHS.AST.Program (Program (Program))
 import PythonHS.AST.Stmt (Stmt (AddAssignStmt, AssignStmt, BreakStmt, ClassDefStmt, ContinueStmt, DivAssignStmt, FloorDivAssignStmt, ForStmt, FromImportStmt, FunctionDefDefaultsStmt, FunctionDefStmt, GlobalStmt, IfStmt, ImportStmt, MatchStmt, ModAssignStmt, MulAssignStmt, PassStmt, PrintStmt, RaiseStmt, ReturnStmt, SubAssignStmt, TryExceptStmt, WhileStmt))
 import PythonHS.Evaluator.ShowPos (showPos)
@@ -17,7 +17,7 @@ import PythonHS.VM.CompileMatch (compileMatch)
 import PythonHS.VM.CompileTryExcept (compileTryExcept)
 import PythonHS.VM.ExprPosition (exprPosition)
 import PythonHS.VM.CompileComprehensionClauses (compileComprehensionClauses)
-import PythonHS.VM.Instruction (Instruction (ApplyBinary, ApplyNot, ApplyUnaryMinus, BuildDict, BuildList, BuildListComprehension, CallFunction, CallValueFunction, CreateLambda, DeclareGlobal, DefineFunction, ForNext, ForSetup, Halt, Jump, JumpIfFalse, LoadName, LoopGuard, PrintTop, PushConst, RaiseTop, ReturnTop, StoreName))
+import PythonHS.VM.Instruction (Instruction (ApplyBinary, ApplyNot, ApplyUnaryMinus, BuildDict, BuildList, BuildListComprehension, CallFunction, CallValueFunction, CreateLambda, DeclareGlobal, DefineFunction, DupTop, ForNext, ForSetup, Halt, Jump, JumpIfFalse, LoadName, LoopGuard, PrintTop, PushConst, RaiseTop, ReturnTop, StoreName))
 import PythonHS.VM.StmtPosition (stmtPosition)
 
 compileProgram :: Program -> Either String [Instruction]
@@ -153,7 +153,7 @@ compileProgram (Program stmts) = do
         ListComprehensionExpr valueExpr loopName iterExpr pos -> do
           (iterCode, _) <- compileExprAt 0 iterExpr
           (valueCode, _) <- compileExprAt 0 valueExpr
-          let clauses = [(loopName, iterCode ++ [ReturnTop], Nothing)]
+          let clauses = [([loopName], iterCode ++ [ReturnTop], [])]
           pure ([BuildListComprehension clauses (valueCode ++ [ReturnTop]) pos], baseIndex + 1)
         ListComprehensionClausesExpr valueExpr clausesExpr pos -> do
           clauses <- compileComprehensionClauses compileExprAt clausesExpr
@@ -169,6 +169,9 @@ compileProgram (Program stmts) = do
         NotExpr notExpr pos -> do
           (exprCode, exprEnd) <- compileExprAt baseIndex notExpr
           pure (exprCode ++ [ApplyNot pos], exprEnd + 1)
+        WalrusExpr name valueExpr _ -> do
+          (valueCode, valueEnd) <- compileExprAt baseIndex valueExpr
+          pure (valueCode ++ [DupTop, StoreName name], valueEnd + 2)
         LambdaExpr params bodyExpr pos -> do
           (bodyCode, _) <- compileExprAt 0 bodyExpr
           let lambdaName = "__lambda_" ++ showPos pos

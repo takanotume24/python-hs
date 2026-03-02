@@ -5,18 +5,19 @@ import PythonHS.VM.Instruction (Instruction (ReturnTop))
 
 compileComprehensionClauses ::
   (Int -> Expr -> Either String ([Instruction], Int)) ->
-  [(String, Expr, Maybe Expr)] ->
-  Either String [(String, [Instruction], Maybe [Instruction])]
+  [([String], Expr, [Expr])] ->
+  Either String [([String], [Instruction], [[Instruction]])]
 compileComprehensionClauses compileExprAt clauses =
   case clauses of
     [] -> Right []
-    (name, iterExpr, maybeCondExpr) : rest -> do
+    (targets, iterExpr, condExprs) : rest -> do
       (iterCode, _) <- compileExprAt 0 iterExpr
-      maybeCondCode <-
-        case maybeCondExpr of
-          Nothing -> Right Nothing
-          Just condExpr -> do
-            (condCode, _) <- compileExprAt 0 condExpr
-            Right (Just (condCode ++ [ReturnTop]))
+      condCodes <- compileConditions condExprs
       restClauses <- compileComprehensionClauses compileExprAt rest
-      Right ((name, iterCode ++ [ReturnTop], maybeCondCode) : restClauses)
+      Right ((targets, iterCode ++ [ReturnTop], condCodes) : restClauses)
+  where
+    compileConditions [] = Right []
+    compileConditions (condExpr : restConds) = do
+      (condCode, _) <- compileExprAt 0 condExpr
+      restCodes <- compileConditions restConds
+      Right ((condCode ++ [ReturnTop]) : restCodes)

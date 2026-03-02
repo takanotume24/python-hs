@@ -86,6 +86,18 @@ spec = describe "runSourceVm (vm mvp)" $ do
   it "runs list comprehension with nested for clauses" $ do
     runSourceVm "print [x + y for x in [1, 2] for y in [10, 20]]\n" `shouldBe` Right ["[11, 21, 12, 22]"]
 
+  it "runs list comprehension with chained if clauses" $ do
+    runSourceVm "print [x for x in [1, 2, 3, 4, 5, 6] if x % 2 == 0 if x > 2]\n" `shouldBe` Right ["[4, 6]"]
+
+  it "runs list comprehension with unpack target" $ do
+    runSourceVm "print [a + b for a, b in [[1, 10], [2, 20]]]\n" `shouldBe` Right ["[11, 22]"]
+
+  it "runs list comprehension with walrus condition" $ do
+    runSourceVm "print [x for x in [1, 2, 3, 4] if (y := x % 2) == 0]\n" `shouldBe` Right ["[2, 4]"]
+
+  it "does not leak comprehension variable to outer scope" $ do
+    runSourceVm "x = 100\nprint [x for x in [1, 2]]\nprint x\n" `shouldBe` Right ["[1, 2]", "100"]
+
   it "runs function definition and call with default parameters" $ do
     runSourceVm "def add(a, b = 2):\n  return a + b\nprint add(1)\nprint add(1, 3)\n" `shouldBe` Right ["3", "4"]
 

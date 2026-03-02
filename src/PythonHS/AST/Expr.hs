@@ -11,10 +11,11 @@ data Expr
   | NoneExpr Position
   | ListExpr [Expr] Position
   | ListComprehensionExpr Expr String Expr Position
-  | ListComprehensionClausesExpr Expr [(String, Expr, Maybe Expr)] Position
+  | ListComprehensionClausesExpr Expr [([String], Expr, [Expr])] Position
   | DictExpr [(Expr, Expr)] Position
   | IdentifierExpr String Position
   | KeywordArgExpr String Expr Position
+  | WalrusExpr String Expr Position
   | LambdaExpr [String] Expr Position
   | LambdaDefaultsExpr [String] [(String, Expr)] Expr Position
   | UnaryMinusExpr Expr Position

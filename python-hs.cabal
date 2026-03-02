@@ -46,6 +46,7 @@ library
     , PythonHS.Parser.ParseExpr
     , PythonHS.Parser.ParseComprehensionTail
     , PythonHS.Parser.ParseLambdaExpr
+    , PythonHS.Parser.ParseWalrusExpr
     , PythonHS.Parser.ExprPos
     , PythonHS.Parser.NormalizeFloatLiteral
     , PythonHS.Parser.ParseStatement
