@@ -3,7 +3,7 @@ module Test.Lexer.ScanTokensCoreSpec (spec) where
 import PythonHS.Lexer.Position (Position (Position))
 import PythonHS.Lexer.ScanTokens (scanTokens)
 import PythonHS.Lexer.Token (Token (Token))
-import PythonHS.Lexer.TokenType (TokenType (AsToken, AssignToken, BreakToken, ColonToken, ContinueToken, DotToken, DoubleSlashAssignToken, DoubleSlashToken, EOFToken, ElifToken, ExceptToken, FalseToken, FinallyToken, FloatToken, ForToken, FromToken, GlobalToken, IdentifierToken, IfToken, ImportToken, InToken, IntegerToken, LParenToken, MinusAssignToken, NewlineToken, NoneToken, PassToken, PercentAssignToken, PercentToken, PlusAssignToken, PlusToken, PrintToken, RaiseToken, ReturnToken, RParenToken, SlashAssignToken, SlashToken, StarAssignToken, StarToken, StringToken, TrueToken, TryToken))
+import PythonHS.Lexer.TokenType (TokenType (AsToken, AssignToken, BreakToken, CaseToken, ColonToken, ContinueToken, DedentToken, DotToken, DoubleSlashAssignToken, DoubleSlashToken, EOFToken, ElifToken, ExceptToken, FalseToken, FinallyToken, FloatToken, ForToken, FromToken, GlobalToken, IdentifierToken, IfToken, ImportToken, InToken, IndentToken, IntegerToken, LParenToken, MatchToken, MinusAssignToken, NewlineToken, NoneToken, PassToken, PercentAssignToken, PercentToken, PipeToken, PlusAssignToken, PlusToken, PrintToken, RaiseToken, ReturnToken, RParenToken, SlashAssignToken, SlashToken, StarAssignToken, StarToken, StringToken, TrueToken, TryToken))
 import Test.Hspec (Spec, describe, it, shouldBe)
 
 spec :: Spec
@@ -210,6 +210,29 @@ spec = describe "scanTokens core tokens" $ do
           Token StringToken "x" (Position 4 7),
           Token NewlineToken "\\n" (Position 4 10),
           Token EOFToken "" (Position 5 1)
+        ]
+
+  it "recognizes match/case and pattern tokens" $ do
+    scanTokens "match x:\n  case 1 | 2:\n    print 1\n" `shouldBe`
+      Right
+        [ Token MatchToken "match" (Position 1 1),
+          Token IdentifierToken "x" (Position 1 7),
+          Token ColonToken ":" (Position 1 8),
+          Token NewlineToken "\\n" (Position 1 9),
+          Token IndentToken "<INDENT>" (Position 2 1),
+          Token CaseToken "case" (Position 2 3),
+          Token IntegerToken "1" (Position 2 8),
+          Token PipeToken "|" (Position 2 10),
+          Token IntegerToken "2" (Position 2 12),
+          Token ColonToken ":" (Position 2 13),
+          Token NewlineToken "\\n" (Position 2 14),
+          Token IndentToken "<INDENT>" (Position 3 1),
+          Token PrintToken "print" (Position 3 5),
+          Token IntegerToken "1" (Position 3 11),
+          Token NewlineToken "\\n" (Position 3 12),
+          Token DedentToken "<DEDENT>" (Position 4 1),
+          Token DedentToken "<DEDENT>" (Position 4 1),
+          Token EOFToken "" (Position 4 1)
         ]
 
   it "recognizes from/as keywords for import variants" $ do

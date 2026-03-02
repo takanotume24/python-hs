@@ -53,6 +53,8 @@ data TokenType
   | ExceptToken
   | FinallyToken
   | RaiseToken
+  | MatchToken
+  | CaseToken
   | EqToken
   | NotEqToken
   | LtToken
@@ -62,5 +64,6 @@ data TokenType
   | AndToken
   | OrToken
   | NotToken
+  | PipeToken
   | EOFToken
   deriving (Eq, Show)

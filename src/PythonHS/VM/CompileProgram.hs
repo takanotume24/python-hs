@@ -3,7 +3,7 @@ module PythonHS.VM.CompileProgram (compileProgram) where
 import PythonHS.AST.BinaryOperator (BinaryOperator (AddOperator, AndOperator, DivideOperator, FloorDivideOperator, ModuloOperator, MultiplyOperator, OrOperator, SubtractOperator))
 import PythonHS.AST.Expr (Expr (BinaryExpr, CallExpr, DictExpr, FloatExpr, IdentifierExpr, IntegerExpr, ListExpr, NoneExpr, NotExpr, StringExpr, UnaryMinusExpr))
 import PythonHS.AST.Program (Program (Program))
-import PythonHS.AST.Stmt (Stmt (AddAssignStmt, AssignStmt, BreakStmt, ContinueStmt, DivAssignStmt, FloorDivAssignStmt, ForStmt, FromImportStmt, FunctionDefDefaultsStmt, FunctionDefStmt, GlobalStmt, IfStmt, ImportStmt, ModAssignStmt, MulAssignStmt, PassStmt, PrintStmt, RaiseStmt, ReturnStmt, SubAssignStmt, TryExceptStmt, WhileStmt))
+import PythonHS.AST.Stmt (Stmt (AddAssignStmt, AssignStmt, BreakStmt, ContinueStmt, DivAssignStmt, FloorDivAssignStmt, ForStmt, FromImportStmt, FunctionDefDefaultsStmt, FunctionDefStmt, GlobalStmt, IfStmt, ImportStmt, MatchStmt, ModAssignStmt, MulAssignStmt, PassStmt, PrintStmt, RaiseStmt, ReturnStmt, SubAssignStmt, TryExceptStmt, WhileStmt))
 import PythonHS.Evaluator.ShowPos (showPos)
 import PythonHS.Evaluator.Value (Value (FloatValue, IntValue, NoneValue, StringValue))
 import PythonHS.VM.CompileCallArgsAt (compileCallArgsAt)
@@ -11,6 +11,7 @@ import PythonHS.VM.CompileDefaults (compileDefaults)
 import PythonHS.VM.CompileExprItemsAt (compileExprItemsAt)
 import PythonHS.VM.CompileImportStmt (compileImportStmt)
 import PythonHS.VM.CompileLogicalExpr (compileLogicalExpr)
+import PythonHS.VM.CompileMatch (compileMatch)
 import PythonHS.VM.CompileTryExcept (compileTryExcept)
 import PythonHS.VM.ExprPosition (exprPosition)
 import PythonHS.VM.Instruction (Instruction (ApplyBinary, ApplyNot, ApplyUnaryMinus, BuildDict, BuildList, CallFunction, DeclareGlobal, DefineFunction, ForNext, ForSetup, Halt, Jump, JumpIfFalse, LoadName, LoopGuard, PrintTop, PushConst, RaiseTop, ReturnTop, StoreName))
@@ -41,6 +42,8 @@ compileProgram (Program stmts) = do
           pure (code, exprEnd + 1)
         TryExceptStmt tryStmts exceptStmts maybeFinally _ ->
           compileTryExcept compileStatements baseIndex inFunction maybeLoop tryStmts exceptStmts maybeFinally
+        MatchStmt subjectExpr matchCases _ ->
+          compileMatch compileExprAt compileStatements baseIndex inFunction maybeLoop subjectExpr matchCases
         ImportStmt _ _ ->
           compileImportStmt baseIndex stmt
         FromImportStmt _ _ _ ->

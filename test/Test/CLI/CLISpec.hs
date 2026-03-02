@@ -151,6 +151,15 @@ spec = describe "runFile / replEvalLines" $ do
         res <- runFile path
         res `shouldBe` Right ["1", "3"]
 
+  it "handles match/case patterns in vm engine for runFile" $
+    withSystemTempFile "vm-match-case.pyhs" $ \path h -> do
+      hPutStr h "x = {\"k\": 9}\nmatch x:\n  case {\"k\": v} if v:\n    print v\n  case _:\n    print 0\n"
+      hClose h
+      bracket (lookupEnv "PYTHON_HS_RUNNER_ENGINE") restoreRunnerEngine $ \_ -> do
+        setEnv "PYTHON_HS_RUNNER_ENGINE" "vm"
+        res <- runFile path
+        res `shouldBe` Right ["9"]
+
   it "falls back to ast engine when PYTHON_HS_RUNNER_ENGINE is unknown" $
     withSystemTempFile "ast-fallback.pyhs" $ \path h -> do
       hPutStr h "def add(a, b = 2):\n  return a + b\nprint add(1)\n"

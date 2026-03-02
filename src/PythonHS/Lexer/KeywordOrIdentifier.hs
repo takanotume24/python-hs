@@ -19,6 +19,8 @@ import PythonHS.Lexer.TokenType
         IfToken,
         ImportToken,
         InToken,
+        MatchToken,
+        CaseToken,
         NoneToken,
         NotToken,
         OrToken,
@@ -57,6 +59,8 @@ keywordOrIdentifier value
   | value == "except" = ExceptToken
   | value == "finally" = FinallyToken
   | value == "raise" = RaiseToken
+  | value == "match" = MatchToken
+  | value == "case" = CaseToken
   | value == "and" = AndToken
   | value == "or" = OrToken
   | value == "not" = NotToken

@@ -12,10 +12,11 @@ import PythonHS.VM.CallBuiltin (callBuiltin)
 import PythonHS.VM.CollectFunctionGlobalDecls (collectFunctionGlobalDecls)
 import PythonHS.VM.EvalBinaryOp (evalBinaryOp)
 import PythonHS.VM.EvaluateBuiltinArgs (evaluateBuiltinArgs)
+import PythonHS.VM.ExecuteMatchPattern (executeMatchPattern)
 import PythonHS.VM.EvaluateUserArgs (evaluateUserArgs)
 import PythonHS.VM.FirstKeywordArg (firstKeywordArg)
 import PythonHS.VM.HandleRuntimeError (handleRuntimeError)
-import PythonHS.VM.Instruction (Instruction (ApplyBinary, ApplyNot, ApplyUnaryMinus, BuildDict, BuildList, CallFunction, DeclareGlobal, DefineFunction, ForNext, ForSetup, Halt, Jump, JumpIfFalse, LoadName, LoopGuard, PopExceptionHandler, PrintTop, PushConst, PushExceptionHandler, PushFinallyHandler, RaisePendingError, RaiseTop, ReturnTop, StoreName))
+import PythonHS.VM.Instruction (Instruction (ApplyBinary, ApplyNot, ApplyUnaryMinus, BuildDict, BuildList, CallFunction, DeclareGlobal, DefineFunction, ForNext, ForSetup, Halt, Jump, JumpIfFalse, LoadName, LoopGuard, MatchPattern, PopExceptionHandler, PrintTop, PushConst, PushExceptionHandler, PushFinallyHandler, RaisePendingError, RaiseTop, ReturnTop, StoreName))
 import PythonHS.VM.IsTruthy (isTruthy)
 import PythonHS.VM.LookupName (lookupName)
 import PythonHS.VM.PopValues (popValues)
@@ -63,9 +64,13 @@ runInstructions instructions = do
               case popValues (count * 2) stack of
                 Left err -> Left err
                 Right (flatValues, rest) ->
-                  case toPairs flatValues of
-                    Left err -> Left err
-                    Right pairs -> execute code (ip + 1) (DictValue pairs : rest) globalsEnv localEnv functions globalDecls forStates loopCounts exceptionHandlers outputs isTopLevel
+                    case toPairs flatValues of
+                      Left err -> Left err
+                      Right pairs -> execute code (ip + 1) (DictValue pairs : rest) globalsEnv localEnv functions globalDecls forStates loopCounts exceptionHandlers outputs isTopLevel
+            MatchPattern pattern _ ->
+              do
+                (newStack, newGlobals, newLocals) <- executeMatchPattern isTopLevel globalDecls pattern stack globalsEnv localEnv
+                execute code (ip + 1) newStack newGlobals newLocals functions globalDecls forStates loopCounts exceptionHandlers outputs isTopLevel
             Jump target -> execute code target stack globalsEnv localEnv functions globalDecls forStates loopCounts exceptionHandlers outputs isTopLevel
             JumpIfFalse target ->
               case stack of

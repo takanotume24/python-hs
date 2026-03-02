@@ -113,6 +113,13 @@
 - [x] 構造制約対応: `ParseExceptSuites` を分離して `ParseStatement` の 200 行制約を維持
 - [x] 品質ゲート再実行（`cabal test` / `cabal run check-structure` / warning 0）
 
+## 現在のスコープ（P12: VM match/case 導入）
+- [x] P12 開始: `match/case` を VM 専用で導入するスコープを開始
+- [x] 失敗テスト先行: lexer/parser/VM/CLI に `match/case` ケースを追加
+- [x] VM 実装: `MatchStmt` / `Pattern` を追加し、値/OR/シーケンス/マッピング/ガードの最小実行を導入
+- [x] 構造制約対応: `ExecuteMatchPattern` を分離して `RunInstructions` の 200 行制約を維持
+- [x] 品質ゲート再実行（`cabal test` / `cabal run check-structure` / warning 0）
+
 ### 運用メモ
 - 受け入れテストは MVP 最小（`MvpScenarioSpec`）を維持し、詳細仕様は Runner/Eval の回帰テストで固定する。
 
@@ -208,6 +215,10 @@
 ## メンテナンス記録（要約）
 - 注記: 以下は時系列ログ。古い日付の「未対応」項目は、その後のエントリで仕様更新済みの場合がある。
 - 2026-03-02
+  - [x] P12開始/完了: VM専用で `match/case`（値/OR/シーケンス/マッピング/ガードの最小対応）を導入し、同日内にテスト・実装・品質ゲートまで完了
+  - [x] P12継続: `Pattern` / `MatchStmt` を追加し、`ParsePattern` / `ParseMatchStmt` / `CompileMatch` / `MatchPatternBindings` を実装
+  - [x] P12継続: 構造制約対応として `ExecuteMatchPattern` を分離し、`RunInstructions` の 200 行制約超過を解消
+  - [x] P12継続: 品質ゲート再実行（`cabal test` 717 examples green / `cabal run check-structure` pass / warning 0）を確認
   - [x] P8完了: `import` 拡張（`import`/`import as`/`from import`/dotted path）を lexer/parser/AST/VM へ導入し、VM 実行で `math` 組み込み + ローカル `.py` import を有効化
   - [x] P8完了: `runFile` の VM 経路に探索パス注入（実行ファイルディレクトリ）を導入し、ローカルモジュール解決を実運用導線で固定
   - [x] P8完了: 品質ゲート再実行（`cabal test`: 695 examples green / `cabal run check-structure`: pass）を確認

@@ -26,6 +26,15 @@ spec = describe "runSourceVm (vm mvp)" $ do
   it "runs only the first except suite when multiple except suites exist" $ do
     runSourceVm "try:\n  raise \"boom\"\nexcept:\n  print 1\nexcept:\n  print 2\nfinally:\n  print 3\n" `shouldBe` Right ["1", "3"]
 
+  it "matches value patterns and wildcard in order" $ do
+    runSourceVm "x = 2\nmatch x:\n  case 1:\n    print 10\n  case 2:\n    print 20\n  case _:\n    print 30\n" `shouldBe` Right ["20"]
+
+  it "supports OR pattern and guard" $ do
+    runSourceVm "x = 1\nok = 1\nmatch x:\n  case 1 | 2 if ok:\n    print 7\n  case _:\n    print 9\n" `shouldBe` Right ["7"]
+
+  it "supports sequence and mapping pattern captures" $ do
+    runSourceVm "x = [1, 2, 3]\nmatch x:\n  case [a, b, *rest]:\n    print a\n    print b\n    print rest\n  case _:\n    print 0\nm = {\"k\": 8}\nmatch m:\n  case {\"k\": v}:\n    print v\n  case _:\n    print 0\n" `shouldBe` Right ["1", "2", "[3]", "8"]
+
   it "supports import math with MVP functions" $ do
     runSourceVm "import math\nprint math.sqrt(9)\nprint math.sin(0)\nprint math.pi()\nprint math.e()\n" `shouldBe` Right ["3.0", "0.0", "3.141592653589793", "2.718281828459045"]
 

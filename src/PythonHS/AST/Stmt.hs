@@ -1,6 +1,7 @@
 module PythonHS.AST.Stmt (Stmt (..)) where
 
 import PythonHS.AST.Expr (Expr)
+import PythonHS.AST.Pattern (Pattern)
 import PythonHS.Lexer.Position (Position)
 
 -- Statements: assignment, print, control flow, function definition
@@ -21,6 +22,7 @@ data Stmt
   | ImportStmt [([String], Maybe String)] Position
   | FromImportStmt [String] [(String, Maybe String)] Position
   | TryExceptStmt [Stmt] [[Stmt]] (Maybe [Stmt]) Position
+  | MatchStmt Expr [(Pattern, Maybe Expr, [Stmt], Position)] Position
   | RaiseStmt Expr Position
   | PassStmt Position
   | IfStmt Expr [Stmt] (Maybe [Stmt]) Position      -- condition, then-branch, optional else-branch

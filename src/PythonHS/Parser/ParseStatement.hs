@@ -21,8 +21,9 @@ import PythonHS.Lexer.TokenType
          ImportToken,
          TryToken,
          FinallyToken,
-         RaiseToken,
-         IfToken,
+          RaiseToken,
+          MatchToken,
+          IfToken,
         InToken,
         IndentToken,
         LParenToken,
@@ -44,6 +45,7 @@ import PythonHS.Parser.ParseExceptSuites (parseExceptSuites)
 import PythonHS.Parser.ParseExpr (parseExpr)
 import PythonHS.Parser.ParseIfTail (parseIfTail)
 import PythonHS.Parser.ParseImportStmt (parseImportStmt)
+import PythonHS.Parser.ParseMatchStmt (parseMatchStmt)
 parseStatement :: [Token] -> Either ParseError (Stmt, [Token])
 parseStatement tokenStream =
   case tokenStream of
@@ -109,6 +111,8 @@ parseStatement tokenStream =
             Left err -> Left err
         Token _ _ pos' : _ -> Left (ExpectedExpression pos')
         _ -> Left (ExpectedExpression (Position 0 0))
+    Token MatchToken _ pos : rest ->
+      parseMatchStmt parseExpr parseSuite pos rest
     Token WhileToken _ pos : rest -> do
       (cond, afterCond) <- parseExpr rest
       case afterCond of

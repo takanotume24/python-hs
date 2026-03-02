@@ -1,6 +1,7 @@
 module PythonHS.VM.Instruction (Instruction (..)) where
 
 import PythonHS.AST.BinaryOperator (BinaryOperator)
+import PythonHS.AST.Pattern (Pattern)
 import PythonHS.Evaluator.Value (Value)
 import PythonHS.Lexer.Position (Position)
 
@@ -20,6 +21,7 @@ data Instruction
   | ApplyUnaryMinus Position
   | ApplyNot Position
   | ApplyBinary BinaryOperator Position
+  | MatchPattern Pattern Position
   | JumpIfFalse Int
   | Jump Int
   | DefineFunction String [String] [(String, [Instruction])] [Instruction]

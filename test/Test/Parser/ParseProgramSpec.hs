@@ -2,8 +2,9 @@ module Test.Parser.ParseProgramSpec (spec) where
 
 import PythonHS.AST.BinaryOperator (BinaryOperator (..))
 import PythonHS.AST.Expr (Expr (BinaryExpr, CallExpr, DictExpr, FloatExpr, IdentifierExpr, IntegerExpr, KeywordArgExpr, ListExpr, NoneExpr, NotExpr, StringExpr, UnaryMinusExpr))
+import PythonHS.AST.Pattern (Pattern (CapturePattern, MappingPattern, OrPattern, ValuePattern, WildcardPattern))
 import PythonHS.AST.Program (Program (Program))
-import PythonHS.AST.Stmt (Stmt (AddAssignStmt, AssignStmt, BreakStmt, ContinueStmt, DivAssignStmt, FloorDivAssignStmt, ForStmt, FromImportStmt, FunctionDefDefaultsStmt, FunctionDefStmt, GlobalStmt, IfStmt, ImportStmt, ModAssignStmt, MulAssignStmt, PassStmt, PrintStmt, RaiseStmt, ReturnStmt, SubAssignStmt, TryExceptStmt, WhileStmt))
+import PythonHS.AST.Stmt (Stmt (AddAssignStmt, AssignStmt, BreakStmt, ContinueStmt, DivAssignStmt, FloorDivAssignStmt, ForStmt, FromImportStmt, FunctionDefDefaultsStmt, FunctionDefStmt, GlobalStmt, IfStmt, ImportStmt, MatchStmt, ModAssignStmt, MulAssignStmt, PassStmt, PrintStmt, RaiseStmt, ReturnStmt, SubAssignStmt, TryExceptStmt, WhileStmt))
 import PythonHS.Lexer.Token (Token (Token))
 import PythonHS.Lexer.Position (Position (Position))
 import PythonHS.Lexer.TokenType
@@ -56,11 +57,14 @@ import PythonHS.Lexer.TokenType
         AndToken,
         OrToken,
         NotToken,
-         IfToken,
-         TryToken,
-         ExceptToken,
-         FinallyToken,
-         WhileToken,
+          IfToken,
+          MatchToken,
+          CaseToken,
+          TryToken,
+          ExceptToken,
+          FinallyToken,
+          PipeToken,
+          WhileToken,
          LBracketToken,
          RBracketToken,
         LBraceToken,
@@ -239,6 +243,81 @@ spec = describe "parseProgram" $ do
                   [PrintStmt (IntegerExpr 2 (Position 6 9)) (Position 6 3)]
                 ]
                 Nothing
+                (Position 1 1)
+            ]
+        )
+
+  it "parses match statement with OR/guard/mapping/wildcard patterns" $ do
+    parseProgram
+      [ Token MatchToken "match" (Position 1 1),
+        Token IdentifierToken "x" (Position 1 7),
+        Token ColonToken ":" (Position 1 8),
+        Token NewlineToken "\\n" (Position 1 9),
+        Token IndentToken "<INDENT>" (Position 2 1),
+        Token CaseToken "case" (Position 2 3),
+        Token IntegerToken "1" (Position 2 8),
+        Token PipeToken "|" (Position 2 10),
+        Token IntegerToken "2" (Position 2 12),
+        Token IfToken "if" (Position 2 14),
+        Token IdentifierToken "ok" (Position 2 17),
+        Token ColonToken ":" (Position 2 19),
+        Token NewlineToken "\\n" (Position 2 20),
+        Token IndentToken "<INDENT>" (Position 3 1),
+        Token PrintToken "print" (Position 3 5),
+        Token IntegerToken "10" (Position 3 11),
+        Token NewlineToken "\\n" (Position 3 13),
+        Token DedentToken "<DEDENT>" (Position 4 1),
+        Token CaseToken "case" (Position 4 3),
+        Token LBraceToken "{" (Position 4 8),
+        Token StringToken "k" (Position 4 9),
+        Token ColonToken ":" (Position 4 12),
+        Token IdentifierToken "v" (Position 4 14),
+        Token RBraceToken "}" (Position 4 15),
+        Token ColonToken ":" (Position 4 16),
+        Token NewlineToken "\\n" (Position 4 17),
+        Token IndentToken "<INDENT>" (Position 5 1),
+        Token PrintToken "print" (Position 5 5),
+        Token IdentifierToken "v" (Position 5 11),
+        Token NewlineToken "\\n" (Position 5 12),
+        Token DedentToken "<DEDENT>" (Position 6 1),
+        Token CaseToken "case" (Position 6 3),
+        Token IdentifierToken "_" (Position 6 8),
+        Token ColonToken ":" (Position 6 9),
+        Token NewlineToken "\\n" (Position 6 10),
+        Token IndentToken "<INDENT>" (Position 7 1),
+        Token PrintToken "print" (Position 7 5),
+        Token IntegerToken "0" (Position 7 11),
+        Token NewlineToken "\\n" (Position 7 12),
+        Token DedentToken "<DEDENT>" (Position 8 1),
+        Token DedentToken "<DEDENT>" (Position 8 1),
+        Token EOFToken "" (Position 8 1)
+      ]
+      `shouldBe` Right
+        ( Program
+            [ MatchStmt
+                (IdentifierExpr "x" (Position 1 7))
+                [ ( OrPattern
+                      [ ValuePattern (IntegerExpr 1 (Position 2 8)) (Position 2 8),
+                        ValuePattern (IntegerExpr 2 (Position 2 12)) (Position 2 12)
+                      ]
+                      (Position 2 10),
+                    Just (IdentifierExpr "ok" (Position 2 17)),
+                    [PrintStmt (IntegerExpr 10 (Position 3 11)) (Position 3 5)],
+                    (Position 2 3)
+                  ),
+                  ( MappingPattern
+                      [(StringExpr "k" (Position 4 9), CapturePattern "v" (Position 4 14))]
+                      (Position 4 8),
+                    Nothing,
+                    [PrintStmt (IdentifierExpr "v" (Position 5 11)) (Position 5 5)],
+                    (Position 4 3)
+                  ),
+                  ( WildcardPattern (Position 6 8),
+                    Nothing,
+                    [PrintStmt (IntegerExpr 0 (Position 7 11)) (Position 7 5)],
+                    (Position 6 3)
+                  )
+                ]
                 (Position 1 1)
             ]
         )

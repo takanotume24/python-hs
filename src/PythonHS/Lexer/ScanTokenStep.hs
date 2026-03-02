@@ -30,8 +30,9 @@ import PythonHS.Lexer.TokenType
         LtToken,
         GtToken,
         LteToken,
-        GteToken,
-        LBracketToken,
+         GteToken,
+         PipeToken,
+         LBracketToken,
         RBracketToken,
         LBraceToken,
         RBraceToken,
@@ -85,6 +86,7 @@ scanTokenStep src ln col =
           case rest of
             ('=' : rest') -> Right (Token PercentAssignToken "%=" (Position ln col), rest', col + 2)
             _ -> Right (Token PercentToken "%" (Position ln col), rest, col + 1)
+      | c == '|' -> Right (Token PipeToken "|" (Position ln col), rest, col + 1)
       | c == '(' -> Right (Token LParenToken "(" (Position ln col), rest, col + 1)
       | c == ')' -> Right (Token RParenToken ")" (Position ln col), rest, col + 1)
       | c == '[' -> Right (Token LBracketToken "[" (Position ln col), rest, col + 1)

@@ -12,6 +12,7 @@ library
     , PythonHS.Lexer.ScanTokens
     , PythonHS.AST.BinaryOperator
     , PythonHS.AST.Expr
+    , PythonHS.AST.Pattern
     , PythonHS.AST.Stmt
     , PythonHS.AST.Program
     , PythonHS.Lexer.Position
@@ -45,6 +46,8 @@ library
     , PythonHS.Parser.ParseExpr
     , PythonHS.Parser.ParseStatement
     , PythonHS.Parser.ParseExceptSuites
+    , PythonHS.Parser.ParsePattern
+    , PythonHS.Parser.ParseMatchStmt
     , PythonHS.Parser.ParseIfTail
     , PythonHS.Parser.ParseImportStmt
     , PythonHS.Structure.CheckStructureWarnings
@@ -71,12 +74,14 @@ library
     , PythonHS.VM.CompileExprItemsAt
     , PythonHS.VM.CompileImportStmt
     , PythonHS.VM.CompileLogicalExpr
+    , PythonHS.VM.CompileMatch
     , PythonHS.VM.CompileTryExcept
     , PythonHS.VM.EvalBinaryOp
     , PythonHS.VM.ResolveLocalImports
     , PythonHS.VM.TransformImportAliases
     , PythonHS.VM.CollectFunctionGlobalDecls
     , PythonHS.VM.EvaluateBuiltinArgs
+    , PythonHS.VM.ExecuteMatchPattern
     , PythonHS.VM.EvaluateUserArgs
     , PythonHS.VM.ExprPosition
     , PythonHS.VM.FirstKeywordArg
@@ -85,6 +90,8 @@ library
     , PythonHS.VM.Instruction
     , PythonHS.VM.IsTruthy
     , PythonHS.VM.LookupName
+    , PythonHS.VM.MatchPatternBindings
+    , PythonHS.VM.BindPatternCaptures
     , PythonHS.VM.PopValues
     , PythonHS.VM.ToForIterable
     , PythonHS.VM.ToPairs
