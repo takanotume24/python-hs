@@ -2,7 +2,7 @@ module PythonHS.VM.StoreNameWithAttr (storeNameWithAttr) where
 
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
-import PythonHS.Evaluator.Value (Value (InstanceValue), Value)
+import PythonHS.Evaluator.Value (Value (InstanceValue, IntValue), Value)
 import PythonHS.VM.LookupName (lookupName)
 
 storeNameWithAttr :: Bool -> Set.Set String -> String -> Value -> Map.Map String Value -> Map.Map String Value -> Either String (Map.Map String Value, Map.Map String Value)
@@ -39,8 +39,11 @@ storeNameWithAttr isTopLevelNow globalDeclsNow name value globalsNow localsNow =
         [attrName] ->
           case currentValue of
             InstanceValue className attrPairs ->
-              let newPairs = upsertAttr attrName valueToStore attrPairs
-               in Right (InstanceValue className newPairs)
+              if isFrozenInstance attrPairs && attrName /= "__python_hs_frozen__"
+                then Left ("Type error: cannot assign to frozen dataclass field " ++ attrName ++ " at 0:0")
+                else
+                  let newPairs = upsertAttr attrName valueToStore attrPairs
+                   in Right (InstanceValue className newPairs)
             _ -> Left "Type error: attribute store expects instance at 0:0"
         attrName : restAttrs ->
           case currentValue of
@@ -62,3 +65,8 @@ storeNameWithAttr isTopLevelNow globalDeclsNow name value globalsNow localsNow =
           if k == key
             then (k, newValue) : restPairs
             else (k, v) : upsertAttr key newValue restPairs
+
+    isFrozenInstance attrPairs =
+      case lookup "__python_hs_frozen__" attrPairs of
+        Just (IntValue n) -> n /= 0
+        _ -> False

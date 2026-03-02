@@ -43,8 +43,9 @@ library
     , PythonHS.Lexer.KeywordOrIdentifier
     , PythonHS.Lexer.ParseExponent
     , PythonHS.Lexer.ScanTokenStep
-    , PythonHS.Parser.ParseExpr
-    , PythonHS.Parser.ParseCallArgument
+      , PythonHS.Parser.ParseExpr
+      , PythonHS.Parser.ParseAnnAssignStmt
+      , PythonHS.Parser.ParseCallArgument
     , PythonHS.Parser.ParseDecoratedStmt
     , PythonHS.Parser.ParseComprehensionTail
     , PythonHS.Parser.ParseLambdaExpr
@@ -57,8 +58,9 @@ library
     , PythonHS.Parser.ParseExceptSuites
     , PythonHS.Parser.ParsePattern
     , PythonHS.Parser.ParseMatchStmt
-    , PythonHS.Parser.ParseIfTail
-    , PythonHS.Parser.ParseYieldStmt
+      , PythonHS.Parser.ParseIfTail
+      , PythonHS.Parser.ParseSuite
+      , PythonHS.Parser.ParseYieldStmt
     , PythonHS.Parser.ParseImportStmt
     , PythonHS.Structure.CheckStructureWarnings
     , PythonHS.Evaluator.ValueToOutput
@@ -79,17 +81,19 @@ library
     , PythonHS.VM.CallCollectionBuiltin
     , PythonHS.VM.CallMathBuiltin
     , PythonHS.VM.BindCallArguments
-    , PythonHS.VM.CompileCallArgsAt
-    , PythonHS.VM.CompileClassStmt
+      , PythonHS.VM.CompileCallArgsAt
+      , PythonHS.VM.CompileClassDefStmt
+      , PythonHS.VM.CompileClassStmt
     , PythonHS.VM.CompileCompoundAssign
     , PythonHS.VM.CompileDecoratorApplications
     , PythonHS.VM.CompileDecoratedStmt
     , PythonHS.VM.CompileFunctionDefStmt
     , PythonHS.VM.CompileYieldCollectStmt
     , PythonHS.VM.CompileComprehensionClauses
-    , PythonHS.VM.CompileDictEntriesAt
-    , PythonHS.VM.CompileDefaults
-    , PythonHS.VM.CompileExprItemsAt
+      , PythonHS.VM.CompileDictEntriesAt
+      , PythonHS.VM.CompileDefaults
+      , PythonHS.VM.CompileExprAt
+      , PythonHS.VM.CompileExprItemsAt
     , PythonHS.VM.CompileImportStmt
     , PythonHS.VM.CompileLogicalExpr
     , PythonHS.VM.CompileMatch

@@ -26,8 +26,9 @@ import PythonHS.AST.Expr
       )
   )
 import PythonHS.AST.Stmt
-  ( Stmt
+      ( Stmt
       ( AddAssignStmt,
+        AnnAssignStmt,
         AssignStmt,
         DecoratedStmt,
         DivAssignStmt,
@@ -51,6 +52,12 @@ transformImportAliases :: Bool -> Map.Map String String -> Map.Map String String
 transformImportAliases renameDefNames moduleAlias callAlias identAlias stmt =
   case stmt of
     AssignStmt name expr pos -> AssignStmt (renameName renameDefNames callAlias name) (transformExpr moduleAlias callAlias identAlias expr) pos
+    AnnAssignStmt name annotation maybeExpr pos ->
+      AnnAssignStmt
+        (renameName renameDefNames callAlias name)
+        (transformExpr moduleAlias callAlias identAlias annotation)
+        (fmap (transformExpr moduleAlias callAlias identAlias) maybeExpr)
+        pos
     DecoratedStmt decorators innerStmt pos ->
       DecoratedStmt
         (fmap (transformExpr moduleAlias callAlias identAlias) decorators)

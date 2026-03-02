@@ -11,7 +11,6 @@ import PythonHS.Lexer.TokenType
         ColonToken,
         ContinueToken,
         ClassToken,
-        DedentToken,
         DefToken,
         DoubleSlashAssignToken,
          DotToken,
@@ -27,7 +26,6 @@ import PythonHS.Lexer.TokenType
           MatchToken,
           IfToken,
         InToken,
-        IndentToken,
         LParenToken,
          MinusAssignToken,
          MinusToken,
@@ -43,7 +41,7 @@ import PythonHS.Lexer.TokenType
          YieldToken
        )
   )
-import PythonHS.Parser.ParseError (ParseError (ExpectedAssignAfterIdentifier, ExpectedExpression, ExpectedNewlineAfterStatement))
+import PythonHS.Parser.ParseError (ParseError (ExpectedAssignAfterIdentifier, ExpectedExpression))
 import PythonHS.Parser.ParseExceptSuites (parseExceptSuites)
 import PythonHS.Parser.ParseClassStmt (parseClassStmt)
 import PythonHS.Parser.ParseExpr (parseExpr)
@@ -52,9 +50,13 @@ import PythonHS.Parser.ParseIfTail (parseIfTail)
 import PythonHS.Parser.ParseImportStmt (parseImportStmt)
 import PythonHS.Parser.ParseMatchStmt (parseMatchStmt)
 import PythonHS.Parser.ParseDecoratedStmt (parseDecoratedStmt)
+import PythonHS.Parser.ParseAnnAssignStmt (parseAnnAssignStmt)
+import PythonHS.Parser.ParseSuite (parseSuite)
 import PythonHS.Parser.ParseYieldStmt (parseYieldStmt)
 parseStatement :: [Token] -> Either ParseError (Stmt, [Token])
 parseStatement tokenStream =
+  let parseSuiteWithStatements = parseSuite parseStatement
+   in
   case tokenStream of
     Token AtToken _ pos : _ ->
       parseDecoratedStmt parseExpr parseStatement pos tokenStream
@@ -81,6 +83,8 @@ parseStatement tokenStream =
     Token IdentifierToken obj pos : Token DotToken _ _ : Token IdentifierToken attr _ : Token AssignToken _ _ : rest -> do
       (valueExpr, remaining) <- parseExpr rest
       Right (AssignStmt (obj ++ "." ++ attr) valueExpr pos, remaining)
+    Token IdentifierToken name pos : Token ColonToken _ _ : rest ->
+      parseAnnAssignStmt parseExpr name pos rest
     Token IdentifierToken name pos : Token AssignToken _ _ : rest -> do
       (valueExpr, remaining) <- parseExpr rest
       Right (AssignStmt name valueExpr pos, remaining)
@@ -106,32 +110,32 @@ parseStatement tokenStream =
       (cond, afterCond) <- parseExpr rest
       case afterCond of
         Token ColonToken _ _ : afterColon -> do
-          (thenSuite, afterThen) <- parseSuite afterColon
-          (elseBranch, finalRest) <- parseIfTail parseSuite afterThen
+          (thenSuite, afterThen) <- parseSuiteWithStatements afterColon
+          (elseBranch, finalRest) <- parseIfTail parseSuiteWithStatements afterThen
           Right (IfStmt cond thenSuite elseBranch pos, finalRest)
         Token _ _ pos' : _ -> Left (ExpectedExpression pos')
         _ -> Left (ExpectedExpression (Position 0 0))
     Token TryToken _ pos : rest ->
       case rest of
         Token ColonToken _ _ : afterColon -> do
-          (trySuite, afterTrySuite) <- parseSuite afterColon
-          case parseExceptSuites parseSuite (dropLeadingNewlines afterTrySuite) of
+          (trySuite, afterTrySuite) <- parseSuiteWithStatements afterColon
+          case parseExceptSuites parseSuiteWithStatements (dropLeadingNewlines afterTrySuite) of
             Right (exceptSuites, afterExceptSuites) ->
               case dropLeadingNewlines afterExceptSuites of
                 Token FinallyToken _ _ : Token ColonToken _ _ : afterFinallyColon -> do
-                  (finallySuite, finalRest) <- parseSuite afterFinallyColon
+                  (finallySuite, finalRest) <- parseSuiteWithStatements afterFinallyColon
                   Right (TryExceptStmt trySuite exceptSuites (Just finallySuite) pos, finalRest)
                 _ -> Right (TryExceptStmt trySuite exceptSuites Nothing pos, afterExceptSuites)
             Left err -> Left err
         Token _ _ pos' : _ -> Left (ExpectedExpression pos')
         _ -> Left (ExpectedExpression (Position 0 0))
     Token MatchToken _ pos : rest ->
-      parseMatchStmt parseExpr parseSuite pos rest
+      parseMatchStmt parseExpr parseSuiteWithStatements pos rest
     Token WhileToken _ pos : rest -> do
       (cond, afterCond) <- parseExpr rest
       case afterCond of
         Token ColonToken _ _ : afterColon -> do
-          (bodySuite, finalRest) <- parseSuite afterColon
+          (bodySuite, finalRest) <- parseSuiteWithStatements afterColon
           Right (WhileStmt cond bodySuite pos, finalRest)
         Token _ _ pos' : _ -> Left (ExpectedExpression pos')
         _ -> Left (ExpectedExpression (Position 0 0))
@@ -139,7 +143,7 @@ parseStatement tokenStream =
       (iterExpr, afterIter) <- parseExpr rest
       case afterIter of
         Token ColonToken _ _ : afterColon -> do
-          (bodySuite, finalRest) <- parseSuite afterColon
+          (bodySuite, finalRest) <- parseSuiteWithStatements afterColon
           Right (ForStmt name iterExpr bodySuite pos, finalRest)
         Token _ _ pos' : _ -> Left (ExpectedExpression pos')
         _ -> Left (ExpectedExpression (Position 0 0))
@@ -150,50 +154,24 @@ parseStatement tokenStream =
           (_, afterAnnotation) <- parseExpr afterArrow
           case afterAnnotation of
             Token ColonToken _ _ : afterColon -> do
-              (bodySuite, finalRest) <- parseSuite afterColon
+              (bodySuite, finalRest) <- parseSuiteWithStatements afterColon
               if null defaults
                 then Right (FunctionDefStmt name params bodySuite posDef, finalRest)
                 else Right (FunctionDefDefaultsStmt name params defaults bodySuite posDef, finalRest)
             Token _ _ pos' : _ -> Left (ExpectedExpression pos')
             _ -> Left (ExpectedExpression (Position 0 0))
         Token ColonToken _ _ : afterColon -> do
-          (bodySuite, finalRest) <- parseSuite afterColon
+          (bodySuite, finalRest) <- parseSuiteWithStatements afterColon
           if null defaults
             then Right (FunctionDefStmt name params bodySuite posDef, finalRest)
             else Right (FunctionDefDefaultsStmt name params defaults bodySuite posDef, finalRest)
         Token _ _ pos' : _ -> Left (ExpectedExpression pos')
         _ -> Left (ExpectedExpression (Position 0 0))
     Token ClassToken _ posClass : Token IdentifierToken name _ : rest ->
-      parseClassStmt parseSuite posClass name rest
+      parseClassStmt parseSuiteWithStatements posClass name rest
     Token IdentifierToken _ pos : _ -> Left (ExpectedAssignAfterIdentifier pos)
     tok : _ -> Left (ExpectedExpression (position tok))
     [] -> Left (ExpectedExpression (Position 0 0))
   where
-    parseSuite ts =
-      case ts of
-        Token NewlineToken _ _ : Token IndentToken _ _ : rest -> parseIndentedSuite rest
-        Token NewlineToken _ _ : rest -> do
-          (stmt, remaining) <- parseStatement rest
-          Right ([stmt], remaining)
-        _ -> do
-          (stmt, remaining) <- parseStatement ts
-          Right ([stmt], remaining)
-
-    parseIndentedSuite (Token DedentToken _ dedentPos : rest) =
-      Right ([], Token NewlineToken "\\n" dedentPos : rest)
-    parseIndentedSuite ts = do
-      (statement, restAfterStatement) <- parseStatement ts
-      restAfterNewline <- consumeNewline restAfterStatement
-      case restAfterNewline of
-        Token DedentToken _ dedentPos : rest ->
-          Right ([statement], Token NewlineToken "\\n" dedentPos : rest)
-        _ -> do
-          (otherStatements, finalRest) <- parseIndentedSuite restAfterNewline
-          Right (statement : otherStatements, finalRest)
-
-    consumeNewline (Token NewlineToken _ _ : rest) = Right rest
-    consumeNewline (Token _ _ pos : _) = Left (ExpectedNewlineAfterStatement pos)
-    consumeNewline [] = Left (ExpectedNewlineAfterStatement (Position 0 0))
-
     dropLeadingNewlines (Token NewlineToken _ _ : rest) = dropLeadingNewlines rest
     dropLeadingNewlines rest = rest

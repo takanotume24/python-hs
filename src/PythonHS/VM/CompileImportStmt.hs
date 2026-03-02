@@ -28,6 +28,14 @@ compileImportStmt importBaseIndex stmt =
                   Just aliasName -> aliasName
                   Nothing -> "math"
            in Right ([PushConst (StringValue "<module:math>"), StoreName targetName], baseIndex + 2)
+        else
+          if modulePath == ["dataclasses"]
+            then
+              let targetName =
+                    case maybeAlias of
+                      Just aliasName -> aliasName
+                      Nothing -> "dataclasses"
+               in Right ([PushConst (StringValue "<module:dataclasses>"), StoreName targetName], baseIndex + 2)
         else Left ("Import error: unsupported module " ++ joinModulePath modulePath ++ " at " ++ showPos pos)
 
     compileFromImport baseIndex modulePath importedNames pos =
@@ -40,6 +48,9 @@ compileImportStmt importBaseIndex stmt =
                   setupCode = [PushConst (StringValue "<module:math>"), StoreName moduleAlias]
               (importedCode, importedEnd) <- compileFromMathItems (baseIndex + 2) moduleAlias importedNames pos
               pure (setupCode ++ importedCode, importedEnd)
+            else
+              if modulePath == ["dataclasses"]
+                then compileFromDataclassesItems baseIndex importedNames pos
             else Left ("Import error: unsupported module " ++ joinModulePath modulePath ++ " at " ++ showPos pos)
 
     compileFromMathItems baseIndex moduleAlias importedNames pos =
@@ -75,6 +86,21 @@ compileImportStmt importBaseIndex stmt =
         || name == "tan"
         || name == "log"
         || name == "exp"
+
+    compileFromDataclassesItems baseIndex importedNames pos =
+      case importedNames of
+        [] -> Right ([], baseIndex)
+        (name, maybeAlias) : rest ->
+          if name == "dataclass" || name == "field"
+            then do
+              let targetName =
+                    case maybeAlias of
+                      Just aliasName -> aliasName
+                      Nothing -> name
+                  firstCode = [PushConst (StringValue ("<dataclasses:" ++ name ++ ">")), StoreName targetName]
+              (restCode, restEnd) <- compileFromDataclassesItems (baseIndex + 2) rest pos
+              pure (firstCode ++ restCode, restEnd)
+            else Left ("Import error: unsupported module member " ++ name ++ " at " ++ showPos pos)
 
     joinModulePath segments =
       case segments of

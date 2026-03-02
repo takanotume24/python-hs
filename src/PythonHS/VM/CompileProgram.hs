@@ -1,27 +1,21 @@
 module PythonHS.VM.CompileProgram (compileProgram) where
 
-import PythonHS.AST.BinaryOperator (BinaryOperator (AddOperator, AndOperator, DivideOperator, FloorDivideOperator, ModuloOperator, MultiplyOperator, OrOperator, SubtractOperator))
-import PythonHS.AST.Expr (Expr (BinaryExpr, CallExpr, CallValueExpr, DictExpr, FloatExpr, IdentifierExpr, IntegerExpr, LambdaDefaultsExpr, LambdaExpr, ListComprehensionClausesExpr, ListComprehensionExpr, ListExpr, NoneExpr, NotExpr, StringExpr, UnaryMinusExpr, WalrusExpr))
+import PythonHS.AST.BinaryOperator (BinaryOperator (AddOperator, DivideOperator, FloorDivideOperator, ModuloOperator, MultiplyOperator, SubtractOperator))
 import PythonHS.AST.Program (Program (Program))
-import PythonHS.AST.Stmt (Stmt (AddAssignStmt, AssignStmt, BreakStmt, ClassDefStmt, ContinueStmt, DecoratedStmt, DivAssignStmt, FloorDivAssignStmt, ForStmt, FromImportStmt, FunctionDefDefaultsStmt, FunctionDefStmt, GlobalStmt, IfStmt, ImportStmt, MatchStmt, ModAssignStmt, MulAssignStmt, PassStmt, PrintStmt, RaiseStmt, ReturnStmt, SubAssignStmt, TryExceptStmt, WhileStmt, YieldFromStmt, YieldStmt))
+import PythonHS.AST.Stmt (Stmt (AddAssignStmt, AnnAssignStmt, AssignStmt, BreakStmt, ClassDefStmt, ContinueStmt, DecoratedStmt, DivAssignStmt, FloorDivAssignStmt, ForStmt, FromImportStmt, FunctionDefDefaultsStmt, FunctionDefStmt, GlobalStmt, IfStmt, ImportStmt, MatchStmt, ModAssignStmt, MulAssignStmt, PassStmt, PrintStmt, RaiseStmt, ReturnStmt, SubAssignStmt, TryExceptStmt, WhileStmt, YieldFromStmt, YieldStmt))
 import PythonHS.Evaluator.ShowPos (showPos)
-import PythonHS.Evaluator.Value (Value (FloatValue, IntValue, NoneValue, StringValue))
-import PythonHS.VM.CompileCallArgsAt (compileCallArgsAt)
-import PythonHS.VM.CompileClassStmt (compileClassStmt)
+import PythonHS.VM.CompileClassDefStmt (compileClassDefStmt)
 import PythonHS.VM.CompileCompoundAssign (compileCompoundAssign)
-import PythonHS.VM.CompileDictEntriesAt (compileDictEntriesAt)
 import PythonHS.VM.CompileDefaults (compileDefaults)
 import PythonHS.VM.CompileDecoratedStmt (compileDecoratedStmt)
-import PythonHS.VM.CompileExprItemsAt (compileExprItemsAt)
+import PythonHS.VM.CompileExprAt (compileExprAt)
 import PythonHS.VM.CompileFunctionDefStmt (compileFunctionDefStmt)
 import PythonHS.VM.CompileImportStmt (compileImportStmt)
-import PythonHS.VM.CompileLogicalExpr (compileLogicalExpr)
 import PythonHS.VM.CompileMatch (compileMatch)
 import PythonHS.VM.CompileTryExcept (compileTryExcept)
 import PythonHS.VM.ExprPosition (exprPosition)
-import PythonHS.VM.CompileComprehensionClauses (compileComprehensionClauses)
 import PythonHS.VM.CompileYieldCollectStmt (compileYieldCollectStmt)
-import PythonHS.VM.Instruction (Instruction (ApplyBinary, ApplyNot, ApplyUnaryMinus, BuildDict, BuildList, BuildListComprehension, CallFunction, CallValueFunction, CreateLambda, DeclareGlobal, DefineFunction, DupTop, ForNext, ForSetup, Halt, Jump, JumpIfFalse, LoadName, LoopGuard, PrintTop, PushConst, RaiseTop, ReturnTop, StoreName))
+import PythonHS.VM.Instruction (Instruction (DeclareGlobal, DefineFunction, ForNext, ForSetup, Halt, Jump, JumpIfFalse, LoopGuard, PrintTop, RaiseTop, ReturnTop, StoreName))
 import PythonHS.VM.StmtPosition (stmtPosition)
 
 compileProgram :: Program -> Either String [Instruction]
@@ -43,7 +37,15 @@ compileProgram (Program stmts) = do
       case stmt of
         PassStmt _ -> Right ([], baseIndex)
         DecoratedStmt decorators targetStmt _ ->
-          compileDecoratedStmt compileStmt compileExprAt baseIndex inFunction maybeLoop decorators targetStmt
+          compileDecoratedStmt
+            compileStmt
+            (compileClassDefStmt compileDefaults compileStatements compileExprAt)
+            compileExprAt
+            baseIndex
+            inFunction
+            maybeLoop
+            decorators
+            targetStmt
         GlobalStmt name _ -> Right ([DeclareGlobal name], baseIndex + 1)
         RaiseStmt expr pos -> do
           (exprCode, exprEnd) <- compileExprAt baseIndex expr
@@ -61,6 +63,13 @@ compileProgram (Program stmts) = do
           (exprCode, exprEnd) <- compileExprAt baseIndex expr
           let code = exprCode ++ [StoreName name]
           pure (code, exprEnd + 1)
+        AnnAssignStmt name _ maybeExpr _ ->
+          case maybeExpr of
+            Nothing -> Right ([], baseIndex)
+            Just expr -> do
+              (exprCode, exprEnd) <- compileExprAt baseIndex expr
+              let code = exprCode ++ [StoreName name]
+              pure (code, exprEnd + 1)
         AddAssignStmt name expr pos -> compileCompoundAssign compileExprAt baseIndex name expr pos AddOperator
         SubAssignStmt name expr pos -> compileCompoundAssign compileExprAt baseIndex name expr pos SubtractOperator
         MulAssignStmt name expr pos -> compileCompoundAssign compileExprAt baseIndex name expr pos MultiplyOperator
@@ -123,7 +132,7 @@ compileProgram (Program stmts) = do
           let code = iterCode ++ [ForSetup nextIndex iterPos, ForNext name loopEndIndex iterPos, LoopGuard forPos] ++ bodyCode ++ [Jump nextIndex]
           pure (code, loopEndIndex)
         ClassDefStmt className maybeBase body _ ->
-          compileClassStmt compileDefaults compileStatements compileExprAt baseIndex className maybeBase body
+          compileClassDefStmt compileDefaults compileStatements compileExprAt baseIndex className maybeBase body Nothing
         FunctionDefStmt name params body posDef ->
           fmap (\(functionCode, _) -> ([DefineFunction name params [] functionCode], baseIndex + 1)) (compileFunctionDefStmt compileStatements compileExprAt posDef [] body)
         FunctionDefDefaultsStmt name params defaults body posDef ->
@@ -143,58 +152,3 @@ compileProgram (Program stmts) = do
           case maybeLoop of
             Just (_, continueTarget) -> Right ([Jump continueTarget], baseIndex + 1)
             Nothing -> Left ("Continue outside loop at " ++ showPos pos)
-
-    compileExprAt baseIndex expr =
-      case expr of
-        IntegerExpr n _ -> Right ([PushConst (IntValue n)], baseIndex + 1)
-        FloatExpr n _ -> Right ([PushConst (FloatValue n)], baseIndex + 1)
-        StringExpr s _ -> Right ([PushConst (StringValue s)], baseIndex + 1)
-        NoneExpr _ -> Right ([PushConst NoneValue], baseIndex + 1)
-        ListExpr elements _ -> do
-          (elementCode, elementEnd) <- compileExprItemsAt compileExprAt baseIndex elements
-          pure (elementCode ++ [BuildList (length elements)], elementEnd + 1)
-        ListComprehensionExpr valueExpr loopName iterExpr pos -> do
-          (iterCode, _) <- compileExprAt 0 iterExpr
-          (valueCode, _) <- compileExprAt 0 valueExpr
-          let clauses = [([loopName], iterCode ++ [ReturnTop], [])]
-          pure ([BuildListComprehension clauses (valueCode ++ [ReturnTop]) pos], baseIndex + 1)
-        ListComprehensionClausesExpr valueExpr clausesExpr pos -> do
-          clauses <- compileComprehensionClauses compileExprAt clausesExpr
-          (valueCode, _) <- compileExprAt 0 valueExpr
-          pure ([BuildListComprehension clauses (valueCode ++ [ReturnTop]) pos], baseIndex + 1)
-        DictExpr entries _ -> do
-          (entryCode, entryEnd) <- compileDictEntriesAt compileExprAt baseIndex entries
-          pure (entryCode ++ [BuildDict (length entries)], entryEnd + 1)
-        IdentifierExpr name pos -> Right ([LoadName name pos], baseIndex + 1)
-        UnaryMinusExpr unaryExpr pos -> do
-          (exprCode, exprEnd) <- compileExprAt baseIndex unaryExpr
-          pure (exprCode ++ [ApplyUnaryMinus pos], exprEnd + 1)
-        NotExpr notExpr pos -> do
-          (exprCode, exprEnd) <- compileExprAt baseIndex notExpr
-          pure (exprCode ++ [ApplyNot pos], exprEnd + 1)
-        WalrusExpr name valueExpr _ -> do
-          (valueCode, valueEnd) <- compileExprAt baseIndex valueExpr
-          pure (valueCode ++ [DupTop, StoreName name], valueEnd + 2)
-        LambdaExpr params bodyExpr pos -> do
-          (bodyCode, _) <- compileExprAt 0 bodyExpr
-          let lambdaName = "__lambda_" ++ showPos pos
-          pure ([CreateLambda lambdaName params [] (bodyCode ++ [ReturnTop])], baseIndex + 1)
-        LambdaDefaultsExpr params defaults bodyExpr pos -> do
-          (defaultCodes, _) <- compileDefaults compileExprAt defaults
-          (bodyCode, _) <- compileExprAt 0 bodyExpr
-          let lambdaName = "__lambda_" ++ showPos pos
-          pure ([CreateLambda lambdaName params defaultCodes (bodyCode ++ [ReturnTop])], baseIndex + 1)
-        BinaryExpr AndOperator left right _ -> compileLogicalExpr compileExprAt AndOperator baseIndex left right
-        BinaryExpr OrOperator left right _ -> compileLogicalExpr compileExprAt OrOperator baseIndex left right
-        BinaryExpr op left right pos -> do
-          (leftCode, leftEnd) <- compileExprAt baseIndex left
-          (rightCode, rightEnd) <- compileExprAt leftEnd right
-          pure (leftCode ++ rightCode ++ [ApplyBinary op pos], rightEnd + 1)
-        CallExpr fname args pos -> do
-          compiledArgs <- compileCallArgsAt compileExprAt args
-          pure ([CallFunction fname compiledArgs pos], baseIndex + 1)
-        CallValueExpr callee args pos -> do
-          (calleeCode, calleeEnd) <- compileExprAt baseIndex callee
-          compiledArgs <- compileCallArgsAt compileExprAt args
-          pure (calleeCode ++ [CallValueFunction compiledArgs pos], calleeEnd + 1)
-        _ -> Left ("VM compile error: unsupported expression at " ++ showPos (exprPosition expr))

@@ -20,6 +20,12 @@ evalStatements env fenv outputs (stmt : rest) =
     AssignStmt name expr _ -> do
       (val, exprOuts, envAfterExpr) <- evalExpr evalStatements env fenv expr
       evalStatements (Map.insert name val envAfterExpr) fenv (outputs ++ exprOuts) rest
+    AnnAssignStmt name _ maybeExpr _ ->
+      case maybeExpr of
+        Nothing -> evalStatements env fenv outputs rest
+        Just expr -> do
+          (val, exprOuts, envAfterExpr) <- evalExpr evalStatements env fenv expr
+          evalStatements (Map.insert name val envAfterExpr) fenv (outputs ++ exprOuts) rest
     DecoratedStmt _ _ pos -> Left $ "Runtime error: decorator is only supported in vm engine at " ++ showPos pos
 
     AddAssignStmt name expr pos -> do

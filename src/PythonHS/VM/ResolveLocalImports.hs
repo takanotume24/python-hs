@@ -4,8 +4,9 @@ import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import PythonHS.AST.Program (Program (Program))
 import PythonHS.AST.Stmt
-  ( Stmt
-      ( AssignStmt,
+      ( Stmt
+      ( AnnAssignStmt,
+        AssignStmt,
         DecoratedStmt,
         FromImportStmt,
         ImportStmt,
@@ -51,6 +52,14 @@ resolveLocalImports searchPaths (Program rootStmts) = do
                     Left err -> pure (Left err)
                     Right (restStmts, cacheAfterRest, includedAfterRest) ->
                       pure (Right (FromImportStmt modulePath importedNames pos : restStmts, cacheAfterRest, includedAfterRest))
+                else
+                  if modulePath == ["dataclasses"]
+                    then do
+                      restResult <- resolveStmts cache visiting included moduleAlias callAlias identAlias rest
+                      case restResult of
+                        Left err -> pure (Left err)
+                        Right (restStmts, cacheAfterRest, includedAfterRest) ->
+                          pure (Right (FromImportStmt modulePath importedNames pos : restStmts, cacheAfterRest, includedAfterRest))
                 else do
                   loadResult <- loadModule cache visiting included modulePath
                   case loadResult of
@@ -132,6 +141,7 @@ resolveLocalImports searchPaths (Program rootStmts) = do
         (\acc stmt ->
            case stmt of
               AssignStmt name _ _ -> Map.insert name (moduleMemberName name) acc
+              AnnAssignStmt name _ (Just _) _ -> Map.insert name (moduleMemberName name) acc
               FunctionDefStmt name _ _ _ -> Map.insert name (moduleMemberName name) acc
               FunctionDefDefaultsStmt name _ _ _ _ -> Map.insert name (moduleMemberName name) acc
               DecoratedStmt _ innerStmt _ ->

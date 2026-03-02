@@ -31,6 +31,7 @@ TDD（`hspec`）で機能を拡張し、`Lexer -> Parser -> Evaluator -> Runner/
 - [x] 文: `try/except`（複数 `except` 節対応）、`try/except/finally`、`raise`
 - [x] 文: `match/case`（値/OR/シーケンス/マッピング/ガードの最小対応）
 - [x] 文: `class`（単一継承ヘッダ + クラスボディの最小対応）
+- [x] 文: class フィールド型注釈（`name: type` / `name: type = expr`）の最小対応
 - [x] 制御構文: `if/elif/else`, `while`, `for`
 - [x] 関数定義: `def name(args): ...`
 - [x] 式: 四則演算（`+ - * / % //`）, 比較, `not`, 関数呼び出し
@@ -69,6 +70,7 @@ TDD（`hspec`）で機能を拡張し、`Lexer -> Parser -> Evaluator -> Runner/
 - [x] `update(dict, key, value)` / `update(dict, otherDict)`
 - [x] `setdefault(dict, key)` / `setdefault(dict, key, default)`
 - [x] VM最小 math 導線: `import math` + `math.sqrt/sin/cos/tan/log/exp/pi/e`
+- [x] VM最小 dataclass 導線: `from dataclasses import dataclass, field` + `@dataclass(order=..., frozen=...)`
 
 補足:
 - `math` は現時点で VM 実行経路を対象にした MVP 実装です。
@@ -77,6 +79,7 @@ TDD（`hspec`）で機能を拡張し、`Lexer -> Parser -> Evaluator -> Runner/
 - 例外処理（`try/except/finally`, `raise`）は現時点で VM 実行経路のみを対象にした MVP 実装です。
 - `match/case` は現時点で VM 実行経路のみを対象にした MVP 実装です。
 - `class`（`__init__` / メソッド呼び出し / 単一継承）は現時点で VM 実行経路のみを対象にした MVP 実装です。
+- `dataclass`（`__init__` / `__repr__` / `__eq__` / `order` / `frozen` / `field(default_factory=list)`）は現時点で VM 実行経路のみを対象にした MVP 実装です。
 
 ## MVP外・未対応（明示）
 - [ ] Python完全互換（あくまでサブセット）

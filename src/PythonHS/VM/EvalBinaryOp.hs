@@ -2,7 +2,7 @@ module PythonHS.VM.EvalBinaryOp (evalBinaryOp) where
 
 import PythonHS.AST.BinaryOperator (BinaryOperator (..))
 import PythonHS.Evaluator.ShowPos (showPos)
-import PythonHS.Evaluator.Value (Value (DictValue, FloatValue, IntValue, ListValue, NoneValue, StringValue))
+import PythonHS.Evaluator.Value (Value (DictValue, FloatValue, InstanceValue, IntValue, ListValue, NoneValue, StringValue))
 import PythonHS.Lexer.Position (Position)
 
 evalBinaryOp :: BinaryOperator -> Value -> Value -> Position -> Either String Value
@@ -23,10 +23,10 @@ evalBinaryOp op left right pos =
     ModuloOperator -> evalModulo pos left right
     EqOperator -> evalEqComparison left right
     NotEqOperator -> evalNotEqComparison left right
-    LtOperator -> evalNumericComparison "<" pos left right (<)
-    GtOperator -> evalNumericComparison ">" pos left right (>)
-    LteOperator -> evalNumericComparison "<=" pos left right (<=)
-    GteOperator -> evalNumericComparison ">=" pos left right (>=)
+    LtOperator -> evalOrderComparison "<" pos left right (\ordResult -> ordResult == LT)
+    GtOperator -> evalOrderComparison ">" pos left right (\ordResult -> ordResult == GT)
+    LteOperator -> evalOrderComparison "<=" pos left right (\ordResult -> ordResult /= GT)
+    GteOperator -> evalOrderComparison ">=" pos left right (\ordResult -> ordResult /= LT)
     AndOperator -> do
       leftTruthy <- expectTruthy "and" pos left
       rightTruthy <- expectTruthy "and" pos right
@@ -91,6 +91,47 @@ evalBinaryOp op left right pos =
       leftNumber <- expectNumber context pos' left'
       rightNumber <- expectNumber context pos' right'
       Right (IntValue (if cmp leftNumber rightNumber then 1 else 0))
+
+    evalOrderComparison context pos' left' right' cmp =
+      case (left', right') of
+        (InstanceValue leftClass leftAttrs, InstanceValue rightClass rightAttrs) ->
+          if leftClass == rightClass
+            then do
+              ordResult <- compareInstanceValues leftAttrs rightAttrs
+              Right (IntValue (if cmp ordResult then 1 else 0))
+            else Left ("Type error: expected int in " ++ context ++ " at " ++ showPos pos')
+        _ -> evalNumericComparison context pos' left' right' (\l r -> cmp (compare l r))
+
+    compareInstanceValues leftAttrs rightAttrs =
+      compareLists (filterDataclassAttrs leftAttrs) (filterDataclassAttrs rightAttrs)
+
+    filterDataclassAttrs pairs =
+      case pairs of
+        [] -> []
+        (name, value) : rest ->
+          if name == "__python_hs_frozen__"
+            then filterDataclassAttrs rest
+            else value : filterDataclassAttrs rest
+
+    compareLists leftValues rightValues =
+      case (leftValues, rightValues) of
+        ([], []) -> Right EQ
+        ([], _ : _) -> Right LT
+        (_ : _, []) -> Right GT
+        (leftValue : leftRest, rightValue : rightRest) ->
+          let firstCompare = compareSingleValue leftValue rightValue
+           in if firstCompare == EQ
+                then compareLists leftRest rightRest
+                else Right firstCompare
+
+    compareSingleValue leftValue rightValue =
+      case (leftValue, rightValue) of
+        (IntValue leftInt, IntValue rightInt) -> compare leftInt rightInt
+        (FloatValue leftFloat, FloatValue rightFloat) -> compare leftFloat rightFloat
+        (IntValue leftInt, FloatValue rightFloat) -> compare (fromIntegral leftInt :: Double) rightFloat
+        (FloatValue leftFloat, IntValue rightInt) -> compare leftFloat (fromIntegral rightInt :: Double)
+        (StringValue leftString, StringValue rightString) -> compare leftString rightString
+        _ -> compare (show leftValue) (show rightValue)
 
     expectNumber _ _ (IntValue n) = Right (fromIntegral n)
     expectNumber _ _ (FloatValue n) = Right n

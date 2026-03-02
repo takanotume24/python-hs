@@ -126,6 +126,15 @@
 - [x] VM 実装: class 定義、インスタンス生成、属性読書き、単一継承メソッド解決を導入
 - [x] 品質ゲート再実行（`cabal test` / `cabal run check-structure` / warning 0）
 
+## 現在のスコープ（P14: VM dataclass 導入）
+- [x] P14 開始: VM 専用で dataclass 導入スコープを開始
+- [x] スコープ確定: 互換重視（型注釈フィールド前提）で `__init__` / `__repr__` / `__eq__` 自動生成を対象にする
+- [x] スコープ確定: `frozen` / `order` / `field(default_factory=...)` の主要オプションを対象にする
+- [x] 失敗テスト先行: VM 受け入れテストに dataclass コア/オプションケースを追加
+- [x] AST/Parser 拡張: 型注釈フィールド構文を保持可能にした
+- [x] VM 実装: dataclass デコレータ設定を class コンパイルへ反映し、`__init__` / `__repr__` / `__eq__` / `order` 生成と `frozen` 拒否を導入
+- [x] 品質ゲート再実行（`cabal test` / `cabal run check-structure` / warning 0）
+
 ### 運用メモ
 - 受け入れテストは MVP 最小（`MvpScenarioSpec`）を維持し、詳細仕様は Runner/Eval の回帰テストで固定する。
 

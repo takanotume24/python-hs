@@ -74,6 +74,18 @@ spec = describe "runSourceVm (vm mvp)" $ do
   it "runs class decorators" $ do
     runSourceVm "x = 0\ndef deco(cls):\n  global x\n  x = 1\n  return cls\n@deco\nclass C:\n  pass\nprint x\n" `shouldBe` Right ["1"]
 
+  it "runs dataclass core behavior (__init__/__repr__/__eq__)" $ do
+    runSourceVm "from dataclasses import dataclass\n@dataclass\nclass Point:\n  x: int\n  y: int\np1 = Point(1, 2)\np2 = Point(1, 2)\nprint p1.x\nprint p1.__repr__()\nprint p1 == p2\n" `shouldBe` Right ["1", "Point(x=1, y=2)", "1"]
+
+  it "runs dataclass order comparisons" $ do
+    runSourceVm "from dataclasses import dataclass\n@dataclass(order=1)\nclass Point:\n  x: int\n  y: int\nprint Point(1, 2) < Point(2, 1)\nprint Point(2, 1) > Point(1, 2)\n" `shouldBe` Right ["1", "1"]
+
+  it "runs dataclass field default_factory per instance" $ do
+    runSourceVm "from dataclasses import dataclass, field\n@dataclass\nclass Box:\n  items: list = field(default_factory=list)\nb1 = Box()\nb2 = Box()\nb1.items = append(b1.items, 1)\nprint b1.items\nprint b2.items\n" `shouldBe` Right ["[1]", "[]"]
+
+  it "rejects assignment to frozen dataclass field" $ do
+    runSourceVm "from dataclasses import dataclass\n@dataclass(frozen=1)\nclass Point:\n  x: int\np = Point(1)\np.x = 2\n" `shouldBe` Left "Type error: cannot assign to frozen dataclass field x at 0:0"
+
   it "runs generator function with yield in for loop" $ do
     runSourceVm "def gen():\n  yield 1\n  yield 2\nfor x in gen():\n  print x\n" `shouldBe` Right ["1", "2"]
 

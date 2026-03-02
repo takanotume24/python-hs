@@ -8,6 +8,7 @@ import PythonHS.Lexer.Position (Position)
 -- each statement carries a source position for better error reporting
 data Stmt
   = AssignStmt String Expr Position
+  | AnnAssignStmt String Expr (Maybe Expr) Position -- name, annotation, optional value
   | DecoratedStmt [Expr] Stmt Position
   | YieldStmt Expr Position
   | YieldFromStmt Expr Position
