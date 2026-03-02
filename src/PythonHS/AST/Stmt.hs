@@ -9,6 +9,8 @@ import PythonHS.Lexer.Position (Position)
 data Stmt
   = AssignStmt String Expr Position
   | DecoratedStmt [Expr] Stmt Position
+  | YieldStmt Expr Position
+  | YieldFromStmt Expr Position
   | AddAssignStmt String Expr Position
   | SubAssignStmt String Expr Position
   | MulAssignStmt String Expr Position

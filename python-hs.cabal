@@ -58,6 +58,7 @@ library
     , PythonHS.Parser.ParsePattern
     , PythonHS.Parser.ParseMatchStmt
     , PythonHS.Parser.ParseIfTail
+    , PythonHS.Parser.ParseYieldStmt
     , PythonHS.Parser.ParseImportStmt
     , PythonHS.Structure.CheckStructureWarnings
     , PythonHS.Evaluator.ValueToOutput
@@ -80,8 +81,11 @@ library
     , PythonHS.VM.BindCallArguments
     , PythonHS.VM.CompileCallArgsAt
     , PythonHS.VM.CompileClassStmt
+    , PythonHS.VM.CompileCompoundAssign
     , PythonHS.VM.CompileDecoratorApplications
     , PythonHS.VM.CompileDecoratedStmt
+    , PythonHS.VM.CompileFunctionDefStmt
+    , PythonHS.VM.CompileYieldCollectStmt
     , PythonHS.VM.CompileComprehensionClauses
     , PythonHS.VM.CompileDictEntriesAt
     , PythonHS.VM.CompileDefaults
@@ -106,6 +110,7 @@ library
     , PythonHS.VM.StmtPosition
     , PythonHS.VM.Instruction
     , PythonHS.VM.IsTruthy
+    , PythonHS.VM.HasYieldInStmts
     , PythonHS.VM.LookupName
     , PythonHS.VM.LookupNameWithAttr
     , PythonHS.VM.StoreNameWithAttr

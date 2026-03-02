@@ -74,6 +74,12 @@ spec = describe "runSourceVm (vm mvp)" $ do
   it "runs class decorators" $ do
     runSourceVm "x = 0\ndef deco(cls):\n  global x\n  x = 1\n  return cls\n@deco\nclass C:\n  pass\nprint x\n" `shouldBe` Right ["1"]
 
+  it "runs generator function with yield in for loop" $ do
+    runSourceVm "def gen():\n  yield 1\n  yield 2\nfor x in gen():\n  print x\n" `shouldBe` Right ["1", "2"]
+
+  it "runs yield from delegation" $ do
+    runSourceVm "def inner():\n  yield 1\n  yield 2\ndef outer():\n  yield from inner()\n  yield 3\nfor x in outer():\n  print x\n" `shouldBe` Right ["1", "2", "3"]
+
   it "runs lambda expression call via variable" $ do
     runSourceVm "f = lambda x: x + 1\nprint f(2)\n" `shouldBe` Right ["3"]
 

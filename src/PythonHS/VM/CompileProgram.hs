@@ -3,21 +3,24 @@ module PythonHS.VM.CompileProgram (compileProgram) where
 import PythonHS.AST.BinaryOperator (BinaryOperator (AddOperator, AndOperator, DivideOperator, FloorDivideOperator, ModuloOperator, MultiplyOperator, OrOperator, SubtractOperator))
 import PythonHS.AST.Expr (Expr (BinaryExpr, CallExpr, CallValueExpr, DictExpr, FloatExpr, IdentifierExpr, IntegerExpr, LambdaDefaultsExpr, LambdaExpr, ListComprehensionClausesExpr, ListComprehensionExpr, ListExpr, NoneExpr, NotExpr, StringExpr, UnaryMinusExpr, WalrusExpr))
 import PythonHS.AST.Program (Program (Program))
-import PythonHS.AST.Stmt (Stmt (AddAssignStmt, AssignStmt, BreakStmt, ClassDefStmt, ContinueStmt, DecoratedStmt, DivAssignStmt, FloorDivAssignStmt, ForStmt, FromImportStmt, FunctionDefDefaultsStmt, FunctionDefStmt, GlobalStmt, IfStmt, ImportStmt, MatchStmt, ModAssignStmt, MulAssignStmt, PassStmt, PrintStmt, RaiseStmt, ReturnStmt, SubAssignStmt, TryExceptStmt, WhileStmt))
+import PythonHS.AST.Stmt (Stmt (AddAssignStmt, AssignStmt, BreakStmt, ClassDefStmt, ContinueStmt, DecoratedStmt, DivAssignStmt, FloorDivAssignStmt, ForStmt, FromImportStmt, FunctionDefDefaultsStmt, FunctionDefStmt, GlobalStmt, IfStmt, ImportStmt, MatchStmt, ModAssignStmt, MulAssignStmt, PassStmt, PrintStmt, RaiseStmt, ReturnStmt, SubAssignStmt, TryExceptStmt, WhileStmt, YieldFromStmt, YieldStmt))
 import PythonHS.Evaluator.ShowPos (showPos)
 import PythonHS.Evaluator.Value (Value (FloatValue, IntValue, NoneValue, StringValue))
 import PythonHS.VM.CompileCallArgsAt (compileCallArgsAt)
 import PythonHS.VM.CompileClassStmt (compileClassStmt)
+import PythonHS.VM.CompileCompoundAssign (compileCompoundAssign)
 import PythonHS.VM.CompileDictEntriesAt (compileDictEntriesAt)
 import PythonHS.VM.CompileDefaults (compileDefaults)
 import PythonHS.VM.CompileDecoratedStmt (compileDecoratedStmt)
 import PythonHS.VM.CompileExprItemsAt (compileExprItemsAt)
+import PythonHS.VM.CompileFunctionDefStmt (compileFunctionDefStmt)
 import PythonHS.VM.CompileImportStmt (compileImportStmt)
 import PythonHS.VM.CompileLogicalExpr (compileLogicalExpr)
 import PythonHS.VM.CompileMatch (compileMatch)
 import PythonHS.VM.CompileTryExcept (compileTryExcept)
 import PythonHS.VM.ExprPosition (exprPosition)
 import PythonHS.VM.CompileComprehensionClauses (compileComprehensionClauses)
+import PythonHS.VM.CompileYieldCollectStmt (compileYieldCollectStmt)
 import PythonHS.VM.Instruction (Instruction (ApplyBinary, ApplyNot, ApplyUnaryMinus, BuildDict, BuildList, BuildListComprehension, CallFunction, CallValueFunction, CreateLambda, DeclareGlobal, DefineFunction, DupTop, ForNext, ForSetup, Halt, Jump, JumpIfFalse, LoadName, LoopGuard, PrintTop, PushConst, RaiseTop, ReturnTop, StoreName))
 import PythonHS.VM.StmtPosition (stmtPosition)
 
@@ -58,16 +61,24 @@ compileProgram (Program stmts) = do
           (exprCode, exprEnd) <- compileExprAt baseIndex expr
           let code = exprCode ++ [StoreName name]
           pure (code, exprEnd + 1)
-        AddAssignStmt name expr pos -> compileCompoundAssign baseIndex name expr pos AddOperator
-        SubAssignStmt name expr pos -> compileCompoundAssign baseIndex name expr pos SubtractOperator
-        MulAssignStmt name expr pos -> compileCompoundAssign baseIndex name expr pos MultiplyOperator
-        DivAssignStmt name expr pos -> compileCompoundAssign baseIndex name expr pos DivideOperator
-        ModAssignStmt name expr pos -> compileCompoundAssign baseIndex name expr pos ModuloOperator
-        FloorDivAssignStmt name expr pos -> compileCompoundAssign baseIndex name expr pos FloorDivideOperator
+        AddAssignStmt name expr pos -> compileCompoundAssign compileExprAt baseIndex name expr pos AddOperator
+        SubAssignStmt name expr pos -> compileCompoundAssign compileExprAt baseIndex name expr pos SubtractOperator
+        MulAssignStmt name expr pos -> compileCompoundAssign compileExprAt baseIndex name expr pos MultiplyOperator
+        DivAssignStmt name expr pos -> compileCompoundAssign compileExprAt baseIndex name expr pos DivideOperator
+        ModAssignStmt name expr pos -> compileCompoundAssign compileExprAt baseIndex name expr pos ModuloOperator
+        FloorDivAssignStmt name expr pos -> compileCompoundAssign compileExprAt baseIndex name expr pos FloorDivideOperator
         PrintStmt expr _ -> do
           (exprCode, exprEnd) <- compileExprAt baseIndex expr
           let code = exprCode ++ [PrintTop]
           pure (code, exprEnd + 1)
+        YieldStmt expr pos ->
+          if inFunction
+            then compileYieldCollectStmt compileExprAt baseIndex "append" expr pos
+            else Left ("VM compile error: unsupported statement at " ++ showPos (stmtPosition stmt))
+        YieldFromStmt expr pos ->
+          if inFunction
+            then compileYieldCollectStmt compileExprAt baseIndex "extend" expr pos
+            else Left ("VM compile error: unsupported statement at " ++ showPos (stmtPosition stmt))
         IfStmt cond thenStmts maybeElseStmts _ -> do
           (condCode, condEnd) <- compileExprAt baseIndex cond
           let jumpIfFalseIndex = condEnd
@@ -113,15 +124,10 @@ compileProgram (Program stmts) = do
           pure (code, loopEndIndex)
         ClassDefStmt className maybeBase body _ ->
           compileClassStmt compileDefaults compileStatements compileExprAt baseIndex className maybeBase body
-        FunctionDefStmt name params body _ -> do
-          (bodyCode, _) <- compileStatements 0 True Nothing body
-          let functionCode = bodyCode ++ [PushConst (IntValue 0), ReturnTop]
-          pure ([DefineFunction name params [] functionCode], baseIndex + 1)
-        FunctionDefDefaultsStmt name params defaults body _ -> do
-          (defaultCodes, _) <- compileDefaults compileExprAt defaults
-          (bodyCode, _) <- compileStatements 0 True Nothing body
-          let functionCode = bodyCode ++ [PushConst (IntValue 0), ReturnTop]
-          pure ([DefineFunction name params defaultCodes functionCode], baseIndex + 1)
+        FunctionDefStmt name params body posDef ->
+          fmap (\(functionCode, _) -> ([DefineFunction name params [] functionCode], baseIndex + 1)) (compileFunctionDefStmt compileStatements compileExprAt posDef [] body)
+        FunctionDefDefaultsStmt name params defaults body posDef ->
+          fmap (\(functionCode, defaultCodes) -> ([DefineFunction name params defaultCodes functionCode], baseIndex + 1)) (compileFunctionDefStmt compileStatements compileExprAt posDef defaults body)
         ReturnStmt expr _ ->
           if inFunction
             then do
@@ -137,12 +143,6 @@ compileProgram (Program stmts) = do
           case maybeLoop of
             Just (_, continueTarget) -> Right ([Jump continueTarget], baseIndex + 1)
             Nothing -> Left ("Continue outside loop at " ++ showPos pos)
-
-    compileCompoundAssign baseIndex name expr pos op = do
-      (exprCode, exprEnd) <- compileExprAt (baseIndex + 1) expr
-      let code = [LoadName name pos] ++ exprCode ++ [ApplyBinary op pos, StoreName name]
-      pure (code, exprEnd + 2)
-
 
     compileExprAt baseIndex expr =
       case expr of

@@ -221,6 +221,10 @@
 ## メンテナンス記録（要約）
 - 注記: 以下は時系列ログ。古い日付の「未対応」項目は、その後のエントリで仕様更新済みの場合がある。
 - 2026-03-02
+  - [x] P19開始/完了: VM専用で `yield` / `yield from` を導入し、同日内にテスト・実装・品質ゲートまで完了
+  - [x] P19継続: lexer/parser/AST に `yield` 構文を追加（`YieldToken`、`YieldStmt`、`YieldFromStmt`、`ParseYieldStmt`）
+  - [x] P19継続: VM コンパイル/実行を拡張し、`yield` を収集型 generator（リスト返却）として `for` 反復へ統合、`yield from` は `extend` 導線で委譲を実装
+  - [x] P19継続: 品質ゲート再実行（`cabal test -j1` 752 examples green / `cabal run check-structure` pass / warning 0）を確認
   - [x] P12開始/完了: VM専用で `match/case`（値/OR/シーケンス/マッピング/ガードの最小対応）を導入し、同日内にテスト・実装・品質ゲートまで完了
   - [x] P12継続: `Pattern` / `MatchStmt` を追加し、`ParsePattern` / `ParseMatchStmt` / `CompileMatch` / `MatchPatternBindings` を実装
   - [x] P12継続: 構造制約対応として `ExecuteMatchPattern` を分離し、`RunInstructions` の 200 行制約超過を解消

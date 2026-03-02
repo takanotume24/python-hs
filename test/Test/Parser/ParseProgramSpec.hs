@@ -4,7 +4,7 @@ import PythonHS.AST.BinaryOperator (BinaryOperator (..))
 import PythonHS.AST.Expr (Expr (BinaryExpr, CallExpr, DictExpr, FloatExpr, IdentifierExpr, IntegerExpr, KeywordArgExpr, KwStarArgExpr, LambdaExpr, ListComprehensionClausesExpr, ListComprehensionExpr, ListExpr, NoneExpr, NotExpr, StarArgExpr, StringExpr, UnaryMinusExpr, WalrusExpr))
 import PythonHS.AST.Pattern (Pattern (CapturePattern, MappingPattern, OrPattern, ValuePattern, WildcardPattern))
 import PythonHS.AST.Program (Program (Program))
-import PythonHS.AST.Stmt (Stmt (AddAssignStmt, AssignStmt, BreakStmt, ClassDefStmt, ContinueStmt, DecoratedStmt, DivAssignStmt, FloorDivAssignStmt, ForStmt, FromImportStmt, FunctionDefDefaultsStmt, FunctionDefStmt, GlobalStmt, IfStmt, ImportStmt, MatchStmt, ModAssignStmt, MulAssignStmt, PassStmt, PrintStmt, RaiseStmt, ReturnStmt, SubAssignStmt, TryExceptStmt, WhileStmt))
+import PythonHS.AST.Stmt (Stmt (AddAssignStmt, AssignStmt, BreakStmt, ClassDefStmt, ContinueStmt, DecoratedStmt, DivAssignStmt, FloorDivAssignStmt, ForStmt, FromImportStmt, FunctionDefDefaultsStmt, FunctionDefStmt, GlobalStmt, IfStmt, ImportStmt, MatchStmt, ModAssignStmt, MulAssignStmt, PassStmt, PrintStmt, RaiseStmt, ReturnStmt, SubAssignStmt, TryExceptStmt, WhileStmt, YieldFromStmt, YieldStmt))
 import PythonHS.Lexer.Token (Token (Token))
 import PythonHS.Lexer.Position (Position (Position))
 import PythonHS.Lexer.TokenType
@@ -50,8 +50,9 @@ import PythonHS.Lexer.TokenType
         PrintToken,
         RParenToken,
          ReturnToken,
-         RaiseToken,
-         BreakToken,
+          RaiseToken,
+          YieldToken,
+          BreakToken,
          ContinueToken,
          GlobalToken,
         PassToken,
@@ -1390,6 +1391,35 @@ spec = describe "parseProgram" $ do
         Token EOFToken "" (Position 1 1)
       ]
       `shouldBe` Right (Program [FunctionDefStmt "id" ["x"] [ReturnStmt (NoneExpr (Position 1 1)) (Position 1 1)] (Position 1 1)])
+
+  it "parses yield inside function body" $ do
+    parseProgram
+      [ Token DefToken "def" (Position 1 1),
+        Token IdentifierToken "gen" (Position 1 5),
+        Token LParenToken "(" (Position 1 8),
+        Token RParenToken ")" (Position 1 9),
+        Token ColonToken ":" (Position 1 10),
+        Token YieldToken "yield" (Position 1 12),
+        Token IntegerToken "1" (Position 1 18),
+        Token NewlineToken "\\n" (Position 1 19),
+        Token EOFToken "" (Position 2 1)
+      ]
+      `shouldBe` Right (Program [FunctionDefStmt "gen" [] [YieldStmt (IntegerExpr 1 (Position 1 18)) (Position 1 12)] (Position 1 1)])
+
+  it "parses yield from inside function body" $ do
+    parseProgram
+      [ Token DefToken "def" (Position 1 1),
+        Token IdentifierToken "gen" (Position 1 5),
+        Token LParenToken "(" (Position 1 8),
+        Token RParenToken ")" (Position 1 9),
+        Token ColonToken ":" (Position 1 10),
+        Token YieldToken "yield" (Position 1 12),
+        Token FromToken "from" (Position 1 18),
+        Token IdentifierToken "xs" (Position 1 23),
+        Token NewlineToken "\\n" (Position 1 25),
+        Token EOFToken "" (Position 2 1)
+      ]
+      `shouldBe` Right (Program [FunctionDefStmt "gen" [] [YieldFromStmt (IdentifierExpr "xs" (Position 1 23)) (Position 1 12)] (Position 1 1)])
 
   it "parses an indented function suite with multiple statements" $ do
     parseProgram

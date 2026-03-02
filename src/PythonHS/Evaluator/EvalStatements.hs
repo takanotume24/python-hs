@@ -51,6 +51,8 @@ evalStatements env fenv outputs (stmt : rest) =
     ReturnStmt expr pos -> do
       (val, exprOuts, envAfterExpr) <- evalExpr evalStatements env fenv expr
       Right (envAfterExpr, fenv, outputs ++ exprOuts, Just (val, pos))
+    YieldStmt _ pos -> Left $ "Runtime error: yield is only supported in vm engine at " ++ showPos pos
+    YieldFromStmt _ pos -> Left $ "Runtime error: yield from is only supported in vm engine at " ++ showPos pos
 
     BreakStmt pos -> Right (env, fenv, outputs, Just (BreakValue, pos))
     ContinueStmt pos -> Right (env, fenv, outputs, Just (ContinueValue, pos))

@@ -41,7 +41,9 @@ import PythonHS.AST.Stmt
         PrintStmt,
         ReturnStmt,
         SubAssignStmt,
-        WhileStmt
+        WhileStmt,
+        YieldFromStmt,
+        YieldStmt
       )
   )
 
@@ -62,6 +64,8 @@ transformImportAliases renameDefNames moduleAlias callAlias identAlias stmt =
     FloorDivAssignStmt name expr pos -> FloorDivAssignStmt name (transformExpr moduleAlias callAlias identAlias expr) pos
     PrintStmt expr pos -> PrintStmt (transformExpr moduleAlias callAlias identAlias expr) pos
     ReturnStmt expr pos -> ReturnStmt (transformExpr moduleAlias callAlias identAlias expr) pos
+    YieldStmt expr pos -> YieldStmt (transformExpr moduleAlias callAlias identAlias expr) pos
+    YieldFromStmt expr pos -> YieldFromStmt (transformExpr moduleAlias callAlias identAlias expr) pos
     IfStmt cond thenBranch elseBranch pos ->
       IfStmt
         (transformExpr moduleAlias callAlias identAlias cond)

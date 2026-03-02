@@ -21,8 +21,9 @@ import PythonHS.Lexer.TokenType
         ImportToken,
         InToken,
         LambdaToken,
-        MatchToken,
-        CaseToken,
+         MatchToken,
+         CaseToken,
+         YieldToken,
         NoneToken,
         NotToken,
         OrToken,
@@ -51,6 +52,7 @@ keywordOrIdentifier value
   | value == "def" = DefToken
   | value == "class" = ClassToken
   | value == "lambda" = LambdaToken
+  | value == "yield" = YieldToken
   | value == "return" = ReturnToken
   | value == "break" = BreakToken
   | value == "continue" = ContinueToken

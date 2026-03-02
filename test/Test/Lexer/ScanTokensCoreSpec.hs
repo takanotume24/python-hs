@@ -3,7 +3,7 @@ module Test.Lexer.ScanTokensCoreSpec (spec) where
 import PythonHS.Lexer.Position (Position (Position))
 import PythonHS.Lexer.ScanTokens (scanTokens)
 import PythonHS.Lexer.Token (Token (Token))
-import PythonHS.Lexer.TokenType (TokenType (AsToken, AssignToken, AtToken, BreakToken, CaseToken, ClassToken, ColonAssignToken, ColonToken, ContinueToken, DedentToken, DotToken, DoubleSlashAssignToken, DoubleSlashToken, EOFToken, ElifToken, ExceptToken, FalseToken, FinallyToken, FloatToken, ForToken, FromToken, GlobalToken, IdentifierToken, IfToken, ImportToken, InToken, IndentToken, IntegerToken, LParenToken, LambdaToken, MatchToken, MinusAssignToken, NewlineToken, NoneToken, PassToken, PercentAssignToken, PercentToken, PipeToken, PlusAssignToken, PlusToken, PrintToken, RaiseToken, ReturnToken, RParenToken, SlashAssignToken, SlashToken, StarAssignToken, StarToken, StringToken, TrueToken, TryToken))
+import PythonHS.Lexer.TokenType (TokenType (AsToken, AssignToken, AtToken, BreakToken, CaseToken, ClassToken, ColonAssignToken, ColonToken, ContinueToken, DedentToken, DotToken, DoubleSlashAssignToken, DoubleSlashToken, EOFToken, ElifToken, ExceptToken, FalseToken, FinallyToken, FloatToken, ForToken, FromToken, GlobalToken, IdentifierToken, IfToken, ImportToken, InToken, IndentToken, IntegerToken, LParenToken, LambdaToken, MatchToken, MinusAssignToken, NewlineToken, NoneToken, PassToken, PercentAssignToken, PercentToken, PipeToken, PlusAssignToken, PlusToken, PrintToken, RaiseToken, ReturnToken, RParenToken, SlashAssignToken, SlashToken, StarAssignToken, StarToken, StringToken, TrueToken, TryToken, YieldToken))
 import Test.Hspec (Spec, describe, it, shouldBe)
 
 spec :: Spec
@@ -159,6 +159,15 @@ spec = describe "scanTokens core tokens" $ do
         [ Token ReturnToken "return" (Position 1 1),
           Token IdentifierToken "x" (Position 1 8),
           Token NewlineToken "\\n" (Position 1 9),
+          Token EOFToken "" (Position 2 1)
+        ]
+
+  it "recognizes yield keyword" $ do
+    scanTokens "yield x\n" `shouldBe`
+      Right
+        [ Token YieldToken "yield" (Position 1 1),
+          Token IdentifierToken "x" (Position 1 7),
+          Token NewlineToken "\\n" (Position 1 8),
           Token EOFToken "" (Position 2 1)
         ]
 

@@ -26,6 +26,13 @@ callCollectionBuiltin name args pos =
       [ListValue vals, value] -> Right (ListValue (vals ++ [value]))
       [_, _] -> Left ("Type error: append expects list as first argument at " ++ showPos pos)
       _ -> Left ("Argument count mismatch when calling append at " ++ showPos pos)
+    "extend" -> Just $ case args of
+      [ListValue vals, ListValue otherVals] -> Right (ListValue (vals ++ otherVals))
+      [ListValue vals, IntValue n] -> Right (ListValue (vals ++ [IntValue i | i <- [0 .. n - 1]]))
+      [ListValue vals, DictValue pairs] -> Right (ListValue (vals ++ map fst pairs))
+      [ListValue _, _] -> Left ("Type error: extend expects iterable as second argument at " ++ showPos pos)
+      [_, _] -> Left ("Type error: extend expects list as first argument at " ++ showPos pos)
+      _ -> Left ("Argument count mismatch when calling extend at " ++ showPos pos)
     "sort" -> Just $ case args of
       [ListValue vals] ->
         case numberPairs vals of

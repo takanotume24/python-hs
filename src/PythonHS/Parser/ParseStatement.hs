@@ -36,11 +36,12 @@ import PythonHS.Lexer.TokenType
         PercentAssignToken,
         PlusAssignToken,
         PrintToken,
-        ReturnToken,
-        SlashAssignToken,
-        StarAssignToken,
-        WhileToken
-      )
+         ReturnToken,
+         SlashAssignToken,
+         StarAssignToken,
+         WhileToken,
+         YieldToken
+       )
   )
 import PythonHS.Parser.ParseError (ParseError (ExpectedAssignAfterIdentifier, ExpectedExpression, ExpectedNewlineAfterStatement))
 import PythonHS.Parser.ParseExceptSuites (parseExceptSuites)
@@ -51,6 +52,7 @@ import PythonHS.Parser.ParseIfTail (parseIfTail)
 import PythonHS.Parser.ParseImportStmt (parseImportStmt)
 import PythonHS.Parser.ParseMatchStmt (parseMatchStmt)
 import PythonHS.Parser.ParseDecoratedStmt (parseDecoratedStmt)
+import PythonHS.Parser.ParseYieldStmt (parseYieldStmt)
 parseStatement :: [Token] -> Either ParseError (Stmt, [Token])
 parseStatement tokenStream =
   case tokenStream of
@@ -64,6 +66,8 @@ parseStatement tokenStream =
     Token ReturnToken _ pos : rest -> do
       (valueExpr, remaining) <- parseExpr rest
       Right (ReturnStmt valueExpr pos, remaining)
+    Token YieldToken _ pos : rest ->
+      parseYieldStmt parseExpr pos rest
     Token RaiseToken _ pos : rest -> do
       (valueExpr, remaining) <- parseExpr rest
       Right (RaiseStmt valueExpr pos, remaining)
