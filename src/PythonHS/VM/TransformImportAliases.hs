@@ -11,6 +11,7 @@ import PythonHS.AST.Expr
         IdentifierExpr,
         IntegerExpr,
         KeywordArgExpr,
+        KwStarArgExpr,
         LambdaDefaultsExpr,
         LambdaExpr,
         ListComprehensionClausesExpr,
@@ -18,6 +19,7 @@ import PythonHS.AST.Expr
          ListExpr,
          NoneExpr,
          NotExpr,
+         StarArgExpr,
          StringExpr,
          UnaryMinusExpr,
          WalrusExpr
@@ -91,6 +93,8 @@ transformImportAliases renameDefNames moduleAlias callAlias identAlias stmt =
             pos
         DictExpr entries pos -> DictExpr (fmap (\(k, v) -> (transformExpr moduleAliases callAliases identAliases k, transformExpr moduleAliases callAliases identAliases v)) entries) pos
         KeywordArgExpr name value pos -> KeywordArgExpr name (transformExpr moduleAliases callAliases identAliases value) pos
+        StarArgExpr value pos -> StarArgExpr (transformExpr moduleAliases callAliases identAliases value) pos
+        KwStarArgExpr value pos -> KwStarArgExpr (transformExpr moduleAliases callAliases identAliases value) pos
         WalrusExpr name value pos -> WalrusExpr name (transformExpr moduleAliases callAliases identAliases value) pos
         LambdaExpr params valueExpr pos -> LambdaExpr params (transformExpr moduleAliases callAliases identAliases valueExpr) pos
         LambdaDefaultsExpr params defaults valueExpr pos ->

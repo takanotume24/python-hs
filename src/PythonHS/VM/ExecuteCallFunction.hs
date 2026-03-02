@@ -117,8 +117,17 @@ executeCallFunction execute isTopLevel fname compiledArgs pos stack globalsEnv l
 
     callBuiltinOrFail args globalsAfterArgs functionsAfterArgs outputsAfterArgs =
       case firstKeywordArg compiledArgs of
-        Just (_, argPos) -> Left ("Argument error: keyword arguments are not supported for builtin " ++ fname ++ " at " ++ showPos argPos)
+        Just (_, argPos)
+          | isBuiltinName fname ->
+              Left ("Argument error: keyword arguments are not supported for builtin " ++ fname ++ " at " ++ showPos argPos)
         Nothing ->
+          case callBuiltin fname args pos of
+            Just (Left err) -> Left err
+            Just (Right builtinValue) ->
+              let newLocalEnv = if isTopLevel then globalsAfterArgs else localEnv
+               in Right (builtinValue : stack, globalsAfterArgs, newLocalEnv, functionsAfterArgs, outputsAfterArgs)
+            Nothing -> Left ("Name error: undefined function " ++ fname ++ " at " ++ showPos pos)
+        _ ->
           case callBuiltin fname args pos of
             Just (Left err) -> Left err
             Just (Right builtinValue) ->

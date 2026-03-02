@@ -1,6 +1,6 @@
 module PythonHS.VM.CompileCallArgsAt (compileCallArgsAt) where
 
-import PythonHS.AST.Expr (Expr (KeywordArgExpr))
+import PythonHS.AST.Expr (Expr (KeywordArgExpr, KwStarArgExpr, StarArgExpr))
 import PythonHS.Lexer.Position (Position)
 import PythonHS.VM.ExprPosition (exprPosition)
 import PythonHS.VM.Instruction (Instruction)
@@ -15,7 +15,18 @@ compileCallArgsAt compileExprAt args =
           (argCode, _) <- compileExprAt 0 valueExpr
           restCompiledArgs <- compileCallArgsAt compileExprAt restArgs
           pure ((argCode, Just argName, argPos) : restCompiledArgs)
+        StarArgExpr valueExpr argPos -> do
+          (argCode, _) <- compileExprAt 0 valueExpr
+          restCompiledArgs <- compileCallArgsAt compileExprAt restArgs
+          pure ((argCode, Just starArgMarker, argPos) : restCompiledArgs)
+        KwStarArgExpr valueExpr argPos -> do
+          (argCode, _) <- compileExprAt 0 valueExpr
+          restCompiledArgs <- compileCallArgsAt compileExprAt restArgs
+          pure ((argCode, Just kwStarArgMarker, argPos) : restCompiledArgs)
         _ -> do
           (argCode, _) <- compileExprAt 0 argExpr
           restCompiledArgs <- compileCallArgsAt compileExprAt restArgs
           pure ((argCode, Nothing, exprPosition argExpr) : restCompiledArgs)
+  where
+    starArgMarker = "__python_hs_star_arg__"
+    kwStarArgMarker = "__python_hs_kwstar_arg__"

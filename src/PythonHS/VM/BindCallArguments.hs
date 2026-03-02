@@ -2,15 +2,19 @@ module PythonHS.VM.BindCallArguments (bindCallArguments) where
 
 import qualified Data.Map.Strict as Map
 import PythonHS.Evaluator.ShowPos (showPos)
-import PythonHS.Evaluator.Value (Value)
+import PythonHS.Evaluator.Value (Value (DictValue, ListValue, StringValue), Value)
 import PythonHS.Lexer.Position (Position)
 
 bindCallArguments :: String -> Position -> [String] -> [Value] -> [(Maybe String, Position)] -> Either String (Map.Map String Value)
 bindCallArguments fname callPos params argValues argKinds = do
   (positionalVals, keywordVals, kwPosByName, kwOrder) <- collectArgs False [] Map.empty Map.empty [] (zip argValues argKinds)
   boundByName <- bindByName keywordVals kwPosByName kwOrder
-  bindPositional positionalVals boundByName kwPosByName kwOrder
+  bindPositional positionalVals boundByName kwPosByName kwOrder keywordVals
   where
+    plainParams = filter isPlainParam params
+    varArgName = findVarArg params
+    kwArgName = findKwArg params
+
     collectArgs seenKeywordArg positionalVals keywordVals kwPosByName kwOrder pairs =
       case pairs of
         [] -> Right (positionalVals, keywordVals, kwPosByName, kwOrder)
@@ -46,18 +50,28 @@ bindCallArguments fname callPos params argValues argKinds = do
                 Nothing -> Left ("Argument count mismatch when calling " ++ fname ++ " at " ++ showPos callPos)
             Nothing -> Right keywordVals
 
-    bindPositional positionalVals bound kwPosByName kwOrder =
+    bindPositional positionalVals bound kwPosByName kwOrder keywordVals =
       case firstCollisionName of
         Just paramName ->
           case Map.lookup paramName kwPosByName of
             Just argPos -> Left ("Argument error: multiple values for parameter " ++ paramName ++ " at " ++ showPos argPos)
             Nothing -> Left ("Argument count mismatch when calling " ++ fname ++ " at " ++ showPos callPos)
         Nothing ->
-          if length positionalVals > length params
+          if length positionalVals > length plainParams && varArgName == Nothing
             then Left ("Argument count mismatch when calling " ++ fname ++ " at " ++ showPos callPos)
-            else Right (foldl insertPositional bound (zip positionalParamNames positionalVals))
+            else
+              let fixedBound = foldl insertPositional bound (zip positionalParamNames positionalVals)
+                  withVarArgs =
+                    case varArgName of
+                      Just name -> Map.insert name (ListValue (drop (length plainParams) positionalVals)) fixedBound
+                      Nothing -> fixedBound
+                  withKwArgs =
+                    case kwArgName of
+                      Just name -> Map.insert name (DictValue (fmap (\(k, v) -> (StringValue k, v)) (extraKeywordPairs kwOrder keywordVals))) withVarArgs
+                      Nothing -> withVarArgs
+               in Right withKwArgs
       where
-        positionalParamNames = take (min (length positionalVals) (length params)) params
+        positionalParamNames = take (min (length positionalVals) (length plainParams)) plainParams
         firstCollisionName = firstMatch kwOrder positionalParamNames
 
         insertPositional acc (paramName, value) =
@@ -71,7 +85,7 @@ bindCallArguments fname callPos params argValues argKinds = do
       case names of
         [] -> Nothing
         name : restNames ->
-          if name `elem` params
+          if name `elem` plainParams || kwArgName /= Nothing
             then firstNotInParams restNames
             else Just name
 
@@ -82,3 +96,36 @@ bindCallArguments fname callPos params argValues argKinds = do
           if name `elem` candidates
             then Just name
             else firstMatch restNames candidates
+
+    isPlainParam name = not (isVarParam name) && not (isKwParam name)
+
+    isVarParam ('*' : c : _) = c /= '*'
+    isVarParam _ = False
+
+    isKwParam ('*' : '*' : _) = True
+    isKwParam _ = False
+
+    stripPrefixStars ('*' : '*' : rest) = rest
+    stripPrefixStars ('*' : rest) = rest
+    stripPrefixStars name = name
+
+    findVarArg names =
+      case filter isVarParam names of
+        [] -> Nothing
+        name : _ -> Just (stripPrefixStars name)
+
+    findKwArg names =
+      case filter isKwParam names of
+        [] -> Nothing
+        name : _ -> Just (stripPrefixStars name)
+
+    extraKeywordPairs names keywordVals =
+      case names of
+        [] -> []
+        name : restNames ->
+          if name `elem` plainParams
+            then extraKeywordPairs restNames keywordVals
+            else
+              case Map.lookup name keywordVals of
+                Just value -> (name, value) : extraKeywordPairs restNames keywordVals
+                Nothing -> extraKeywordPairs restNames keywordVals

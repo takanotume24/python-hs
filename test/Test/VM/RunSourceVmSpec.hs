@@ -293,17 +293,17 @@ spec = describe "runSourceVm (vm mvp)" $ do
   it "returns parse error for mixed keyword then positional call arguments" $ do
     runSourceVm "print f(a=1, 2)\n" `shouldBe` Left "ExpectedExpression (Position {line = 1, column = 14})"
 
-  it "returns parse error for unsupported star expansion in call arguments" $ do
-    runSourceVm "print f(*[1,2])\n" `shouldBe` Left "ExpectedExpression (Position {line = 1, column = 9})"
+  it "supports star expansion in call arguments" $ do
+    runSourceVm "def f(a, b):\n  return a + b\nprint f(*[1,2])\n" `shouldBe` Right ["3"]
 
-  it "returns parse error for unsupported double-star expansion in call arguments" $ do
-    runSourceVm "print f(**{})\n" `shouldBe` Left "ExpectedExpression (Position {line = 1, column = 9})"
+  it "supports double-star expansion in call arguments" $ do
+    runSourceVm "def f(a, b):\n  return a + b\nprint f(**{\"a\":1,\"b\":2})\n" `shouldBe` Right ["3"]
 
-  it "returns parse error for unsupported *args in function definition" $ do
-    runSourceVm "def f(*args):\n  pass\n" `shouldBe` Left "ExpectedExpression (Position {line = 1, column = 7})"
+  it "supports *args in function definition" $ do
+    runSourceVm "def f(*args):\n  return len(args)\nprint f(1,2,3)\n" `shouldBe` Right ["3"]
 
-  it "returns parse error for unsupported **kwargs in function definition" $ do
-    runSourceVm "def f(**kwargs):\n  pass\n" `shouldBe` Left "ExpectedExpression (Position {line = 1, column = 7})"
+  it "supports **kwargs in function definition" $ do
+    runSourceVm "def f(**kwargs):\n  return get(kwargs, \"x\", 0)\nprint f(x=7)\n" `shouldBe` Right ["7"]
 
   it "returns parse error for unsupported keyword-only separator in function definition" $ do
     runSourceVm "def f(*, a):\n  pass\n" `shouldBe` Left "ExpectedExpression (Position {line = 1, column = 7})"
@@ -311,11 +311,11 @@ spec = describe "runSourceVm (vm mvp)" $ do
   it "returns parse error for unsupported positional-only separator in function definition" $ do
     runSourceVm "def f(a, /):\n  pass\n" `shouldBe` Left "ExpectedExpression (Position {line = 1, column = 10})"
 
-  it "returns parse error for unsupported type annotation in function parameter" $ do
-    runSourceVm "def f(a: int):\n  pass\n" `shouldBe` Left "ExpectedExpression (Position {line = 1, column = 8})"
+  it "accepts type annotation in function parameter" $ do
+    runSourceVm "def f(a: int):\n  return a\nprint f(1)\n" `shouldBe` Right ["1"]
 
-  it "returns parse error for unsupported return type annotation in function definition" $ do
-    runSourceVm "def f() -> int:\n  pass\n" `shouldBe` Left "ExpectedExpression (Position {line = 1, column = 9})"
+  it "accepts return type annotation in function definition" $ do
+    runSourceVm "def f() -> int:\n  return 1\nprint f()\n" `shouldBe` Right ["1"]
 
   it "returns parse error for missing expression after print" $ do
     runSourceVm "print\n" `shouldBe` Left "ExpectedExpression (Position {line = 1, column = 6})"

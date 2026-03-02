@@ -15,6 +15,8 @@ data Expr
   | DictExpr [(Expr, Expr)] Position
   | IdentifierExpr String Position
   | KeywordArgExpr String Expr Position
+  | StarArgExpr Expr Position
+  | KwStarArgExpr Expr Position
   | WalrusExpr String Expr Position
   | LambdaExpr [String] Expr Position
   | LambdaDefaultsExpr [String] [(String, Expr)] Expr Position

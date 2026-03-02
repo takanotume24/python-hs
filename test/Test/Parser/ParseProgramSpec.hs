@@ -1,7 +1,7 @@
 module Test.Parser.ParseProgramSpec (spec) where
 
 import PythonHS.AST.BinaryOperator (BinaryOperator (..))
-import PythonHS.AST.Expr (Expr (BinaryExpr, CallExpr, DictExpr, FloatExpr, IdentifierExpr, IntegerExpr, KeywordArgExpr, LambdaExpr, ListComprehensionClausesExpr, ListComprehensionExpr, ListExpr, NoneExpr, NotExpr, StringExpr, UnaryMinusExpr, WalrusExpr))
+import PythonHS.AST.Expr (Expr (BinaryExpr, CallExpr, DictExpr, FloatExpr, IdentifierExpr, IntegerExpr, KeywordArgExpr, KwStarArgExpr, LambdaExpr, ListComprehensionClausesExpr, ListComprehensionExpr, ListExpr, NoneExpr, NotExpr, StarArgExpr, StringExpr, UnaryMinusExpr, WalrusExpr))
 import PythonHS.AST.Pattern (Pattern (CapturePattern, MappingPattern, OrPattern, ValuePattern, WildcardPattern))
 import PythonHS.AST.Program (Program (Program))
 import PythonHS.AST.Stmt (Stmt (AddAssignStmt, AssignStmt, BreakStmt, ClassDefStmt, ContinueStmt, DivAssignStmt, FloorDivAssignStmt, ForStmt, FromImportStmt, FunctionDefDefaultsStmt, FunctionDefStmt, GlobalStmt, IfStmt, ImportStmt, MatchStmt, ModAssignStmt, MulAssignStmt, PassStmt, PrintStmt, RaiseStmt, ReturnStmt, SubAssignStmt, TryExceptStmt, WhileStmt))
@@ -1104,6 +1104,45 @@ spec = describe "parseProgram" $ do
                     [IntegerExpr 1 (Position 1 9), KeywordArgExpr "b" (IntegerExpr 2 (Position 1 14)) (Position 1 12)]
                     (Position 1 7)
                 )
+                (Position 1 1)
+            ]
+        )
+
+  it "parses star expansion in call arguments" $ do
+    parseProgram
+      [ Token PrintToken "print" (Position 1 1),
+        Token IdentifierToken "f" (Position 1 7),
+        Token LParenToken "(" (Position 1 8),
+        Token StarToken "*" (Position 1 9),
+        Token IdentifierToken "xs" (Position 1 10),
+        Token RParenToken ")" (Position 1 12),
+        Token NewlineToken "\\n" (Position 1 13),
+        Token EOFToken "" (Position 2 1)
+      ]
+      `shouldBe` Right
+        ( Program
+            [ PrintStmt
+                (CallExpr "f" [StarArgExpr (IdentifierExpr "xs" (Position 1 10)) (Position 1 9)] (Position 1 7))
+                (Position 1 1)
+            ]
+        )
+
+  it "parses double-star expansion in call arguments" $ do
+    parseProgram
+      [ Token PrintToken "print" (Position 1 1),
+        Token IdentifierToken "f" (Position 1 7),
+        Token LParenToken "(" (Position 1 8),
+        Token StarToken "*" (Position 1 9),
+        Token StarToken "*" (Position 1 10),
+        Token IdentifierToken "kw" (Position 1 11),
+        Token RParenToken ")" (Position 1 13),
+        Token NewlineToken "\\n" (Position 1 14),
+        Token EOFToken "" (Position 2 1)
+      ]
+      `shouldBe` Right
+        ( Program
+            [ PrintStmt
+                (CallExpr "f" [KwStarArgExpr (IdentifierExpr "kw" (Position 1 11)) (Position 1 9)] (Position 1 7))
                 (Position 1 1)
             ]
         )

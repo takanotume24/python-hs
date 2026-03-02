@@ -39,6 +39,10 @@ evalExpr evalStatementsFn env fenv expr =
         Nothing -> Left $ "Name error: undefined identifier " ++ name ++ " at " ++ showPos pos
     KeywordArgExpr _ valueExpr _ ->
       evalExpr evalStatementsFn env fenv valueExpr
+    StarArgExpr _ pos ->
+      Left $ "Runtime error: argument expansion is only supported in vm engine at " ++ showPos pos
+    KwStarArgExpr _ pos ->
+      Left $ "Runtime error: argument expansion is only supported in vm engine at " ++ showPos pos
     WalrusExpr _ _ pos ->
       Left $ "Runtime error: walrus is only supported in vm engine at " ++ showPos pos
     LambdaExpr _ _ pos ->
@@ -86,6 +90,8 @@ evalExpr evalStatementsFn env fenv expr =
     exprPos (DictExpr _ pos) = pos
     exprPos (IdentifierExpr _ pos) = pos
     exprPos (KeywordArgExpr _ _ pos) = pos
+    exprPos (StarArgExpr _ pos) = pos
+    exprPos (KwStarArgExpr _ pos) = pos
     exprPos (WalrusExpr _ _ pos) = pos
     exprPos (LambdaExpr _ _ pos) = pos
     exprPos (LambdaDefaultsExpr _ _ _ pos) = pos

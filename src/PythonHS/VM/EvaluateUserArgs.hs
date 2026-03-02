@@ -3,7 +3,7 @@ module PythonHS.VM.EvaluateUserArgs (evaluateUserArgs) where
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import PythonHS.Evaluator.ShowPos (showPos)
-import PythonHS.Evaluator.Value (Value (NoneValue), Value)
+import PythonHS.Evaluator.Value (Value (DictValue, ListValue, NoneValue, StringValue), Value)
 import PythonHS.Lexer.Position (Position)
 import PythonHS.VM.Instruction (Instruction (ReturnTop), Instruction)
 
@@ -33,15 +33,47 @@ evaluateUserArgs executeFn callName callPos currentLocalEnv remainingArgs curren
               (argValue, globalsAfterArg, functionsAfterArg, outputsAfterArg) <-
                 evalArgCode argCode currentGlobals currentFunctions currentOutputs
               evaluateUserArgs executeFn callName callPos currentLocalEnv restArgs globalsAfterArg functionsAfterArg outputsAfterArg False seenKeywordNames (accValues ++ [argValue]) (accKinds ++ [(Nothing, argPos)])
-        Just argName ->
-          if Set.member argName seenKeywordNames
-            then Left ("Argument error: duplicate keyword argument " ++ argName ++ " at " ++ showPos argPos)
-            else do
+        Just argName
+          | argName == starArgMarker -> do
+              (argValue, globalsAfterArg, functionsAfterArg, outputsAfterArg) <-
+                evalArgCode argCode currentGlobals currentFunctions currentOutputs
+              case argValue of
+                ListValue unpackedValues ->
+                  if seenKeywordArg
+                    then Left ("Argument count mismatch when calling " ++ callName ++ " at " ++ showPos callPos)
+                    else
+                      evaluateUserArgs
+                        executeFn
+                        callName
+                        callPos
+                        currentLocalEnv
+                        restArgs
+                        globalsAfterArg
+                        functionsAfterArg
+                        outputsAfterArg
+                        False
+                        seenKeywordNames
+                        (accValues ++ unpackedValues)
+                        (accKinds ++ fmap (\_ -> (Nothing, argPos)) unpackedValues)
+                _ -> Left ("Type error: * expects list at " ++ showPos argPos)
+          | argName == kwStarArgMarker -> do
+              (argValue, globalsAfterArg, functionsAfterArg, outputsAfterArg) <-
+                evalArgCode argCode currentGlobals currentFunctions currentOutputs
+              case argValue of
+                DictValue keyValuePairs ->
+                  appendKwPairs keyValuePairs argPos restArgs globalsAfterArg functionsAfterArg outputsAfterArg seenKeywordNames accValues accKinds
+                _ -> Left ("Type error: ** expects dict at " ++ showPos argPos)
+          | Set.member argName seenKeywordNames ->
+              Left ("Argument error: duplicate keyword argument " ++ argName ++ " at " ++ showPos argPos)
+          | otherwise -> do
               (argValue, globalsAfterArg, functionsAfterArg, outputsAfterArg) <-
                 evalArgCode argCode currentGlobals currentFunctions currentOutputs
               let newSeenKeywordNames = Set.insert argName seenKeywordNames
               evaluateUserArgs executeFn callName callPos currentLocalEnv restArgs globalsAfterArg functionsAfterArg outputsAfterArg True newSeenKeywordNames (accValues ++ [argValue]) (accKinds ++ [(Just argName, argPos)])
   where
+    starArgMarker = "__python_hs_star_arg__"
+    kwStarArgMarker = "__python_hs_kwstar_arg__"
+
     evalArgCode argCode globalsNow functionsNow outputsNow = do
       (maybeArgValue, globalsAfterArg, functionsAfterArg, outputsAfterArg) <-
         executeFn (argCode ++ [ReturnTop]) 0 [] globalsNow currentLocalEnv functionsNow Set.empty Map.empty Map.empty [] outputsNow False
@@ -50,3 +82,25 @@ evaluateUserArgs executeFn callName callPos currentLocalEnv remainingArgs curren
               Just value -> value
               Nothing -> NoneValue
       Right (argValue, globalsAfterArg, functionsAfterArg, outputsAfterArg)
+
+    appendKwPairs keyValuePairs kwPos argsAfterKw globalsNow functionsNow outputsNow seenNames values kinds =
+      case keyValuePairs of
+        [] ->
+          evaluateUserArgs executeFn callName callPos currentLocalEnv argsAfterKw globalsNow functionsNow outputsNow True seenNames values kinds
+        (keyValue, value) : restPairs ->
+          case keyValue of
+            StringValue argName ->
+              if Set.member argName seenNames
+                then Left ("Argument error: duplicate keyword argument " ++ argName ++ " at " ++ showPos kwPos)
+                else
+                  appendKwPairs
+                    restPairs
+                    kwPos
+                    argsAfterKw
+                    globalsNow
+                    functionsNow
+                    outputsNow
+                    (Set.insert argName seenNames)
+                    (values ++ [value])
+                    (kinds ++ [(Just argName, kwPos)])
+            _ -> Left ("Type error: ** expects string keys at " ++ showPos kwPos)

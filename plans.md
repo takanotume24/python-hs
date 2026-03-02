@@ -643,3 +643,6 @@
   - [x] P16 開始: 内包表記 完全化（複数 `if` / walrus `:=` / アンパックtarget / 非リーク）を VM 専用で開始
   - [x] P16 実装: `WalrusExpr`、`ColonAssignToken`、拡張内包 clause（targets + ifs）と VM 実行系（`DupTop` 含む）を導入
   - [x] P16 完了: `cabal test -j1`（739 examples）と `cabal run check-structure` 成功
+  - [x] P17 開始: bytecode 対応（call側 `*args/**kwargs`・def側 `*args/**kwargs`・関数アノテーション受理）を VM 中心で開始
+  - [x] P17 実装: call 引数展開 AST/Parser/VM 束縛拡張、def 可変引数束縛、parameter/return annotation 構文受理を追加
+  - [x] P17 完了: `cabal test -j1`（741 examples）と `cabal run check-structure` 成功

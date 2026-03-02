@@ -10,4 +10,9 @@ firstKeywordArg compiledArgs =
     (_, argKind, argPos) : restCompiledArgs ->
       case argKind of
         Nothing -> firstKeywordArg restCompiledArgs
-        Just argName -> Just (argName, argPos)
+        Just argName ->
+          if argName == starArgMarker
+            then firstKeywordArg restCompiledArgs
+            else Just (argName, argPos)
+  where
+    starArgMarker = "__python_hs_star_arg__"

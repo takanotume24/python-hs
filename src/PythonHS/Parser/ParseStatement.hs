@@ -13,7 +13,8 @@ import PythonHS.Lexer.TokenType
         DedentToken,
         DefToken,
         DoubleSlashAssignToken,
-        DotToken,
+         DotToken,
+         GtToken,
         ForToken,
         FromToken,
         GlobalToken,
@@ -27,7 +28,8 @@ import PythonHS.Lexer.TokenType
         InToken,
         IndentToken,
         LParenToken,
-        MinusAssignToken,
+         MinusAssignToken,
+         MinusToken,
         NewlineToken,
         PassToken,
         PercentAssignToken,
@@ -136,6 +138,16 @@ parseStatement tokenStream =
     Token DefToken _ posDef : Token IdentifierToken name _ : Token LParenToken _ _ : rest -> do
       (params, defaults, afterParams) <- parseParameters parseExpr rest
       case afterParams of
+        Token MinusToken _ _ : Token GtToken _ _ : afterArrow -> do
+          (_, afterAnnotation) <- parseExpr afterArrow
+          case afterAnnotation of
+            Token ColonToken _ _ : afterColon -> do
+              (bodySuite, finalRest) <- parseSuite afterColon
+              if null defaults
+                then Right (FunctionDefStmt name params bodySuite posDef, finalRest)
+                else Right (FunctionDefDefaultsStmt name params defaults bodySuite posDef, finalRest)
+            Token _ _ pos' : _ -> Left (ExpectedExpression pos')
+            _ -> Left (ExpectedExpression (Position 0 0))
         Token ColonToken _ _ : afterColon -> do
           (bodySuite, finalRest) <- parseSuite afterColon
           if null defaults

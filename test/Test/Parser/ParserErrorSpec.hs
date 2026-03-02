@@ -1,5 +1,6 @@
 module Test.Parser.ParserErrorSpec (spec) where
 
+import Data.Either (isRight)
 import PythonHS.Lexer.Position (Position (Position))
 import PythonHS.Lexer.Token (Token (Token))
 import PythonHS.Lexer.TokenType
@@ -8,6 +9,7 @@ import PythonHS.Lexer.TokenType
         EOFToken,
         CommaToken,
         ColonToken,
+        DedentToken,
         DefToken,
         ElifToken,
         ElseToken,
@@ -23,6 +25,7 @@ import PythonHS.Lexer.TokenType
         LParenToken,
         MinusToken,
         NewlineToken,
+        PassToken,
         PrintToken,
         GtToken,
         SlashToken,
@@ -35,7 +38,7 @@ import PythonHS.Lexer.TokenType
   )
 import PythonHS.Parser.ParseError (ParseError (ExpectedAssignAfterIdentifier, ExpectedExpression, ExpectedNewlineAfterStatement))
 import PythonHS.Parser.ParseProgram (parseProgram)
-import Test.Hspec (Spec, describe, it, shouldBe)
+import Test.Hspec (Spec, describe, it, shouldBe, shouldSatisfy)
 
 spec :: Spec
 spec = describe "parse error reporting" $ do
@@ -277,7 +280,7 @@ spec = describe "parse error reporting" $ do
       ]
       `shouldBe` Left (ExpectedExpression (Position 1 19))
 
-  it "reports ExpectedExpression for unsupported star expansion in call arguments" $ do
+  it "accepts star expansion in call arguments" $ do
     parseProgram
       [ Token PrintToken "print" (Position 1 1),
         Token IdentifierToken "f" (Position 1 7),
@@ -292,9 +295,9 @@ spec = describe "parse error reporting" $ do
         Token NewlineToken "\\n" (Position 1 16),
         Token EOFToken "" (Position 2 1)
       ]
-      `shouldBe` Left (ExpectedExpression (Position 1 9))
+      `shouldSatisfy` isRight
 
-  it "reports ExpectedExpression for unsupported double-star expansion in call arguments" $ do
+  it "accepts double-star expansion in call arguments" $ do
     parseProgram
       [ Token PrintToken "print" (Position 1 1),
         Token IdentifierToken "f" (Position 1 7),
@@ -307,9 +310,9 @@ spec = describe "parse error reporting" $ do
         Token NewlineToken "\\n" (Position 1 14),
         Token EOFToken "" (Position 2 1)
       ]
-      `shouldBe` Left (ExpectedExpression (Position 1 9))
+      `shouldSatisfy` isRight
 
-  it "reports ExpectedExpression for unsupported *args in function definition" $ do
+  it "accepts *args in function definition" $ do
     parseProgram
       [ Token DefToken "def" (Position 1 1),
         Token IdentifierToken "f" (Position 1 5),
@@ -319,11 +322,15 @@ spec = describe "parse error reporting" $ do
         Token RParenToken ")" (Position 1 12),
         Token ColonToken ":" (Position 1 13),
         Token NewlineToken "\\n" (Position 1 14),
-        Token EOFToken "" (Position 2 1)
+        Token IndentToken "<INDENT>" (Position 2 1),
+        Token PassToken "pass" (Position 2 3),
+        Token NewlineToken "\\n" (Position 2 7),
+        Token DedentToken "<DEDENT>" (Position 3 1),
+        Token EOFToken "" (Position 3 1)
       ]
-      `shouldBe` Left (ExpectedExpression (Position 1 7))
+      `shouldSatisfy` isRight
 
-  it "reports ExpectedExpression for unsupported **kwargs in function definition" $ do
+  it "accepts **kwargs in function definition" $ do
     parseProgram
       [ Token DefToken "def" (Position 1 1),
         Token IdentifierToken "f" (Position 1 5),
@@ -334,9 +341,13 @@ spec = describe "parse error reporting" $ do
         Token RParenToken ")" (Position 1 15),
         Token ColonToken ":" (Position 1 16),
         Token NewlineToken "\\n" (Position 1 17),
-        Token EOFToken "" (Position 2 1)
+        Token IndentToken "<INDENT>" (Position 2 1),
+        Token PassToken "pass" (Position 2 3),
+        Token NewlineToken "\\n" (Position 2 7),
+        Token DedentToken "<DEDENT>" (Position 3 1),
+        Token EOFToken "" (Position 3 1)
       ]
-      `shouldBe` Left (ExpectedExpression (Position 1 7))
+      `shouldSatisfy` isRight
 
   it "reports ExpectedExpression for unsupported keyword-only separator in function definition" $ do
     parseProgram
@@ -368,7 +379,7 @@ spec = describe "parse error reporting" $ do
       ]
       `shouldBe` Left (ExpectedExpression (Position 1 10))
 
-  it "reports ExpectedExpression for unsupported type annotation in function parameter" $ do
+  it "accepts type annotation in function parameter" $ do
     parseProgram
       [ Token DefToken "def" (Position 1 1),
         Token IdentifierToken "f" (Position 1 5),
@@ -379,11 +390,15 @@ spec = describe "parse error reporting" $ do
         Token RParenToken ")" (Position 1 13),
         Token ColonToken ":" (Position 1 14),
         Token NewlineToken "\\n" (Position 1 15),
-        Token EOFToken "" (Position 2 1)
+        Token IndentToken "<INDENT>" (Position 2 1),
+        Token PassToken "pass" (Position 2 3),
+        Token NewlineToken "\\n" (Position 2 7),
+        Token DedentToken "<DEDENT>" (Position 3 1),
+        Token EOFToken "" (Position 3 1)
       ]
-      `shouldBe` Left (ExpectedExpression (Position 1 8))
+      `shouldSatisfy` isRight
 
-  it "reports ExpectedExpression for unsupported return type annotation in function definition" $ do
+  it "accepts return type annotation in function definition" $ do
     parseProgram
       [ Token DefToken "def" (Position 1 1),
         Token IdentifierToken "f" (Position 1 5),
@@ -394,9 +409,13 @@ spec = describe "parse error reporting" $ do
         Token IdentifierToken "int" (Position 1 12),
         Token ColonToken ":" (Position 1 15),
         Token NewlineToken "\\n" (Position 1 16),
-        Token EOFToken "" (Position 2 1)
+        Token IndentToken "<INDENT>" (Position 2 1),
+        Token PassToken "pass" (Position 2 3),
+        Token NewlineToken "\\n" (Position 2 7),
+        Token DedentToken "<DEDENT>" (Position 3 1),
+        Token EOFToken "" (Position 3 1)
       ]
-      `shouldBe` Left (ExpectedExpression (Position 1 9))
+      `shouldSatisfy` isRight
 
   it "reports ExpectedExpression when duplicate parameter names include defaults" $ do
     parseProgram

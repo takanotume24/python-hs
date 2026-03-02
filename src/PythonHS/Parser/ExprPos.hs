@@ -1,6 +1,6 @@
 module PythonHS.Parser.ExprPos (exprPos) where
 
-import PythonHS.AST.Expr (Expr (BinaryExpr, CallExpr, CallValueExpr, DictExpr, FloatExpr, IdentifierExpr, IntegerExpr, KeywordArgExpr, LambdaDefaultsExpr, LambdaExpr, ListComprehensionClausesExpr, ListComprehensionExpr, ListExpr, NoneExpr, NotExpr, StringExpr, UnaryMinusExpr, WalrusExpr))
+import PythonHS.AST.Expr (Expr (BinaryExpr, CallExpr, CallValueExpr, DictExpr, FloatExpr, IdentifierExpr, IntegerExpr, KeywordArgExpr, KwStarArgExpr, LambdaDefaultsExpr, LambdaExpr, ListComprehensionClausesExpr, ListComprehensionExpr, ListExpr, NoneExpr, NotExpr, StarArgExpr, StringExpr, UnaryMinusExpr, WalrusExpr))
 import PythonHS.Lexer.Position (Position)
 
 exprPos :: Expr -> Position
@@ -16,6 +16,8 @@ exprPos expr =
     DictExpr _ pos -> pos
     IdentifierExpr _ pos -> pos
     KeywordArgExpr _ _ pos -> pos
+    StarArgExpr _ pos -> pos
+    KwStarArgExpr _ pos -> pos
     WalrusExpr _ _ pos -> pos
     LambdaExpr _ _ pos -> pos
     LambdaDefaultsExpr _ _ _ pos -> pos

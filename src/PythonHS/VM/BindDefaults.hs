@@ -21,16 +21,16 @@ bindDefaults ::
 bindDefaults execute fname pos params defaultCodes initialLocals globalsNow functionsNow outputsNow =
   fill params initialLocals globalsNow functionsNow outputsNow
   where
-    defaultMap = Map.fromList defaultCodes
+    defaultMap = Map.fromList (fmap (\(name, code) -> (canonicalName name, code)) defaultCodes)
 
     fill remainingParams currentLocals currentGlobals currentFunctions currentOutputs =
       case remainingParams of
         [] -> Right (currentLocals, currentGlobals, currentFunctions, currentOutputs)
         paramName : restParams ->
-          case Map.lookup paramName currentLocals of
+          case Map.lookup (canonicalName paramName) currentLocals of
             Just _ -> fill restParams currentLocals currentGlobals currentFunctions currentOutputs
             Nothing ->
-              case Map.lookup paramName defaultMap of
+              case Map.lookup (canonicalName paramName) defaultMap of
                 Nothing -> Left ("Argument count mismatch when calling " ++ fname ++ " at " ++ showPos pos)
                 Just defaultCode -> do
                   (maybeDefaultValue, globalsAfterDefault, functionsAfterDefault, outputsAfterDefault) <-
@@ -39,5 +39,9 @@ bindDefaults execute fname pos params defaultCodes initialLocals globalsNow func
                         case maybeDefaultValue of
                           Just value -> value
                           Nothing -> NoneValue
-                  let newLocals = Map.insert paramName defaultValue currentLocals
+                  let newLocals = Map.insert (canonicalName paramName) defaultValue currentLocals
                   fill restParams newLocals globalsAfterDefault functionsAfterDefault outputsAfterDefault
+
+    canonicalName ('*' : '*' : rest) = rest
+    canonicalName ('*' : rest) = rest
+    canonicalName name = name

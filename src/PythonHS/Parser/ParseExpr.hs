@@ -1,10 +1,11 @@
 module PythonHS.Parser.ParseExpr (parseExpr) where
 import PythonHS.AST.BinaryOperator (BinaryOperator (AddOperator, AndOperator, DivideOperator, EqOperator, FloorDivideOperator, GtOperator, GteOperator, LtOperator, LteOperator, ModuloOperator, MultiplyOperator, NotEqOperator, OrOperator, SubtractOperator))
-import PythonHS.AST.Expr (Expr (BinaryExpr, CallExpr, CallValueExpr, DictExpr, FloatExpr, IdentifierExpr, IntegerExpr, KeywordArgExpr, ListExpr, NoneExpr, NotExpr, StringExpr, UnaryMinusExpr))
+import PythonHS.AST.Expr (Expr (BinaryExpr, CallExpr, CallValueExpr, DictExpr, FloatExpr, IdentifierExpr, IntegerExpr, ListExpr, NoneExpr, NotExpr, StringExpr, UnaryMinusExpr))
 import PythonHS.Lexer.Position (Position (Position))
 import PythonHS.Lexer.Token (Token (Token), position)
-import PythonHS.Lexer.TokenType (TokenType (AndToken, AssignToken, ColonToken, CommaToken, DotToken, DoubleSlashToken, EqToken, FalseToken, FloatToken, ForToken, GtToken, GteToken, IdentifierToken, IntegerToken, LBraceToken, LBracketToken, LParenToken, LtToken, LteToken, MinusToken, NoneToken, NotEqToken, NotToken, OrToken, PercentToken, PlusToken, RBraceToken, RBracketToken, RParenToken, SlashToken, StarToken, StringToken, TrueToken))
+import PythonHS.Lexer.TokenType (TokenType (AndToken, ColonToken, CommaToken, DotToken, DoubleSlashToken, EqToken, FalseToken, FloatToken, ForToken, GtToken, GteToken, IdentifierToken, IntegerToken, LBraceToken, LBracketToken, LParenToken, LtToken, LteToken, MinusToken, NoneToken, NotEqToken, NotToken, OrToken, PercentToken, PlusToken, RBraceToken, RBracketToken, RParenToken, SlashToken, StarToken, StringToken, TrueToken))
 import PythonHS.Parser.ExprPos (exprPos)
+import PythonHS.Parser.ParseCallArgument (parseCallArgument)
 import PythonHS.Parser.ParseComprehensionTail (parseComprehensionTail)
 import PythonHS.Parser.ParseLambdaExpr (parseLambdaExpr)
 import PythonHS.Parser.ParseError (ParseError (ExpectedExpression))
@@ -177,7 +178,7 @@ parseExpr = parseLambdaExpr (parseWalrusExpr parseOr)
     parseArguments (Token RParenToken _ _ : rest) = Right ([], rest)
     parseArguments ts = parseArgumentsTail False [] ts
     parseArgumentsTail seenKeywordArg accArgs tokenStream = do
-      (argExpr, isKeywordArg, mismatchPos, afterArg) <- parseCallArgument tokenStream
+      (argExpr, isKeywordArg, mismatchPos, afterArg) <- parseCallArgument parseExpr tokenStream
       if seenKeywordArg && not isKeywordArg
         then Left (ExpectedExpression mismatchPos)
         else
@@ -189,9 +190,3 @@ parseExpr = parseLambdaExpr (parseWalrusExpr parseOr)
                 _ -> parseArgumentsTail (seenKeywordArg || isKeywordArg) (accArgs ++ [argExpr]) rest
             Token _ _ pos : _ -> Left (ExpectedExpression pos)
             _ -> Left (ExpectedExpression (Position 0 0))
-    parseCallArgument (Token IdentifierToken name namePos : Token AssignToken _ assignPos : rest) = do
-      (valueExpr, afterValue) <- parseExpr rest
-      Right (KeywordArgExpr name valueExpr namePos, True, assignPos, afterValue)
-    parseCallArgument tokenStream = do
-      (argExpr, afterArg) <- parseExpr tokenStream
-      Right (argExpr, False, exprPos argExpr, afterArg)

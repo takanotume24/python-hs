@@ -50,6 +50,8 @@ evalWhileStmt evalStatementsFn evalExprFn env fenv outputs cond body whilePos re
     exprPos (DictExpr _ pos) = pos
     exprPos (IdentifierExpr _ pos) = pos
     exprPos (KeywordArgExpr _ _ pos) = pos
+    exprPos (StarArgExpr _ pos) = pos
+    exprPos (KwStarArgExpr _ pos) = pos
     exprPos (WalrusExpr _ _ pos) = pos
     exprPos (LambdaExpr _ _ pos) = pos
     exprPos (LambdaDefaultsExpr _ _ _ pos) = pos
