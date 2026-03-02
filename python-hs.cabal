@@ -45,6 +45,7 @@ library
     , PythonHS.Lexer.ScanTokenStep
     , PythonHS.Parser.ParseExpr
     , PythonHS.Parser.ParseCallArgument
+    , PythonHS.Parser.ParseDecoratedStmt
     , PythonHS.Parser.ParseComprehensionTail
     , PythonHS.Parser.ParseLambdaExpr
     , PythonHS.Parser.ParseWalrusExpr
@@ -79,6 +80,8 @@ library
     , PythonHS.VM.BindCallArguments
     , PythonHS.VM.CompileCallArgsAt
     , PythonHS.VM.CompileClassStmt
+    , PythonHS.VM.CompileDecoratorApplications
+    , PythonHS.VM.CompileDecoratedStmt
     , PythonHS.VM.CompileComprehensionClauses
     , PythonHS.VM.CompileDictEntriesAt
     , PythonHS.VM.CompileDefaults

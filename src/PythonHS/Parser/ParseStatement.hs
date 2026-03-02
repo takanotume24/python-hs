@@ -6,6 +6,7 @@ import PythonHS.Lexer.Token (Token (Token), position)
 import PythonHS.Lexer.TokenType
   ( TokenType
       ( AssignToken,
+        AtToken,
         BreakToken,
         ColonToken,
         ContinueToken,
@@ -49,9 +50,12 @@ import PythonHS.Parser.ParseParameters (parseParameters)
 import PythonHS.Parser.ParseIfTail (parseIfTail)
 import PythonHS.Parser.ParseImportStmt (parseImportStmt)
 import PythonHS.Parser.ParseMatchStmt (parseMatchStmt)
+import PythonHS.Parser.ParseDecoratedStmt (parseDecoratedStmt)
 parseStatement :: [Token] -> Either ParseError (Stmt, [Token])
 parseStatement tokenStream =
   case tokenStream of
+    Token AtToken _ pos : _ ->
+      parseDecoratedStmt parseExpr parseStatement pos tokenStream
     Token PrintToken _ pos : rest -> do
       (valueExpr, remaining) <- parseExpr rest
       Right (PrintStmt valueExpr pos, remaining)

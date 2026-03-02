@@ -29,6 +29,7 @@ import PythonHS.AST.Stmt
   ( Stmt
       ( AddAssignStmt,
         AssignStmt,
+        DecoratedStmt,
         DivAssignStmt,
         FloorDivAssignStmt,
         ForStmt,
@@ -48,6 +49,11 @@ transformImportAliases :: Bool -> Map.Map String String -> Map.Map String String
 transformImportAliases renameDefNames moduleAlias callAlias identAlias stmt =
   case stmt of
     AssignStmt name expr pos -> AssignStmt (renameName renameDefNames callAlias name) (transformExpr moduleAlias callAlias identAlias expr) pos
+    DecoratedStmt decorators innerStmt pos ->
+      DecoratedStmt
+        (fmap (transformExpr moduleAlias callAlias identAlias) decorators)
+        (transformImportAliases renameDefNames moduleAlias callAlias identAlias innerStmt)
+        pos
     AddAssignStmt name expr pos -> AddAssignStmt name (transformExpr moduleAlias callAlias identAlias expr) pos
     SubAssignStmt name expr pos -> SubAssignStmt name (transformExpr moduleAlias callAlias identAlias expr) pos
     MulAssignStmt name expr pos -> MulAssignStmt name (transformExpr moduleAlias callAlias identAlias expr) pos

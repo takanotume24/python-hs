@@ -68,5 +68,6 @@ data TokenType
   | OrToken
   | NotToken
   | PipeToken
+  | AtToken
   | EOFToken
   deriving (Eq, Show)

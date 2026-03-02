@@ -646,3 +646,6 @@
   - [x] P17 開始: bytecode 対応（call側 `*args/**kwargs`・def側 `*args/**kwargs`・関数アノテーション受理）を VM 中心で開始
   - [x] P17 実装: call 引数展開 AST/Parser/VM 束縛拡張、def 可変引数束縛、parameter/return annotation 構文受理を追加
   - [x] P17 完了: `cabal test -j1`（741 examples）と `cabal run check-structure` 成功
+  - [x] P18 開始: デコレータ（関数/クラス/複数/引数付き）を VM 専用で導入するスコープを開始
+  - [x] P18 実装: `@` トークン、decorated stmt AST/Parser、VM デコレータ適用コンパイル、関数参照解決を追加
+  - [x] P18 完了: `cabal test -j1`（747 examples）と `cabal run check-structure` 成功

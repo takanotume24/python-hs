@@ -235,7 +235,7 @@ spec = describe "runFile / replEvalLines" $ do
 
   it "reports lexer/parse errors with prefix in REPL" $ do
     outs1 <- replEvalLines ["x @ 1", ""]
-    outs1 `shouldBe` ["Error: UnexpectedCharacter '@'"]
+    outs1 `shouldBe` ["Error: ExpectedAssignAfterIdentifier (Position {line = 1, column = 1})"]
     outs2 <- replEvalLines ["print", ""]
     outs2 `shouldBe` ["Error: ExpectedExpression (Position {line = 1, column = 6})"]
 
@@ -279,7 +279,7 @@ spec = describe "runFile / replEvalLines" $ do
     (code, out, _err) <- runInteractivePythonHs "x @ 1\nprint 2\n"
     code `shouldBe` ExitSuccess
     (">>> " `isPrefixOf` out) `shouldBe` True
-    ("Error: UnexpectedCharacter '@'\n>>> 2" `isInfixOf` out) `shouldBe` True
+    ("Error: ExpectedAssignAfterIdentifier (Position {line = 1, column = 1})\n>>> 2" `isInfixOf` out) `shouldBe` True
 
   it "exits interactive REPL when exit() is entered" $ do
     (code, out, _err) <- runInteractivePythonHs "print 1\nexit()\nprint 2\n"

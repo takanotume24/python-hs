@@ -65,6 +65,15 @@ spec = describe "runSourceVm (vm mvp)" $ do
   it "runs single inheritance method lookup" $ do
     runSourceVm "class A:\n  def f(self):\n    return 7\nclass B(A):\n  pass\nx = B()\nprint x.f()\n" `shouldBe` Right ["7"]
 
+  it "runs function decorators in bottom-up order" $ do
+    runSourceVm "def add1(fn):\n  return lambda x: (fn)(x) + 1\ndef mul2(fn):\n  return lambda x: (fn)(x) * 2\n@add1\n@mul2\ndef f(x):\n  return x\nprint f(3)\n" `shouldBe` Right ["7"]
+
+  it "runs call-style decorators" $ do
+    runSourceVm "def add(n):\n  return lambda fn: (lambda x: (fn)(x) + n)\n@add(2)\ndef f(x):\n  return x\nprint f(3)\n" `shouldBe` Right ["5"]
+
+  it "runs class decorators" $ do
+    runSourceVm "x = 0\ndef deco(cls):\n  global x\n  x = 1\n  return cls\n@deco\nclass C:\n  pass\nprint x\n" `shouldBe` Right ["1"]
+
   it "runs lambda expression call via variable" $ do
     runSourceVm "f = lambda x: x + 1\nprint f(2)\n" `shouldBe` Right ["3"]
 
@@ -198,7 +207,7 @@ spec = describe "runSourceVm (vm mvp)" $ do
     runSourceVm "x = 0\nwhile x < 2001:\nx = x + 1\nprint x\n" `shouldBe` Left "Value error: iteration limit exceeded at 2:1"
 
   it "returns lexer error for unexpected character" $ do
-    runSourceVm "x @ 1\n" `shouldBe` Left "UnexpectedCharacter '@'"
+    runSourceVm "x @ 1\n" `shouldBe` Left "ExpectedAssignAfterIdentifier (Position {line = 1, column = 1})"
 
   it "returns lexer error for inconsistent dedent indentation" $ do
     runSourceVm "if 1:\n  print 1\n print 2\n" `shouldBe` Left "UnexpectedCharacter ' '"

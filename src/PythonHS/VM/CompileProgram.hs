@@ -3,13 +3,14 @@ module PythonHS.VM.CompileProgram (compileProgram) where
 import PythonHS.AST.BinaryOperator (BinaryOperator (AddOperator, AndOperator, DivideOperator, FloorDivideOperator, ModuloOperator, MultiplyOperator, OrOperator, SubtractOperator))
 import PythonHS.AST.Expr (Expr (BinaryExpr, CallExpr, CallValueExpr, DictExpr, FloatExpr, IdentifierExpr, IntegerExpr, LambdaDefaultsExpr, LambdaExpr, ListComprehensionClausesExpr, ListComprehensionExpr, ListExpr, NoneExpr, NotExpr, StringExpr, UnaryMinusExpr, WalrusExpr))
 import PythonHS.AST.Program (Program (Program))
-import PythonHS.AST.Stmt (Stmt (AddAssignStmt, AssignStmt, BreakStmt, ClassDefStmt, ContinueStmt, DivAssignStmt, FloorDivAssignStmt, ForStmt, FromImportStmt, FunctionDefDefaultsStmt, FunctionDefStmt, GlobalStmt, IfStmt, ImportStmt, MatchStmt, ModAssignStmt, MulAssignStmt, PassStmt, PrintStmt, RaiseStmt, ReturnStmt, SubAssignStmt, TryExceptStmt, WhileStmt))
+import PythonHS.AST.Stmt (Stmt (AddAssignStmt, AssignStmt, BreakStmt, ClassDefStmt, ContinueStmt, DecoratedStmt, DivAssignStmt, FloorDivAssignStmt, ForStmt, FromImportStmt, FunctionDefDefaultsStmt, FunctionDefStmt, GlobalStmt, IfStmt, ImportStmt, MatchStmt, ModAssignStmt, MulAssignStmt, PassStmt, PrintStmt, RaiseStmt, ReturnStmt, SubAssignStmt, TryExceptStmt, WhileStmt))
 import PythonHS.Evaluator.ShowPos (showPos)
 import PythonHS.Evaluator.Value (Value (FloatValue, IntValue, NoneValue, StringValue))
 import PythonHS.VM.CompileCallArgsAt (compileCallArgsAt)
 import PythonHS.VM.CompileClassStmt (compileClassStmt)
 import PythonHS.VM.CompileDictEntriesAt (compileDictEntriesAt)
 import PythonHS.VM.CompileDefaults (compileDefaults)
+import PythonHS.VM.CompileDecoratedStmt (compileDecoratedStmt)
 import PythonHS.VM.CompileExprItemsAt (compileExprItemsAt)
 import PythonHS.VM.CompileImportStmt (compileImportStmt)
 import PythonHS.VM.CompileLogicalExpr (compileLogicalExpr)
@@ -38,6 +39,8 @@ compileProgram (Program stmts) = do
     compileStmt baseIndex inFunction maybeLoop stmt =
       case stmt of
         PassStmt _ -> Right ([], baseIndex)
+        DecoratedStmt decorators targetStmt _ ->
+          compileDecoratedStmt compileStmt compileExprAt baseIndex inFunction maybeLoop decorators targetStmt
         GlobalStmt name _ -> Right ([DeclareGlobal name], baseIndex + 1)
         RaiseStmt expr pos -> do
           (exprCode, exprEnd) <- compileExprAt baseIndex expr

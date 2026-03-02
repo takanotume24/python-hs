@@ -36,7 +36,10 @@ runInstructions instructions = do
             LoadName name pos ->
               case lookupNameWithAttr name localEnv globalsEnv of
                 Just value -> execute code (ip + 1) (value : stack) globalsEnv localEnv functions globalDecls forStates loopCounts exceptionHandlers outputs isTopLevel
-                Nothing -> Left ("Name error: undefined identifier " ++ name ++ " at " ++ showPos pos)
+                Nothing ->
+                  case Map.lookup name functions of
+                    Just _ -> execute code (ip + 1) (FunctionRefValue name [] : stack) globalsEnv localEnv functions globalDecls forStates loopCounts exceptionHandlers outputs isTopLevel
+                    Nothing -> Left ("Name error: undefined identifier " ++ name ++ " at " ++ showPos pos)
             DeclareGlobal name ->
               let newGlobalDecls = Set.insert name globalDecls
                in execute code (ip + 1) stack globalsEnv localEnv functions newGlobalDecls forStates loopCounts exceptionHandlers outputs isTopLevel

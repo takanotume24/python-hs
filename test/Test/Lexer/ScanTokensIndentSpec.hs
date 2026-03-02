@@ -4,7 +4,7 @@ import PythonHS.Lexer.LexerError (LexerError (UnexpectedCharacter))
 import PythonHS.Lexer.Position (Position (Position))
 import PythonHS.Lexer.ScanTokens (scanTokens)
 import PythonHS.Lexer.Token (Token (Token))
-import PythonHS.Lexer.TokenType (TokenType (AndToken, AssignToken, ColonToken, CommaToken, DedentToken, EOFToken, EqToken, GtToken, GteToken, IdentifierToken, IfToken, IndentToken, IntegerToken, LBraceToken, LBracketToken, LtToken, LteToken, NewlineToken, NotEqToken, NotToken, OrToken, PrintToken, RBraceToken, RBracketToken, StringToken))
+import PythonHS.Lexer.TokenType (TokenType (AndToken, AssignToken, AtToken, ColonToken, CommaToken, DedentToken, EOFToken, EqToken, GtToken, GteToken, IdentifierToken, IfToken, IndentToken, IntegerToken, LBraceToken, LBracketToken, LtToken, LteToken, NewlineToken, NotEqToken, NotToken, OrToken, PrintToken, RBraceToken, RBracketToken, StringToken))
 import Test.Hspec (Spec, describe, it, shouldBe)
 
 spec :: Spec
@@ -60,8 +60,15 @@ spec = describe "scanTokens indentation and extras" $ do
           Token EOFToken "" (Position 2 1)
         ]
 
-  it "returns error on unexpected characters" $ do
-    scanTokens "x @ 1\n" `shouldBe` Left (UnexpectedCharacter '@')
+  it "tokenizes at symbol" $ do
+    scanTokens "x @ 1\n" `shouldBe`
+      Right
+        [ Token IdentifierToken "x" (Position 1 1),
+          Token AtToken "@" (Position 1 3),
+          Token IntegerToken "1" (Position 1 5),
+          Token NewlineToken "\\n" (Position 1 6),
+          Token EOFToken "" (Position 2 1)
+        ]
 
   it "accepts tab-indented input as leading whitespace" $ do
     scanTokens "\tprint 1\n" `shouldBe`

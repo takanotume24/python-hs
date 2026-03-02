@@ -10,6 +10,7 @@ import PythonHS.VM.BindDefaults (bindDefaults)
 import PythonHS.VM.CallBuiltin (callBuiltin)
 import PythonHS.VM.CollectFunctionGlobalDecls (collectFunctionGlobalDecls)
 import PythonHS.VM.EvaluateBuiltinArgs (evaluateBuiltinArgs)
+import PythonHS.VM.ExecuteCallValueFunction (executeCallValueFunction)
 import PythonHS.VM.EvaluateUserArgs (evaluateUserArgs)
 import PythonHS.VM.FindMethodFunctionName (findMethodFunctionName)
 import PythonHS.VM.FirstKeywordArg (firstKeywordArg)
@@ -29,43 +30,45 @@ executeCallFunction ::
   [String] ->
   Either String ([Value], Map.Map String Value, Map.Map String Value, Map.Map String ([String], [(String, [Instruction])], [Instruction]), [String])
 executeCallFunction execute isTopLevel fname compiledArgs pos stack globalsEnv localEnv functions outputs =
-  case Map.lookup fname functions of
-    Just (params, defaultCodes, functionCode) -> do
-      (argValues, argKinds, globalsAfterArgs, functionsAfterArgs, outputsAfterArgs) <-
-        evaluateUserArgs execute fname pos localEnv compiledArgs globalsEnv functions outputs False Set.empty [] []
-      initialLocals <- bindCallArguments fname pos params argValues argKinds
-      (functionLocals, globalsAfterDefaults, functionsAfterDefaults, outputsAfterDefaults) <-
-        bindDefaults execute fname pos params defaultCodes initialLocals globalsAfterArgs functionsAfterArgs outputsAfterArgs
-      let functionGlobalDecls = collectFunctionGlobalDecls functionCode
-      (maybeValue, newGlobals, newFunctions, newOutputs) <-
-        execute functionCode 0 [] globalsAfterDefaults functionLocals functionsAfterDefaults functionGlobalDecls Map.empty Map.empty [] outputsAfterDefaults False
-      let returnValue =
-            case maybeValue of
-              Just value -> value
-              Nothing -> IntValue 0
-      let newLocalEnv = if isTopLevel then newGlobals else localEnv
-      Right (returnValue : stack, newGlobals, newLocalEnv, newFunctions, newOutputs)
-    Nothing ->
-      case firstKeywordArg compiledArgs of
-        Just (_, argPos)
-          | isBuiltinName fname ->
-              Left ("Argument error: keyword arguments are not supported for builtin " ++ fname ++ " at " ++ showPos argPos)
-        _ -> do
-          (args, globalsAfterArgs, functionsAfterArgs, outputsAfterArgs) <-
-            evaluateBuiltinArgs execute localEnv compiledArgs globalsEnv functions outputs []
-          case lookupName fname localEnv globalsEnv of
-            Just (ClassValue className _ _) ->
-              createInstance className args globalsAfterArgs functionsAfterArgs outputsAfterArgs
-            Just (FunctionRefValue functionName capturedBindings) ->
-              callUserFunction functionName (Just capturedBindings) args globalsAfterArgs functionsAfterArgs outputsAfterArgs
-            _ ->
-              case args of
-                InstanceValue className _ : _ ->
-                  case findMethodFunctionName globalsAfterArgs localEnv className fname of
-                    Just methodFunctionName ->
-                      callUserFunction methodFunctionName Nothing args globalsAfterArgs functionsAfterArgs outputsAfterArgs
-                    Nothing -> callBuiltinOrFail args globalsAfterArgs functionsAfterArgs outputsAfterArgs
-                _ -> callBuiltinOrFail args globalsAfterArgs functionsAfterArgs outputsAfterArgs
+  case lookupName fname localEnv globalsEnv of
+    Just callableValue@(FunctionRefValue _ _) ->
+      executeCallValueFunction execute isTopLevel compiledArgs pos (callableValue : stack) globalsEnv localEnv functions outputs
+    _ ->
+      case Map.lookup fname functions of
+        Just (params, defaultCodes, functionCode) -> do
+          (argValues, argKinds, globalsAfterArgs, functionsAfterArgs, outputsAfterArgs) <-
+            evaluateUserArgs execute fname pos localEnv compiledArgs globalsEnv functions outputs False Set.empty [] []
+          initialLocals <- bindCallArguments fname pos params argValues argKinds
+          (functionLocals, globalsAfterDefaults, functionsAfterDefaults, outputsAfterDefaults) <-
+            bindDefaults execute fname pos params defaultCodes initialLocals globalsAfterArgs functionsAfterArgs outputsAfterArgs
+          let functionGlobalDecls = collectFunctionGlobalDecls functionCode
+          (maybeValue, newGlobals, newFunctions, newOutputs) <-
+            execute functionCode 0 [] globalsAfterDefaults functionLocals functionsAfterDefaults functionGlobalDecls Map.empty Map.empty [] outputsAfterDefaults False
+          let returnValue =
+                case maybeValue of
+                  Just value -> value
+                  Nothing -> IntValue 0
+          let newLocalEnv = if isTopLevel then newGlobals else localEnv
+          Right (returnValue : stack, newGlobals, newLocalEnv, newFunctions, newOutputs)
+        Nothing ->
+          case firstKeywordArg compiledArgs of
+            Just (_, argPos)
+              | isBuiltinName fname ->
+                  Left ("Argument error: keyword arguments are not supported for builtin " ++ fname ++ " at " ++ showPos argPos)
+            _ -> do
+              (args, globalsAfterArgs, functionsAfterArgs, outputsAfterArgs) <-
+                evaluateBuiltinArgs execute localEnv compiledArgs globalsEnv functions outputs []
+              case lookupName fname localEnv globalsEnv of
+                Just (ClassValue className _ _) ->
+                  createInstance className args globalsAfterArgs functionsAfterArgs outputsAfterArgs
+                _ ->
+                  case args of
+                    InstanceValue className _ : _ ->
+                      case findMethodFunctionName globalsAfterArgs localEnv className fname of
+                        Just methodFunctionName ->
+                          callUserFunction methodFunctionName Nothing args globalsAfterArgs functionsAfterArgs outputsAfterArgs
+                        Nothing -> callBuiltinOrFail args globalsAfterArgs functionsAfterArgs outputsAfterArgs
+                    _ -> callBuiltinOrFail args globalsAfterArgs functionsAfterArgs outputsAfterArgs
   where
     callUserFunction targetName maybeCapturedBindings args globalsNow functionsNow outputsNow =
       case Map.lookup targetName functionsNow of

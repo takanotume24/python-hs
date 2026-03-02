@@ -70,7 +70,7 @@ spec = describe "runSource (integration edge/error)" $ do
     runSource "for i in range(2001):\npass\n" `shouldBe` Left "Value error: iteration limit exceeded at 1:1"
 
   it "returns lexer error for unexpected character" $ do
-    runSource "x @ 1\n" `shouldBe` Left "UnexpectedCharacter '@'"
+    runSource "x @ 1\n" `shouldBe` Left "ExpectedAssignAfterIdentifier (Position {line = 1, column = 1})"
 
   it "returns lexer error for inconsistent dedent indentation" $ do
     runSource "if 1:\n  print 1\n print 2\n" `shouldBe` Left "UnexpectedCharacter ' '"

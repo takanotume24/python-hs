@@ -6,6 +6,7 @@ import PythonHS.AST.Program (Program (Program))
 import PythonHS.AST.Stmt
   ( Stmt
       ( AssignStmt,
+        DecoratedStmt,
         FromImportStmt,
         ImportStmt,
         FunctionDefDefaultsStmt,
@@ -130,10 +131,15 @@ resolveLocalImports searchPaths (Program rootStmts) = do
       foldl
         (\acc stmt ->
            case stmt of
-             AssignStmt name _ _ -> Map.insert name (moduleMemberName name) acc
-             FunctionDefStmt name _ _ _ -> Map.insert name (moduleMemberName name) acc
-             FunctionDefDefaultsStmt name _ _ _ _ -> Map.insert name (moduleMemberName name) acc
-             _ -> acc
+              AssignStmt name _ _ -> Map.insert name (moduleMemberName name) acc
+              FunctionDefStmt name _ _ _ -> Map.insert name (moduleMemberName name) acc
+              FunctionDefDefaultsStmt name _ _ _ _ -> Map.insert name (moduleMemberName name) acc
+              DecoratedStmt _ innerStmt _ ->
+                case innerStmt of
+                  FunctionDefStmt name _ _ _ -> Map.insert name (moduleMemberName name) acc
+                  FunctionDefDefaultsStmt name _ _ _ _ -> Map.insert name (moduleMemberName name) acc
+                  _ -> acc
+              _ -> acc
         )
         Map.empty
         stmts
