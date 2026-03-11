@@ -6,6 +6,7 @@ import PythonHS.Evaluator.Value (Value (IntValue, ListValue))
 import PythonHS.Lexer.Position (Position)
 import PythonHS.VM.CallCollectionBuiltin (callCollectionBuiltin)
 import PythonHS.VM.CallMathBuiltin (callMathBuiltin)
+import PythonHS.VM.CallStdlibBuiltin (callStdlibBuiltin)
 
 callBuiltin :: String -> [Value] -> Position -> Maybe (Either String Value)
 callBuiltin name args pos =
@@ -26,7 +27,10 @@ callBuiltin name args pos =
     _ ->
       case callMathBuiltin name args pos of
         Just result -> Just result
-        Nothing -> callCollectionBuiltin name args pos
+        Nothing ->
+          case callStdlibBuiltin name args pos of
+            Just result -> Just result
+            Nothing -> callCollectionBuiltin name args pos
   where
     rangeOne n
       | n <= 0 = []

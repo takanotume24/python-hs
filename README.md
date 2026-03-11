@@ -81,7 +81,7 @@ TDD（`hspec`）で機能を拡張し、`Lexer -> Parser -> Evaluator -> Runner/
 - `import` は現時点で VM 実行経路を対象に、`math` / `dataclasses` / ローカル `module.py` / `package/__init__.py` / package submodule（`pkg.sub`, `from pkg import sub` など）を受理します。
 - `from . import x` などの relative import は、package 配下モジュール内では利用可能です（エントリスクリプト直下では parent package がないためエラー）。
 - `from pkg import *` はローカル package/module に対して利用可能です（先頭 `_` の名前は除外）。
-- `import os` / `import json` / `import pathlib` は現時点では marker module（`<module:...>`）として最小受理します。
+- `import os` / `import json` / `import pathlib` は VM で最小関数を利用可能です（`os.getcwd`, `json.dumps/loads`, `pathlib.Path`）。
 - `math.pi` / `math.e` は現仕様では関数形式（`math.pi()` / `math.e()`）で利用します。
 - 例外処理（`try/except/finally`, `raise`）は現時点で VM 実行経路のみを対象にした MVP 実装です。
 - `match/case` は現時点で VM 実行経路のみを対象にした MVP 実装です。
@@ -91,7 +91,7 @@ TDD（`hspec`）で機能を拡張し、`Lexer -> Parser -> Evaluator -> Runner/
 ## MVP外・未対応（明示）
 - [ ] Python完全互換（あくまでサブセット）
 - [ ] Pythonの属性解決/メソッド解決の完全互換（descriptor/protocol を含む）
-- [ ] `match/case` の完全CPython互換、import の完全CPython互換（module object / `__all__` / fully-featured stdlib loader）など
+- [ ] `match/case` の完全CPython互換、import の完全CPython互換（残: fully-featured stdlib loader / CPython細部互換）など
 
 ## 開発環境（Nix Flakes）
 

@@ -182,7 +182,19 @@
 - [x] P34 着手: `from pkg import *` の `__all__` 優先挙動を失敗テスト先行で追加
 - [x] P34 実装: `ResolveLocalImports` の star import 展開で `__all__` を解釈し、公開名を制御
 - [x] P34 構造制約対応: `ResolveStarExportNames` helper を分離し、`ResolveLocalImports` の行数制約を維持
-- [ ] P34 継続: `from pkg import name` の attribute/submodule 優先順位を追加回帰で固定
+- [x] P34 継続: `from pkg import name` の attribute/submodule 優先順位を追加回帰で固定（attribute 優先を CLI/VM テスト化）
+
+## 現在のスコープ（P35: loader/cache 互換）
+- [x] P35 着手: 2ノード/3ノード循環 import の失敗テストを CLI/VM に追加
+- [x] P35 実装: `ResolveLocalImports.loadModule` で cache 先行登録を導入し、循環時は部分初期化 module を返却
+- [x] P35 実装: 循環検出を即時エラー固定から「cache 参照優先」へ変更し、循環 import の決定的動作を確保
+- [x] P35 品質ゲート: `cabal test` / `cabal run check-structure` / warning 0 を再通過
+
+## 現在のスコープ（P36: stdlib loader 実装）
+- [x] P36 着手: `json/pathlib/os` の最小実関数ケースを失敗テスト先行で追加
+- [x] P36 実装: `CallStdlibBuiltin` を追加し、`json.dumps/loads` / `pathlib.Path` / `os.getcwd` を VM builtin 呼び出しで解決
+- [x] P36 実装: `CallBuiltin` から stdlib builtin dispatch を追加し、marker 依存を段階縮退
+- [x] P36 品質ゲート: `cabal test` / `cabal run check-structure` / warning 0 を再通過
 
 ## 現在のスコープ（P9: VM例外処理MVP）
 - [x] P9 開始: 次機能を `try/except` + `raise <expr>` の VM 専用導入として計画確定

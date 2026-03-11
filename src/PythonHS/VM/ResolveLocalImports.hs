@@ -115,7 +115,10 @@ resolveLocalImports searchPaths (Program rootStmts) = do
     loadModule cache visiting included modulePath = do
       let moduleKey = moduleKeyFor modulePath
       if Set.member moduleKey visiting
-        then pure (Left ("Import error: circular import " ++ moduleKey))
+        then
+          case Map.lookup moduleKey cache of
+            Just (_cachedStmts, cachedExports) -> pure (Right ([], cachedExports, cache, included))
+            Nothing -> pure (Left ("Import error: circular import " ++ moduleKey))
         else
           case Map.lookup moduleKey cache of
             Just (cachedStmts, cachedExports) ->
@@ -134,11 +137,12 @@ resolveLocalImports searchPaths (Program rootStmts) = do
                       case parseProgram tokens of
                         Left parseErr -> pure (Left (show parseErr))
                         Right (Program moduleStmts) -> do
+                          let preloadedCache = Map.insert moduleKey ([], Map.empty) cache
                           let packagePath =
                                 if takeFileName moduleFile == "__init__.py"
                                   then modulePath
                                   else dropLast modulePath
-                          resolvedModule <- resolveStmts cache (Set.insert moduleKey visiting) included packagePath Map.empty Map.empty Map.empty moduleStmts
+                          resolvedModule <- resolveStmts preloadedCache (Set.insert moduleKey visiting) included packagePath Map.empty Map.empty Map.empty moduleStmts
                           case resolvedModule of
                             Left err -> pure (Left err)
                             Right (moduleResolvedStmts, cacheAfterResolve, includedAfterResolve) -> do

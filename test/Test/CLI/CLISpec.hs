@@ -231,6 +231,21 @@ spec = describe "runFile / replEvalLines" $ do
         res <- runFile mainPath
         res `shouldBe` Right ["5"]
 
+  it "prefers package attribute over submodule on from-import in vm engine for runFile" $
+    withSystemTempDirectory "vm-local-from-import-attribute-priority" $ \dir -> do
+      let packageDir = dir </> "pkg"
+      let initPath = packageDir </> "__init__.py"
+      let subPath = packageDir </> "name.py"
+      let mainPath = dir </> "main.py"
+      createDirectory packageDir
+      writeFile initPath "name = 41\n"
+      writeFile subPath "def value():\n  return 99\n"
+      writeFile mainPath "from pkg import name\nprint name\n"
+      bracket (lookupEnv "PYTHON_HS_RUNNER_ENGINE") restoreRunnerEngine $ \_ -> do
+        setEnv "PYTHON_HS_RUNNER_ENGINE" "vm"
+        res <- runFile mainPath
+        res `shouldBe` Right ["41"]
+
   it "runs from package submodule import member in vm engine for runFile" $
     withSystemTempDirectory "vm-local-from-submodule-member-import" $ \dir -> do
       let packageDir = dir </> "pkg"
@@ -381,6 +396,33 @@ spec = describe "runFile / replEvalLines" $ do
         res <- runFile path
         res `shouldBe` Right ["<module:os>"]
 
+  it "runs minimal json module functions in vm engine for runFile" $
+    withSystemTempFile "vm-import-json-functions.pyhs" $ \path h -> do
+      hPutStr h "import json\nprint json.dumps(1)\nprint json.loads(\"1\")\n"
+      hClose h
+      bracket (lookupEnv "PYTHON_HS_RUNNER_ENGINE") restoreRunnerEngine $ \_ -> do
+        setEnv "PYTHON_HS_RUNNER_ENGINE" "vm"
+        res <- runFile path
+        res `shouldBe` Right ["1", "1"]
+
+  it "runs minimal pathlib Path constructor in vm engine for runFile" $
+    withSystemTempFile "vm-import-pathlib-functions.pyhs" $ \path h -> do
+      hPutStr h "import pathlib\nprint pathlib.Path(\"a/b\")\n"
+      hClose h
+      bracket (lookupEnv "PYTHON_HS_RUNNER_ENGINE") restoreRunnerEngine $ \_ -> do
+        setEnv "PYTHON_HS_RUNNER_ENGINE" "vm"
+        res <- runFile path
+        res `shouldBe` Right ["a/b"]
+
+  it "runs minimal os getcwd function in vm engine for runFile" $
+    withSystemTempFile "vm-import-os-functions.pyhs" $ \path h -> do
+      hPutStr h "import os\nprint os.getcwd()\n"
+      hClose h
+      bracket (lookupEnv "PYTHON_HS_RUNNER_ENGINE") restoreRunnerEngine $ \_ -> do
+        setEnv "PYTHON_HS_RUNNER_ENGINE" "vm"
+        res <- runFile path
+        res `shouldBe` Right ["."]
+
   it "reports name-not-found error for from-import missing member in vm engine for runFile" $
     withSystemTempDirectory "vm-from-import-missing-member" $ \dir -> do
       let packageDir = dir </> "pkg"
@@ -409,6 +451,42 @@ spec = describe "runFile / replEvalLines" $ do
         setEnv "PYTHON_HS_RUNNER_ENGINE" "vm"
         res <- runFile mainPath
         res `shouldBe` Left "Import error: name not found missing in pkg.sub"
+
+  it "supports two-node circular import with partially initialized modules in vm engine for runFile" $
+    withSystemTempDirectory "vm-circular-import-two-node" $ \dir -> do
+      let packageDir = dir </> "pkg"
+      let initPath = packageDir </> "__init__.py"
+      let aPath = packageDir </> "a.py"
+      let bPath = packageDir </> "b.py"
+      let mainPath = dir </> "main.py"
+      createDirectory packageDir
+      writeFile initPath "pass\n"
+      writeFile aPath "import pkg.b\ndef a():\n  return 1\n"
+      writeFile bPath "import pkg.a\ndef b():\n  return 2\n"
+      writeFile mainPath "from pkg.a import a\nprint a()\n"
+      bracket (lookupEnv "PYTHON_HS_RUNNER_ENGINE") restoreRunnerEngine $ \_ -> do
+        setEnv "PYTHON_HS_RUNNER_ENGINE" "vm"
+        res <- runFile mainPath
+        res `shouldBe` Right ["1"]
+
+  it "supports three-node circular import with partially initialized modules in vm engine for runFile" $
+    withSystemTempDirectory "vm-circular-import-three-node" $ \dir -> do
+      let packageDir = dir </> "pkg"
+      let initPath = packageDir </> "__init__.py"
+      let aPath = packageDir </> "a.py"
+      let bPath = packageDir </> "b.py"
+      let cPath = packageDir </> "c.py"
+      let mainPath = dir </> "main.py"
+      createDirectory packageDir
+      writeFile initPath "pass\n"
+      writeFile aPath "import pkg.b\ndef a():\n  return 1\n"
+      writeFile bPath "import pkg.c\ndef b():\n  return 2\n"
+      writeFile cPath "import pkg.a\ndef c():\n  return 3\n"
+      writeFile mainPath "from pkg.a import a\nprint a()\n"
+      bracket (lookupEnv "PYTHON_HS_RUNNER_ENGINE") restoreRunnerEngine $ \_ -> do
+        setEnv "PYTHON_HS_RUNNER_ENGINE" "vm"
+        res <- runFile mainPath
+        res `shouldBe` Right ["1"]
 
   it "handles try/except and raise in vm engine for runFile" $
     withSystemTempFile "vm-try-except-raise.pyhs" $ \path h -> do

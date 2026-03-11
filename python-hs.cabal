@@ -84,6 +84,7 @@ library
     , PythonHS.VM.GetitemValue
     , PythonHS.VM.SliceValue
     , PythonHS.VM.CallMathBuiltin
+    , PythonHS.VM.CallStdlibBuiltin
     , PythonHS.VM.BindCallArguments
       , PythonHS.VM.CompileCallArgsAt
       , PythonHS.VM.CompileClassDefStmt
