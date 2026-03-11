@@ -84,6 +84,12 @@ spec = describe "runSourceVm (vm mvp)" $ do
   it "supports inherited bound method value call via attribute lookup" $ do
     runSourceVm "class A:\n  def f(self):\n    return 9\nclass B(A):\n  pass\nx = B()\ng = x.f\nprint g()\n" `shouldBe` Right ["9"]
 
+  it "supports unbound method value call via class attribute lookup" $ do
+    runSourceVm "class A:\n  def add(self, v):\n    return v + 1\nf = A.add\nprint f(A(), 2)\n" `shouldBe` Right ["3"]
+
+  it "supports inherited unbound method value call via class attribute lookup" $ do
+    runSourceVm "class A:\n  def f(self):\n    return 7\nclass B(A):\n  pass\ng = B.f\nprint g(B())\n" `shouldBe` Right ["7"]
+
   it "runs function decorators in bottom-up order" $ do
     runSourceVm "def add1(fn):\n  return lambda x: (fn)(x) + 1\ndef mul2(fn):\n  return lambda x: (fn)(x) * 2\n@add1\n@mul2\ndef f(x):\n  return x\nprint f(3)\n" `shouldBe` Right ["7"]
 

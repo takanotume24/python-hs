@@ -36,6 +36,11 @@
 - [x] P21 実装: parser/AST/VM に mapping pattern `**rest` capture を追加
 - [x] P21 実装: `match {"k": v, **rest}` の値束縛と残余辞書束縛を VM テストで固定
 
+## 現在のスコープ（P22: class 属性経由メソッド参照）
+- [x] P22 開始: `A.f` / `B.f`（継承含む）のクラス属性経由メソッド参照を VM で拡張
+- [x] P22 実装: `LookupNameWithAttr` に `ClassValue` 経路を追加し、関数参照を返却
+- [x] P22 実装: `f = A.add; f(A(), 2)` / `g = B.f; g(B())` を VM テストで固定
+
 ## 現在のスコープ（P5: VM基盤導入・並行運用）
 - [x] P5 開始: AST評価器と並行して最小VM経路を追加する方針を開始
 - [x] VM縦スライス1: `runSourceVm` を追加（lex/parse/compile/execute）
