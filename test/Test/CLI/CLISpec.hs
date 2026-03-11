@@ -86,6 +86,44 @@ spec = describe "runFile / replEvalLines" $ do
         res <- runFile mainPath
         res `shouldBe` Right ["5"]
 
+  it "keeps LEGB-style local precedence over global in vm engine for runFile" $
+    withSystemTempFile "vm-legb-local-global.pyhs" $ \path h -> do
+      hPutStr h "x = 1\ndef f():\n  x = 2\n  return x\nprint f()\nprint x\n"
+      hClose h
+      bracket (lookupEnv "PYTHON_HS_RUNNER_ENGINE") restoreRunnerEngine $ \_ -> do
+        setEnv "PYTHON_HS_RUNNER_ENGINE" "vm"
+        res <- runFile path
+        res `shouldBe` Right ["2", "1"]
+
+  it "keeps class method binding parity for obj.f and A.f(obj, ...) in vm engine for runFile" $
+    withSystemTempFile "vm-method-binding-parity.pyhs" $ \path h -> do
+      hPutStr h "class A:\n  def add(self, x):\n    return x + 1\na = A()\nprint a.add(2)\nprint A.add(a, 3)\n"
+      hClose h
+      bracket (lookupEnv "PYTHON_HS_RUNNER_ENGINE") restoreRunnerEngine $ \_ -> do
+        setEnv "PYTHON_HS_RUNNER_ENGINE" "vm"
+        res <- runFile path
+        res `shouldBe` Right ["3", "4"]
+
+  it "evaluates call arguments left-to-right in vm engine for runFile" $
+    withSystemTempFile "vm-eval-order-args.pyhs" $ \path h -> do
+      hPutStr h "def a():\n  print 1\n  return 10\ndef b():\n  print 2\n  return 20\ndef f(x, y):\n  return x + y\nprint f(a(), b())\n"
+      hClose h
+      bracket (lookupEnv "PYTHON_HS_RUNNER_ENGINE") restoreRunnerEngine $ \_ -> do
+        setEnv "PYTHON_HS_RUNNER_ENGINE" "vm"
+        res <- runFile path
+        res `shouldBe` Right ["1", "2", "30"]
+
+  it "runs module top-level once across repeated imports in vm engine for runFile" $
+    withSystemTempDirectory "vm-import-reimport-once" $ \dir -> do
+      let modulePath = dir </> "helper.py"
+      let mainPath = dir </> "main.py"
+      writeFile modulePath "print 7\n"
+      writeFile mainPath "import helper\nimport helper\nprint 1\n"
+      bracket (lookupEnv "PYTHON_HS_RUNNER_ENGINE") restoreRunnerEngine $ \_ -> do
+        setEnv "PYTHON_HS_RUNNER_ENGINE" "vm"
+        res <- runFile mainPath
+        res `shouldBe` Right ["7", "1"]
+
   it "runs local .py from-import with alias in vm engine for runFile" $
     withSystemTempDirectory "vm-local-from-import" $ \dir -> do
       let modulePath = dir </> "helper.py"

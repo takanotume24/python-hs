@@ -1,7 +1,7 @@
 # python-hs
 
-Haskellで実装した、Python 3 サブセットのインタプリタです。  
-TDD（`hspec`）で機能を拡張し、`Lexer -> Parser -> Evaluator -> Runner/CLI` を段階的に実装しています。
+Haskellで実装した、Python 3 インタプリタです。  
+TDD（`hspec`）で機能を拡張し、**可能な限り CPython 互換**を目標に `Lexer -> Parser -> Evaluator -> Runner/CLI` を継続的に改善しています。
 
 このプログラムは、GitHub Copilotによって生成されたコード、及びtakanotume24が手動で修正したコードを含みます。
 
@@ -29,9 +29,9 @@ TDD（`hspec`）で機能を拡張し、`Lexer -> Parser -> Evaluator -> Runner/
 ### 構文解析（Parser）
 - [x] 文: `print`, 代入, 複合代入, `return`, `global`, `pass`, `import`
 - [x] 文: `try/except`（複数 `except` 節対応）、`try/except/finally`、`raise`
-- [x] 文: `match/case`（値/OR/シーケンス/マッピング/ガードの最小対応）
-- [x] 文: `class`（単一継承ヘッダ + クラスボディの最小対応）
-- [x] 文: class フィールド型注釈（`name: type` / `name: type = expr`）の最小対応
+- [x] 文: `match/case`（値/OR/シーケンス/マッピング/ガード対応）
+- [x] 文: `class`（単一継承ヘッダ + クラスボディ対応）
+- [x] 文: class フィールド型注釈（`name: type` / `name: type = expr`）対応
 - [x] 制御構文: `if/elif/else`, `while`, `for`
 - [x] 関数定義: `def name(args): ...`
 - [x] 式: 四則演算（`+ - * / % //`）, 比較, `not`, 関数呼び出し
@@ -72,26 +72,26 @@ TDD（`hspec`）で機能を拡張し、`Lexer -> Parser -> Evaluator -> Runner/
 - [x] `get(dict, key)` / `get(dict, key, default)`
 - [x] `update(dict, key, value)` / `update(dict, otherDict)`
 - [x] `setdefault(dict, key)` / `setdefault(dict, key, default)`
-- [x] VM最小 math 導線: `import math` + `math.sqrt/sin/cos/tan/log/exp/pi/e`
-- [x] VM最小 dataclass 導線: `from dataclasses import dataclass, field` + `@dataclass(order=..., frozen=...)`
+- [x] VM math 導線: `import math` + `math.sqrt/sin/cos/tan/log/exp/pi/e`
+- [x] VM dataclass 導線: `from dataclasses import dataclass, field` + `@dataclass(order=..., frozen=...)`
 - [x] VM tuple 導線: tuple literal / 比較 / index・slice / unpack / match sequence / for反復
 
 補足:
-- `math` は現時点で VM 実行経路を対象にした MVP 実装です。
+- `math` は現時点で VM 実行経路を対象に互換性向上を継続中です。
 - `import` は現時点で VM 実行経路を対象に、`math` / `dataclasses` / ローカル `module.py` / `package/__init__.py` / package submodule（`pkg.sub`, `from pkg import sub` など）を受理します。
 - `from . import x` などの relative import は、package 配下モジュール内では利用可能です（エントリスクリプト直下では parent package がないためエラー）。
 - `from pkg import *` はローカル package/module に対して利用可能です（先頭 `_` の名前は除外）。
-- `import os` / `import json` / `import pathlib` は VM で最小関数を利用可能です（`os.getcwd`, `json.dumps/loads`, `pathlib.Path`）。
+- `import os` / `import json` / `import pathlib` は VM で利用可能です（現状: `os.getcwd`, `json.dumps/loads`, `pathlib.Path`）。
 - `math.pi` / `math.e` は現仕様では関数形式（`math.pi()` / `math.e()`）で利用します。
-- 例外処理（`try/except/finally`, `raise`）は現時点で VM 実行経路のみを対象にした MVP 実装です。
-- `match/case` は現時点で VM 実行経路のみを対象にした MVP 実装です。
-- `class`（`__init__` / メソッド呼び出し / 単一継承）は現時点で VM 実行経路のみを対象にした MVP 実装です。
-- `dataclass`（`__init__` / `__repr__` / `__eq__` / `order` / `frozen` / `field(default_factory=list)`）は現時点で VM 実行経路のみを対象にした MVP 実装です。
+- 例外処理（`try/except/finally`, `raise`）は現時点で VM 実行経路を中心に互換性向上を継続中です。
+- `match/case` は現時点で VM 実行経路を中心に互換性向上を継続中です。
+- `class`（`__init__` / メソッド呼び出し / 単一継承）は現時点で VM 実行経路を中心に互換性向上を継続中です。
+- `dataclass`（`__init__` / `__repr__` / `__eq__` / `order` / `frozen` / `field(default_factory=list)`）は現時点で VM 実行経路を中心に互換性向上を継続中です。
 
-## MVP外・未対応（明示）
-- [ ] Python完全互換（あくまでサブセット）
+## 互換性ギャップ（継続改善中）
+- [ ] Python完全互換（継続して差分を縮小）
 - [ ] Pythonの属性解決/メソッド解決の完全互換（descriptor/protocol を含む）
-- [ ] `match/case` の完全CPython互換、import の完全CPython互換（残: fully-featured stdlib loader / CPython細部互換）など
+- [ ] `match/case` / import / stdlib の CPython 細部互換の拡張
 
 ## 開発環境（Nix Flakes）
 

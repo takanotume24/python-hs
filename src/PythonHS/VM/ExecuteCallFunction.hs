@@ -64,6 +64,11 @@ executeCallFunction execute isTopLevel fname compiledArgs pos stack globalsEnv l
                   createInstance className args globalsAfterArgs functionsAfterArgs outputsAfterArgs
                 _ ->
                   case args of
+                    ClassValue className _ _ : methodArgs@(InstanceValue _ _ : _) ->
+                      case findMethodFunctionName globalsAfterArgs localEnv className fname of
+                        Just methodFunctionName ->
+                          callUserFunction methodFunctionName Nothing methodArgs globalsAfterArgs functionsAfterArgs outputsAfterArgs
+                        Nothing -> callBuiltinOrFail args globalsAfterArgs functionsAfterArgs outputsAfterArgs
                     InstanceValue className _ : _ ->
                       case findMethodFunctionName globalsAfterArgs localEnv className fname of
                         Just methodFunctionName ->
