@@ -24,26 +24,21 @@ compileImportStmt importBaseIndex stmt =
       if null modulePath
         then Left ("Import error: unsupported module  at " ++ showPos pos)
         else
-          let targetName =
-                case maybeAlias of
-                  Just aliasName -> aliasName
-                  Nothing -> last modulePath
-              moduleName = joinModulePath modulePath
-              targetBindingCode = [PushConst (ModuleValue moduleName []), StoreName targetName]
-              rootBindingCode =
-                case maybeAlias of
-                  Just _ -> []
-                  Nothing ->
-                    if length modulePath > 1
-                      then
-                        case modulePath of
-                          rootName : _ ->
-                            let rootValue = buildRootModuleValue modulePath
-                             in [PushConst rootValue, StoreName rootName]
-                          [] -> []
-                      else []
-              allCode = targetBindingCode ++ rootBindingCode
-           in Right (allCode, baseIndex + length allCode)
+          case maybeAlias of
+            Just aliasName ->
+              let moduleName = joinModulePath modulePath
+                  importCode = [PushConst (ModuleValue moduleName []), StoreName aliasName]
+               in Right (importCode, baseIndex + length importCode)
+            Nothing ->
+              case modulePath of
+                [singleName] ->
+                  let importCode = [PushConst (ModuleValue singleName []), StoreName singleName]
+                   in Right (importCode, baseIndex + length importCode)
+                rootName : _ ->
+                  let rootValue = buildRootModuleValue modulePath
+                      importCode = [PushConst rootValue, StoreName rootName]
+                   in Right (importCode, baseIndex + length importCode)
+                [] -> Left ("Import error: unsupported module  at " ++ showPos pos)
 
     compileFromImport baseIndex relativeLevel modulePath importedNames pos
       | relativeLevel > 0 =

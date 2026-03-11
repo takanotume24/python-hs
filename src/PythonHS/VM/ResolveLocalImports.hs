@@ -94,23 +94,28 @@ resolveLocalImports searchPaths (Program rootStmts) = do
       case modules of
         [] -> pure (Right ([], cache, included, moduleAlias, []))
         (modulePath, maybeAlias) : rest ->
-          if isBuiltinImportModule modulePath
-            then do
-              restResult <- resolveImportEntries cache visiting included moduleAlias rest
-              pure (fmap (\(prefixed, nextCache, nextIncluded, nextModuleAlias, keptEntries) -> (prefixed, nextCache, nextIncluded, nextModuleAlias, (modulePath, maybeAlias) : keptEntries)) restResult)
-            else do
-              loadResult <- loadModule cache visiting included modulePath
-              case loadResult of
-                Left err -> pure (Left err)
-                Right (moduleStmts, _exportMap, updatedCache, updatedIncluded) -> do
-                  let aliasName = maybe (last modulePath) id maybeAlias
-                      modulePrefix = modulePrefixFor modulePath
-                      updatedModuleAlias = Map.insert aliasName modulePrefix moduleAlias
-                  restResult <- resolveImportEntries updatedCache visiting updatedIncluded updatedModuleAlias rest
-                  case restResult of
+          case modulePath of
+            [] -> pure (Left "Import error: module not found ")
+            rootModule : _ ->
+              if isBuiltinImportModule modulePath
+                then do
+                  restResult <- resolveImportEntries cache visiting included moduleAlias rest
+                  pure (fmap (\(prefixed, nextCache, nextIncluded, nextModuleAlias, keptEntries) -> (prefixed, nextCache, nextIncluded, nextModuleAlias, (modulePath, maybeAlias) : keptEntries)) restResult)
+                else do
+                  loadResult <- loadModule cache visiting included modulePath
+                  case loadResult of
                     Left err -> pure (Left err)
-                    Right (restPrefixed, cacheAfterRest, includedAfterRest, moduleAliasAfterRest, keptEntries) ->
-                      pure (Right (moduleStmts ++ restPrefixed, cacheAfterRest, includedAfterRest, moduleAliasAfterRest, (modulePath, maybeAlias) : keptEntries))
+                    Right (moduleStmts, _exportMap, updatedCache, updatedIncluded) -> do
+                      let (aliasName, modulePrefix) =
+                            case maybeAlias of
+                              Just aliasName' -> (aliasName', modulePrefixFor modulePath)
+                              Nothing -> (rootModule, modulePrefixFor [rootModule])
+                          updatedModuleAlias = Map.insert aliasName modulePrefix moduleAlias
+                      restResult <- resolveImportEntries updatedCache visiting updatedIncluded updatedModuleAlias rest
+                      case restResult of
+                        Left err -> pure (Left err)
+                        Right (restPrefixed, cacheAfterRest, includedAfterRest, moduleAliasAfterRest, keptEntries) ->
+                          pure (Right (moduleStmts ++ restPrefixed, cacheAfterRest, includedAfterRest, moduleAliasAfterRest, (modulePath, maybeAlias) : keptEntries))
 
     loadModule cache visiting included modulePath = do
       let moduleKey = moduleKeyFor modulePath

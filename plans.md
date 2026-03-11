@@ -205,6 +205,13 @@
 - [x] P36 実装: `CallBuiltin` から stdlib builtin dispatch を追加し、marker 依存を段階縮退
 - [x] P36 品質ゲート: `cabal test` / `cabal run check-structure` / warning 0 を再通過
 
+## 現在のスコープ（P37: dotted import 束縛の CPython 互換化）
+- [x] P37 開始: `import pkg.sub` 時のトップレベル束縛を CPython 互換（bare `sub` 非束縛）へ整合するスコープを開始
+- [x] P37 失敗テスト先行: `CLISpec` / `RunSourceVmSpec` に `import pkg.sub` 後の `sub` 直接参照を `Name error` とするケースを追加
+- [x] P37 実装: `CompileImportStmt` と `ResolveLocalImports` の import 束縛規則を更新し、dotted import の非 alias 時は root module のみ束縛するよう修正
+- [x] P37 回帰更新: 深い submodule / package module のケースを `pkg.sub.deep` / `pkg.mod` 経由参照へ更新して互換規則を固定
+- [x] P37 品質ゲート: `cabal test` / `cabal run check-structure` / warning 0 を再通過
+
 ## 現在のスコープ（P9: VM例外処理MVP）
 - [x] P9 開始: 次機能を `try/except` + `raise <expr>` の VM 専用導入として計画確定
 - [x] 失敗テスト先行: `try` / `except` / `raise` の lexer/parser ケースを追加

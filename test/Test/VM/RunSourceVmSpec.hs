@@ -1,6 +1,10 @@
 module Test.VM.RunSourceVmSpec (spec) where
 
 import PythonHS.RunSourceVm (runSourceVm)
+import PythonHS.RunSourceVmWithSearchPaths (runSourceVmWithSearchPaths)
+import System.Directory (createDirectory)
+import System.FilePath ((</>))
+import System.IO.Temp (withSystemTempDirectory)
 import Test.Hspec (Spec, describe, it, shouldBe)
 
 spec :: Spec
@@ -56,6 +60,17 @@ spec = describe "runSourceVm (vm mvp)" $ do
 
   it "supports from math import with alias" $ do
     runSourceVm "from math import sqrt as s, pi\nprint s(9)\nprint pi\n" `shouldBe` Right ["3.0", "3.141592653589793"]
+
+  it "does not bind bare submodule name for import pkg.sub" $
+    withSystemTempDirectory "vm-local-submodule-import" $ \dir -> do
+      let packageDir = dir </> "pkg"
+      let initPath = packageDir </> "__init__.py"
+      let subPath = packageDir </> "sub.py"
+      createDirectory packageDir
+      writeFile initPath "pass\n"
+      writeFile subPath "def inc(x):\n  return x + 1\n"
+      result <- runSourceVmWithSearchPaths [dir] "import pkg.sub\nprint sub.inc(4)\n"
+      result `shouldBe` Left "Name error: undefined identifier sub at 2:7"
 
   it "handles arbitrary-size integer arithmetic" $ do
     runSourceVm "x = 123456789012345678901234567890\nprint x + 1\n" `shouldBe` Right ["123456789012345678901234567891"]

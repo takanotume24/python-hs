@@ -79,6 +79,7 @@ TDD（`hspec`）で機能を拡張し、**可能な限り CPython 互換**を目
 補足:
 - `math` は現時点で VM 実行経路を対象に互換性向上を継続中です。
 - `import` は現時点で VM 実行経路を対象に、`math` / `dataclasses` / ローカル `module.py` / `package/__init__.py` / package submodule（`pkg.sub`, `from pkg import sub` など）を受理します。
+- `import pkg.sub` / `import pkg.sub.deep` のような dotted import では、非 alias 時のトップレベル束縛は root module（例: `pkg`）のみです。`sub` / `deep` を直接参照したい場合は `from ... import ...` または `import ... as ...` を使います。
 - `from . import x` などの relative import は、package 配下モジュール内では利用可能です（エントリスクリプト直下では parent package がないためエラー）。
 - `from pkg import *` はローカル package/module に対して利用可能です（先頭 `_` の名前は除外）。
 - `import os` / `import json` / `import pathlib` は VM で利用可能です（現状: `os.getcwd`, `json.dumps/loads`, `pathlib.Path`）。

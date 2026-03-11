@@ -161,7 +161,7 @@ spec = describe "runFile / replEvalLines" $ do
         res <- runFile mainPath
         res `shouldBe` Right ["12", "10"]
 
-  it "runs package submodule import in vm engine for runFile" $
+  it "does not bind bare submodule name for import pkg.sub in vm engine for runFile" $
     withSystemTempDirectory "vm-local-submodule-import" $ \dir -> do
       let packageDir = dir </> "pkg"
       let initPath = packageDir </> "__init__.py"
@@ -174,7 +174,7 @@ spec = describe "runFile / replEvalLines" $ do
       bracket (lookupEnv "PYTHON_HS_RUNNER_ENGINE") restoreRunnerEngine $ \_ -> do
         setEnv "PYTHON_HS_RUNNER_ENGINE" "vm"
         res <- runFile mainPath
-        res `shouldBe` Right ["5"]
+        res `shouldBe` Left "Name error: undefined identifier sub at 2:7"
 
   it "runs package submodule import via pkg.sub receiver in vm engine for runFile" $
     withSystemTempDirectory "vm-local-submodule-import-pkg-receiver" $ \dir -> do
@@ -301,7 +301,7 @@ spec = describe "runFile / replEvalLines" $ do
         res <- runFile mainPath
         res `shouldBe` Right ["5"]
 
-  it "runs deep package submodule import in vm engine for runFile" $
+  it "runs deep package submodule import via pkg.sub.deep receiver in vm engine for runFile" $
     withSystemTempDirectory "vm-local-deep-submodule-import" $ \dir -> do
       let packageDir = dir </> "pkg"
       let subDir = packageDir </> "sub"
@@ -313,7 +313,7 @@ spec = describe "runFile / replEvalLines" $ do
       writeFile initPath "pass\n"
       writeFile subInitPath "pass\n"
       writeFile deepPath "def inc(x):\n  return x + 1\n"
-      writeFile mainPath "import pkg.sub.deep\nprint deep.inc(4)\n"
+      writeFile mainPath "import pkg.sub.deep\nprint pkg.sub.deep.inc(4)\n"
       bracket (lookupEnv "PYTHON_HS_RUNNER_ENGINE") restoreRunnerEngine $ \_ -> do
         setEnv "PYTHON_HS_RUNNER_ENGINE" "vm"
         res <- runFile mainPath
@@ -408,7 +408,7 @@ spec = describe "runFile / replEvalLines" $ do
         res <- runFile mainPath
         res `shouldSatisfy` (== Left "Name error: undefined function hidden at 3:7")
 
-  it "runs relative import inside package module in vm engine for runFile" $
+  it "runs relative import inside package module via pkg.mod receiver in vm engine for runFile" $
     withSystemTempDirectory "vm-relative-import-in-package" $ \dir -> do
       let packageDir = dir </> "pkg"
       let initPath = packageDir </> "__init__.py"
@@ -419,7 +419,7 @@ spec = describe "runFile / replEvalLines" $ do
       writeFile initPath "pass\n"
       writeFile utilPath "def inc(x):\n  return x + 1\n"
       writeFile modPath "from . import util\ndef run(x):\n  return util.inc(x)\n"
-      writeFile mainPath "import pkg.mod\nprint mod.run(4)\n"
+      writeFile mainPath "import pkg.mod\nprint pkg.mod.run(4)\n"
       bracket (lookupEnv "PYTHON_HS_RUNNER_ENGINE") restoreRunnerEngine $ \_ -> do
         setEnv "PYTHON_HS_RUNNER_ENGINE" "vm"
         res <- runFile mainPath
