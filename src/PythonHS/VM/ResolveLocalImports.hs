@@ -2,7 +2,6 @@ module PythonHS.VM.ResolveLocalImports (resolveLocalImports) where
 
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
-import Data.List (isPrefixOf)
 import PythonHS.AST.Program (Program (Program))
 import PythonHS.AST.Stmt
       ( Stmt
@@ -18,6 +17,7 @@ import PythonHS.VM.ResolveTargetModulePath (resolveTargetModulePath)
 import PythonHS.VM.IsBuiltinImportModule (isBuiltinImportModule)
 import PythonHS.Parser.ParseProgram (parseProgram)
 import PythonHS.VM.FindModuleFile (findModuleFile)
+import PythonHS.VM.ResolveStarExportNames (resolveStarExportNames)
 import PythonHS.VM.TransformImportAliases (transformImportAliases)
 import System.FilePath (takeFileName)
 
@@ -105,14 +105,7 @@ resolveLocalImports searchPaths (Program rootStmts) = do
                 Right (moduleStmts, _exportMap, updatedCache, updatedIncluded) -> do
                   let aliasName = maybe (last modulePath) id maybeAlias
                       modulePrefix = modulePrefixFor modulePath
-                      baseAliasMap = Map.insert aliasName modulePrefix moduleAlias
-                      updatedModuleAlias =
-                        case maybeAlias of
-                          Just _ -> baseAliasMap
-                          Nothing ->
-                            if length modulePath > 1
-                              then Map.insert (moduleKeyFor modulePath) modulePrefix baseAliasMap
-                              else baseAliasMap
+                      updatedModuleAlias = Map.insert aliasName modulePrefix moduleAlias
                   restResult <- resolveImportEntries updatedCache visiting updatedIncluded updatedModuleAlias rest
                   case restResult of
                     Left err -> pure (Left err)
@@ -190,7 +183,7 @@ resolveLocalImports searchPaths (Program rootStmts) = do
       case loadResult of
         Left err -> pure (Left err)
         Right (moduleStmts, exportMap, updatedCache, updatedIncluded) ->
-          let visibleExports = Map.toList (Map.filterWithKey (\name _ -> not ("_" `isPrefixOf` name)) exportMap)
+          let visibleExports = resolveStarExportNames moduleStmts exportMap
               updatedCallAlias = foldl (\m (k, v) -> Map.insert k v m) callAlias visibleExports
               updatedIdentAlias = foldl (\m (k, v) -> Map.insert k v m) identAlias visibleExports
            in pure (Right (moduleStmts, updatedCache, updatedIncluded, updatedCallAlias, updatedIdentAlias))

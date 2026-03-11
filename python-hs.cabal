@@ -109,6 +109,7 @@ library
     , PythonHS.VM.ModuleKeyFor
     , PythonHS.VM.ModulePrefixFor
     , PythonHS.VM.ResolveTargetModulePath
+    , PythonHS.VM.ResolveStarExportNames
     , PythonHS.VM.ResolveLocalImports
     , PythonHS.VM.TransformImportAliases
     , PythonHS.VM.CollectFunctionGlobalDecls

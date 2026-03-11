@@ -175,7 +175,14 @@
 - [x] P32 完了: warning 0 を維持した状態で `cabal test` / `cabal run check-structure` を再通過
 - [x] P33 着手: `import pkg.sub as s` の module object 呼び出し回帰を失敗テスト先行で追加
 - [x] P33 実装: `m = s; m.inc(4)` のような alias 再束縛後の呼び出しを VM runtime で解決
-- [ ] P33 継続: dotted alias 依存経路を段階縮小し、module object 中心の解決へ寄せる
+- [x] P33 継続: `x = pkg; x.sub.inc(4)` / `import pkg.sub.deep as d; d.inc(4)` を追加し module object 経路を回帰固定
+- [x] P33 継続: `ResolveLocalImports` の dotted alias 依存（`pkg.sub` キー追加）を縮小し、module object 解決へ寄せる
+
+## 現在のスコープ（P34: from-import / star import 互換）
+- [x] P34 着手: `from pkg import *` の `__all__` 優先挙動を失敗テスト先行で追加
+- [x] P34 実装: `ResolveLocalImports` の star import 展開で `__all__` を解釈し、公開名を制御
+- [x] P34 構造制約対応: `ResolveStarExportNames` helper を分離し、`ResolveLocalImports` の行数制約を維持
+- [ ] P34 継続: `from pkg import name` の attribute/submodule 優先順位を追加回帰で固定
 
 ## 現在のスコープ（P9: VM例外処理MVP）
 - [x] P9 開始: 次機能を `try/except` + `raise <expr>` の VM 専用導入として計画確定

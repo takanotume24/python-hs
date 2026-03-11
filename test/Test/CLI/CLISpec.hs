@@ -183,6 +183,39 @@ spec = describe "runFile / replEvalLines" $ do
         res <- runFile mainPath
         res `shouldBe` Right ["5"]
 
+  it "supports module-object chain call via reassigned package value in vm engine for runFile" $
+    withSystemTempDirectory "vm-local-package-object-reassignment" $ \dir -> do
+      let packageDir = dir </> "pkg"
+      let initPath = packageDir </> "__init__.py"
+      let subPath = packageDir </> "sub.py"
+      let mainPath = dir </> "main.py"
+      createDirectory packageDir
+      writeFile initPath "pass\n"
+      writeFile subPath "def inc(x):\n  return x + 1\n"
+      writeFile mainPath "import pkg.sub\nx = pkg\nprint x.sub.inc(4)\n"
+      bracket (lookupEnv "PYTHON_HS_RUNNER_ENGINE") restoreRunnerEngine $ \_ -> do
+        setEnv "PYTHON_HS_RUNNER_ENGINE" "vm"
+        res <- runFile mainPath
+        res `shouldBe` Right ["5"]
+
+  it "supports deep module alias call for import pkg.sub.deep as d in vm engine for runFile" $
+    withSystemTempDirectory "vm-local-deep-module-alias-call" $ \dir -> do
+      let packageDir = dir </> "pkg"
+      let subDir = packageDir </> "sub"
+      let initPath = packageDir </> "__init__.py"
+      let subInitPath = subDir </> "__init__.py"
+      let deepPath = subDir </> "deep.py"
+      let mainPath = dir </> "main.py"
+      createDirectoryIfMissing True subDir
+      writeFile initPath "pass\n"
+      writeFile subInitPath "pass\n"
+      writeFile deepPath "def inc(x):\n  return x + 1\n"
+      writeFile mainPath "import pkg.sub.deep as d\nprint d.inc(4)\n"
+      bracket (lookupEnv "PYTHON_HS_RUNNER_ENGINE") restoreRunnerEngine $ \_ -> do
+        setEnv "PYTHON_HS_RUNNER_ENGINE" "vm"
+        res <- runFile mainPath
+        res `shouldBe` Right ["5"]
+
   it "runs from package import submodule in vm engine for runFile" $
     withSystemTempDirectory "vm-local-from-package-submodule-import" $ \dir -> do
       let packageDir = dir </> "pkg"
@@ -308,6 +341,19 @@ spec = describe "runFile / replEvalLines" $ do
         setEnv "PYTHON_HS_RUNNER_ENGINE" "vm"
         res <- runFile mainPath
         res `shouldBe` Right ["1"]
+
+  it "respects __all__ for star import from package in vm engine for runFile" $
+    withSystemTempDirectory "vm-star-import-package-all" $ \dir -> do
+      let packageDir = dir </> "pkg"
+      let initPath = packageDir </> "__init__.py"
+      let mainPath = dir </> "main.py"
+      createDirectory packageDir
+      writeFile initPath "def visible():\n  return 1\ndef hidden():\n  return 2\n__all__ = [\"visible\"]\n"
+      writeFile mainPath "from pkg import *\nprint visible()\nprint hidden()\n"
+      bracket (lookupEnv "PYTHON_HS_RUNNER_ENGINE") restoreRunnerEngine $ \_ -> do
+        setEnv "PYTHON_HS_RUNNER_ENGINE" "vm"
+        res <- runFile mainPath
+        res `shouldSatisfy` (== Left "Name error: undefined function hidden at 3:7")
 
   it "runs relative import inside package module in vm engine for runFile" $
     withSystemTempDirectory "vm-relative-import-in-package" $ \dir -> do
