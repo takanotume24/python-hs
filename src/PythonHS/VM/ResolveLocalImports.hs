@@ -17,9 +17,8 @@ import PythonHS.AST.Stmt
   )
 import PythonHS.Lexer.ScanTokens (scanTokens)
 import PythonHS.Parser.ParseProgram (parseProgram)
+import PythonHS.VM.FindModuleFile (findModuleFile)
 import PythonHS.VM.TransformImportAliases (transformImportAliases)
-import System.Directory (doesFileExist)
-import System.FilePath ((</>))
 
 resolveLocalImports :: [FilePath] -> Program -> IO (Either String Program)
 resolveLocalImports searchPaths (Program rootStmts) = do
@@ -66,15 +65,16 @@ resolveLocalImports searchPaths (Program rootStmts) = do
                   case loadResult of
                     Left err -> pure (Left err)
                     Right (moduleStmts, exportMap, updatedCache, updatedIncluded) ->
-                      let aliasPairs = fmap (\(memberName, maybeAlias) -> (maybe memberName id maybeAlias, Map.findWithDefault memberName memberName exportMap)) importedNames
-                          updatedCallAlias = foldl (\m (k, v) -> Map.insert k v m) callAlias aliasPairs
-                          updatedIdentAlias = foldl (\m (k, v) -> Map.insert k v m) identAlias aliasPairs
-                       in do
-                            restResult <- resolveStmts updatedCache visiting updatedIncluded moduleAlias updatedCallAlias updatedIdentAlias rest
+                      do
+                        aliasResult <- resolveFromImports updatedCache visiting updatedIncluded modulePath moduleAlias callAlias identAlias [] importedNames exportMap
+                        case aliasResult of
+                          Left err -> pure (Left err)
+                          Right (extraModuleStmts, cacheAfterAliases, includedAfterAliases, moduleAliasAfterAliases, callAliasAfterAliases, identAliasAfterAliases) -> do
+                            restResult <- resolveStmts cacheAfterAliases visiting includedAfterAliases moduleAliasAfterAliases callAliasAfterAliases identAliasAfterAliases rest
                             case restResult of
                               Left err -> pure (Left err)
                               Right (restStmts, cacheAfterRest, includedAfterRest) ->
-                                pure (Right (moduleStmts ++ restStmts, cacheAfterRest, includedAfterRest))
+                                pure (Right (moduleStmts ++ extraModuleStmts ++ restStmts, cacheAfterRest, includedAfterRest))
             _ -> do
               let transformedStmt = transformImportAliases False moduleAlias callAlias identAlias stmt
               restResult <- resolveStmts cache visiting included moduleAlias callAlias identAlias rest
@@ -137,6 +137,23 @@ resolveLocalImports searchPaths (Program rootStmts) = do
                                 then pure (Right ([], exportMap, updatedCache, includedAfterResolve))
                                 else pure (Right (renamedModuleStmts, exportMap, updatedCache, Set.insert moduleKey includedAfterResolve))
 
+    resolveFromImports cache visiting included modulePath moduleAlias callAlias identAlias collected importedNames exportMap =
+      case importedNames of
+        [] -> pure (Right (reverse collected, cache, included, moduleAlias, callAlias, identAlias))
+        (memberName, maybeAlias) : rest ->
+          case Map.lookup memberName exportMap of
+            Just mappedName ->
+              let aliasName = maybe memberName id maybeAlias
+               in resolveFromImports cache visiting included modulePath moduleAlias (Map.insert aliasName mappedName callAlias) (Map.insert aliasName mappedName identAlias) collected rest exportMap
+            Nothing -> do
+              submoduleResult <- loadModule cache visiting included (modulePath ++ [memberName])
+              case submoduleResult of
+                Left err -> pure (Left err)
+                Right (submoduleStmts, _submoduleExports, updatedCache, updatedIncluded) ->
+                  let aliasName = maybe memberName id maybeAlias
+                      modulePrefix = modulePrefixFor (modulePath ++ [memberName])
+                   in resolveFromImports updatedCache visiting updatedIncluded modulePath (Map.insert aliasName modulePrefix moduleAlias) callAlias identAlias (reverse submoduleStmts ++ collected) rest exportMap
+
     collectExports modulePath stmts =
       foldl
         (\acc stmt ->
@@ -165,25 +182,3 @@ resolveLocalImports searchPaths (Program rootStmts) = do
     foldl1Join _ [] = ""
     foldl1Join _ [single] = single
     foldl1Join sep (x : xs) = x ++ sep ++ foldl1Join sep xs
-
-    findModuleFile modulePath paths =
-      let relModule = foldl1Join "/" modulePath ++ ".py"
-          relPackageInit = foldl1Join "/" modulePath </> "__init__.py"
-       in search [relModule, relPackageInit] paths
-      where
-        search relPaths candidates =
-          case candidates of
-            [] -> pure (Left ("Import error: module not found " ++ foldl1Join "." modulePath))
-            candidate : rest -> do
-              found <- findFirstExisting candidate relPaths
-              case found of
-                Just fullPath -> pure (Right fullPath)
-                Nothing -> search relPaths rest
-
-        findFirstExisting _ [] = pure Nothing
-        findFirstExisting candidate (relPath : restRelPaths) = do
-          let fullPath = candidate </> relPath
-          exists <- doesFileExist fullPath
-          if exists
-            then pure (Just fullPath)
-            else findFirstExisting candidate restRelPaths

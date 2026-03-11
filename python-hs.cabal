@@ -103,6 +103,7 @@ library
     , PythonHS.VM.CompileMatch
     , PythonHS.VM.CompileTryExcept
     , PythonHS.VM.EvalBinaryOp
+    , PythonHS.VM.FindModuleFile
     , PythonHS.VM.ResolveLocalImports
     , PythonHS.VM.TransformImportAliases
     , PythonHS.VM.CollectFunctionGlobalDecls

@@ -3,7 +3,7 @@ module Test.CLI.CLISpec (spec) where
 import Control.Exception (bracket)
 import Data.List (isInfixOf, isPrefixOf)
 import qualified Paths_python_hs
-import System.Directory (createDirectory, doesFileExist)
+import System.Directory (createDirectory, createDirectoryIfMissing, doesFileExist)
 import System.Environment (getExecutablePath, lookupEnv, setEnv, unsetEnv)
 import System.Exit (ExitCode (ExitSuccess))
 import System.FilePath ((</>))
@@ -122,6 +122,53 @@ spec = describe "runFile / replEvalLines" $ do
         setEnv "PYTHON_HS_RUNNER_ENGINE" "vm"
         res <- runFile mainPath
         res `shouldBe` Right ["12", "10"]
+
+  it "runs package submodule import in vm engine for runFile" $
+    withSystemTempDirectory "vm-local-submodule-import" $ \dir -> do
+      let packageDir = dir </> "pkg"
+      let initPath = packageDir </> "__init__.py"
+      let subPath = packageDir </> "sub.py"
+      let mainPath = dir </> "main.py"
+      createDirectory packageDir
+      writeFile initPath "pass\n"
+      writeFile subPath "def inc(x):\n  return x + 1\n"
+      writeFile mainPath "import pkg.sub\nprint sub.inc(4)\n"
+      bracket (lookupEnv "PYTHON_HS_RUNNER_ENGINE") restoreRunnerEngine $ \_ -> do
+        setEnv "PYTHON_HS_RUNNER_ENGINE" "vm"
+        res <- runFile mainPath
+        res `shouldBe` Right ["5"]
+
+  it "runs from package import submodule in vm engine for runFile" $
+    withSystemTempDirectory "vm-local-from-package-submodule-import" $ \dir -> do
+      let packageDir = dir </> "pkg"
+      let initPath = packageDir </> "__init__.py"
+      let subPath = packageDir </> "sub.py"
+      let mainPath = dir </> "main.py"
+      createDirectory packageDir
+      writeFile initPath "pass\n"
+      writeFile subPath "def inc(x):\n  return x + 1\n"
+      writeFile mainPath "from pkg import sub\nprint sub.inc(4)\n"
+      bracket (lookupEnv "PYTHON_HS_RUNNER_ENGINE") restoreRunnerEngine $ \_ -> do
+        setEnv "PYTHON_HS_RUNNER_ENGINE" "vm"
+        res <- runFile mainPath
+        res `shouldBe` Right ["5"]
+
+  it "runs from package submodule import member in vm engine for runFile" $
+    withSystemTempDirectory "vm-local-from-submodule-member-import" $ \dir -> do
+      let packageDir = dir </> "pkg"
+      let nestedDir = packageDir </> "sub"
+      let initPath = packageDir </> "__init__.py"
+      let nestedInitPath = nestedDir </> "__init__.py"
+      let mainPath = dir </> "main.py"
+      createDirectory packageDir
+      createDirectoryIfMissing True nestedDir
+      writeFile initPath "pass\n"
+      writeFile nestedInitPath "def inc(x):\n  return x + 1\n"
+      writeFile mainPath "from pkg.sub import inc as i\nprint i(4)\n"
+      bracket (lookupEnv "PYTHON_HS_RUNNER_ENGINE") restoreRunnerEngine $ \_ -> do
+        setEnv "PYTHON_HS_RUNNER_ENGINE" "vm"
+        res <- runFile mainPath
+        res `shouldBe` Right ["5"]
 
   it "reports math type error in vm engine for runFile" $
     withSystemTempFile "vm-math-type-error.pyhs" $ \path h -> do

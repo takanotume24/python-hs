@@ -41,6 +41,15 @@
 - [x] P22 実装: `LookupNameWithAttr` に `ClassValue` 経路を追加し、関数参照を返却
 - [x] P22 実装: `f = A.add; f(A(), 2)` / `g = B.f; g(B())` を VM テストで固定
 
+## 現在のスコープ（P23: 汎用 import 拡張フェーズ2）
+- [x] P23 開始: package 配下 submodule の import 互換を VM で拡張
+- [x] P23 実装: `import pkg.sub` を CLI/VM テストで固定
+- [x] P23 実装: `from pkg import sub`（submodule 値の参照）を解決可能化
+- [x] P23 実装: `from pkg.sub import fn as f` を package module でも解決可能化
+- [x] P23 実装: `ResolveLocalImports` の from-import 解決で、export 未定義名を `pkg.<name>` submodule として再解決する経路を追加
+- [x] P23 構造制約対応: `FindModuleFile` を分離し、`ResolveLocalImports` の行数制約を維持
+- [x] 品質ゲート再実行（`cabal test` / `cabal run check-structure` / warning 0）
+
 ## 現在のスコープ（P5: VM基盤導入・並行運用）
 - [x] P5 開始: AST評価器と並行して最小VM経路を追加する方針を開始
 - [x] VM縦スライス1: `runSourceVm` を追加（lex/parse/compile/execute）
