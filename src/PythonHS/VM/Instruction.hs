@@ -19,6 +19,8 @@ data Instruction
   | PushExceptionHandler Int
   | PushFinallyHandler Int
   | PopExceptionHandler
+  | LoadPendingException
+  | MatchExceptionType (Maybe String)
   | DupTop
   | ApplyUnaryMinus Position
   | ApplyNot Position
@@ -34,6 +36,7 @@ data Instruction
   | CallValueFunction [([Instruction], Maybe String, Position)] Position
   | UnpackToNames [String] Position
   | RaiseTop Position
+  | RaisePendingException
   | RaisePendingError
   | ReturnTop
   | PrintTop

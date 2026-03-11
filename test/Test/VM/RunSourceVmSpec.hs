@@ -26,6 +26,13 @@ spec = describe "runSourceVm (vm mvp)" $ do
   it "runs only the first except suite when multiple except suites exist" $ do
     runSourceVm "try:\n  raise \"boom\"\nexcept:\n  print 1\nexcept:\n  print 2\nfinally:\n  print 3\n" `shouldBe` Right ["1", "3"]
 
+  it "matches typed except by runtime error category" $ do
+    runSourceVm "try:\n  print len(1)\nexcept NameError:\n  print 1\nexcept TypeError:\n  print 2\nexcept:\n  print 3\n" `shouldBe` Right ["2"]
+
+  it "binds typed except alias and rethrows on non-matching type" $ do
+    runSourceVm "try:\n  raise \"boom\"\nexcept RuntimeError as e:\n  print e\n" `shouldBe` Right ["Runtime error: boom at 2:3"]
+    runSourceVm "try:\n  raise \"boom\"\nexcept TypeError:\n  print 1\n" `shouldBe` Left "Runtime error: boom at 2:3"
+
   it "matches value patterns and wildcard in order" $ do
     runSourceVm "x = 2\nmatch x:\n  case 1:\n    print 10\n  case 2:\n    print 20\n  case _:\n    print 30\n" `shouldBe` Right ["20"]
 

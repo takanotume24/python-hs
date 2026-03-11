@@ -111,8 +111,10 @@ library
     , PythonHS.VM.ExecuteCallValueFunction
     , PythonHS.VM.ExecuteForNext
     , PythonHS.VM.ExecuteListComprehension
+    , PythonHS.VM.ExecutePendingExceptionInstruction
     , PythonHS.VM.ExecuteUnpackToNames
     , PythonHS.VM.ExecuteMatchPattern
+    , PythonHS.VM.ApplyExceptionInstruction
     , PythonHS.VM.EvaluateUserArgs
     , PythonHS.VM.ExprPosition
     , PythonHS.VM.FirstKeywordArg

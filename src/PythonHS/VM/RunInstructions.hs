@@ -7,6 +7,7 @@ import PythonHS.Evaluator.ShowPos (showPos)
 import PythonHS.Evaluator.Value (Value (ClassValue, DictValue, FloatValue, FunctionRefValue, IntValue, ListValue, StringValue, TupleValue))
 import PythonHS.Evaluator.ValueToOutput (valueToOutput)
 import PythonHS.VM.EvalBinaryOp (evalBinaryOp)
+import PythonHS.VM.ApplyExceptionInstruction (applyExceptionInstruction)
 import PythonHS.VM.ExecuteCallFunction (executeCallFunction)
 import PythonHS.VM.ExecuteCallValueFunction (executeCallValueFunction)
 import PythonHS.VM.ExecuteForNext (executeForNext)
@@ -14,7 +15,7 @@ import PythonHS.VM.ExecuteListComprehension (executeListComprehension)
 import PythonHS.VM.ExecuteMatchPattern (executeMatchPattern)
 import PythonHS.VM.ExecuteUnpackToNames (executeUnpackToNames)
 import PythonHS.VM.HandleRuntimeError (handleRuntimeError)
-import PythonHS.VM.Instruction (Instruction (ApplyBinary, ApplyNot, ApplyUnaryMinus, BuildDict, BuildList, BuildListComprehension, BuildTuple, CallFunction, CallValueFunction, CreateLambda, DeclareGlobal, DefineClass, DefineFunction, DupTop, ForNext, ForSetup, Halt, Jump, JumpIfFalse, LoadName, LoopGuard, MatchPattern, PopExceptionHandler, PrintTop, PushConst, PushExceptionHandler, PushFinallyHandler, RaisePendingError, RaiseTop, ReturnTop, StoreName, UnpackToNames))
+import PythonHS.VM.Instruction (Instruction (ApplyBinary, ApplyNot, ApplyUnaryMinus, BuildDict, BuildList, BuildListComprehension, BuildTuple, CallFunction, CallValueFunction, CreateLambda, DeclareGlobal, DefineClass, DefineFunction, DupTop, ForNext, ForSetup, Halt, Jump, JumpIfFalse, LoadName, LoadPendingException, LoopGuard, MatchExceptionType, MatchPattern, PopExceptionHandler, PrintTop, PushConst, PushExceptionHandler, PushFinallyHandler, RaisePendingError, RaisePendingException, RaiseTop, ReturnTop, StoreName, UnpackToNames))
 import PythonHS.VM.IsTruthy (isTruthy)
 import PythonHS.VM.LookupNameWithAttr (lookupNameWithAttr)
 import PythonHS.VM.PopValues (popValues)
@@ -27,8 +28,6 @@ runInstructions instructions = do
   (_, _, _, outputs) <- execute instructions 0 [] Map.empty Map.empty Map.empty Set.empty Map.empty Map.empty [] [] True
   pure outputs
   where
-    pendingErrorName = "__python_hs_pending_finally_error__"
-
     execute code ip stack globalsEnv localEnv functions globalDecls forStates loopCounts exceptionHandlers outputs isTopLevel
       | ip < 0 || ip >= length code = Right (Nothing, globalsEnv, functions, outputs)
       | otherwise =
@@ -101,14 +100,13 @@ runInstructions instructions = do
                 Left err -> Left err
                 Right (nextIp, newForStates, newGlobals, newLocals) ->
                   execute code nextIp stack newGlobals newLocals functions globalDecls newForStates loopCounts exceptionHandlers outputs isTopLevel
-            PushExceptionHandler handlerIp ->
-              execute code (ip + 1) stack globalsEnv localEnv functions globalDecls forStates loopCounts (handlerIp : exceptionHandlers) outputs isTopLevel
-            PushFinallyHandler handlerIp ->
-              execute code (ip + 1) stack globalsEnv localEnv functions globalDecls forStates loopCounts (encodeFinallyHandler handlerIp : exceptionHandlers) outputs isTopLevel
-            PopExceptionHandler ->
-              case exceptionHandlers of
-                _ : restHandlers -> execute code (ip + 1) stack globalsEnv localEnv functions globalDecls forStates loopCounts restHandlers outputs isTopLevel
-                [] -> execute code (ip + 1) stack globalsEnv localEnv functions globalDecls forStates loopCounts [] outputs isTopLevel
+            instruction@(PushExceptionHandler _) -> handleExceptionInstruction instruction code ip stack globalsEnv localEnv functions globalDecls forStates loopCounts exceptionHandlers outputs isTopLevel
+            instruction@(PushFinallyHandler _) -> handleExceptionInstruction instruction code ip stack globalsEnv localEnv functions globalDecls forStates loopCounts exceptionHandlers outputs isTopLevel
+            instruction@PopExceptionHandler -> handleExceptionInstruction instruction code ip stack globalsEnv localEnv functions globalDecls forStates loopCounts exceptionHandlers outputs isTopLevel
+            instruction@LoadPendingException -> handleExceptionInstruction instruction code ip stack globalsEnv localEnv functions globalDecls forStates loopCounts exceptionHandlers outputs isTopLevel
+            instruction@(MatchExceptionType _) -> handleExceptionInstruction instruction code ip stack globalsEnv localEnv functions globalDecls forStates loopCounts exceptionHandlers outputs isTopLevel
+            instruction@RaisePendingException -> handleExceptionInstruction instruction code ip stack globalsEnv localEnv functions globalDecls forStates loopCounts exceptionHandlers outputs isTopLevel
+            instruction@RaisePendingError -> handleExceptionInstruction instruction code ip stack globalsEnv localEnv functions globalDecls forStates loopCounts exceptionHandlers outputs isTopLevel
             DupTop ->
               case stack of
                 value : rest -> execute code (ip + 1) (value : value : rest) globalsEnv localEnv functions globalDecls forStates loopCounts exceptionHandlers outputs isTopLevel
@@ -175,15 +173,11 @@ runInstructions instructions = do
             RaiseTop pos ->
               case stack of
                 value : rest ->
-                  let err = "Runtime error: " ++ valueToOutput value ++ " at " ++ showPos pos
-                   in case exceptionHandlers of
-                         handlerIp : restHandlers -> execute code handlerIp rest globalsEnv localEnv functions globalDecls forStates loopCounts restHandlers outputs isTopLevel
+                  let err = "Runtime error: " ++ valueToOutput value ++ " at " ++ showPos pos in
+                    case exceptionHandlers of
+                         handlerIp : restHandlers -> execute code handlerIp rest globalsEnv (Map.insert "__python_hs_pending_except_error__" (StringValue err) localEnv) functions globalDecls forStates loopCounts restHandlers outputs isTopLevel
                          [] -> Left err
                 _ -> Left "VM runtime error: raise requires one value on stack"
-            RaisePendingError ->
-              case Map.lookup pendingErrorName localEnv of
-                Just (StringValue err) -> Left err
-                _ -> execute code (ip + 1) stack globalsEnv localEnv functions globalDecls forStates loopCounts exceptionHandlers outputs isTopLevel
             ReturnTop ->
               case stack of
                 value : _ -> Right (Just value, globalsEnv, functions, outputs)
@@ -194,4 +188,9 @@ runInstructions instructions = do
                 _ -> Left "VM runtime error: print requires one value on stack"
             Halt -> Right (Nothing, globalsEnv, functions, outputs)
 
-    encodeFinallyHandler handlerIp = negate (handlerIp + 1)
+    handleExceptionInstruction instruction code ip stack globalsEnv localEnv functions globalDecls forStates loopCounts exceptionHandlers outputs isTopLevel =
+      case applyExceptionInstruction ip instruction stack localEnv exceptionHandlers of
+        Left err -> Left err
+        Right (Just err, _, _, _) -> Left err
+        Right (Nothing, nextIp, nextStack, nextHandlers) ->
+          execute code nextIp nextStack globalsEnv localEnv functions globalDecls forStates loopCounts nextHandlers outputs isTopLevel

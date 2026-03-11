@@ -30,12 +30,13 @@ handleRuntimeError execute code stack globalsEnv localEnv functions globalDecls 
             then
               let finalIp = decodeFinallyHandler handlerIp
                   newLocals = Map.insert pendingErrorName (StringValue err) localEnv
-               in execute code finalIp stack globalsEnv newLocals functions globalDecls forStates loopCounts restHandlers outputs isTopLevel
+                in execute code finalIp stack globalsEnv newLocals functions globalDecls forStates loopCounts restHandlers outputs isTopLevel
             else
-              let newLocals = Map.delete pendingErrorName localEnv
+              let newLocals = Map.insert pendingExceptErrorName (StringValue err) (Map.delete pendingErrorName localEnv)
                in execute code handlerIp stack globalsEnv newLocals functions globalDecls forStates loopCounts restHandlers outputs isTopLevel
         [] -> Left err
   where
     pendingErrorName = "__python_hs_pending_finally_error__"
+    pendingExceptErrorName = "__python_hs_pending_except_error__"
     decodeFinallyHandler encoded = negate encoded - 1
     isFinallyHandler handlerIp = handlerIp < 0

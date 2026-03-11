@@ -16,7 +16,7 @@ hasYieldInStmts stmts =
         ForStmt _ _ body _ -> hasYieldInStmts body || hasYieldInStmts rest
         TryExceptStmt tryStmts exceptSuites maybeFinally _ ->
           hasYieldInStmts tryStmts
-            || any hasYieldInStmts exceptSuites
+            || any (\(_, _, suiteStmts, _) -> hasYieldInStmts suiteStmts) exceptSuites
             || maybe False hasYieldInStmts maybeFinally
             || hasYieldInStmts rest
         DecoratedStmt _ innerStmt _ -> hasYieldInStmts [innerStmt] || hasYieldInStmts rest

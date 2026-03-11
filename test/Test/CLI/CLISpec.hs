@@ -3,7 +3,7 @@ module Test.CLI.CLISpec (spec) where
 import Control.Exception (bracket)
 import Data.List (isInfixOf, isPrefixOf)
 import qualified Paths_python_hs
-import System.Directory (doesFileExist)
+import System.Directory (createDirectory, doesFileExist)
 import System.Environment (getExecutablePath, lookupEnv, setEnv, unsetEnv)
 import System.Exit (ExitCode (ExitSuccess))
 import System.FilePath ((</>))
@@ -97,6 +97,32 @@ spec = describe "runFile / replEvalLines" $ do
         res <- runFile mainPath
         res `shouldBe` Right ["12", "10"]
 
+  it "runs package __init__.py import in vm engine for runFile" $
+    withSystemTempDirectory "vm-local-package-import" $ \dir -> do
+      let packageDir = dir </> "pkg"
+      let initPath = packageDir </> "__init__.py"
+      let mainPath = dir </> "main.py"
+      createDirectory packageDir
+      writeFile initPath "def inc(x):\n  return x + 1\n"
+      writeFile mainPath "import pkg\nprint pkg.inc(4)\n"
+      bracket (lookupEnv "PYTHON_HS_RUNNER_ENGINE") restoreRunnerEngine $ \_ -> do
+        setEnv "PYTHON_HS_RUNNER_ENGINE" "vm"
+        res <- runFile mainPath
+        res `shouldBe` Right ["5"]
+
+  it "runs from package import in vm engine for runFile" $
+    withSystemTempDirectory "vm-local-from-package-import" $ \dir -> do
+      let packageDir = dir </> "pkg"
+      let initPath = packageDir </> "__init__.py"
+      let mainPath = dir </> "main.py"
+      createDirectory packageDir
+      writeFile initPath "base = 10\ndef add(x):\n  return x + base\n"
+      writeFile mainPath "from pkg import add as a, base\nprint a(2)\nprint base\n"
+      bracket (lookupEnv "PYTHON_HS_RUNNER_ENGINE") restoreRunnerEngine $ \_ -> do
+        setEnv "PYTHON_HS_RUNNER_ENGINE" "vm"
+        res <- runFile mainPath
+        res `shouldBe` Right ["12", "10"]
+
   it "reports math type error in vm engine for runFile" $
     withSystemTempFile "vm-math-type-error.pyhs" $ \path h -> do
       hPutStr h "import math\nprint math.sqrt(\"x\")\n"
@@ -150,6 +176,15 @@ spec = describe "runFile / replEvalLines" $ do
         setEnv "PYTHON_HS_RUNNER_ENGINE" "vm"
         res <- runFile path
         res `shouldBe` Right ["1", "3"]
+
+  it "handles typed except with alias in vm engine for runFile" $
+    withSystemTempFile "vm-try-typed-except.pyhs" $ \path h -> do
+      hPutStr h "try:\n  print len(1)\nexcept NameError:\n  print 1\nexcept TypeError as e:\n  print e\n"
+      hClose h
+      bracket (lookupEnv "PYTHON_HS_RUNNER_ENGINE") restoreRunnerEngine $ \_ -> do
+        setEnv "PYTHON_HS_RUNNER_ENGINE" "vm"
+        res <- runFile path
+        res `shouldBe` Right ["Type error: len expects string or list at 2:9"]
 
   it "handles match/case patterns in vm engine for runFile" $
     withSystemTempFile "vm-match-case.pyhs" $ \path h -> do
