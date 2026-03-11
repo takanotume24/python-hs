@@ -7,6 +7,7 @@ data Pattern
   = ValuePattern Expr Position
   | WildcardPattern Position
   | CapturePattern String Position
+  | AsPattern Pattern String Position
   | OrPattern [Pattern] Position
   | SequencePattern [Pattern] (Maybe String) Position
   | MappingPattern [(Expr, Pattern)] Position

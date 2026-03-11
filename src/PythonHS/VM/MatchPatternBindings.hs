@@ -1,7 +1,7 @@
 module PythonHS.VM.MatchPatternBindings (matchPatternBindings) where
 
 import PythonHS.AST.Expr (Expr (DictExpr, FloatExpr, IntegerExpr, ListExpr, NoneExpr, StringExpr, TupleExpr))
-import PythonHS.AST.Pattern (Pattern (CapturePattern, MappingPattern, OrPattern, SequencePattern, ValuePattern, WildcardPattern))
+import PythonHS.AST.Pattern (Pattern (AsPattern, CapturePattern, MappingPattern, OrPattern, SequencePattern, ValuePattern, WildcardPattern))
 import PythonHS.Evaluator.Value (Value (DictValue, FloatValue, IntValue, ListValue, NoneValue, StringValue, TupleValue))
 
 matchPatternBindings :: Pattern -> Value -> Maybe [(String, Value)]
@@ -9,6 +9,9 @@ matchPatternBindings patternValue subjectValue =
   case patternValue of
     WildcardPattern _ -> Just []
     CapturePattern name _ -> Just [(name, subjectValue)]
+    AsPattern innerPattern aliasName _ -> do
+      innerBindings <- matchPatternBindings innerPattern subjectValue
+      Just (innerBindings ++ [(aliasName, subjectValue)])
     ValuePattern expr _ ->
       case exprToValue expr of
         Just expected -> if expected == subjectValue then Just [] else Nothing

@@ -1,16 +1,17 @@
 module PythonHS.Parser.ParsePattern (parsePattern) where
 
 import PythonHS.AST.Expr (Expr (DictExpr, IntegerExpr, ListExpr, NoneExpr, StringExpr, FloatExpr))
-import PythonHS.AST.Pattern (Pattern (CapturePattern, MappingPattern, OrPattern, SequencePattern, ValuePattern, WildcardPattern))
+import PythonHS.AST.Pattern (Pattern (AsPattern, CapturePattern, MappingPattern, OrPattern, SequencePattern, ValuePattern, WildcardPattern))
 import PythonHS.Lexer.Position (Position (Position))
 import PythonHS.Lexer.Token (Token (Token), position)
-import PythonHS.Lexer.TokenType (TokenType (ColonToken, CommaToken, FalseToken, FloatToken, IdentifierToken, IntegerToken, LBraceToken, LBracketToken, NoneToken, PipeToken, RBraceToken, RBracketToken, StarToken, StringToken, TrueToken))
+import PythonHS.Lexer.TokenType (TokenType (AsToken, ColonToken, CommaToken, FalseToken, FloatToken, IdentifierToken, IntegerToken, LBraceToken, LBracketToken, NoneToken, PipeToken, RBraceToken, RBracketToken, StarToken, StringToken, TrueToken))
 import PythonHS.Parser.ParseError (ParseError (ExpectedExpression))
 
 parsePattern :: ([Token] -> Either ParseError (Expr, [Token])) -> [Token] -> Either ParseError (Pattern, [Token])
 parsePattern parseExpr tokens = do
   (firstPattern, afterFirst) <- parseSinglePattern tokens
-  parseOrTail firstPattern afterFirst
+  (orPattern, afterOr) <- parseOrTail firstPattern afterFirst
+  parseAsTail orPattern afterOr
   where
     parseOrTail left (Token PipeToken _ pos' : rest) = do
       (right, afterRight) <- parseSinglePattern rest
@@ -20,6 +21,10 @@ parsePattern parseExpr tokens = do
               _ -> [left, right]
       parseOrTail (OrPattern merged pos') afterRight
     parseOrTail left rest = Right (left, rest)
+
+    parseAsTail patternValue (Token AsToken _ asPos : Token IdentifierToken aliasName _ : rest) =
+      Right (AsPattern patternValue aliasName asPos, rest)
+    parseAsTail patternValue rest = Right (patternValue, rest)
 
     parseSinglePattern (Token IdentifierToken "_" pos' : rest) = Right (WildcardPattern pos', rest)
     parseSinglePattern (Token IdentifierToken name pos' : rest) = Right (CapturePattern name pos', rest)

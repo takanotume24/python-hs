@@ -32,7 +32,8 @@ executeCallValueFunction execute isTopLevel compiledArgs pos stack globalsEnv lo
             Just (params, defaultCodes, functionCode) -> do
               (argValues, argKinds, globalsAfterArgs, functionsAfterArgs, outputsAfterArgs) <-
                 evaluateUserArgs execute functionName pos localEnv compiledArgs globalsEnv functions outputs False Set.empty [] []
-              callLocals <- bindCallArguments functionName pos params argValues argKinds
+              let (boundArgValues, boundArgKinds) = injectBoundSelf params capturedBindings argValues argKinds
+              callLocals <- bindCallArguments functionName pos params boundArgValues boundArgKinds
               let capturedLocals = Map.fromList capturedBindings
                   mergedLocals = Map.union callLocals capturedLocals
               (functionLocals, globalsAfterDefaults, functionsAfterDefaults, outputsAfterDefaults) <-
@@ -48,3 +49,14 @@ executeCallValueFunction execute isTopLevel compiledArgs pos stack globalsEnv lo
               Right (returnValue : restStack, newGlobals, newLocalEnv, newFunctions, newOutputs)
         _ -> Left ("Type error: callable expected at " ++ showPos pos)
     _ -> Left "VM runtime error: call requires callable on stack"
+  where
+    injectBoundSelf params capturedBindings argValues argKinds =
+      case params of
+        firstParam : _ ->
+          case lookup "__python_hs_bound_self__" capturedBindings of
+            Just boundSelf ->
+              if any (\(maybeName, _) -> maybeName == Just firstParam) argKinds
+                then (argValues, argKinds)
+                else (boundSelf : argValues, (Nothing, pos) : argKinds)
+            Nothing -> (argValues, argKinds)
+        [] -> (argValues, argKinds)

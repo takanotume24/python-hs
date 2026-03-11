@@ -42,6 +42,9 @@ spec = describe "runSourceVm (vm mvp)" $ do
   it "supports sequence and mapping pattern captures" $ do
     runSourceVm "x = [1, 2, 3]\nmatch x:\n  case [a, b, *rest]:\n    print a\n    print b\n    print rest\n  case _:\n    print 0\nm = {\"k\": 8}\nmatch m:\n  case {\"k\": v}:\n    print v\n  case _:\n    print 0\n" `shouldBe` Right ["1", "2", "[3]", "8"]
 
+  it "supports as-pattern captures in match" $ do
+    runSourceVm "x = [4, 5]\nmatch x:\n  case [a, b] as pair:\n    print a\n    print b\n    print pair\n  case _:\n    print 0\n" `shouldBe` Right ["4", "5", "[4, 5]"]
+
   it "supports import math with MVP functions" $ do
     runSourceVm "import math\nprint math.sqrt(9)\nprint math.sin(0)\nprint math.pi()\nprint math.e()\n" `shouldBe` Right ["3.0", "0.0", "3.141592653589793", "2.718281828459045"]
 
@@ -71,6 +74,12 @@ spec = describe "runSourceVm (vm mvp)" $ do
 
   it "runs single inheritance method lookup" $ do
     runSourceVm "class A:\n  def f(self):\n    return 7\nclass B(A):\n  pass\nx = B()\nprint x.f()\n" `shouldBe` Right ["7"]
+
+  it "supports bound method value call via attribute lookup" $ do
+    runSourceVm "class A:\n  def add(self, v):\n    return v + 1\nx = A()\nf = x.add\nprint f(2)\n" `shouldBe` Right ["3"]
+
+  it "supports inherited bound method value call via attribute lookup" $ do
+    runSourceVm "class A:\n  def f(self):\n    return 9\nclass B(A):\n  pass\nx = B()\ng = x.f\nprint g()\n" `shouldBe` Right ["9"]
 
   it "runs function decorators in bottom-up order" $ do
     runSourceVm "def add1(fn):\n  return lambda x: (fn)(x) + 1\ndef mul2(fn):\n  return lambda x: (fn)(x) * 2\n@add1\n@mul2\ndef f(x):\n  return x\nprint f(3)\n" `shouldBe` Right ["7"]

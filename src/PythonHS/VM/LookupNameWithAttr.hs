@@ -1,7 +1,8 @@
 module PythonHS.VM.LookupNameWithAttr (lookupNameWithAttr) where
 
 import qualified Data.Map.Strict as Map
-import PythonHS.Evaluator.Value (Value (InstanceValue), Value)
+import PythonHS.Evaluator.Value (Value (FunctionRefValue, InstanceValue), Value)
+import PythonHS.VM.FindMethodFunctionName (findMethodFunctionName)
 import PythonHS.VM.LookupName (lookupName)
 
 lookupNameWithAttr :: String -> Map.Map String Value -> Map.Map String Value -> Maybe Value
@@ -25,8 +26,12 @@ lookupNameWithAttr name localNow globalsNow =
         [] -> Just currentValue
         attrName : restAttrs ->
           case currentValue of
-            InstanceValue _ attrPairs ->
+            InstanceValue className attrPairs ->
               case lookup attrName attrPairs of
                 Just attrValue -> loadAttrPath attrValue restAttrs
-                Nothing -> Nothing
+                Nothing ->
+                  case findMethodFunctionName globalsNow localNow className attrName of
+                    Just functionName ->
+                      loadAttrPath (FunctionRefValue functionName [("__python_hs_bound_self__", currentValue)]) restAttrs
+                    Nothing -> Nothing
             _ -> Nothing

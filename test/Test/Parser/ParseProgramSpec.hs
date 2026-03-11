@@ -2,7 +2,7 @@ module Test.Parser.ParseProgramSpec (spec) where
 
 import PythonHS.AST.BinaryOperator (BinaryOperator (..))
 import PythonHS.AST.Expr (Expr (BinaryExpr, CallExpr, DictExpr, FloatExpr, IdentifierExpr, IntegerExpr, KeywordArgExpr, KwStarArgExpr, LambdaExpr, ListComprehensionClausesExpr, ListComprehensionExpr, ListExpr, NoneExpr, NotExpr, StarArgExpr, StringExpr, UnaryMinusExpr, WalrusExpr))
-import PythonHS.AST.Pattern (Pattern (CapturePattern, MappingPattern, OrPattern, ValuePattern, WildcardPattern))
+import PythonHS.AST.Pattern (Pattern (AsPattern, CapturePattern, MappingPattern, OrPattern, SequencePattern, ValuePattern, WildcardPattern))
 import PythonHS.AST.Program (Program (Program))
 import PythonHS.AST.Stmt (Stmt (AddAssignStmt, AssignStmt, BreakStmt, ClassDefStmt, ContinueStmt, DecoratedStmt, DivAssignStmt, FloorDivAssignStmt, ForStmt, FromImportStmt, FunctionDefDefaultsStmt, FunctionDefStmt, GlobalStmt, IfStmt, ImportStmt, MatchStmt, ModAssignStmt, MulAssignStmt, PassStmt, PrintStmt, RaiseStmt, ReturnStmt, SubAssignStmt, TryExceptStmt, WhileStmt, YieldFromStmt, YieldStmt))
 import PythonHS.Lexer.Token (Token (Token))
@@ -461,6 +461,45 @@ spec = describe "parseProgram" $ do
                     Nothing,
                     [PrintStmt (IntegerExpr 0 (Position 7 11)) (Position 7 5)],
                     (Position 6 3)
+                  )
+                ]
+                (Position 1 1)
+            ]
+        )
+
+  it "parses match statement with as-pattern" $ do
+    parseProgram
+      [ Token MatchToken "match" (Position 1 1),
+        Token IdentifierToken "x" (Position 1 7),
+        Token ColonToken ":" (Position 1 8),
+        Token NewlineToken "\\n" (Position 1 9),
+        Token IndentToken "<INDENT>" (Position 2 1),
+        Token CaseToken "case" (Position 2 3),
+        Token LBracketToken "[" (Position 2 8),
+        Token IdentifierToken "a" (Position 2 9),
+        Token CommaToken "," (Position 2 10),
+        Token IdentifierToken "b" (Position 2 12),
+        Token RBracketToken "]" (Position 2 13),
+        Token AsToken "as" (Position 2 15),
+        Token IdentifierToken "pair" (Position 2 18),
+        Token ColonToken ":" (Position 2 22),
+        Token NewlineToken "\\n" (Position 2 23),
+        Token IndentToken "<INDENT>" (Position 3 1),
+        Token PrintToken "print" (Position 3 5),
+        Token IdentifierToken "pair" (Position 3 11),
+        Token NewlineToken "\\n" (Position 3 15),
+        Token DedentToken "<DEDENT>" (Position 4 1),
+        Token DedentToken "<DEDENT>" (Position 4 1),
+        Token EOFToken "" (Position 4 1)
+      ]
+      `shouldBe` Right
+        ( Program
+            [ MatchStmt
+                (IdentifierExpr "x" (Position 1 7))
+                [ ( AsPattern (SequencePattern [CapturePattern "a" (Position 2 9), CapturePattern "b" (Position 2 12)] Nothing (Position 2 8)) "pair" (Position 2 15),
+                    Nothing,
+                    [PrintStmt (IdentifierExpr "pair" (Position 3 11)) (Position 3 5)],
+                    Position 2 3
                   )
                 ]
                 (Position 1 1)

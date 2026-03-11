@@ -51,7 +51,7 @@ spec = describe "runtime error reporting" $ do
       )
       `shouldBe` Left "Name error: undefined identifier missing at 11:15"
 
-  it "reports duplicate and unexpected keyword argument errors at evaluator layer" $ do
+  it "reports duplicate keyword argument error at evaluator layer" $ do
     evalProgram
       ( Program
           [ FunctionDefStmt "f" ["a"] [ReturnStmt (IdentifierExpr "a" (Position 2 10)) (Position 2 3)] (Position 1 1),
@@ -68,6 +68,7 @@ spec = describe "runtime error reporting" $ do
       )
       `shouldBe` Left "Argument error: duplicate keyword argument b at 3:16"
 
+  it "reports unexpected keyword argument error with mixed positional call" $ do
     evalProgram
       ( Program
           [ FunctionDefStmt "f" ["a"] [ReturnStmt (IdentifierExpr "a" (Position 5 10)) (Position 5 3)] (Position 4 1),
@@ -78,6 +79,7 @@ spec = describe "runtime error reporting" $ do
       )
       `shouldBe` Left "Argument error: unexpected keyword argument b at 6:14"
 
+  it "reports first unexpected keyword in source order at evaluator layer" $ do
     evalProgram
       ( Program
           [ FunctionDefStmt "f" ["a"] [ReturnStmt (IdentifierExpr "a" (Position 7 10)) (Position 7 3)] (Position 7 1),
@@ -95,6 +97,7 @@ spec = describe "runtime error reporting" $ do
       )
       `shouldBe` Left "Argument error: unexpected keyword argument z at 8:12"
 
+  it "reports unexpected keyword argument for keyword-only call at evaluator layer" $ do
     evalProgram
       ( Program
           [ FunctionDefStmt "f" ["a"] [ReturnStmt (IdentifierExpr "a" (Position 9 10)) (Position 9 3)] (Position 9 1),
@@ -111,6 +114,7 @@ spec = describe "runtime error reporting" $ do
       )
       `shouldBe` Left "Argument error: unexpected keyword argument z at 10:9"
 
+  it "prioritizes keyword argument expression type error over unexpected keyword" $ do
     evalProgram
       ( Program
           [ FunctionDefStmt "f" ["a"] [ReturnStmt (IdentifierExpr "a" (Position 9 10)) (Position 9 3)] (Position 9 1),
@@ -121,6 +125,7 @@ spec = describe "runtime error reporting" $ do
       )
       `shouldBe` Left "Type error: len expects string or list at 10:13"
 
+  it "prioritizes keyword argument expression Name error over unexpected keyword" $ do
     evalProgram
       ( Program
           [ FunctionDefStmt "f" ["a"] [ReturnStmt (IdentifierExpr "a" (Position 11 10)) (Position 11 3)] (Position 11 1),
@@ -131,7 +136,7 @@ spec = describe "runtime error reporting" $ do
       )
       `shouldBe` Left "Name error: undefined identifier missing at 12:11"
 
-  it "reports multiple-values conflicts and argument expression precedence at evaluator layer" $ do
+  it "reports multiple-values conflict at evaluator layer" $ do
     evalProgram
       ( Program
           [ FunctionDefStmt "f" ["a"] [ReturnStmt (IdentifierExpr "a" (Position 8 10)) (Position 8 3)] (Position 7 1),
@@ -149,6 +154,7 @@ spec = describe "runtime error reporting" $ do
       )
       `shouldBe` Left "Argument error: multiple values for parameter a at 9:18"
 
+  it "reports leftmost multiple-values conflict when multiple parameters collide" $ do
     evalProgram
       ( Program
           [ FunctionDefStmt "f" ["a", "b"] [ReturnStmt (IdentifierExpr "a" (Position 10 10)) (Position 10 3)] (Position 10 1),
@@ -167,6 +173,7 @@ spec = describe "runtime error reporting" $ do
       )
       `shouldBe` Left "Argument error: multiple values for parameter b at 11:15"
 
+  it "prioritizes keyword argument expression type error over multiple-values detection" $ do
     evalProgram
       ( Program
           [ FunctionDefStmt "f" ["a"] [ReturnStmt (IdentifierExpr "a" (Position 9 10)) (Position 9 3)] (Position 9 1),
@@ -183,6 +190,7 @@ spec = describe "runtime error reporting" $ do
       )
       `shouldBe` Left "Type error: len expects string or list at 11:16"
 
+  it "prioritizes keyword argument expression Name error over multiple-values detection" $ do
     evalProgram
       ( Program
           [ FunctionDefStmt "f" ["a"] [ReturnStmt (IdentifierExpr "a" (Position 12 10)) (Position 12 3)] (Position 12 1),
@@ -193,9 +201,9 @@ spec = describe "runtime error reporting" $ do
                     KeywordArgExpr "a" (IdentifierExpr "missing" (Position 13 16)) (Position 13 14)
                   ]
                   (Position 13 7)
-              )
-              (Position 13 1)
-          ]
+               )
+               (Position 13 1)
+           ]
       )
       `shouldBe` Left "Name error: undefined identifier missing at 13:16"
 
