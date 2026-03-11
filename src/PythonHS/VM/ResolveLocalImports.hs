@@ -97,7 +97,7 @@ resolveLocalImports searchPaths (Program rootStmts) = do
           if isBuiltinImportModule modulePath
             then do
               restResult <- resolveImportEntries cache visiting included moduleAlias rest
-              pure (fmap (\(prefixed, nextCache, nextIncluded, nextModuleAlias, keptBuiltin) -> (prefixed, nextCache, nextIncluded, nextModuleAlias, (modulePath, maybeAlias) : keptBuiltin)) restResult)
+              pure (fmap (\(prefixed, nextCache, nextIncluded, nextModuleAlias, keptEntries) -> (prefixed, nextCache, nextIncluded, nextModuleAlias, (modulePath, maybeAlias) : keptEntries)) restResult)
             else do
               loadResult <- loadModule cache visiting included modulePath
               case loadResult of
@@ -116,8 +116,8 @@ resolveLocalImports searchPaths (Program rootStmts) = do
                   restResult <- resolveImportEntries updatedCache visiting updatedIncluded updatedModuleAlias rest
                   case restResult of
                     Left err -> pure (Left err)
-                    Right (restPrefixed, cacheAfterRest, includedAfterRest, moduleAliasAfterRest, keptMath) ->
-                      pure (Right (moduleStmts ++ restPrefixed, cacheAfterRest, includedAfterRest, moduleAliasAfterRest, keptMath))
+                    Right (restPrefixed, cacheAfterRest, includedAfterRest, moduleAliasAfterRest, keptEntries) ->
+                      pure (Right (moduleStmts ++ restPrefixed, cacheAfterRest, includedAfterRest, moduleAliasAfterRest, (modulePath, maybeAlias) : keptEntries))
 
     loadModule cache visiting included modulePath = do
       let moduleKey = moduleKeyFor modulePath

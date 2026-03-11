@@ -1,6 +1,6 @@
 module PythonHS.Evaluator.ValueToReplOutput (valueToReplOutput) where
 
-import PythonHS.Evaluator.Value (Value (BreakValue, ClassValue, ContinueValue, DictValue, FloatValue, FunctionRefValue, InstanceValue, IntValue, ListValue, NoneValue, StringValue, TupleValue))
+import PythonHS.Evaluator.Value (Value (BreakValue, ClassValue, ContinueValue, DictValue, FloatValue, FunctionRefValue, InstanceValue, IntValue, ListValue, ModuleValue, NoneValue, StringValue, TupleValue))
 
 valueToReplOutput :: Value -> String
 valueToReplOutput value =
@@ -12,6 +12,7 @@ valueToReplOutput value =
     ListValue vals -> "[" ++ joinWithCommaSpace (map valueToReplOutput vals) ++ "]"
     TupleValue vals -> tupleToOutput vals
     DictValue pairs -> "{" ++ joinWithCommaSpace (map pairToOutput pairs) ++ "}"
+    ModuleValue moduleName _ -> "<module:" ++ moduleName ++ ">"
     FunctionRefValue name _ -> "<function " ++ name ++ ">"
     ClassValue name _ _ -> "<class " ++ name ++ ">"
     InstanceValue className _ -> "<" ++ className ++ " instance>"

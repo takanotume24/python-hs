@@ -169,6 +169,14 @@
 - [x] 仕様固定: `math` は組み込み、その他はローカル `.py` を解決
 - [x] 品質ゲート再実行（`cabal test` / `cabal run check-structure` / warning 0）
 
+## 現在のスコープ（P32/P33: module object import 互換）
+- [x] P32 完了: `Value` に `ModuleValue` を導入し、`print pkg` / `print pkg.sub` を VM/CLI で固定
+- [x] P32 完了: `IsTruthy` / 出力 / 属性参照（`LookupNameWithAttr`）を `ModuleValue` 対応
+- [x] P32 完了: warning 0 を維持した状態で `cabal test` / `cabal run check-structure` を再通過
+- [x] P33 着手: `import pkg.sub as s` の module object 呼び出し回帰を失敗テスト先行で追加
+- [x] P33 実装: `m = s; m.inc(4)` のような alias 再束縛後の呼び出しを VM runtime で解決
+- [ ] P33 継続: dotted alias 依存経路を段階縮小し、module object 中心の解決へ寄せる
+
 ## 現在のスコープ（P9: VM例外処理MVP）
 - [x] P9 開始: 次機能を `try/except` + `raise <expr>` の VM 専用導入として計画確定
 - [x] 失敗テスト先行: `try` / `except` / `raise` の lexer/parser ケースを追加

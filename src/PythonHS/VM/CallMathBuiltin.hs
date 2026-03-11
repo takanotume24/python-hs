@@ -1,7 +1,7 @@
 module PythonHS.VM.CallMathBuiltin (callMathBuiltin) where
 
 import PythonHS.Evaluator.ShowPos (showPos)
-import PythonHS.Evaluator.Value (Value (FloatValue, IntValue, StringValue))
+import PythonHS.Evaluator.Value (Value (FloatValue, IntValue, ModuleValue, StringValue))
 import PythonHS.Lexer.Position (Position)
 
 callMathBuiltin :: String -> [Value] -> Position -> Maybe (Either String Value)
@@ -16,11 +16,15 @@ callMathBuiltin name args pos =
     "pi" -> Just $ case args of
       [StringValue moduleName]
         | moduleName == "<module:math>" -> Right (FloatValue pi)
+      [ModuleValue moduleName _]
+        | moduleName == "math" -> Right (FloatValue pi)
       [_] -> Left ("Type error: pi expects math module receiver at " ++ showPos pos)
       _ -> Left ("Argument count mismatch when calling pi at " ++ showPos pos)
     "e" -> Just $ case args of
       [StringValue moduleName]
         | moduleName == "<module:math>" -> Right (FloatValue (exp 1))
+      [ModuleValue moduleName _]
+        | moduleName == "math" -> Right (FloatValue (exp 1))
       [_] -> Left ("Type error: e expects math module receiver at " ++ showPos pos)
       _ -> Left ("Argument count mismatch when calling e at " ++ showPos pos)
     _ -> Nothing
@@ -29,6 +33,12 @@ callMathBuiltin name args pos =
       case values of
         [StringValue moduleName, value]
           | moduleName == "<module:math>" ->
+              case value of
+                IntValue n -> Right (FloatValue (op (fromIntegral n)))
+                FloatValue n -> Right (FloatValue (op n))
+                _ -> Left ("Type error: " ++ fname ++ " expects number at " ++ showPos pos)
+        [ModuleValue moduleName _, value]
+          | moduleName == "math" ->
               case value of
                 IntValue n -> Right (FloatValue (op (fromIntegral n)))
                 FloatValue n -> Right (FloatValue (op n))

@@ -3,7 +3,7 @@ module PythonHS.VM.ExecuteCallFunction (executeCallFunction) where
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import PythonHS.Evaluator.ShowPos (showPos)
-import PythonHS.Evaluator.Value (Value (ClassValue, FunctionRefValue, InstanceValue, IntValue), Value)
+import PythonHS.Evaluator.Value (Value (ClassValue, FunctionRefValue, InstanceValue, IntValue, ModuleValue), Value)
 import PythonHS.Lexer.Position (Position)
 import PythonHS.VM.BindCallArguments (bindCallArguments)
 import PythonHS.VM.BindDefaults (bindDefaults)
@@ -16,6 +16,7 @@ import PythonHS.VM.FindMethodFunctionName (findMethodFunctionName)
 import PythonHS.VM.FirstKeywordArg (firstKeywordArg)
 import PythonHS.VM.Instruction (Instruction)
 import PythonHS.VM.LookupName (lookupName)
+import PythonHS.VM.ModulePrefixFor (modulePrefixFor)
 
 executeCallFunction ::
   ([Instruction] -> Int -> [Value] -> Map.Map String Value -> Map.Map String Value -> Map.Map String ([String], [(String, [Instruction])], [Instruction]) -> Set.Set String -> Map.Map Int [Value] -> Map.Map Int Int -> [Int] -> [String] -> Bool -> Either String (Maybe Value, Map.Map String Value, Map.Map String ([String], [(String, [Instruction])], [Instruction]), [String])) ->
@@ -119,24 +120,42 @@ executeCallFunction execute isTopLevel fname compiledArgs pos stack globalsEnv l
                in Right (instanceValue : stack, globalsNow, newLocalEnv, functionsNow, outputsNow)
 
     callBuiltinOrFail args globalsAfterArgs functionsAfterArgs outputsAfterArgs =
-      case firstKeywordArg compiledArgs of
-        Just (_, argPos)
-          | isBuiltinName fname ->
-              Left ("Argument error: keyword arguments are not supported for builtin " ++ fname ++ " at " ++ showPos argPos)
+      case callModuleMemberFunction args globalsAfterArgs functionsAfterArgs outputsAfterArgs of
+        Just result -> result
         Nothing ->
-          case callBuiltin fname args pos of
-            Just (Left err) -> Left err
-            Just (Right builtinValue) ->
-              let newLocalEnv = if isTopLevel then globalsAfterArgs else localEnv
-               in Right (builtinValue : stack, globalsAfterArgs, newLocalEnv, functionsAfterArgs, outputsAfterArgs)
-            Nothing -> Left ("Name error: undefined function " ++ fname ++ " at " ++ showPos pos)
-        _ ->
-          case callBuiltin fname args pos of
-            Just (Left err) -> Left err
-            Just (Right builtinValue) ->
-              let newLocalEnv = if isTopLevel then globalsAfterArgs else localEnv
-               in Right (builtinValue : stack, globalsAfterArgs, newLocalEnv, functionsAfterArgs, outputsAfterArgs)
-            Nothing -> Left ("Name error: undefined function " ++ fname ++ " at " ++ showPos pos)
+          case firstKeywordArg compiledArgs of
+            Just (_, argPos)
+              | isBuiltinName fname ->
+                  Left ("Argument error: keyword arguments are not supported for builtin " ++ fname ++ " at " ++ showPos argPos)
+            Nothing ->
+              case callBuiltin fname args pos of
+                Just (Left err) -> Left err
+                Just (Right builtinValue) ->
+                  let newLocalEnv = if isTopLevel then globalsAfterArgs else localEnv
+                   in Right (builtinValue : stack, globalsAfterArgs, newLocalEnv, functionsAfterArgs, outputsAfterArgs)
+                Nothing -> Left ("Name error: undefined function " ++ fname ++ " at " ++ showPos pos)
+            _ ->
+              case callBuiltin fname args pos of
+                Just (Left err) -> Left err
+                Just (Right builtinValue) ->
+                  let newLocalEnv = if isTopLevel then globalsAfterArgs else localEnv
+                   in Right (builtinValue : stack, globalsAfterArgs, newLocalEnv, functionsAfterArgs, outputsAfterArgs)
+                Nothing -> Left ("Name error: undefined function " ++ fname ++ " at " ++ showPos pos)
+
+    callModuleMemberFunction args globalsNow functionsNow outputsNow =
+      case args of
+        ModuleValue moduleName _ : restArgs ->
+          let memberFunctionName = modulePrefixFor (splitByDot moduleName) ++ fname
+           in case Map.lookup memberFunctionName functionsNow of
+                Just _ -> Just (callUserFunction memberFunctionName Nothing restArgs globalsNow functionsNow outputsNow)
+                Nothing -> Nothing
+        _ -> Nothing
+
+    splitByDot text =
+      case break (== '.') text of
+        (segment, []) -> [segment]
+        (segment, '.' : rest) -> segment : splitByDot rest
+        _ -> [text]
 
     isBuiltinName name =
       case callBuiltin name [] pos of

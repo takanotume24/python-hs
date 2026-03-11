@@ -8,6 +8,7 @@ data Value
   | ListValue [Value]
   | TupleValue [Value]
   | DictValue [(Value, Value)]
+  | ModuleValue String [(String, Value)]
   | FunctionRefValue String [(String, Value)]
   | ClassValue String (Maybe String) [(String, String)]
   | InstanceValue String [(String, Value)]

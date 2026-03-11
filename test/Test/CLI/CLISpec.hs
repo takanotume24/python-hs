@@ -153,6 +153,36 @@ spec = describe "runFile / replEvalLines" $ do
         res <- runFile mainPath
         res `shouldBe` Right ["5"]
 
+  it "binds package and submodule values for import pkg.sub in vm engine for runFile" $
+    withSystemTempDirectory "vm-local-submodule-import-module-values" $ \dir -> do
+      let packageDir = dir </> "pkg"
+      let initPath = packageDir </> "__init__.py"
+      let subPath = packageDir </> "sub.py"
+      let mainPath = dir </> "main.py"
+      createDirectory packageDir
+      writeFile initPath "pass\n"
+      writeFile subPath "def inc(x):\n  return x + 1\n"
+      writeFile mainPath "import pkg.sub\nprint pkg\nprint pkg.sub\n"
+      bracket (lookupEnv "PYTHON_HS_RUNNER_ENGINE") restoreRunnerEngine $ \_ -> do
+        setEnv "PYTHON_HS_RUNNER_ENGINE" "vm"
+        res <- runFile mainPath
+        res `shouldBe` Right ["<module:pkg>", "<module:pkg.sub>"]
+
+  it "supports module-object member call after alias assignment for import pkg.sub as s in vm engine for runFile" $
+    withSystemTempDirectory "vm-local-submodule-import-alias-assignment" $ \dir -> do
+      let packageDir = dir </> "pkg"
+      let initPath = packageDir </> "__init__.py"
+      let subPath = packageDir </> "sub.py"
+      let mainPath = dir </> "main.py"
+      createDirectory packageDir
+      writeFile initPath "pass\n"
+      writeFile subPath "def inc(x):\n  return x + 1\n"
+      writeFile mainPath "import pkg.sub as s\nm = s\nprint m.inc(4)\n"
+      bracket (lookupEnv "PYTHON_HS_RUNNER_ENGINE") restoreRunnerEngine $ \_ -> do
+        setEnv "PYTHON_HS_RUNNER_ENGINE" "vm"
+        res <- runFile mainPath
+        res `shouldBe` Right ["5"]
+
   it "runs from package import submodule in vm engine for runFile" $
     withSystemTempDirectory "vm-local-from-package-submodule-import" $ \dir -> do
       let packageDir = dir </> "pkg"

@@ -1,6 +1,6 @@
 module PythonHS.VM.IsTruthy (isTruthy) where
 
-import PythonHS.Evaluator.Value (Value (BreakValue, ClassValue, ContinueValue, DictValue, FloatValue, FunctionRefValue, InstanceValue, IntValue, ListValue, NoneValue, StringValue, TupleValue))
+import PythonHS.Evaluator.Value (Value (BreakValue, ClassValue, ContinueValue, DictValue, FloatValue, FunctionRefValue, InstanceValue, IntValue, ListValue, ModuleValue, NoneValue, StringValue, TupleValue))
 
 isTruthy :: Value -> Bool
 isTruthy value =
@@ -12,6 +12,7 @@ isTruthy value =
     ListValue vals -> not (null vals)
     TupleValue vals -> not (null vals)
     DictValue pairs -> not (null pairs)
+    ModuleValue _ _ -> True
     ClassValue _ _ _ -> True
     FunctionRefValue _ _ -> True
     InstanceValue _ _ -> True

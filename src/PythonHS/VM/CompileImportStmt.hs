@@ -2,9 +2,8 @@ module PythonHS.VM.CompileImportStmt (compileImportStmt) where
 
 import PythonHS.AST.Stmt (Stmt (FromImportStmt, ImportStmt))
 import PythonHS.Evaluator.ShowPos (showPos)
-import PythonHS.Evaluator.Value (Value (StringValue))
+import PythonHS.Evaluator.Value (Value (ModuleValue, StringValue))
 import PythonHS.VM.Instruction (Instruction (CallFunction, DefineFunction, LoadName, PushConst, ReturnTop, StoreName))
-import PythonHS.VM.IsBuiltinImportModule (isBuiltinImportModule)
 
 compileImportStmt :: Int -> Stmt -> Either String ([Instruction], Int)
 compileImportStmt importBaseIndex stmt =
@@ -22,15 +21,29 @@ compileImportStmt importBaseIndex stmt =
           pure (firstCode ++ restCode, restEnd)
 
     compileSingleImport baseIndex modulePath maybeAlias pos =
-      if isBuiltinImportModule modulePath
-        then
+      if null modulePath
+        then Left ("Import error: unsupported module  at " ++ showPos pos)
+        else
           let targetName =
                 case maybeAlias of
                   Just aliasName -> aliasName
                   Nothing -> last modulePath
-              marker = "<module:" ++ joinModulePath modulePath ++ ">"
-           in Right ([PushConst (StringValue marker), StoreName targetName], baseIndex + 2)
-        else Left ("Import error: unsupported module " ++ joinModulePath modulePath ++ " at " ++ showPos pos)
+              moduleName = joinModulePath modulePath
+              targetBindingCode = [PushConst (ModuleValue moduleName []), StoreName targetName]
+              rootBindingCode =
+                case maybeAlias of
+                  Just _ -> []
+                  Nothing ->
+                    if length modulePath > 1
+                      then
+                        case modulePath of
+                          rootName : _ ->
+                            let rootValue = buildRootModuleValue modulePath
+                             in [PushConst rootValue, StoreName rootName]
+                          [] -> []
+                      else []
+              allCode = targetBindingCode ++ rootBindingCode
+           in Right (allCode, baseIndex + length allCode)
 
     compileFromImport baseIndex relativeLevel modulePath importedNames pos
       | relativeLevel > 0 =
@@ -101,3 +114,16 @@ compileImportStmt importBaseIndex stmt =
         [] -> ""
         [single] -> single
         segment : others -> segment ++ "." ++ joinModulePath others
+
+    buildRootModuleValue segments =
+      case segments of
+        [] -> ModuleValue "" []
+        root : rest ->
+          ModuleValue root (buildAttrs root rest)
+
+    buildAttrs _ [] = []
+    buildAttrs prefix [leaf] =
+      [(leaf, ModuleValue (prefix ++ "." ++ leaf) [])]
+    buildAttrs prefix (x : xs) =
+      let nextPrefix = prefix ++ "." ++ x
+       in [(x, ModuleValue nextPrefix (buildAttrs nextPrefix xs))]
