@@ -104,6 +104,11 @@ library
     , PythonHS.VM.CompileTryExcept
     , PythonHS.VM.EvalBinaryOp
     , PythonHS.VM.FindModuleFile
+    , PythonHS.VM.CollectExports
+    , PythonHS.VM.IsBuiltinImportModule
+    , PythonHS.VM.ModuleKeyFor
+    , PythonHS.VM.ModulePrefixFor
+    , PythonHS.VM.ResolveTargetModulePath
     , PythonHS.VM.ResolveLocalImports
     , PythonHS.VM.TransformImportAliases
     , PythonHS.VM.CollectFunctionGlobalDecls

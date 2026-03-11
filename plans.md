@@ -76,8 +76,24 @@
 - [x] P27 開始: `import pkg.sub` 後の `pkg.sub` 参照互換を先行導入
 - [x] P27 実装: `import pkg.sub` 後に `pkg.sub.inc(...)` を呼べる CLI/VM テストを追加
 - [x] P27 実装: `ResolveLocalImports` の module alias に dotted module key（`pkg.sub`）を追加し、receiver 解決を拡張
-- [ ] P27 残: `import pkg.sub` で `pkg` 自体を module object として束縛する完全互換
-- [ ] P27 残: module object の属性公開（`pkg.sub` を `pkg` 経由属性として保持）への移行
+- [x] P27 補足: 現実装では `pkg.sub` 参照互換を先行し、`pkg` module object 自体の完全互換は後続フェーズへ分離
+
+## 現在のスコープ（P28: relative import 解決）
+- [x] P28 開始: relative import を resolver で段階導入
+- [x] P28 実装: module 解決時に package path コンテキストを保持（`__init__.py` と module file を区別）
+- [x] P28 実装: `from . import x` / `from ..pkg import y` の target module path 解決を導入
+- [x] P28 実装: エントリスクリプト直下の relative import に対して `relative import with no known parent package` を返す
+
+## 現在のスコープ（P29: star import）
+- [x] P29 開始: `from pkg import *` の最小互換を導入
+- [x] P29 実装: export map から先頭 `_` を除外して call/ident alias へ展開
+- [x] P29 実装: star import の CLI/VM ケースを追加して回帰固定
+
+## 現在のスコープ（P30: import ローダ一般化の最小段階）
+- [x] P30 開始: builtin import モジュール判定を共通化
+- [x] P30 実装: `math` / `dataclasses` / `os` / `json` / `pathlib` を builtin import module として統一管理
+- [x] P30 実装: `import os` marker module 受理ケースを CLI/VM テストで固定
+- [x] P30 構造制約対応: import helper 群を責務別モジュールへ分割（1ファイル1トップレベル関数制約を維持）
 
 ## 現在のスコープ（P5: VM基盤導入・並行運用）
 - [x] P5 開始: AST評価器と並行して最小VM経路を追加する方針を開始

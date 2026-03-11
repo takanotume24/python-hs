@@ -4,6 +4,7 @@ import PythonHS.AST.Stmt (Stmt (FromImportStmt, ImportStmt))
 import PythonHS.Evaluator.ShowPos (showPos)
 import PythonHS.Evaluator.Value (Value (StringValue))
 import PythonHS.VM.Instruction (Instruction (CallFunction, DefineFunction, LoadName, PushConst, ReturnTop, StoreName))
+import PythonHS.VM.IsBuiltinImportModule (isBuiltinImportModule)
 
 compileImportStmt :: Int -> Stmt -> Either String ([Instruction], Int)
 compileImportStmt importBaseIndex stmt =
@@ -21,21 +22,14 @@ compileImportStmt importBaseIndex stmt =
           pure (firstCode ++ restCode, restEnd)
 
     compileSingleImport baseIndex modulePath maybeAlias pos =
-      if modulePath == ["math"]
+      if isBuiltinImportModule modulePath
         then
           let targetName =
                 case maybeAlias of
                   Just aliasName -> aliasName
-                  Nothing -> "math"
-           in Right ([PushConst (StringValue "<module:math>"), StoreName targetName], baseIndex + 2)
-        else
-          if modulePath == ["dataclasses"]
-            then
-              let targetName =
-                    case maybeAlias of
-                      Just aliasName -> aliasName
-                      Nothing -> "dataclasses"
-               in Right ([PushConst (StringValue "<module:dataclasses>"), StoreName targetName], baseIndex + 2)
+                  Nothing -> last modulePath
+              marker = "<module:" ++ joinModulePath modulePath ++ ">"
+           in Right ([PushConst (StringValue marker), StoreName targetName], baseIndex + 2)
         else Left ("Import error: unsupported module " ++ joinModulePath modulePath ++ " at " ++ showPos pos)
 
     compileFromImport baseIndex relativeLevel modulePath importedNames pos

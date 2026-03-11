@@ -2,30 +2,31 @@ module PythonHS.VM.ResolveLocalImports (resolveLocalImports) where
 
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
+import Data.List (isPrefixOf)
 import PythonHS.AST.Program (Program (Program))
 import PythonHS.AST.Stmt
       ( Stmt
-      ( AnnAssignStmt,
-        AssignStmt,
-        AssignUnpackStmt,
-        DecoratedStmt,
-        FromImportStmt,
-        ImportStmt,
-        FunctionDefDefaultsStmt,
-        FunctionDefStmt
+      ( FromImportStmt,
+        ImportStmt
       )
   )
 import PythonHS.Lexer.ScanTokens (scanTokens)
+import PythonHS.VM.CollectExports (collectExports)
+import PythonHS.VM.ModuleKeyFor (moduleKeyFor)
+import PythonHS.VM.ModulePrefixFor (modulePrefixFor)
+import PythonHS.VM.ResolveTargetModulePath (resolveTargetModulePath)
+import PythonHS.VM.IsBuiltinImportModule (isBuiltinImportModule)
 import PythonHS.Parser.ParseProgram (parseProgram)
 import PythonHS.VM.FindModuleFile (findModuleFile)
 import PythonHS.VM.TransformImportAliases (transformImportAliases)
+import System.FilePath (takeFileName)
 
 resolveLocalImports :: [FilePath] -> Program -> IO (Either String Program)
 resolveLocalImports searchPaths (Program rootStmts) = do
-  result <- resolveStmts Map.empty Set.empty Set.empty Map.empty Map.empty Map.empty rootStmts
+  result <- resolveStmts Map.empty Set.empty Set.empty [] Map.empty Map.empty Map.empty rootStmts
   pure (fmap (\(stmts, _, _) -> Program stmts) result)
   where
-    resolveStmts cache visiting included moduleAlias callAlias identAlias stmts =
+    resolveStmts cache visiting included currentPackage moduleAlias callAlias identAlias stmts =
       case stmts of
         [] -> pure (Right ([], cache, included))
         stmt : rest ->
@@ -34,50 +35,57 @@ resolveLocalImports searchPaths (Program rootStmts) = do
               importResult <- resolveImportEntries cache visiting included moduleAlias modules
               case importResult of
                 Left err -> pure (Left err)
-                Right (localPrefixed, updatedCache, updatedIncluded, updatedModuleAlias, keptMathEntries) -> do
-                  restResult <- resolveStmts updatedCache visiting updatedIncluded updatedModuleAlias callAlias identAlias rest
+                Right (localPrefixed, updatedCache, updatedIncluded, updatedModuleAlias, keptBuiltinEntries) -> do
+                  restResult <- resolveStmts updatedCache visiting updatedIncluded currentPackage updatedModuleAlias callAlias identAlias rest
                   case restResult of
                     Left err -> pure (Left err)
                     Right (restStmts, cacheAfterRest, includedAfterRest) ->
-                      let mathStmt =
-                            if null keptMathEntries
+                      let builtinStmt =
+                            if null keptBuiltinEntries
                               then []
-                              else [ImportStmt keptMathEntries pos]
-                       in pure (Right (localPrefixed ++ mathStmt ++ restStmts, cacheAfterRest, includedAfterRest))
-            FromImportStmt relativeLevel modulePath importedNames pos
-              | relativeLevel > 0 ->
-                  pure (Left "Import error: relative import is not supported yet")
-              | importedNames == [("*", Nothing)] ->
-                  pure (Left "Import error: star import is not supported yet")
-              | modulePath == ["math"] -> do
-                  restResult <- resolveStmts cache visiting included moduleAlias callAlias identAlias rest
-                  case restResult of
-                    Left err -> pure (Left err)
-                    Right (restStmts, cacheAfterRest, includedAfterRest) ->
-                      pure (Right (FromImportStmt 0 modulePath importedNames pos : restStmts, cacheAfterRest, includedAfterRest))
-              | modulePath == ["dataclasses"] -> do
-                  restResult <- resolveStmts cache visiting included moduleAlias callAlias identAlias rest
-                  case restResult of
-                    Left err -> pure (Left err)
-                    Right (restStmts, cacheAfterRest, includedAfterRest) ->
-                      pure (Right (FromImportStmt 0 modulePath importedNames pos : restStmts, cacheAfterRest, includedAfterRest))
-              | otherwise -> do
-                  loadResult <- loadModule cache visiting included modulePath
-                  case loadResult of
-                    Left err -> pure (Left err)
-                    Right (moduleStmts, exportMap, updatedCache, updatedIncluded) -> do
-                      aliasResult <- resolveFromImports updatedCache visiting updatedIncluded modulePath moduleAlias callAlias identAlias [] importedNames exportMap
-                      case aliasResult of
+                              else [ImportStmt keptBuiltinEntries pos]
+                       in pure (Right (localPrefixed ++ builtinStmt ++ restStmts, cacheAfterRest, includedAfterRest))
+            FromImportStmt relativeLevel modulePath importedNames pos -> do
+              let targetModulePath = resolveTargetModulePath currentPackage relativeLevel modulePath
+              case targetModulePath of
+                Left err -> pure (Left err)
+                Right resolvedModulePath ->
+                  if importedNames == [("*", Nothing)]
+                    then do
+                      starResult <- resolveStarImport cache visiting included resolvedModulePath callAlias identAlias
+                      case starResult of
                         Left err -> pure (Left err)
-                        Right (extraModuleStmts, cacheAfterAliases, includedAfterAliases, moduleAliasAfterAliases, callAliasAfterAliases, identAliasAfterAliases) -> do
-                          restResult <- resolveStmts cacheAfterAliases visiting includedAfterAliases moduleAliasAfterAliases callAliasAfterAliases identAliasAfterAliases rest
+                        Right (moduleStmts, updatedCache, updatedIncluded, updatedCallAlias, updatedIdentAlias) -> do
+                          restResult <- resolveStmts updatedCache visiting updatedIncluded currentPackage moduleAlias updatedCallAlias updatedIdentAlias rest
                           case restResult of
                             Left err -> pure (Left err)
                             Right (restStmts, cacheAfterRest, includedAfterRest) ->
-                              pure (Right (moduleStmts ++ extraModuleStmts ++ restStmts, cacheAfterRest, includedAfterRest))
+                              pure (Right (moduleStmts ++ restStmts, cacheAfterRest, includedAfterRest))
+                    else
+                      if resolvedModulePath == ["math"] || resolvedModulePath == ["dataclasses"]
+                        then do
+                          restResult <- resolveStmts cache visiting included currentPackage moduleAlias callAlias identAlias rest
+                          case restResult of
+                            Left err -> pure (Left err)
+                            Right (restStmts, cacheAfterRest, includedAfterRest) ->
+                              pure (Right (FromImportStmt 0 resolvedModulePath importedNames pos : restStmts, cacheAfterRest, includedAfterRest))
+                        else do
+                          loadResult <- loadModule cache visiting included resolvedModulePath
+                          case loadResult of
+                            Left err -> pure (Left err)
+                            Right (moduleStmts, exportMap, updatedCache, updatedIncluded) -> do
+                              aliasResult <- resolveFromImports updatedCache visiting updatedIncluded resolvedModulePath moduleAlias callAlias identAlias [] importedNames exportMap
+                              case aliasResult of
+                                Left err -> pure (Left err)
+                                Right (extraModuleStmts, cacheAfterAliases, includedAfterAliases, moduleAliasAfterAliases, callAliasAfterAliases, identAliasAfterAliases) -> do
+                                  restResult <- resolveStmts cacheAfterAliases visiting includedAfterAliases currentPackage moduleAliasAfterAliases callAliasAfterAliases identAliasAfterAliases rest
+                                  case restResult of
+                                    Left err -> pure (Left err)
+                                    Right (restStmts, cacheAfterRest, includedAfterRest) ->
+                                      pure (Right (moduleStmts ++ extraModuleStmts ++ restStmts, cacheAfterRest, includedAfterRest))
             _ -> do
               let transformedStmt = transformImportAliases False moduleAlias callAlias identAlias stmt
-              restResult <- resolveStmts cache visiting included moduleAlias callAlias identAlias rest
+              restResult <- resolveStmts cache visiting included currentPackage moduleAlias callAlias identAlias rest
               case restResult of
                 Left err -> pure (Left err)
                 Right (restStmts, cacheAfterRest, includedAfterRest) -> pure (Right (transformedStmt : restStmts, cacheAfterRest, includedAfterRest))
@@ -86,10 +94,10 @@ resolveLocalImports searchPaths (Program rootStmts) = do
       case modules of
         [] -> pure (Right ([], cache, included, moduleAlias, []))
         (modulePath, maybeAlias) : rest ->
-          if modulePath == ["math"]
+          if isBuiltinImportModule modulePath
             then do
               restResult <- resolveImportEntries cache visiting included moduleAlias rest
-              pure (fmap (\(prefixed, nextCache, nextIncluded, nextModuleAlias, keptMath) -> (prefixed, nextCache, nextIncluded, nextModuleAlias, (modulePath, maybeAlias) : keptMath)) restResult)
+              pure (fmap (\(prefixed, nextCache, nextIncluded, nextModuleAlias, keptBuiltin) -> (prefixed, nextCache, nextIncluded, nextModuleAlias, (modulePath, maybeAlias) : keptBuiltin)) restResult)
             else do
               loadResult <- loadModule cache visiting included modulePath
               case loadResult of
@@ -133,7 +141,11 @@ resolveLocalImports searchPaths (Program rootStmts) = do
                       case parseProgram tokens of
                         Left parseErr -> pure (Left (show parseErr))
                         Right (Program moduleStmts) -> do
-                          resolvedModule <- resolveStmts cache (Set.insert moduleKey visiting) included Map.empty Map.empty Map.empty moduleStmts
+                          let packagePath =
+                                if takeFileName moduleFile == "__init__.py"
+                                  then modulePath
+                                  else dropLast modulePath
+                          resolvedModule <- resolveStmts cache (Set.insert moduleKey visiting) included packagePath Map.empty Map.empty Map.empty moduleStmts
                           case resolvedModule of
                             Left err -> pure (Left err)
                             Right (moduleResolvedStmts, cacheAfterResolve, includedAfterResolve) -> do
@@ -167,31 +179,18 @@ resolveLocalImports searchPaths (Program rootStmts) = do
                           modulePrefix = modulePrefixFor submodulePath
                        in resolveFromImports updatedCache visiting updatedIncluded modulePath (Map.insert aliasName modulePrefix moduleAlias) callAlias identAlias (reverse submoduleStmts ++ collected) rest exportMap
 
-    collectExports modulePath stmts =
-      foldl
-        (\acc stmt ->
-           case stmt of
-              AssignStmt name _ _ -> Map.insert name (moduleMemberName name) acc
-              AssignUnpackStmt names _ _ -> foldl (\m name -> Map.insert name (moduleMemberName name) m) acc names
-              AnnAssignStmt name _ (Just _) _ -> Map.insert name (moduleMemberName name) acc
-              FunctionDefStmt name _ _ _ -> Map.insert name (moduleMemberName name) acc
-              FunctionDefDefaultsStmt name _ _ _ _ -> Map.insert name (moduleMemberName name) acc
-              DecoratedStmt _ innerStmt _ ->
-                case innerStmt of
-                  FunctionDefStmt name _ _ _ -> Map.insert name (moduleMemberName name) acc
-                  FunctionDefDefaultsStmt name _ _ _ _ -> Map.insert name (moduleMemberName name) acc
-                  _ -> acc
-              _ -> acc
-        )
-        Map.empty
-        stmts
-      where
-        moduleMemberName name = modulePrefixFor modulePath ++ name
+    dropLast segments =
+      case segments of
+        [] -> []
+        [_] -> []
+        x : xs -> x : dropLast xs
 
-    moduleKeyFor segments = foldl1Join "." segments
-
-    modulePrefixFor segments = "__python_hs_local_" ++ foldl1Join "_" segments ++ "__"
-
-    foldl1Join _ [] = ""
-    foldl1Join _ [single] = single
-    foldl1Join sep (x : xs) = x ++ sep ++ foldl1Join sep xs
+    resolveStarImport cache visiting included modulePath callAlias identAlias = do
+      loadResult <- loadModule cache visiting included modulePath
+      case loadResult of
+        Left err -> pure (Left err)
+        Right (moduleStmts, exportMap, updatedCache, updatedIncluded) ->
+          let visibleExports = Map.toList (Map.filterWithKey (\name _ -> not ("_" `isPrefixOf` name)) exportMap)
+              updatedCallAlias = foldl (\m (k, v) -> Map.insert k v m) callAlias visibleExports
+              updatedIdentAlias = foldl (\m (k, v) -> Map.insert k v m) identAlias visibleExports
+           in pure (Right (moduleStmts, updatedCache, updatedIncluded, updatedCallAlias, updatedIdentAlias))

@@ -250,12 +250,12 @@ spec = describe "runFile / replEvalLines" $ do
 
   it "reports module-not-found import error in vm engine for runFile" $
     withSystemTempFile "vm-import-unsupported.pyhs" $ \path h -> do
-      hPutStr h "import os\n"
+      hPutStr h "import ssl\n"
       hClose h
       bracket (lookupEnv "PYTHON_HS_RUNNER_ENGINE") restoreRunnerEngine $ \_ -> do
         setEnv "PYTHON_HS_RUNNER_ENGINE" "vm"
         res <- runFile path
-        res `shouldBe` Left "Import error: module not found os"
+        res `shouldBe` Left "Import error: module not found ssl"
 
   it "reports unsupported relative import in vm engine for runFile" $
     withSystemTempFile "vm-relative-import-unsupported.pyhs" $ \path h -> do
@@ -264,20 +264,46 @@ spec = describe "runFile / replEvalLines" $ do
       bracket (lookupEnv "PYTHON_HS_RUNNER_ENGINE") restoreRunnerEngine $ \_ -> do
         setEnv "PYTHON_HS_RUNNER_ENGINE" "vm"
         res <- runFile path
-        res `shouldBe` Left "Import error: relative import is not supported yet"
+        res `shouldBe` Left "Import error: relative import with no known parent package"
 
-  it "reports unsupported star import in vm engine for runFile" $
-    withSystemTempDirectory "vm-star-import-unsupported" $ \dir -> do
+  it "runs star import from package in vm engine for runFile" $
+    withSystemTempDirectory "vm-star-import-package" $ \dir -> do
       let packageDir = dir </> "pkg"
       let initPath = packageDir </> "__init__.py"
       let mainPath = dir </> "main.py"
       createDirectory packageDir
-      writeFile initPath "x = 1\n"
-      writeFile mainPath "from pkg import *\n"
+      writeFile initPath "x = 1\n_y = 2\n"
+      writeFile mainPath "from pkg import *\nprint x\n"
       bracket (lookupEnv "PYTHON_HS_RUNNER_ENGINE") restoreRunnerEngine $ \_ -> do
         setEnv "PYTHON_HS_RUNNER_ENGINE" "vm"
         res <- runFile mainPath
-        res `shouldBe` Left "Import error: star import is not supported yet"
+        res `shouldBe` Right ["1"]
+
+  it "runs relative import inside package module in vm engine for runFile" $
+    withSystemTempDirectory "vm-relative-import-in-package" $ \dir -> do
+      let packageDir = dir </> "pkg"
+      let initPath = packageDir </> "__init__.py"
+      let utilPath = packageDir </> "util.py"
+      let modPath = packageDir </> "mod.py"
+      let mainPath = dir </> "main.py"
+      createDirectory packageDir
+      writeFile initPath "pass\n"
+      writeFile utilPath "def inc(x):\n  return x + 1\n"
+      writeFile modPath "from . import util\ndef run(x):\n  return util.inc(x)\n"
+      writeFile mainPath "import pkg.mod\nprint mod.run(4)\n"
+      bracket (lookupEnv "PYTHON_HS_RUNNER_ENGINE") restoreRunnerEngine $ \_ -> do
+        setEnv "PYTHON_HS_RUNNER_ENGINE" "vm"
+        res <- runFile mainPath
+        res `shouldBe` Right ["5"]
+
+  it "runs builtin module import for os marker in vm engine for runFile" $
+    withSystemTempFile "vm-import-os.pyhs" $ \path h -> do
+      hPutStr h "import os\nprint os\n"
+      hClose h
+      bracket (lookupEnv "PYTHON_HS_RUNNER_ENGINE") restoreRunnerEngine $ \_ -> do
+        setEnv "PYTHON_HS_RUNNER_ENGINE" "vm"
+        res <- runFile path
+        res `shouldBe` Right ["<module:os>"]
 
   it "reports name-not-found error for from-import missing member in vm engine for runFile" $
     withSystemTempDirectory "vm-from-import-missing-member" $ \dir -> do
