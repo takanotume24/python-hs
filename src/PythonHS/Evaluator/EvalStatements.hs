@@ -67,7 +67,7 @@ evalStatements env fenv outputs (stmt : rest) =
     ContinueStmt pos -> Right (env, fenv, outputs, Just (ContinueValue, pos))
     GlobalStmt _ _ -> evalStatements env fenv outputs rest
     ImportStmt _ _ -> evalStatements env fenv outputs rest
-    FromImportStmt _ _ _ -> evalStatements env fenv outputs rest
+    FromImportStmt _ _ _ _ -> evalStatements env fenv outputs rest
     TryExceptStmt _ _ _ pos -> Left $ "Runtime error: try/except is only supported in vm engine at " ++ showPos pos
     MatchStmt _ _ pos -> Left $ "Runtime error: match/case is only supported in vm engine at " ++ showPos pos
     RaiseStmt expr pos -> do

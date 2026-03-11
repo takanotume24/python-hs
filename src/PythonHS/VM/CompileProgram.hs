@@ -57,7 +57,7 @@ compileProgram (Program stmts) = do
           compileMatch compileExprAt compileStatements baseIndex inFunction maybeLoop subjectExpr matchCases
         ImportStmt _ _ ->
           compileImportStmt baseIndex stmt
-        FromImportStmt _ _ _ ->
+        FromImportStmt _ _ _ _ ->
           compileImportStmt baseIndex stmt
         AssignStmt name expr _ -> do
           (exprCode, exprEnd) <- compileExprAt baseIndex expr

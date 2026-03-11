@@ -21,7 +21,7 @@ TDD（`hspec`）で機能を拡張し、`Lexer -> Parser -> Evaluator -> Runner/
 - [x] 複合代入（`+= -= *= /= %= //=`）
 - [x] 制御構文キーワード（`if/elif/else`, `while`, `for/in`, `break`, `continue`）
 - [x] 関数関連（`def`, `return`, `global`, `pass`）
-- [x] `import` キーワード（最小: `import math`）
+- [x] `import` キーワード（`import x`, `import x as y`, `from x import y`, `from x import y as z`）
 - [x] 例外構文キーワード（`try`, `except`, `finally`, `raise`）
 - [x] パターンマッチ構文キーワード（`match`, `case`）
 - [x] `INDENT`/`DEDENT` トークン生成（複文ブロック）
@@ -78,7 +78,8 @@ TDD（`hspec`）で機能を拡張し、`Lexer -> Parser -> Evaluator -> Runner/
 
 補足:
 - `math` は現時点で VM 実行経路を対象にした MVP 実装です。
-- `import` は現時点で `math` のみを受理し、`import os` など他モジュールは `Import error` になります。
+- `import` は現時点で VM 実行経路を対象に、`math` / `dataclasses` / ローカル `module.py` / `package/__init__.py` / package submodule（`pkg.sub`, `from pkg import sub` など）を受理します。
+- 標準ライブラリの任意モジュール（例: `os`）は未対応で、`Import error` になります。
 - `math.pi` / `math.e` は現仕様では関数形式（`math.pi()` / `math.e()`）で利用します。
 - 例外処理（`try/except/finally`, `raise`）は現時点で VM 実行経路のみを対象にした MVP 実装です。
 - `match/case` は現時点で VM 実行経路のみを対象にした MVP 実装です。
@@ -87,8 +88,8 @@ TDD（`hspec`）で機能を拡張し、`Lexer -> Parser -> Evaluator -> Runner/
 
 ## MVP外・未対応（明示）
 - [ ] Python完全互換（あくまでサブセット）
-- [ ] 任意オブジェクトの一般メソッド解決（現状は組み込み相当の構文糖衣のみ）
-- [ ] 高度な例外処理（型指定except など）、`match/case` の完全CPython互換、汎用import（任意モジュール読み込み）など
+- [ ] Pythonの属性解決/メソッド解決の完全互換（descriptor/protocol を含む）
+- [ ] `match/case` の完全CPython互換、汎用import（任意モジュール読み込み）など
 
 ## 開発環境（Nix Flakes）
 

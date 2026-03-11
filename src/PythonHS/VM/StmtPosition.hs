@@ -26,7 +26,7 @@ stmtPosition stmt =
     ClassDefStmt _ _ _ pos -> pos
     GlobalStmt _ pos -> pos
     ImportStmt _ pos -> pos
-    FromImportStmt _ _ pos -> pos
+    FromImportStmt _ _ _ pos -> pos
     TryExceptStmt _ _ _ pos -> pos
     MatchStmt _ _ pos -> pos
     RaiseStmt _ pos -> pos

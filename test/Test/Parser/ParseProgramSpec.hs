@@ -234,7 +234,76 @@ spec = describe "parseProgram" $ do
       ]
       `shouldBe` Right
         ( Program
-            [ FromImportStmt ["pkg", "mod"] [("sqrt", Just "s")] (Position 1 1)
+            [ FromImportStmt 0 ["pkg", "mod"] [("sqrt", Just "s")] (Position 1 1)
+            ]
+        )
+
+  it "parses relative from-import statement" $ do
+    parseProgram
+      [ Token FromToken "from" (Position 1 1),
+        Token DotToken "." (Position 1 6),
+        Token DotToken "." (Position 1 7),
+        Token IdentifierToken "pkg" (Position 1 8),
+        Token ImportToken "import" (Position 1 12),
+        Token IdentifierToken "x" (Position 1 19),
+        Token NewlineToken "\\n" (Position 1 20),
+        Token EOFToken "" (Position 2 1)
+      ]
+      `shouldBe` Right
+        ( Program
+            [ FromImportStmt 2 ["pkg"] [("x", Nothing)] (Position 1 1)
+            ]
+        )
+
+  it "parses relative from-import statement without module path" $ do
+    parseProgram
+      [ Token FromToken "from" (Position 1 1),
+        Token DotToken "." (Position 1 6),
+        Token ImportToken "import" (Position 1 8),
+        Token IdentifierToken "x" (Position 1 15),
+        Token NewlineToken "\\n" (Position 1 16),
+        Token EOFToken "" (Position 2 1)
+      ]
+      `shouldBe` Right
+        ( Program
+            [ FromImportStmt 1 [] [("x", Nothing)] (Position 1 1)
+            ]
+        )
+
+  it "parses from-import star" $ do
+    parseProgram
+      [ Token FromToken "from" (Position 1 1),
+        Token IdentifierToken "pkg" (Position 1 6),
+        Token ImportToken "import" (Position 1 10),
+        Token StarToken "*" (Position 1 17),
+        Token NewlineToken "\\n" (Position 1 18),
+        Token EOFToken "" (Position 2 1)
+      ]
+      `shouldBe` Right
+        ( Program
+            [ FromImportStmt 0 ["pkg"] [("*", Nothing)] (Position 1 1)
+            ]
+        )
+
+  it "parses parenthesized from-import with trailing comma" $ do
+    parseProgram
+      [ Token FromToken "from" (Position 1 1),
+        Token IdentifierToken "pkg" (Position 1 6),
+        Token ImportToken "import" (Position 1 10),
+        Token LParenToken "(" (Position 1 17),
+        Token IdentifierToken "a" (Position 1 18),
+        Token CommaToken "," (Position 1 19),
+        Token IdentifierToken "b" (Position 1 21),
+        Token AsToken "as" (Position 1 23),
+        Token IdentifierToken "c" (Position 1 26),
+        Token CommaToken "," (Position 1 27),
+        Token RParenToken ")" (Position 1 28),
+        Token NewlineToken "\\n" (Position 1 29),
+        Token EOFToken "" (Position 2 1)
+      ]
+      `shouldBe` Right
+        ( Program
+            [ FromImportStmt 0 ["pkg"] [("a", Nothing), ("b", Just "c")] (Position 1 1)
             ]
         )
 

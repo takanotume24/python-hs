@@ -138,6 +138,21 @@ spec = describe "runFile / replEvalLines" $ do
         res <- runFile mainPath
         res `shouldBe` Right ["5"]
 
+  it "runs package submodule import via pkg.sub receiver in vm engine for runFile" $
+    withSystemTempDirectory "vm-local-submodule-import-pkg-receiver" $ \dir -> do
+      let packageDir = dir </> "pkg"
+      let initPath = packageDir </> "__init__.py"
+      let subPath = packageDir </> "sub.py"
+      let mainPath = dir </> "main.py"
+      createDirectory packageDir
+      writeFile initPath "pass\n"
+      writeFile subPath "def inc(x):\n  return x + 1\n"
+      writeFile mainPath "import pkg.sub\nprint pkg.sub.inc(4)\n"
+      bracket (lookupEnv "PYTHON_HS_RUNNER_ENGINE") restoreRunnerEngine $ \_ -> do
+        setEnv "PYTHON_HS_RUNNER_ENGINE" "vm"
+        res <- runFile mainPath
+        res `shouldBe` Right ["5"]
+
   it "runs from package import submodule in vm engine for runFile" $
     withSystemTempDirectory "vm-local-from-package-submodule-import" $ \dir -> do
       let packageDir = dir </> "pkg"
@@ -170,6 +185,60 @@ spec = describe "runFile / replEvalLines" $ do
         res <- runFile mainPath
         res `shouldBe` Right ["5"]
 
+  it "runs deep package submodule import in vm engine for runFile" $
+    withSystemTempDirectory "vm-local-deep-submodule-import" $ \dir -> do
+      let packageDir = dir </> "pkg"
+      let subDir = packageDir </> "sub"
+      let initPath = packageDir </> "__init__.py"
+      let subInitPath = subDir </> "__init__.py"
+      let deepPath = subDir </> "deep.py"
+      let mainPath = dir </> "main.py"
+      createDirectoryIfMissing True subDir
+      writeFile initPath "pass\n"
+      writeFile subInitPath "pass\n"
+      writeFile deepPath "def inc(x):\n  return x + 1\n"
+      writeFile mainPath "import pkg.sub.deep\nprint deep.inc(4)\n"
+      bracket (lookupEnv "PYTHON_HS_RUNNER_ENGINE") restoreRunnerEngine $ \_ -> do
+        setEnv "PYTHON_HS_RUNNER_ENGINE" "vm"
+        res <- runFile mainPath
+        res `shouldBe` Right ["5"]
+
+  it "runs from package submodule import deep module in vm engine for runFile" $
+    withSystemTempDirectory "vm-local-from-submodule-import-deep" $ \dir -> do
+      let packageDir = dir </> "pkg"
+      let subDir = packageDir </> "sub"
+      let initPath = packageDir </> "__init__.py"
+      let subInitPath = subDir </> "__init__.py"
+      let deepPath = subDir </> "deep.py"
+      let mainPath = dir </> "main.py"
+      createDirectoryIfMissing True subDir
+      writeFile initPath "pass\n"
+      writeFile subInitPath "pass\n"
+      writeFile deepPath "def inc(x):\n  return x + 1\n"
+      writeFile mainPath "from pkg.sub import deep\nprint deep.inc(4)\n"
+      bracket (lookupEnv "PYTHON_HS_RUNNER_ENGINE") restoreRunnerEngine $ \_ -> do
+        setEnv "PYTHON_HS_RUNNER_ENGINE" "vm"
+        res <- runFile mainPath
+        res `shouldBe` Right ["5"]
+
+  it "runs from deep package submodule import member in vm engine for runFile" $
+    withSystemTempDirectory "vm-local-from-deep-submodule-member-import" $ \dir -> do
+      let packageDir = dir </> "pkg"
+      let subDir = packageDir </> "sub"
+      let initPath = packageDir </> "__init__.py"
+      let subInitPath = subDir </> "__init__.py"
+      let deepPath = subDir </> "deep.py"
+      let mainPath = dir </> "main.py"
+      createDirectoryIfMissing True subDir
+      writeFile initPath "pass\n"
+      writeFile subInitPath "pass\n"
+      writeFile deepPath "def inc(x):\n  return x + 1\n"
+      writeFile mainPath "from pkg.sub.deep import inc as i\nprint i(4)\n"
+      bracket (lookupEnv "PYTHON_HS_RUNNER_ENGINE") restoreRunnerEngine $ \_ -> do
+        setEnv "PYTHON_HS_RUNNER_ENGINE" "vm"
+        res <- runFile mainPath
+        res `shouldBe` Right ["5"]
+
   it "reports math type error in vm engine for runFile" $
     withSystemTempFile "vm-math-type-error.pyhs" $ \path h -> do
       hPutStr h "import math\nprint math.sqrt(\"x\")\n"
@@ -187,6 +256,57 @@ spec = describe "runFile / replEvalLines" $ do
         setEnv "PYTHON_HS_RUNNER_ENGINE" "vm"
         res <- runFile path
         res `shouldBe` Left "Import error: module not found os"
+
+  it "reports unsupported relative import in vm engine for runFile" $
+    withSystemTempFile "vm-relative-import-unsupported.pyhs" $ \path h -> do
+      hPutStr h "from . import x\n"
+      hClose h
+      bracket (lookupEnv "PYTHON_HS_RUNNER_ENGINE") restoreRunnerEngine $ \_ -> do
+        setEnv "PYTHON_HS_RUNNER_ENGINE" "vm"
+        res <- runFile path
+        res `shouldBe` Left "Import error: relative import is not supported yet"
+
+  it "reports unsupported star import in vm engine for runFile" $
+    withSystemTempDirectory "vm-star-import-unsupported" $ \dir -> do
+      let packageDir = dir </> "pkg"
+      let initPath = packageDir </> "__init__.py"
+      let mainPath = dir </> "main.py"
+      createDirectory packageDir
+      writeFile initPath "x = 1\n"
+      writeFile mainPath "from pkg import *\n"
+      bracket (lookupEnv "PYTHON_HS_RUNNER_ENGINE") restoreRunnerEngine $ \_ -> do
+        setEnv "PYTHON_HS_RUNNER_ENGINE" "vm"
+        res <- runFile mainPath
+        res `shouldBe` Left "Import error: star import is not supported yet"
+
+  it "reports name-not-found error for from-import missing member in vm engine for runFile" $
+    withSystemTempDirectory "vm-from-import-missing-member" $ \dir -> do
+      let packageDir = dir </> "pkg"
+      let initPath = packageDir </> "__init__.py"
+      let mainPath = dir </> "main.py"
+      createDirectory packageDir
+      writeFile initPath "x = 1\n"
+      writeFile mainPath "from pkg import missing\n"
+      bracket (lookupEnv "PYTHON_HS_RUNNER_ENGINE") restoreRunnerEngine $ \_ -> do
+        setEnv "PYTHON_HS_RUNNER_ENGINE" "vm"
+        res <- runFile mainPath
+        res `shouldBe` Left "Import error: name not found missing in pkg"
+
+  it "reports name-not-found error for nested from-import missing member in vm engine for runFile" $
+    withSystemTempDirectory "vm-from-import-missing-nested-member" $ \dir -> do
+      let packageDir = dir </> "pkg"
+      let subDir = packageDir </> "sub"
+      let initPath = packageDir </> "__init__.py"
+      let subInitPath = subDir </> "__init__.py"
+      let mainPath = dir </> "main.py"
+      createDirectoryIfMissing True subDir
+      writeFile initPath "pass\n"
+      writeFile subInitPath "x = 1\n"
+      writeFile mainPath "from pkg.sub import missing\n"
+      bracket (lookupEnv "PYTHON_HS_RUNNER_ENGINE") restoreRunnerEngine $ \_ -> do
+        setEnv "PYTHON_HS_RUNNER_ENGINE" "vm"
+        res <- runFile mainPath
+        res `shouldBe` Left "Import error: name not found missing in pkg.sub"
 
   it "handles try/except and raise in vm engine for runFile" $
     withSystemTempFile "vm-try-except-raise.pyhs" $ \path h -> do

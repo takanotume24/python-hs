@@ -9,7 +9,7 @@ compileImportStmt :: Int -> Stmt -> Either String ([Instruction], Int)
 compileImportStmt importBaseIndex stmt =
   case stmt of
     ImportStmt modules pos -> compileImportModules importBaseIndex modules pos
-    FromImportStmt modulePath importedNames pos -> compileFromImport importBaseIndex modulePath importedNames pos
+    FromImportStmt relativeLevel modulePath importedNames pos -> compileFromImport importBaseIndex relativeLevel modulePath importedNames pos
     _ -> Left "VM compile error: compileImportStmt called with non-import statement"
   where
     compileImportModules baseIndex modules pos =
@@ -38,20 +38,20 @@ compileImportStmt importBaseIndex stmt =
                in Right ([PushConst (StringValue "<module:dataclasses>"), StoreName targetName], baseIndex + 2)
         else Left ("Import error: unsupported module " ++ joinModulePath modulePath ++ " at " ++ showPos pos)
 
-    compileFromImport baseIndex modulePath importedNames pos =
-      if null importedNames
-        then Left ("Import error: expected imported name at " ++ showPos pos)
-        else
-          if modulePath == ["math"]
-            then do
-              let moduleAlias = "__python_hs_import_math"
-                  setupCode = [PushConst (StringValue "<module:math>"), StoreName moduleAlias]
-              (importedCode, importedEnd) <- compileFromMathItems (baseIndex + 2) moduleAlias importedNames pos
-              pure (setupCode ++ importedCode, importedEnd)
-            else
-              if modulePath == ["dataclasses"]
-                then compileFromDataclassesItems baseIndex importedNames pos
-            else Left ("Import error: unsupported module " ++ joinModulePath modulePath ++ " at " ++ showPos pos)
+    compileFromImport baseIndex relativeLevel modulePath importedNames pos
+      | relativeLevel > 0 =
+          Left ("Import error: relative import is not supported in vm engine at " ++ showPos pos)
+      | null importedNames =
+          Left ("Import error: expected imported name at " ++ showPos pos)
+      | modulePath == ["math"] = do
+          let moduleAlias = "__python_hs_import_math"
+              setupCode = [PushConst (StringValue "<module:math>"), StoreName moduleAlias]
+          (importedCode, importedEnd) <- compileFromMathItems (baseIndex + 2) moduleAlias importedNames pos
+          pure (setupCode ++ importedCode, importedEnd)
+      | modulePath == ["dataclasses"] =
+          compileFromDataclassesItems baseIndex importedNames pos
+      | otherwise =
+          Left ("Import error: unsupported module " ++ joinModulePath modulePath ++ " at " ++ showPos pos)
 
     compileFromMathItems baseIndex moduleAlias importedNames pos =
       case importedNames of

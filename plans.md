@@ -50,6 +50,35 @@
 - [x] P23 構造制約対応: `FindModuleFile` を分離し、`ResolveLocalImports` の行数制約を維持
 - [x] 品質ゲート再実行（`cabal test` / `cabal run check-structure` / warning 0）
 
+## 現在のスコープ（P24: 汎用 import 拡張フェーズ3）
+- [x] P24 開始: 深い package submodule import の互換を確認・固定するスコープを開始
+- [x] P24 実装: `import pkg.sub.deep` を CLI/VM テストで固定
+- [x] P24 実装: `from pkg.sub import deep` を CLI/VM テストで固定
+- [x] P24 実装: `from pkg.sub.deep import fn as f` を CLI/VM テストで固定
+- [x] P24 実装: 深い submodule 代表ケースが既存 `ResolveLocalImports` 実装で通ることを回帰として固定
+- [x] P24 ドキュメント整合: README の import 対応範囲を実装現状（math/dataclasses/local/package/submodule）へ更新
+
+## 現在のスコープ（P25: from-import エラー互換）
+- [x] P25 開始: `from ... import ...` 未解決時のエラー文言を互換寄りに整えるスコープを開始
+- [x] P25 実装: `from pkg import missing` / `from pkg.sub import missing` の失敗テストを追加
+- [x] P25 実装: `ResolveLocalImports` の from-import で、member が export でも submodule でもない場合は `Import error: name not found <name> in <module>` を返すよう更新
+- [x] P25 実装: submodule が存在するケース（`from pkg.sub import deep` など）は従来どおり解決されることを回帰で確認
+
+## 現在のスコープ（P26: import 構文完全化）
+- [x] P26 開始: import 構文の未対応（relative / star / 括弧付き from-import / 末尾カンマ）を parser で受理するスコープを開始
+- [x] P26 実装: `FromImportStmt` に relative level を追加（`FromImportStmt Int [String] ...`）
+- [x] P26 実装: parser に `from . import x` / `from ..pkg import y` を追加
+- [x] P26 実装: parser に `from pkg import *` を追加
+- [x] P26 実装: parser に `from pkg import (a, b as c,)` を追加
+- [x] P26 実装: VM 実行時の未実装機能（relative / star）を明示エラー化
+
+## 現在のスコープ（P27: module 参照互換の段階導入）
+- [x] P27 開始: `import pkg.sub` 後の `pkg.sub` 参照互換を先行導入
+- [x] P27 実装: `import pkg.sub` 後に `pkg.sub.inc(...)` を呼べる CLI/VM テストを追加
+- [x] P27 実装: `ResolveLocalImports` の module alias に dotted module key（`pkg.sub`）を追加し、receiver 解決を拡張
+- [ ] P27 残: `import pkg.sub` で `pkg` 自体を module object として束縛する完全互換
+- [ ] P27 残: module object の属性公開（`pkg.sub` を `pkg` 経由属性として保持）への移行
+
 ## 現在のスコープ（P5: VM基盤導入・並行運用）
 - [x] P5 開始: AST評価器と並行して最小VM経路を追加する方針を開始
 - [x] VM縦スライス1: `runSourceVm` を追加（lex/parse/compile/execute）

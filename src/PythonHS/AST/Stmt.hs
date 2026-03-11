@@ -25,7 +25,7 @@ data Stmt
   | ContinueStmt Position
   | GlobalStmt String Position
   | ImportStmt [([String], Maybe String)] Position
-  | FromImportStmt [String] [(String, Maybe String)] Position
+  | FromImportStmt Int [String] [(String, Maybe String)] Position -- relative level, module path, imported names
   | TryExceptStmt [Stmt] [(Maybe String, Maybe String, [Stmt], Position)] (Maybe [Stmt]) Position
   | MatchStmt Expr [(Pattern, Maybe Expr, [Stmt], Position)] Position
   | RaiseStmt Expr Position
