@@ -45,6 +45,9 @@ spec = describe "runSourceVm (vm mvp)" $ do
   it "supports as-pattern captures in match" $ do
     runSourceVm "x = [4, 5]\nmatch x:\n  case [a, b] as pair:\n    print a\n    print b\n    print pair\n  case _:\n    print 0\n" `shouldBe` Right ["4", "5", "[4, 5]"]
 
+  it "supports mapping pattern double-star rest capture" $ do
+    runSourceVm "x = {\"k\": 8, \"x\": 9}\nmatch x:\n  case {\"k\": v, **rest}:\n    print v\n    print rest\n  case _:\n    print 0\n" `shouldBe` Right ["8", "{x: 9}"]
+
   it "supports import math with MVP functions" $ do
     runSourceVm "import math\nprint math.sqrt(9)\nprint math.sin(0)\nprint math.pi()\nprint math.e()\n" `shouldBe` Right ["3.0", "0.0", "3.141592653589793", "2.718281828459045"]
 

@@ -10,5 +10,5 @@ data Pattern
   | AsPattern Pattern String Position
   | OrPattern [Pattern] Position
   | SequencePattern [Pattern] (Maybe String) Position
-  | MappingPattern [(Expr, Pattern)] Position
+  | MappingPattern [(Expr, Pattern)] (Maybe String) Position
   deriving (Eq, Show)

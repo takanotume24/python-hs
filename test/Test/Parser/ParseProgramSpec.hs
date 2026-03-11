@@ -451,8 +451,9 @@ spec = describe "parseProgram" $ do
                     (Position 2 3)
                   ),
                   ( MappingPattern
-                      [(StringExpr "k" (Position 4 9), CapturePattern "v" (Position 4 14))]
-                      (Position 4 8),
+                       [(StringExpr "k" (Position 4 9), CapturePattern "v" (Position 4 14))]
+                       Nothing
+                       (Position 4 8),
                     Nothing,
                     [PrintStmt (IdentifierExpr "v" (Position 5 11)) (Position 5 5)],
                     (Position 4 3)
@@ -461,6 +462,50 @@ spec = describe "parseProgram" $ do
                     Nothing,
                     [PrintStmt (IntegerExpr 0 (Position 7 11)) (Position 7 5)],
                     (Position 6 3)
+                  )
+                ]
+                (Position 1 1)
+            ]
+        )
+
+  it "parses mapping pattern with double-star rest capture" $ do
+    parseProgram
+      [ Token MatchToken "match" (Position 1 1),
+        Token IdentifierToken "x" (Position 1 7),
+        Token ColonToken ":" (Position 1 8),
+        Token NewlineToken "\\n" (Position 1 9),
+        Token IndentToken "<INDENT>" (Position 2 1),
+        Token CaseToken "case" (Position 2 3),
+        Token LBraceToken "{" (Position 2 8),
+        Token StringToken "k" (Position 2 9),
+        Token ColonToken ":" (Position 2 12),
+        Token IdentifierToken "v" (Position 2 14),
+        Token CommaToken "," (Position 2 15),
+        Token StarToken "*" (Position 2 17),
+        Token StarToken "*" (Position 2 18),
+        Token IdentifierToken "rest" (Position 2 19),
+        Token RBraceToken "}" (Position 2 23),
+        Token ColonToken ":" (Position 2 24),
+        Token NewlineToken "\\n" (Position 2 25),
+        Token IndentToken "<INDENT>" (Position 3 1),
+        Token PrintToken "print" (Position 3 5),
+        Token IdentifierToken "rest" (Position 3 11),
+        Token NewlineToken "\\n" (Position 3 15),
+        Token DedentToken "<DEDENT>" (Position 4 1),
+        Token DedentToken "<DEDENT>" (Position 4 1),
+        Token EOFToken "" (Position 4 1)
+      ]
+      `shouldBe` Right
+        ( Program
+            [ MatchStmt
+                (IdentifierExpr "x" (Position 1 7))
+                [ ( MappingPattern
+                      [(StringExpr "k" (Position 2 9), CapturePattern "v" (Position 2 14))]
+                      (Just "rest")
+                      (Position 2 8),
+                    Nothing,
+                    [PrintStmt (IdentifierExpr "rest" (Position 3 11)) (Position 3 5)],
+                    (Position 2 3)
                   )
                 ]
                 (Position 1 1)

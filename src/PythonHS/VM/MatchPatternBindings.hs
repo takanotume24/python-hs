@@ -24,9 +24,17 @@ matchPatternBindings patternValue subjectValue =
         TupleValue values ->
           matchSequenceValue items maybeRest values
         _ -> Nothing
-    MappingPattern pairs _ ->
+    MappingPattern pairs maybeRestCapture _ ->
       case subjectValue of
-        DictValue entries -> matchMappingPairs pairs entries []
+        DictValue entries ->
+          case matchMappingPairs pairs entries [] [] of
+            Just (bindings, matchedKeys) ->
+              case maybeRestCapture of
+                Nothing -> Just bindings
+                Just restName ->
+                  let restEntries = filter (\(k, _) -> notElem k matchedKeys) entries
+                   in Just (bindings ++ [(restName, DictValue restEntries)])
+            Nothing -> Nothing
         _ -> Nothing
   where
     matchSequenceValue items maybeRest values =
@@ -54,12 +62,12 @@ matchPatternBindings patternValue subjectValue =
       matchSequence restPatterns restValues (acc ++ nextBindings)
     matchSequence _ _ _ = Nothing
 
-    matchMappingPairs [] _ acc = Just acc
-    matchMappingPairs ((keyExpr, valuePattern) : restPairs) entries acc = do
+    matchMappingPairs [] _ acc matchedKeys = Just (acc, matchedKeys)
+    matchMappingPairs ((keyExpr, valuePattern) : restPairs) entries acc matchedKeys = do
       keyValue <- exprToValue keyExpr
       subjectValueAtKey <- lookupKey keyValue entries
       newBindings <- matchPatternBindings valuePattern subjectValueAtKey
-      matchMappingPairs restPairs entries (acc ++ newBindings)
+      matchMappingPairs restPairs entries (acc ++ newBindings) (matchedKeys ++ [keyValue])
 
     lookupKey _ [] = Nothing
     lookupKey key ((k, v) : rest)

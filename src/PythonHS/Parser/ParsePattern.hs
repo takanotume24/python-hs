@@ -76,19 +76,30 @@ parsePattern parseExpr tokens = do
         parseAfterStar _ _ _ = Left (ExpectedExpression (Position 0 0))
 
     parseMappingPattern mapPos (Token RBraceToken _ _ : rest) =
-      Right (MappingPattern [] mapPos, rest)
-    parseMappingPattern mapPos ts = parseEntries [] ts
+      Right (MappingPattern [] Nothing mapPos, rest)
+    parseMappingPattern mapPos ts = parseEntries [] Nothing ts
       where
-        parseEntries acc stream = do
-          (keyExpr, afterKey) <- parseExpr stream
-          case afterKey of
-            Token ColonToken _ _ : afterColon -> do
-              (valuePattern, afterValue) <- parseSinglePattern afterColon
-              case afterValue of
-                Token CommaToken _ _ : rest -> parseEntries (acc ++ [(keyExpr, valuePattern)]) rest
-                Token RBraceToken _ _ : rest -> Right (MappingPattern (acc ++ [(keyExpr, valuePattern)]) mapPos, rest)
+        parseEntries acc maybeRestCapture stream =
+          case stream of
+            Token StarToken _ _ : Token StarToken _ _ : Token IdentifierToken restName _ : afterRest ->
+              parseAfterDoubleStar (acc, Just restName) afterRest
+            _ -> do
+              (keyExpr, afterKey) <- parseExpr stream
+              case afterKey of
+                Token ColonToken _ _ : afterColon -> do
+                  (valuePattern, afterValue) <- parseSinglePattern afterColon
+                  case afterValue of
+                    Token CommaToken _ _ : rest -> parseEntries (acc ++ [(keyExpr, valuePattern)]) maybeRestCapture rest
+                    Token RBraceToken _ _ : rest -> Right (MappingPattern (acc ++ [(keyExpr, valuePattern)]) maybeRestCapture mapPos, rest)
+                    tok : _ -> Left (ExpectedExpression (position tok))
+                    _ -> Left (ExpectedExpression (Position 0 0))
                 tok : _ -> Left (ExpectedExpression (position tok))
                 _ -> Left (ExpectedExpression (Position 0 0))
+
+        parseAfterDoubleStar (acc, maybeRestCapture) afterRest =
+          case afterRest of
+            Token CommaToken _ _ : Token RBraceToken _ _ : rest -> Right (MappingPattern acc maybeRestCapture mapPos, rest)
+            Token RBraceToken _ _ : rest -> Right (MappingPattern acc maybeRestCapture mapPos, rest)
             tok : _ -> Left (ExpectedExpression (position tok))
             _ -> Left (ExpectedExpression (Position 0 0))
 
