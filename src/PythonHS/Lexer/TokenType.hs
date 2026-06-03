@@ -70,5 +70,6 @@ data TokenType
   | NotToken
   | PipeToken
   | AtToken
+  | WithToken
   | EOFToken
   deriving (Eq, Show)

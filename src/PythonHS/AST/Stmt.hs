@@ -36,4 +36,5 @@ data Stmt
   | ClassDefStmt String (Maybe String) [Stmt] Position -- class name, optional base, body
   | FunctionDefStmt String [String] [Stmt] Position -- name, params, body
   | FunctionDefDefaultsStmt String [String] [(String, Expr)] [Stmt] Position -- name, params, defaults, body
+  | WithStmt Expr [Stmt] Position -- context manager expression, body, position
   deriving (Eq, Show)

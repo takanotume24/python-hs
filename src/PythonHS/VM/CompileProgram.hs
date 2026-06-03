@@ -2,8 +2,9 @@ module PythonHS.VM.CompileProgram (compileProgram) where
 
 import PythonHS.AST.BinaryOperator (BinaryOperator (AddOperator, DivideOperator, FloorDivideOperator, ModuloOperator, MultiplyOperator, SubtractOperator))
 import PythonHS.AST.Program (Program (Program))
-import PythonHS.AST.Stmt (Stmt (AddAssignStmt, AnnAssignStmt, AssignStmt, AssignUnpackStmt, BreakStmt, ClassDefStmt, ContinueStmt, DecoratedStmt, DivAssignStmt, FloorDivAssignStmt, ForStmt, FromImportStmt, FunctionDefDefaultsStmt, FunctionDefStmt, GlobalStmt, IfStmt, ImportStmt, MatchStmt, ModAssignStmt, MulAssignStmt, PassStmt, PrintStmt, RaiseStmt, ReturnStmt, SubAssignStmt, TryExceptStmt, WhileStmt, YieldFromStmt, YieldStmt))
+import PythonHS.AST.Stmt (Stmt (AddAssignStmt, AnnAssignStmt, AssignStmt, AssignUnpackStmt, BreakStmt, ClassDefStmt, ContinueStmt, DecoratedStmt, DivAssignStmt, FloorDivAssignStmt, ForStmt, FromImportStmt, FunctionDefDefaultsStmt, FunctionDefStmt, GlobalStmt, IfStmt, ImportStmt, MatchStmt, ModAssignStmt, MulAssignStmt, PassStmt, PrintStmt, RaiseStmt, ReturnStmt, SubAssignStmt, TryExceptStmt, WhileStmt, WithStmt, YieldFromStmt, YieldStmt))
 import PythonHS.Evaluator.ShowPos (showPos)
+import PythonHS.Evaluator.Value (Value (NoneValue))
 import PythonHS.VM.CompileClassDefStmt (compileClassDefStmt)
 import PythonHS.VM.CompileCompoundAssign (compileCompoundAssign)
 import PythonHS.VM.CompileDefaults (compileDefaults)
@@ -15,7 +16,7 @@ import PythonHS.VM.CompileMatch (compileMatch)
 import PythonHS.VM.CompileTryExcept (compileTryExcept)
 import PythonHS.VM.ExprPosition (exprPosition)
 import PythonHS.VM.CompileYieldCollectStmt (compileYieldCollectStmt)
-import PythonHS.VM.Instruction (Instruction (DeclareGlobal, DefineFunction, ForNext, ForSetup, Halt, Jump, JumpIfFalse, LoopGuard, PrintTop, RaiseTop, ReturnTop, StoreName, UnpackToNames))
+import PythonHS.VM.Instruction (Instruction (CallFunction, DeclareGlobal, DefineFunction, ForNext, ForSetup, Halt, Jump, JumpIfFalse, LoadName, LoopGuard, PrintTop, PushConst, RaiseTop, ReturnTop, StoreName, UnpackToNames))
 import PythonHS.VM.StmtPosition (stmtPosition)
 
 compileProgram :: Program -> Either String [Instruction]
@@ -156,3 +157,16 @@ compileProgram (Program stmts) = do
           case maybeLoop of
             Just (_, continueTarget) -> Right ([Jump continueTarget], baseIndex + 1)
             Nothing -> Left ("Continue outside loop at " ++ showPos pos)
+        WithStmt contextManager body withPos -> do
+          (contextManagerCode, contextManagerEnd) <- compileExprAt baseIndex contextManager
+          let enterCallCode = [CallFunction "__enter__" [([LoadName "__context_manager__" withPos], Nothing, withPos)] withPos]
+          let exitCallCode = [CallFunction "__exit__" [([LoadName "__context_manager__" withPos, PushConst NoneValue, PushConst NoneValue, PushConst NoneValue], Nothing, withPos)] withPos]
+          let bodyStartIndex = contextManagerEnd + 3
+          (bodyCode, bodyEndIndex) <- compileStatements bodyStartIndex inFunction maybeLoop body
+          let code = contextManagerCode 
+                     ++ [StoreName "__context_manager__"] 
+                     ++ enterCallCode 
+                     ++ [StoreName "__context_result__"] 
+                     ++ bodyCode 
+                     ++ exitCallCode
+          pure (code, bodyEndIndex + 1)

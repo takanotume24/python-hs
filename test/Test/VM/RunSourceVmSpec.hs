@@ -571,3 +571,13 @@ spec = describe "runSourceVm (vm mvp)" $ do
     runSourceVm "print setdefault([], 1)\n" `shouldBe` Left "Type error: setdefault expects dict as first argument at 1:7"
     runSourceVm "print values(1)\n" `shouldBe` Left "Type error: values expects dict at 1:7"
     runSourceVm "print items(1)\n" `shouldBe` Left "Type error: items expects dict at 1:7"
+
+  describe "with statement" $ do
+    it "executes with statement with context manager" $ do
+      runSourceVm "class ContextManager:\n  def __enter__(self):\n    print 'enter'\n    return self\n  def __exit__(self, exc_type, exc_value, traceback):\n    print 'exit'\nwith ContextManager():\n  print 'body'" `shouldBe` Right ["enter", "body", "exit"]
+
+    it "executes with statement with exception handling" $ do
+      runSourceVm "class ContextManager:\n  def __enter__(self):\n    print 'enter'\n    return self\n  def __exit__(self, exc_type, exc_value, traceback):\n    print 'exit'\n    return 1\nwith ContextManager():\n  raise 'error'" `shouldBe` Right ["enter", "exit"]
+
+    it "executes nested with statements" $ do
+      runSourceVm "class ContextManager:\n  def __init__(self, name):\n    self.name = name\n  def __enter__(self):\n    print 'enter ' + self.name\n    return self\n  def __exit__(self, exc_type, exc_value, traceback):\n    print 'exit ' + self.name\nwith ContextManager('outer'):\n  with ContextManager('inner'):\n    print 'body'" `shouldBe` Right ["enter outer", "enter inner", "body", "exit inner", "exit outer"]

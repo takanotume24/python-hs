@@ -1,12 +1,13 @@
 module PythonHS.Parser.ParseStatement (parseStatement) where
 import PythonHS.AST.Expr (Expr (NoneExpr))
-import PythonHS.AST.Stmt (Stmt (AddAssignStmt, AssignStmt, AssignUnpackStmt, BreakStmt, ContinueStmt, DivAssignStmt, FloorDivAssignStmt, ForStmt, FunctionDefDefaultsStmt, FunctionDefStmt, GlobalStmt, IfStmt, ModAssignStmt, MulAssignStmt, PassStmt, PrintStmt, RaiseStmt, ReturnStmt, SubAssignStmt, TryExceptStmt, WhileStmt))
+import PythonHS.AST.Stmt (Stmt (AddAssignStmt, AssignStmt, AssignUnpackStmt, BreakStmt, ContinueStmt, DivAssignStmt, FloorDivAssignStmt, ForStmt, FunctionDefDefaultsStmt, FunctionDefStmt, GlobalStmt, IfStmt, ModAssignStmt, MulAssignStmt, PassStmt, PrintStmt, RaiseStmt, ReturnStmt, SubAssignStmt, TryExceptStmt, WhileStmt, WithStmt))
 import PythonHS.Lexer.Position (Position (Position))
 import PythonHS.Lexer.Token (Token (Token), position)
 import PythonHS.Lexer.TokenType
   ( TokenType
       ( AssignToken,
         AtToken,
+        AsToken,
         BreakToken,
         CommaToken,
         ColonToken,
@@ -14,33 +15,34 @@ import PythonHS.Lexer.TokenType
         ClassToken,
         DefToken,
         DoubleSlashAssignToken,
-         DotToken,
-         GtToken,
+        DotToken,
+        GtToken,
         ForToken,
         FromToken,
         GlobalToken,
         IdentifierToken,
-         ImportToken,
-         TryToken,
-         FinallyToken,
-          RaiseToken,
-          MatchToken,
-          IfToken,
+        ImportToken,
+        TryToken,
+        FinallyToken,
+        RaiseToken,
+        MatchToken,
+        IfToken,
         InToken,
         LParenToken,
-         MinusAssignToken,
-         MinusToken,
+        MinusAssignToken,
+        MinusToken,
         NewlineToken,
         PassToken,
         PercentAssignToken,
         PlusAssignToken,
         PrintToken,
-         ReturnToken,
-         SlashAssignToken,
-         StarAssignToken,
-         WhileToken,
-         YieldToken
-       )
+        ReturnToken,
+        SlashAssignToken,
+        StarAssignToken,
+        WhileToken,
+        WithToken,
+        YieldToken
+      )
   )
 import PythonHS.Parser.ParseError (ParseError (ExpectedAssignAfterIdentifier, ExpectedExpression))
 import PythonHS.Parser.ParseExceptSuites (parseExceptSuites)
@@ -168,6 +170,18 @@ parseStatement tokenStream =
           if null defaults
             then Right (FunctionDefStmt name params bodySuite posDef, finalRest)
             else Right (FunctionDefDefaultsStmt name params defaults bodySuite posDef, finalRest)
+        Token _ _ pos' : _ -> Left (ExpectedExpression pos')
+        _ -> Left (ExpectedExpression (Position 0 0))
+    Token WithToken _ pos : rest -> do
+      (contextManager, afterContextManager) <- parseExpr rest
+      case afterContextManager of
+        Token AsToken _ _ : Token IdentifierToken varName _ : Token ColonToken _ _ : afterColon -> do
+          (bodySuite, finalRest) <- parseSuiteWithStatements afterColon
+          -- For now, we'll just ignore the 'as' clause and treat it as a simple with statement
+          Right (WithStmt contextManager bodySuite pos, finalRest)
+        Token ColonToken _ _ : afterColon -> do
+          (bodySuite, finalRest) <- parseSuiteWithStatements afterColon
+          Right (WithStmt contextManager bodySuite pos, finalRest)
         Token _ _ pos' : _ -> Left (ExpectedExpression pos')
         _ -> Left (ExpectedExpression (Position 0 0))
     Token ClassToken _ posClass : Token IdentifierToken name _ : rest ->

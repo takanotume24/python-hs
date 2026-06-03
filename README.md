@@ -34,6 +34,7 @@ TDD（`hspec`）で機能を拡張し、**可能な限り CPython 互換**を目
 - [x] 文: class フィールド型注釈（`name: type` / `name: type = expr`）対応
 - [x] 制御構文: `if/elif/else`, `while`, `for`
 - [x] 関数定義: `def name(args): ...`
+- [ ] 文: `with`（Context Manager）
 - [x] 式: 四則演算（`+ - * / % //`）, 比較, `not`, 関数呼び出し
 - [x] 式: tuple（literal, index/slice）
 - [x] 組み込みのメソッド呼び出し構文（例: `x.append(3)` を関数呼び出しへデシュガー）
@@ -88,6 +89,7 @@ TDD（`hspec`）で機能を拡張し、**可能な限り CPython 互換**を目
 - `match/case` は現時点で VM 実行経路を中心に互換性向上を継続中です。
 - `class`（`__init__` / メソッド呼び出し / 単一継承）は現時点で VM 実行経路を中心に互換性向上を継続中です。
 - `dataclass`（`__init__` / `__repr__` / `__eq__` / `order` / `frozen` / `field(default_factory=list)`）は現時点で VM 実行経路を中心に互換性向上を継続中です。
+- `with` 文（Context Manager）は現時点で未実装です。
 
 ## 互換性ギャップ（継続改善中）
 - [ ] Python完全互換（継続して差分を縮小）

@@ -21,9 +21,9 @@ import PythonHS.Lexer.TokenType
         ImportToken,
         InToken,
         LambdaToken,
-         MatchToken,
-         CaseToken,
-         YieldToken,
+        MatchToken,
+        CaseToken,
+        YieldToken,
         NoneToken,
         NotToken,
         OrToken,
@@ -33,7 +33,8 @@ import PythonHS.Lexer.TokenType
         ReturnToken,
         TrueToken,
         TryToken,
-        WhileToken
+        WhileToken,
+        WithToken
       )
   )
 
@@ -70,4 +71,5 @@ keywordOrIdentifier value
   | value == "and" = AndToken
   | value == "or" = OrToken
   | value == "not" = NotToken
+  | value == "with" = WithToken
   | otherwise = IdentifierToken

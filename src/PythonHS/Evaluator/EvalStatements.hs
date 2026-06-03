@@ -74,6 +74,7 @@ evalStatements env fenv outputs (stmt : rest) =
       (val, _, _) <- evalExpr evalStatements env fenv expr
       Left $ "Runtime error: " ++ valueToOutput val ++ " at " ++ showPos pos
     PassStmt _ -> evalStatements env fenv outputs rest
+    WithStmt contextManager body withPos -> Left $ "Runtime error: with statement is only supported in vm engine at " ++ showPos withPos
 
     IfStmt cond thenBranch maybeElse _ -> do
       (condVal, condOuts, envAfterCond) <- evalExpr evalStatements env fenv cond
