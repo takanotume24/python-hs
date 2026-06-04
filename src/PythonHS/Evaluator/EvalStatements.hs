@@ -7,6 +7,7 @@ import PythonHS.Evaluator.Env (Env)
 import PythonHS.Evaluator.EvalExpr (evalExpr)
 import PythonHS.Evaluator.EvalForStmt (evalForStmt)
 import PythonHS.Evaluator.EvalWhileStmt (evalWhileStmt)
+import PythonHS.Evaluator.EvalWithStmt (evalWithStmt)
 import PythonHS.Evaluator.FuncEnv (FuncEnv)
 import PythonHS.Evaluator.ShowPos (showPos)
 import PythonHS.Evaluator.Value (Value (BreakValue, ContinueValue, DictValue, FloatValue, IntValue, ListValue, NoneValue, StringValue, TupleValue))
@@ -74,7 +75,8 @@ evalStatements env fenv outputs (stmt : rest) =
       (val, _, _) <- evalExpr evalStatements env fenv expr
       Left $ "Runtime error: " ++ valueToOutput val ++ " at " ++ showPos pos
     PassStmt _ -> evalStatements env fenv outputs rest
-    WithStmt contextManager body withPos -> Left $ "Runtime error: with statement is only supported in vm engine at " ++ showPos withPos
+    WithStmt contextManager maybeVarName body withPos ->
+      evalWithStmt evalStatements (evalExpr evalStatements) env fenv outputs contextManager maybeVarName body withPos rest
 
     IfStmt cond thenBranch maybeElse _ -> do
       (condVal, condOuts, envAfterCond) <- evalExpr evalStatements env fenv cond

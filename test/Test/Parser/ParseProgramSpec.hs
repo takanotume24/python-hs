@@ -2069,7 +2069,7 @@ spec = describe "parseProgram" $ do
           Token DedentToken "<DEDENT>" (Position 3 1),
           Token EOFToken "" (Position 3 1)
         ]
-        `shouldBe` Right (Program [WithStmt (CallExpr "open" [StringExpr "'file.txt'" (Position 1 11)] (Position 1 6)) [PrintStmt (IntegerExpr 1 (Position 2 9)) (Position 2 3)] (Position 1 1)])
+        `shouldBe` Right (Program [WithStmt (CallExpr "open" [StringExpr "'file.txt'" (Position 1 11)] (Position 1 6)) Nothing [PrintStmt (IntegerExpr 1 (Position 2 9)) (Position 2 3)] (Position 1 1)])
 
     it "parses with statement with complex expression" $ do
       parseProgram
@@ -2089,7 +2089,7 @@ spec = describe "parseProgram" $ do
           Token DedentToken "<DEDENT>" (Position 3 1),
           Token EOFToken "" (Position 3 1)
         ]
-        `shouldBe` Right (Program [WithStmt (CallExpr "open" [StringExpr "'file.txt'" (Position 1 11)] (Position 1 6)) [PrintStmt (IdentifierExpr "f" (Position 2 9)) (Position 2 3)] (Position 1 1)])
+        `shouldBe` Right (Program [WithStmt (CallExpr "open" [StringExpr "'file.txt'" (Position 1 11)] (Position 1 6)) (Just "f") [PrintStmt (IdentifierExpr "f" (Position 2 9)) (Position 2 3)] (Position 1 1)])
 
     it "parses with statement with multiple statements in body" $ do
       parseProgram
@@ -2110,4 +2110,4 @@ spec = describe "parseProgram" $ do
           Token DedentToken "<DEDENT>" (Position 4 1),
           Token EOFToken "" (Position 4 1)
         ]
-        `shouldBe` Right (Program [WithStmt (CallExpr "open" [StringExpr "'file.txt'" (Position 1 11)] (Position 1 6)) [PrintStmt (IntegerExpr 1 (Position 2 9)) (Position 2 3), PrintStmt (IntegerExpr 2 (Position 3 9)) (Position 3 3)] (Position 1 1)])
+        `shouldBe` Right (Program [WithStmt (CallExpr "open" [StringExpr "'file.txt'" (Position 1 11)] (Position 1 6)) Nothing [PrintStmt (IntegerExpr 1 (Position 2 9)) (Position 2 3), PrintStmt (IntegerExpr 2 (Position 3 9)) (Position 3 3)] (Position 1 1)])

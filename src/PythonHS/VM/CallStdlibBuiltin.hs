@@ -3,6 +3,7 @@ module PythonHS.VM.CallStdlibBuiltin (callStdlibBuiltin) where
 import PythonHS.Evaluator.ShowPos (showPos)
 import PythonHS.Evaluator.Value (Value (IntValue, ModuleValue, StringValue), Value)
 import PythonHS.Lexer.Position (Position)
+import qualified Data.Map.Strict as Map
 
 callStdlibBuiltin :: String -> [Value] -> Position -> Maybe (Either String Value)
 callStdlibBuiltin name args pos =
@@ -11,6 +12,7 @@ callStdlibBuiltin name args pos =
     "loads" -> Just (evalJsonLoads args)
     "Path" -> Just (evalPathlibPath args)
     "getcwd" -> Just (evalOsGetcwd args)
+    "getattr" -> Just (evalGetattr args pos)
     _ -> Nothing
   where
     evalJsonDumps values =
@@ -55,3 +57,15 @@ callStdlibBuiltin name args pos =
         '"' : rest -> '\\' : '"' : escapeJsonString rest
         '\\' : rest -> '\\' : '\\' : escapeJsonString rest
         ch : rest -> ch : escapeJsonString rest
+
+    evalGetattr values pos =
+      case values of
+        [obj, StringValue attrName] -> 
+          case obj of
+            ModuleValue _ attrs -> 
+              case lookup attrName attrs of
+                Just value -> Right value
+                Nothing -> Left ("Attribute error: module has no attribute '" ++ attrName ++ "' at " ++ showPos pos)
+            _ -> Left ("Type error: getattr expects module object at " ++ showPos pos)
+        [_, _] -> Left ("Type error: getattr expects string attribute name at " ++ showPos pos)
+        _ -> Left ("Argument count mismatch when calling getattr at " ++ showPos pos)

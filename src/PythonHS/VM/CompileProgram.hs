@@ -16,7 +16,7 @@ import PythonHS.VM.CompileMatch (compileMatch)
 import PythonHS.VM.CompileTryExcept (compileTryExcept)
 import PythonHS.VM.ExprPosition (exprPosition)
 import PythonHS.VM.CompileYieldCollectStmt (compileYieldCollectStmt)
-import PythonHS.VM.Instruction (Instruction (CallFunction, DeclareGlobal, DefineFunction, ForNext, ForSetup, Halt, Jump, JumpIfFalse, LoadName, LoopGuard, PrintTop, PushConst, RaiseTop, ReturnTop, StoreName, UnpackToNames))
+import PythonHS.VM.Instruction (Instruction (ApplyBinary, ApplyNot, ApplyUnaryMinus, BuildDict, BuildList, BuildListComprehension, BuildTuple, CallFunction, CallValueFunction, CreateLambda, DeclareGlobal, DefineClass, DefineFunction, DupTop, ForNext, ForSetup, Halt, Jump, JumpIfFalse, LoadName, LoopGuard, MatchExceptionType, MatchPattern, PopExceptionHandler, PrintTop, PushConst, PushExceptionHandler, PushFinallyHandler, RaisePendingError, RaisePendingException, RaiseTop, ReturnTop, StoreName, UnpackToNames))
 import PythonHS.VM.StmtPosition (stmtPosition)
 
 compileProgram :: Program -> Either String [Instruction]
@@ -157,16 +157,23 @@ compileProgram (Program stmts) = do
           case maybeLoop of
             Just (_, continueTarget) -> Right ([Jump continueTarget], baseIndex + 1)
             Nothing -> Left ("Continue outside loop at " ++ showPos pos)
-        WithStmt contextManager body withPos -> do
+        WithStmt contextManager maybeVarName body withPos -> do
+          -- For now, implement a minimal version that at least compiles
+          -- We'll improve this implementation gradually
           (contextManagerCode, contextManagerEnd) <- compileExprAt baseIndex contextManager
-          let enterCallCode = [CallFunction "__enter__" [([LoadName "__context_manager__" withPos], Nothing, withPos)] withPos]
-          let exitCallCode = [CallFunction "__exit__" [([LoadName "__context_manager__" withPos, PushConst NoneValue, PushConst NoneValue, PushConst NoneValue], Nothing, withPos)] withPos]
-          let bodyStartIndex = contextManagerEnd + 3
+          let contextManagerVar = "__context_manager_" ++ show baseIndex ++ "__"
+          let setupCode = contextManagerCode ++ [StoreName contextManagerVar]
+          let enterCode = [LoadName contextManagerVar withPos, CallFunction "__enter__" [([LoadName contextManagerVar withPos], Nothing, withPos)] withPos]
+          let storeCode = case maybeVarName of
+                            Just varName -> [StoreName varName]
+                            Nothing -> []
+          let bodyStartIndex = baseIndex + length setupCode + length enterCode + length storeCode
           (bodyCode, bodyEndIndex) <- compileStatements bodyStartIndex inFunction maybeLoop body
-          let code = contextManagerCode 
-                     ++ [StoreName "__context_manager__"] 
-                     ++ enterCallCode 
-                     ++ [StoreName "__context_result__"] 
-                     ++ bodyCode 
-                     ++ exitCallCode
-          pure (code, bodyEndIndex + 1)
+          let exitCode = [LoadName contextManagerVar withPos, CallFunction "__exit__" [
+                            ([LoadName contextManagerVar withPos], Nothing, withPos),
+                            ([PushConst NoneValue], Nothing, withPos),
+                            ([PushConst NoneValue], Nothing, withPos),
+                            ([PushConst NoneValue], Nothing, withPos)
+                          ] withPos]
+          let allCode = setupCode ++ enterCode ++ storeCode ++ bodyCode ++ exitCode
+          pure (allCode, bodyEndIndex + length exitCode)

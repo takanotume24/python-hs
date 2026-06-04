@@ -33,5 +33,6 @@ parseSuite parseStatement ts =
           Right (statement : otherStatements, finalRest)
 
     consumeNewline (Token NewlineToken _ _ : rest) = Right rest
+    consumeNewline rest@((Token DedentToken _ _) : _) = Right rest
     consumeNewline (Token _ _ pos : _) = Left (ExpectedNewlineAfterStatement pos)
     consumeNewline [] = Left (ExpectedNewlineAfterStatement (Position 0 0))

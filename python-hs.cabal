@@ -64,6 +64,7 @@ library
       , PythonHS.Parser.ParseSuite
       , PythonHS.Parser.ParseYieldStmt
     , PythonHS.Parser.ParseImportStmt
+    , PythonHS.Parser.ParseWithStmt
     , PythonHS.Structure.CheckStructureWarnings
     , PythonHS.Evaluator.ValueToOutput
     , PythonHS.Evaluator.ValueToReplOutput
@@ -71,6 +72,7 @@ library
     , PythonHS.Evaluator.EvalWhileStmt
     , PythonHS.Evaluator.EvalForStmt
     , PythonHS.Evaluator.EvalExpr
+    , PythonHS.Evaluator.EvalWithStmt
     , PythonHS.Evaluator.EvalExprBinary
     , PythonHS.Evaluator.EvalCallExpr
     , PythonHS.Evaluator.EvalBuiltinExpr

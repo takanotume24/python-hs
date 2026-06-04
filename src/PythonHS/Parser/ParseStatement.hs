@@ -56,6 +56,7 @@ import PythonHS.Parser.ParseDecoratedStmt (parseDecoratedStmt)
 import PythonHS.Parser.ParseAnnAssignStmt (parseAnnAssignStmt)
 import PythonHS.Parser.ParseSuite (parseSuite)
 import PythonHS.Parser.ParseYieldStmt (parseYieldStmt)
+import PythonHS.Parser.ParseWithStmt (parseWithStmt)
 parseStatement :: [Token] -> Either ParseError (Stmt, [Token])
 parseStatement tokenStream =
   let parseSuiteWithStatements = parseSuite parseStatement
@@ -172,18 +173,8 @@ parseStatement tokenStream =
             else Right (FunctionDefDefaultsStmt name params defaults bodySuite posDef, finalRest)
         Token _ _ pos' : _ -> Left (ExpectedExpression pos')
         _ -> Left (ExpectedExpression (Position 0 0))
-    Token WithToken _ pos : rest -> do
-      (contextManager, afterContextManager) <- parseExpr rest
-      case afterContextManager of
-        Token AsToken _ _ : Token IdentifierToken varName _ : Token ColonToken _ _ : afterColon -> do
-          (bodySuite, finalRest) <- parseSuiteWithStatements afterColon
-          -- For now, we'll just ignore the 'as' clause and treat it as a simple with statement
-          Right (WithStmt contextManager bodySuite pos, finalRest)
-        Token ColonToken _ _ : afterColon -> do
-          (bodySuite, finalRest) <- parseSuiteWithStatements afterColon
-          Right (WithStmt contextManager bodySuite pos, finalRest)
-        Token _ _ pos' : _ -> Left (ExpectedExpression pos')
-        _ -> Left (ExpectedExpression (Position 0 0))
+    Token WithToken _ pos : rest ->
+      parseWithStmt parseStatement pos rest
     Token ClassToken _ posClass : Token IdentifierToken name _ : rest ->
       parseClassStmt parseSuiteWithStatements posClass name rest
     Token IdentifierToken _ pos : _ -> Left (ExpectedAssignAfterIdentifier pos)

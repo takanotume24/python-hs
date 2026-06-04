@@ -117,6 +117,12 @@ scanTokenStep src ln col =
            in case tailInput of
                 ('"' : rest') -> Right (Token StringToken strContent (Position ln col), rest', col + len + 2)
                 _ -> Left (UnexpectedCharacter '"')
+      | c == '\'' ->
+          let (strContent, tailInput) = span (\x -> x /= '\'' && x /= '\n') rest
+              len = length strContent
+           in case tailInput of
+                ('\'' : rest') -> Right (Token StringToken strContent (Position ln col), rest', col + len + 2)
+                _ -> Left (UnexpectedCharacter '\'')
       | isDigit c ->
           let (digits, afterDigits) = span isDigit (c : rest)
            in case afterDigits of

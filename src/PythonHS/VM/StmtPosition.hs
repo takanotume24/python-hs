@@ -35,4 +35,4 @@ stmtPosition stmt =
     ReturnStmt _ pos -> pos
     WhileStmt _ _ pos -> pos
     PrintStmt _ pos -> pos
-    WithStmt _ _ pos -> pos
+    WithStmt _ _ _ pos -> pos
