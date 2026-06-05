@@ -15,6 +15,7 @@ library
     , PythonHS.AST.Pattern
     , PythonHS.AST.Stmt
     , PythonHS.AST.Program
+    , PythonHS.AST.WithContext
     , PythonHS.Lexer.Position
     , PythonHS.Parser.ParseError
     , PythonHS.Parser.ParseProgram

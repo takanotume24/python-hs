@@ -591,3 +591,30 @@ spec = describe "runSourceVm (vm mvp)" $ do
 
     it "executes with statement with __exit__ returning falsy value" $ do
       runSourceVm "class ContextManager:\n  def __enter__(self):\n    print 'enter'\n    return self\n  def __exit__(self, exc_type, exc_value, traceback):\n    print 'exit'\n    return 0\nwith ContextManager():\n  raise 'error'" `shouldSatisfy` isLeft
+
+    it "handles simple context manager with print" $ do
+      runSourceVm "class SimpleContext:\n  def __enter__(self):\n    return 'entered'\n  def __exit__(self, exc_type, exc_value, traceback):\n    return None\nwith SimpleContext() as ctx:\n  print ctx" `shouldBe` Right ["entered"]
+
+    it "handles context manager with variable binding" $ do
+      runSourceVm "class VarContext:\n  def __enter__(self):\n    return 'value'\n  def __exit__(self, exc_type, exc_value, traceback):\n    return None\nwith VarContext() as v:\n  print v" `shouldBe` Right ["value"]
+
+    it "handles minimal context manager" $ do
+      runSourceVm "class MinimalContext:\n  def __enter__(self):\n    pass\n  def __exit__(self, exc_type, exc_value, traceback):\n    pass\nwith MinimalContext():\n  pass" `shouldBe` Right []
+
+    it "handles context manager with simple print" $ do
+      runSourceVm "class PrintContext:\n  def __enter__(self):\n    print 'enter'\n  def __exit__(self, exc_type, exc_value, traceback):\n    print 'exit'\nwith PrintContext():\n  print 'body'" `shouldBe` Right ["enter", "body", "exit"]
+
+    it "handles simplest successful with statement" $ do
+      runSourceVm "class SimpleContext:\n  def __enter__(self):\n    return 'entered'\n  def __exit__(self, exc_type, exc_value, traceback):\n    return None\nresult = None\nwith SimpleContext() as ctx:\n  result = ctx\nprint result" `shouldBe` Right ["entered"]
+
+    it "handles even simpler with statement" $ do
+      runSourceVm "class SimpleContext:\n  def __enter__(self):\n    pass\n  def __exit__(self, exc_type, exc_value, traceback):\n    pass\nwith SimpleContext():\n  pass" `shouldBe` Right []
+
+    it "handles simplest possible with statement" $ do
+      runSourceVm "with None:\n  pass" `shouldSatisfy` isLeft
+
+    it "handles minimal with statement" $ do
+      runSourceVm "class MinimalContext:\n  def __enter__(self):\n    pass\n  def __exit__(self, exc_type, exc_value, traceback):\n    pass\nwith MinimalContext():\n  pass" `shouldBe` Right []
+
+    it "handles simplest with statement" $ do
+      runSourceVm "with None:\n  pass" `shouldSatisfy` isLeft

@@ -3,7 +3,7 @@ module PythonHS.VM.ApplyExceptionInstruction (applyExceptionInstruction) where
 import qualified Data.Map.Strict as Map
 import PythonHS.Evaluator.Value (Value (StringValue), Value)
 import PythonHS.VM.ExecutePendingExceptionInstruction (executePendingExceptionInstruction)
-import PythonHS.VM.Instruction (Instruction (LoadPendingException, MatchExceptionType, PopExceptionHandler, PushExceptionHandler, PushFinallyHandler, RaisePendingError, RaisePendingException))
+import PythonHS.VM.Instruction (Instruction (LoadPendingException, MatchExceptionType, PopExceptionHandler, PushExceptionHandler, PushFinallyHandler, PushWithHandler, RaisePendingError, RaisePendingException))
 
 applyExceptionInstruction :: Int -> Instruction -> [Value] -> Map.Map String Value -> [Int] -> Either String (Maybe String, Int, [Value], [Int])
 applyExceptionInstruction ip instruction stack localEnv exceptionHandlers =
@@ -12,10 +12,12 @@ applyExceptionInstruction ip instruction stack localEnv exceptionHandlers =
       Right (Nothing, ip + 1, stack, handlerIp : exceptionHandlers)
     PushFinallyHandler handlerIp ->
       Right (Nothing, ip + 1, stack, encodeFinallyHandler handlerIp : exceptionHandlers)
+    PushWithHandler handlerIp ->
+      Right (Nothing, ip + 1, stack, handlerIp : exceptionHandlers)
     PopExceptionHandler ->
       case exceptionHandlers of
         _ : restHandlers -> Right (Nothing, ip + 1, stack, restHandlers)
-        [] -> Right (Nothing, ip + 1, stack, [])
+        [] -> Left "Runtime error: attempting to pop from empty exception handler stack"
     RaisePendingError ->
       case Map.lookup pendingFinallyErrorName localEnv of
         Just (StringValue err) -> Right (Just err, ip, stack, exceptionHandlers)

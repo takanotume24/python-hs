@@ -2,10 +2,12 @@ module PythonHS.Evaluator.EvalContextManager (enterContextManager, exitContextMa
 
 import qualified Data.Map.Strict as Map
 import PythonHS.AST.Expr (Expr (..))
+import PythonHS.AST.WithContext (ContextManager(..), WithEntry(..), WithExit(..))
 import PythonHS.Evaluator.Env (Env)
 import PythonHS.Evaluator.FuncEnv (FuncEnv)
 import PythonHS.Evaluator.Value (Value)
 import PythonHS.Lexer.Position (Position)
+import PythonHS.VM.Instruction (Instruction(CallFunction))
 
 -- | Enter a context manager by calling its __enter__ method
 --
@@ -26,12 +28,13 @@ enterContextManager ::
   (Env -> FuncEnv -> Expr -> Either String (Value, [String], Env)) ->
   Env ->
   FuncEnv ->
-  Expr ->
-  Position ->
+  ContextManager ->
   Either String (Value, [String], Env)
-enterContextManager evalExprFn env fenv contextManager withPos = do
-  let enterCall = CallExpr "__enter__" [contextManager] withPos
-  evalExprFn env fenv enterCall
+enterContextManager evalExprFn env fenv contextManager = do
+  let entryCall = CallExpr "__enter__" [contextManagerExpr contextManager] (contextManagerPos contextManager)
+  let entryInstruction = CallFunction "__enter__" [] (contextManagerPos contextManager)
+  let withEntry = WithEntry entryCall entryInstruction (contextManagerPos contextManager)
+  evalExprFn env fenv (entryCallExpr withEntry)
 
 -- | Exit a context manager normally by calling its __exit__ method with None arguments
 --
@@ -51,12 +54,14 @@ exitContextManager ::
   (Env -> FuncEnv -> Expr -> Either String (Value, [String], Env)) ->
   Env ->
   FuncEnv ->
-  Expr ->
-  Position ->
+  ContextManager ->
   Either String (Value, [String], Env)
-exitContextManager evalExprFn env fenv contextManager withPos = do
-  let exitCall = CallExpr "__exit__" [contextManager, NoneExpr withPos, NoneExpr withPos, NoneExpr withPos] withPos
-  evalExprFn env fenv exitCall
+exitContextManager evalExprFn env fenv contextManager = do
+  let noneExpr = NoneExpr (contextManagerPos contextManager)
+  let exitCall = CallExpr "__exit__" [contextManagerExpr contextManager, noneExpr, noneExpr, noneExpr] (contextManagerPos contextManager)
+  let exitInstruction = CallFunction "__exit__" [] (contextManagerPos contextManager)
+  let exitNormal = WithExit exitCall exitInstruction (contextManagerPos contextManager) False
+  evalExprFn env fenv (exitCallExpr exitNormal)
 
 -- | Exit a context manager with an exception by calling its __exit__ method with exception arguments
 --
@@ -81,13 +86,15 @@ exitContextManagerWithException ::
   (Env -> FuncEnv -> Expr -> Either String (Value, [String], Env)) ->
   Env ->
   FuncEnv ->
-  Expr ->
-  Position ->
+  ContextManager ->
   String ->
   Either String (Value, [String], Env)
-exitContextManagerWithException evalExprFn env fenv contextManager withPos err = do
-  let exitCall = CallExpr "__exit__" [contextManager, StringExpr "Exception" withPos, StringExpr err withPos, NoneExpr withPos] withPos
-  evalExprFn env fenv exitCall
+exitContextManagerWithException evalExprFn env fenv contextManager err = do
+  let withPos = contextManagerPos contextManager
+  let exitCall = CallExpr "__exit__" [contextManagerExpr contextManager, StringExpr "Exception" withPos, StringExpr err withPos, NoneExpr withPos] withPos
+  let exitInstruction = CallFunction "__exit__" [] withPos
+  let exitException = WithExit exitCall exitInstruction withPos True
+  evalExprFn env fenv (exitCallExpr exitException)
 
 -- | Bind the result of context manager's __enter__ method to a variable if specified
 --
