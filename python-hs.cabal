@@ -1,4 +1,4 @@
-cabal-version:      2.4
+cabal-version:      3.14
 name:               python-hs
 version:            0.1.0.0
 build-type:         Simple
@@ -32,6 +32,7 @@ library
     , PythonHS.Evaluator.Env
     , PythonHS.Evaluator.Value
     , PythonHS.Evaluator.FuncEnv
+    , PythonHS.Evaluator.EvalContextManager
     , PythonHS.Structure.CheckStructure
     , PythonHS.Structure.CheckStructureViolations
   other-modules:
@@ -204,6 +205,7 @@ test-suite python-hs-test
     , Test.CLI.CLISpec
     , Test.VM.RunSourceVmSpec
     , Test.Structure.CheckStructureSpec
+    , Test.Evaluator.EvalContextManagerSpec
   build-depends:
       base >=4.14 && <5
     , hspec >=2.7 && <3
@@ -212,6 +214,7 @@ test-suite python-hs-test
     , process
     , temporary
     , python-hs
+    , containers >=0.6 && <0.9
   -- prefer modern field to avoid deprecation warning
   build-tool-depends:
     hspec-discover:hspec-discover

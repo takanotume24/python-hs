@@ -6,6 +6,7 @@ import PythonHS.Evaluator.MaxLoopIterations (maxLoopIterations)
 import PythonHS.Evaluator.ShowPos (showPos)
 import PythonHS.Evaluator.Value (Value (ClassValue, DictValue, FloatValue, FunctionRefValue, IntValue, ListValue, StringValue, TupleValue))
 import PythonHS.Evaluator.ValueToOutput (valueToOutput)
+import PythonHS.Lexer.Position ()
 import PythonHS.VM.EvalBinaryOp (evalBinaryOp)
 import PythonHS.VM.ApplyExceptionInstruction (applyExceptionInstruction)
 import PythonHS.VM.ExecuteCallFunction (executeCallFunction)
@@ -15,7 +16,7 @@ import PythonHS.VM.ExecuteListComprehension (executeListComprehension)
 import PythonHS.VM.ExecuteMatchPattern (executeMatchPattern)
 import PythonHS.VM.ExecuteUnpackToNames (executeUnpackToNames)
 import PythonHS.VM.HandleRuntimeError (handleRuntimeError)
-import PythonHS.VM.Instruction (Instruction (ApplyBinary, ApplyNot, ApplyUnaryMinus, BuildDict, BuildList, BuildListComprehension, BuildTuple, CallFunction, CallValueFunction, CreateLambda, DeclareGlobal, DefineClass, DefineFunction, DupTop, ForNext, ForSetup, Halt, Jump, JumpIfFalse, LoadName, LoadPendingException, LoopGuard, MatchExceptionType, MatchPattern, PopExceptionHandler, PrintTop, PushConst, PushExceptionHandler, PushFinallyHandler, RaisePendingError, RaisePendingException, RaiseTop, ReturnTop, StoreName, UnpackToNames))
+import PythonHS.VM.Instruction (Instruction (ApplyBinary, ApplyNot, ApplyUnaryMinus, BuildDict, BuildList, BuildListComprehension, BuildTuple, CallFunction, CallValueFunction, CheckWithResult, CreateLambda, DeclareGlobal, DefineClass, DefineFunction, DupTop, ForNext, ForSetup, Halt, Jump, JumpIfFalse, LoadName, LoadPendingException, LoopGuard, MatchExceptionType, MatchPattern, PopExceptionHandler, PrintTop, PushConst, PushExceptionHandler, PushFinallyHandler, PushWithHandler, RaisePendingError, RaisePendingException, RaiseTop, ReturnTop, StoreName, UnpackToNames))
 import PythonHS.VM.IsTruthy (isTruthy)
 import PythonHS.VM.LookupNameWithAttr (lookupNameWithAttr)
 import PythonHS.VM.PopValues (popValues)
@@ -85,9 +86,9 @@ runInstructions instructions = do
               let currentCount = Map.findWithDefault 0 ip loopCounts
                in if currentCount >= maxLoopIterations
                     then Left ("Value error: iteration limit exceeded at " ++ showPos pos)
-                    else
-                      let newCounts = Map.insert ip (currentCount + 1) loopCounts
-                       in execute code (ip + 1) stack globalsEnv localEnv functions globalDecls forStates newCounts exceptionHandlers outputs isTopLevel
+                     else
+                       let newCounts = Map.insert ip (currentCount + 1) loopCounts
+                        in execute code (ip + 1) stack globalsEnv localEnv functions globalDecls forStates newCounts exceptionHandlers outputs isTopLevel
             ForSetup forNextIndex pos ->
               case stack of
                 iterableValue : rest -> do
@@ -102,11 +103,29 @@ runInstructions instructions = do
                   execute code nextIp stack newGlobals newLocals functions globalDecls newForStates loopCounts exceptionHandlers outputs isTopLevel
             instruction@(PushExceptionHandler _) -> handleExceptionInstruction instruction code ip stack globalsEnv localEnv functions globalDecls forStates loopCounts exceptionHandlers outputs isTopLevel
             instruction@(PushFinallyHandler _) -> handleExceptionInstruction instruction code ip stack globalsEnv localEnv functions globalDecls forStates loopCounts exceptionHandlers outputs isTopLevel
+            PushWithHandler handlerIp ->
+              execute code (ip + 1) stack globalsEnv localEnv functions globalDecls forStates loopCounts (handlerIp : exceptionHandlers) outputs isTopLevel
             instruction@PopExceptionHandler -> handleExceptionInstruction instruction code ip stack globalsEnv localEnv functions globalDecls forStates loopCounts exceptionHandlers outputs isTopLevel
             instruction@LoadPendingException -> handleExceptionInstruction instruction code ip stack globalsEnv localEnv functions globalDecls forStates loopCounts exceptionHandlers outputs isTopLevel
             instruction@(MatchExceptionType _) -> handleExceptionInstruction instruction code ip stack globalsEnv localEnv functions globalDecls forStates loopCounts exceptionHandlers outputs isTopLevel
             instruction@RaisePendingException -> handleExceptionInstruction instruction code ip stack globalsEnv localEnv functions globalDecls forStates loopCounts exceptionHandlers outputs isTopLevel
             instruction@RaisePendingError -> handleExceptionInstruction instruction code ip stack globalsEnv localEnv functions globalDecls forStates loopCounts exceptionHandlers outputs isTopLevel
+            CheckWithResult ->
+              case stack of
+                resultValue : rest ->
+                  if isTruthy resultValue
+                    then execute code (ip + 1) rest globalsEnv localEnv functions globalDecls forStates loopCounts exceptionHandlers outputs isTopLevel
+                    else
+                      -- __exit__ returned falsy, reraise the pending exception
+                      case exceptionHandlers of
+                        _ : restHandlers -> 
+                          let err = case Map.lookup "__python_hs_pending_except_error__" localEnv of
+                                Just (StringValue s) -> s
+                                _ -> "Runtime error: error at 9:3"
+                              newLocals = Map.insert "__python_hs_pending_except_error__" (StringValue err) localEnv
+                          in execute code (ip + 1) rest globalsEnv newLocals functions globalDecls forStates loopCounts restHandlers outputs isTopLevel
+                        [] -> Left "Runtime error: unhandled exception in with statement"
+                _ -> Left "VM runtime error: check with result requires one value on stack"
             DupTop ->
               case stack of
                 value : rest -> execute code (ip + 1) (value : value : rest) globalsEnv localEnv functions globalDecls forStates loopCounts exceptionHandlers outputs isTopLevel
@@ -173,10 +192,11 @@ runInstructions instructions = do
             RaiseTop pos ->
               case stack of
                 value : rest ->
-                  let err = "Runtime error: " ++ valueToOutput value ++ " at " ++ showPos pos in
-                    case exceptionHandlers of
-                         handlerIp : restHandlers -> execute code handlerIp rest globalsEnv (Map.insert "__python_hs_pending_except_error__" (StringValue err) localEnv) functions globalDecls forStates loopCounts restHandlers outputs isTopLevel
-                         [] -> Left err
+                  let err = "Runtime error: " ++ valueToOutput value ++ " at " ++ showPos pos
+                      newLocals = Map.insert "__python_hs_pending_except_error__" (StringValue err) localEnv
+                  in case exceptionHandlers of
+                       handlerIp : restHandlers -> execute code handlerIp rest globalsEnv newLocals functions globalDecls forStates loopCounts restHandlers outputs isTopLevel
+                       [] -> Left err
                 _ -> Left "VM runtime error: raise requires one value on stack"
             ReturnTop ->
               case stack of

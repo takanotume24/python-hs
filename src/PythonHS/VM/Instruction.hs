@@ -18,6 +18,7 @@ data Instruction
   | ForNext String Int Position
   | PushExceptionHandler Int
   | PushFinallyHandler Int
+  | PushWithHandler Int
   | PopExceptionHandler
   | LoadPendingException
   | MatchExceptionType (Maybe String)
@@ -40,5 +41,6 @@ data Instruction
   | RaisePendingError
   | ReturnTop
   | PrintTop
+  | CheckWithResult
   | Halt
   deriving (Eq, Show)

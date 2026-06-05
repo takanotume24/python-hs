@@ -5,7 +5,8 @@ import PythonHS.RunSourceVmWithSearchPaths (runSourceVmWithSearchPaths)
 import System.Directory (createDirectory)
 import System.FilePath ((</>))
 import System.IO.Temp (withSystemTempDirectory)
-import Test.Hspec (Spec, describe, it, shouldBe)
+import Test.Hspec (Spec, describe, it, shouldBe, shouldSatisfy)
+import Data.Either (isLeft)
 
 spec :: Spec
 spec = describe "runSourceVm (vm mvp)" $ do
@@ -581,3 +582,12 @@ spec = describe "runSourceVm (vm mvp)" $ do
 
     it "executes nested with statements" $ do
       runSourceVm "class ContextManager:\n  def __init__(self, name):\n    self.name = name\n  def __enter__(self):\n    print 'enter ' + self.name\n    return self\n  def __exit__(self, exc_type, exc_value, traceback):\n    print 'exit ' + self.name\nwith ContextManager('outer'):\n  with ContextManager('inner'):\n    print 'body'" `shouldBe` Right ["enter outer", "enter inner", "body", "exit inner", "exit outer"]
+
+    it "executes with statement with __exit__ returning None" $ do
+      runSourceVm "class ContextManager:\n  def __enter__(self):\n    print 'enter'\n    return self\n  def __exit__(self, exc_type, exc_value, traceback):\n    print 'exit'\nwith ContextManager():\n  raise 'error'" `shouldSatisfy` isLeft
+
+    it "executes with statement with __exit__ returning truthy value" $ do
+      runSourceVm "class ContextManager:\n  def __enter__(self):\n    print 'enter'\n    return self\n  def __exit__(self, exc_type, exc_value, traceback):\n    print 'exit'\n    return 1\nwith ContextManager():\n  raise 'error'" `shouldBe` Right ["enter", "exit"]
+
+    it "executes with statement with __exit__ returning falsy value" $ do
+      runSourceVm "class ContextManager:\n  def __enter__(self):\n    print 'enter'\n    return self\n  def __exit__(self, exc_type, exc_value, traceback):\n    print 'exit'\n    return 0\nwith ContextManager():\n  raise 'error'" `shouldSatisfy` isLeft

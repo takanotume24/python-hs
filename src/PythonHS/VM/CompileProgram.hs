@@ -16,7 +16,7 @@ import PythonHS.VM.CompileMatch (compileMatch)
 import PythonHS.VM.CompileTryExcept (compileTryExcept)
 import PythonHS.VM.ExprPosition (exprPosition)
 import PythonHS.VM.CompileYieldCollectStmt (compileYieldCollectStmt)
-import PythonHS.VM.Instruction (Instruction (ApplyBinary, ApplyNot, ApplyUnaryMinus, BuildDict, BuildList, BuildListComprehension, BuildTuple, CallFunction, CallValueFunction, CreateLambda, DeclareGlobal, DefineClass, DefineFunction, DupTop, ForNext, ForSetup, Halt, Jump, JumpIfFalse, LoadName, LoopGuard, MatchExceptionType, MatchPattern, PopExceptionHandler, PrintTop, PushConst, PushExceptionHandler, PushFinallyHandler, RaisePendingError, RaisePendingException, RaiseTop, ReturnTop, StoreName, UnpackToNames))
+import PythonHS.VM.Instruction (Instruction (ApplyBinary, ApplyNot, ApplyUnaryMinus, BuildDict, BuildList, BuildListComprehension, BuildTuple, CallFunction, CheckWithResult, CreateLambda, DeclareGlobal, DefineClass, DefineFunction, ForNext, ForSetup, Halt, Jump, JumpIfFalse, LoadName, LoadPendingException, LoopGuard, PopExceptionHandler, PrintTop, PushConst, PushExceptionHandler, RaisePendingException, RaiseTop, ReturnTop, StoreName, UnpackToNames))
 import PythonHS.VM.StmtPosition (stmtPosition)
 
 compileProgram :: Program -> Either String [Instruction]
@@ -158,8 +158,6 @@ compileProgram (Program stmts) = do
             Just (_, continueTarget) -> Right ([Jump continueTarget], baseIndex + 1)
             Nothing -> Left ("Continue outside loop at " ++ showPos pos)
         WithStmt contextManager maybeVarName body withPos -> do
-          -- For now, implement a minimal version that at least compiles
-          -- We'll improve this implementation gradually
           (contextManagerCode, contextManagerEnd) <- compileExprAt baseIndex contextManager
           let contextManagerVar = "__context_manager_" ++ show baseIndex ++ "__"
           let setupCode = contextManagerCode ++ [StoreName contextManagerVar]
@@ -167,13 +165,34 @@ compileProgram (Program stmts) = do
           let storeCode = case maybeVarName of
                             Just varName -> [StoreName varName]
                             Nothing -> []
-          let bodyStartIndex = baseIndex + length setupCode + length enterCode + length storeCode
+          let setupEndIndex = baseIndex + length setupCode + length enterCode + length storeCode
+          -- Set up exception handling for the body
+          let bodyStartIndex = setupEndIndex + 1  -- After PushExceptionHandler
           (bodyCode, bodyEndIndex) <- compileStatements bodyStartIndex inFunction maybeLoop body
-          let exitCode = [LoadName contextManagerVar withPos, CallFunction "__exit__" [
-                            ([LoadName contextManagerVar withPos], Nothing, withPos),
-                            ([PushConst NoneValue], Nothing, withPos),
-                            ([PushConst NoneValue], Nothing, withPos),
-                            ([PushConst NoneValue], Nothing, withPos)
-                          ] withPos]
-          let allCode = setupCode ++ enterCode ++ storeCode ++ bodyCode ++ exitCode
-          pure (allCode, bodyEndIndex + length exitCode)
+          -- Exit code for normal completion (just call __exit__, don't check result)
+          let exitNormalStartIndex = bodyEndIndex + 2  -- Skip PopExceptionHandler and Jump
+          let nonePos = ([PushConst NoneValue], Nothing, withPos)
+          let exitNormalCode = [LoadName contextManagerVar withPos, 
+                               CallFunction "__exit__" [
+                                  ([LoadName contextManagerVar withPos], Nothing, withPos),
+                                  nonePos,
+                                  nonePos,
+                                  nonePos
+                                ] withPos]
+          -- Exit code for exception handling (call __exit__ and check if it suppresses the exception)
+          let exitExceptionStartIndex = exitNormalStartIndex + length exitNormalCode
+          let exitExceptionCode = [LoadName contextManagerVar withPos,
+                                  CallFunction "__exit__" [
+                                     ([LoadName contextManagerVar withPos], Nothing, withPos),
+                                     ([LoadPendingException], Nothing, withPos),  -- exc_type
+                                     ([LoadPendingException], Nothing, withPos),  -- exc_value
+                                     nonePos  -- traceback
+                                   ] withPos,
+                                  CheckWithResult]
+          let allCode = setupCode ++ enterCode ++ storeCode ++
+                       [PushExceptionHandler exitExceptionStartIndex] ++
+                       bodyCode ++
+                       [PopExceptionHandler, Jump exitNormalStartIndex] ++
+                       exitNormalCode ++
+                       exitExceptionCode
+          pure (allCode, exitExceptionStartIndex + length exitExceptionCode)
