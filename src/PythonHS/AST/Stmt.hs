@@ -7,34 +7,145 @@ import PythonHS.Lexer.Position (Position)
 -- Statements: assignment, print, control flow, function definition
 -- each statement carries a source position for better error reporting
 data Stmt
-  = AssignStmt String Expr Position
-  | AssignUnpackStmt [String] Expr Position
-  | AnnAssignStmt String Expr (Maybe Expr) Position -- name, annotation, optional value
-  | DecoratedStmt [Expr] Stmt Position
-  | YieldStmt Expr Position
-  | YieldFromStmt Expr Position
-  | AddAssignStmt String Expr Position
-  | SubAssignStmt String Expr Position
-  | MulAssignStmt String Expr Position
-  | DivAssignStmt String Expr Position
-  | ModAssignStmt String Expr Position
-  | FloorDivAssignStmt String Expr Position
-  | PrintStmt Expr Position
-  | ReturnStmt Expr Position
-  | BreakStmt Position
-  | ContinueStmt Position
-  | GlobalStmt String Position
-  | ImportStmt [([String], Maybe String)] Position
-  | FromImportStmt Int [String] [(String, Maybe String)] Position -- relative level, module path, imported names
-  | TryExceptStmt [Stmt] [(Maybe String, Maybe String, [Stmt], Position)] (Maybe [Stmt]) Position
-  | MatchStmt Expr [(Pattern, Maybe Expr, [Stmt], Position)] Position
-  | RaiseStmt Expr Position
-  | PassStmt Position
-  | IfStmt Expr [Stmt] (Maybe [Stmt]) Position      -- condition, then-branch, optional else-branch
-  | WhileStmt Expr [Stmt] Position                  -- condition, body
-  | ForStmt String Expr [Stmt] Position             -- loop variable, iterable expression, body
-  | ClassDefStmt String (Maybe String) [Stmt] Position -- class name, optional base, body
-  | FunctionDefStmt String [String] [Stmt] Position -- name, params, body
-  | FunctionDefDefaultsStmt String [String] [(String, Expr)] [Stmt] Position -- name, params, defaults, body
-  | WithStmt Expr (Maybe String) [Stmt] Position -- context manager expression, optional variable name, body, position
+  = AssignStmt
+      { assignStmtName :: String,
+        assignStmtValue :: Expr,
+        assignStmtPos :: Position
+      }
+  | AssignUnpackStmt
+      { assignUnpackStmtNames :: [String],
+        assignUnpackStmtValue :: Expr,
+        assignUnpackStmtPos :: Position
+      }
+  | AnnAssignStmt
+      { annAssignStmtName :: String,
+        annAssignStmtAnnotation :: Expr,
+        annAssignStmtValue :: Maybe Expr,
+        annAssignStmtPos :: Position
+      }
+  | DecoratedStmt
+      { decoratedStmtDecorators :: [Expr],
+        decoratedStmtTarget :: Stmt,
+        decoratedStmtPos :: Position
+      }
+  | YieldStmt
+      { yieldStmtValue :: Expr,
+        yieldStmtPos :: Position
+      }
+  | YieldFromStmt
+      { yieldFromStmtValue :: Expr,
+        yieldFromStmtPos :: Position
+      }
+  | AddAssignStmt
+      { addAssignStmtName :: String,
+        addAssignStmtValue :: Expr,
+        addAssignStmtPos :: Position
+      }
+  | SubAssignStmt
+      { subAssignStmtName :: String,
+        subAssignStmtValue :: Expr,
+        subAssignStmtPos :: Position
+      }
+  | MulAssignStmt
+      { mulAssignStmtName :: String,
+        mulAssignStmtValue :: Expr,
+        mulAssignStmtPos :: Position
+      }
+  | DivAssignStmt
+      { divAssignStmtName :: String,
+        divAssignStmtValue :: Expr,
+        divAssignStmtPos :: Position
+      }
+  | ModAssignStmt
+      { modAssignStmtName :: String,
+        modAssignStmtValue :: Expr,
+        modAssignStmtPos :: Position
+      }
+  | FloorDivAssignStmt
+      { floorDivAssignStmtName :: String,
+        floorDivAssignStmtValue :: Expr,
+        floorDivAssignStmtPos :: Position
+      }
+  | PrintStmt
+      { printStmtValue :: Expr,
+        printStmtPos :: Position
+      }
+  | ReturnStmt
+      { returnStmtValue :: Expr,
+        returnStmtPos :: Position
+      }
+  | BreakStmt { breakStmtPos :: Position }
+  | ContinueStmt { continueStmtPos :: Position }
+  | GlobalStmt
+      { globalStmtName :: String,
+        globalStmtPos :: Position
+      }
+  | ImportStmt
+      { importStmtItems :: [([String], Maybe String)],
+        importStmtPos :: Position
+      }
+  | FromImportStmt
+      { fromImportStmtLevel :: Int,
+        fromImportStmtModule :: [String],
+        fromImportStmtItems :: [(String, Maybe String)],
+        fromImportStmtPos :: Position
+      }
+  | TryExceptStmt
+      { tryExceptStmtTryBody :: [Stmt],
+        tryExceptStmtExceptSuites :: [(Maybe String, Maybe String, [Stmt], Position)],
+        tryExceptStmtFinallyBody :: Maybe [Stmt],
+        tryExceptStmtPos :: Position
+      }
+  | MatchStmt
+      { matchStmtSubject :: Expr,
+        matchStmtCases :: [(Pattern, Maybe Expr, [Stmt], Position)],
+        matchStmtPos :: Position
+      }
+  | RaiseStmt
+      { raiseStmtExpr :: Expr,
+        raiseStmtPos :: Position
+      }
+  | PassStmt { passStmtPos :: Position }
+  | IfStmt
+      { ifStmtCond :: Expr,
+        ifStmtThen :: [Stmt],
+        ifStmtElse :: Maybe [Stmt],
+        ifStmtPos :: Position
+      }
+  | WhileStmt
+      { whileStmtCond :: Expr,
+        whileStmtBody :: [Stmt],
+        whileStmtPos :: Position
+      }
+  | ForStmt
+      { forStmtVar :: String,
+        forStmtIter :: Expr,
+        forStmtBody :: [Stmt],
+        forStmtPos :: Position
+      }
+  | ClassDefStmt
+      { classDefStmtName :: String,
+        classDefStmtBase :: Maybe String,
+        classDefStmtBody :: [Stmt],
+        classDefStmtPos :: Position
+      }
+  | FunctionDefStmt
+      { functionDefStmtName :: String,
+        functionDefStmtParams :: [String],
+        functionDefStmtBody :: [Stmt],
+        functionDefStmtPos :: Position
+      }
+  | FunctionDefDefaultsStmt
+      { functionDefDefaultsStmtName :: String,
+        functionDefDefaultsStmtParams :: [String],
+        functionDefDefaultsStmtDefaults :: [(String, Expr)],
+        functionDefDefaultsStmtBody :: [Stmt],
+        functionDefDefaultsStmtPos :: Position
+      }
+  | WithStmt
+      { withStmtContextManager :: Expr,
+        withStmtVarName :: Maybe String,
+        withStmtBody :: [Stmt],
+        withStmtPos :: Position
+      }
   deriving (Eq, Show)

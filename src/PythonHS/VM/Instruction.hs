@@ -6,37 +6,81 @@ import PythonHS.Evaluator.Value (Value)
 import PythonHS.Lexer.Position (Position)
 
 data Instruction
-  = PushConst Value
-  | LoadName String Position
-  | StoreName String
-  | BuildList Int
-  | BuildTuple Int
-  | BuildDict Int
-  | DeclareGlobal String
-  | LoopGuard Position
-  | ForSetup Int Position
-  | ForNext String Int Position
-  | PushExceptionHandler Int
-  | PushFinallyHandler Int
-  | PushWithHandler Int
+  = PushConst { pushConstValue :: Value }
+  | LoadName
+      { loadNameName :: String,
+        loadNamePos :: Position
+      }
+  | StoreName { storeNameName :: String }
+  | BuildList { buildListCount :: Int }
+  | BuildTuple { buildTupleCount :: Int }
+  | BuildDict { buildDictCount :: Int }
+  | DeclareGlobal { declareGlobalName :: String }
+  | LoopGuard { loopGuardPos :: Position }
+  | ForSetup
+      { forSetupNextIndex :: Int,
+        forSetupPos :: Position
+      }
+  | ForNext
+      { forNextName :: String,
+        forNextLoopEndIndex :: Int,
+        forNextPos :: Position
+      }
+  | PushExceptionHandler { pushExceptionHandlerIp :: Int }
+  | PushFinallyHandler { pushFinallyHandlerIp :: Int }
+  | PushWithHandler { pushWithHandlerIp :: Int }
   | PopExceptionHandler
   | LoadPendingException
-  | MatchExceptionType (Maybe String)
+  | MatchExceptionType { matchExceptionTypeName :: Maybe String }
   | DupTop
-  | ApplyUnaryMinus Position
-  | ApplyNot Position
-  | ApplyBinary BinaryOperator Position
-  | MatchPattern Pattern Position
-  | JumpIfFalse Int
-  | Jump Int
-  | DefineFunction String [String] [(String, [Instruction])] [Instruction]
-  | CreateLambda String [String] [(String, [Instruction])] [Instruction]
-  | DefineClass String (Maybe String) [(String, String)]
-  | BuildListComprehension [([String], [Instruction], [[Instruction]])] [Instruction] Position
-  | CallFunction String [([Instruction], Maybe String, Position)] Position
-  | CallValueFunction [([Instruction], Maybe String, Position)] Position
-  | UnpackToNames [String] Position
-  | RaiseTop Position
+  | ApplyUnaryMinus { applyUnaryMinusPos :: Position }
+  | ApplyNot { applyNotPos :: Position }
+  | ApplyBinary
+      { applyBinaryOp :: BinaryOperator,
+        applyBinaryPos :: Position
+      }
+  | MatchPattern
+      { matchPatternPattern :: Pattern,
+        matchPatternPos :: Position
+      }
+  | JumpIfFalse { jumpIfFalseTarget :: Int }
+  | Jump { jumpTarget :: Int }
+  | DefineFunction
+      { defineFunctionName :: String,
+        defineFunctionParams :: [String],
+        defineFunctionDefaultCodes :: [(String, [Instruction])],
+        defineFunctionCode :: [Instruction]
+      }
+  | CreateLambda
+      { createLambdaName :: String,
+        createLambdaParams :: [String],
+        createLambdaDefaultCodes :: [(String, [Instruction])],
+        createLambdaCode :: [Instruction]
+      }
+  | DefineClass
+      { defineClassName :: String,
+        defineClassBase :: Maybe String,
+        defineClassMethods :: [(String, String)]
+      }
+  | BuildListComprehension
+      { buildListComprehensionClauses :: [([String], [Instruction], [[Instruction]])],
+        buildListComprehensionValueCode :: [Instruction],
+        buildListComprehensionPos :: Position
+      }
+  | CallFunction
+      { callFunctionName :: String,
+        callFunctionArgs :: [([Instruction], Maybe String, Position)],
+        callFunctionPos :: Position
+      }
+  | CallValueFunction
+      { callValueFunctionArgs :: [([Instruction], Maybe String, Position)],
+        callValueFunctionPos :: Position
+      }
+  | UnpackToNames
+      { unpackToNamesNames :: [String],
+        unpackToNamesPos :: Position
+      }
+  | RaiseTop { raiseTopPos :: Position }
   | RaisePendingException
   | RaisePendingError
   | ReturnTop

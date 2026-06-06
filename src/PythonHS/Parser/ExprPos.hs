@@ -1,31 +1,32 @@
+{-# LANGUAGE NamedFieldPuns #-}
 module PythonHS.Parser.ExprPos (exprPos) where
 
-import PythonHS.AST.Expr (Expr (BinaryExpr, CallExpr, CallValueExpr, DictExpr, FloatExpr, IdentifierExpr, IndexExpr, IntegerExpr, KeywordArgExpr, KwStarArgExpr, LambdaDefaultsExpr, LambdaExpr, ListComprehensionClausesExpr, ListComprehensionExpr, ListExpr, NoneExpr, NotExpr, SliceExpr, StarArgExpr, StringExpr, TupleExpr, UnaryMinusExpr, WalrusExpr))
+import PythonHS.AST.Expr (Expr (..))
 import PythonHS.Lexer.Position (Position)
 
 exprPos :: Expr -> Position
 exprPos expr =
   case expr of
-    IntegerExpr _ pos -> pos
-    FloatExpr _ pos -> pos
-    StringExpr _ pos -> pos
-    NoneExpr pos -> pos
-    ListExpr _ pos -> pos
-    TupleExpr _ pos -> pos
-    ListComprehensionExpr _ _ _ pos -> pos
-    ListComprehensionClausesExpr _ _ pos -> pos
-    DictExpr _ pos -> pos
-    IdentifierExpr _ pos -> pos
-    KeywordArgExpr _ _ pos -> pos
-    StarArgExpr _ pos -> pos
-    KwStarArgExpr _ pos -> pos
-    WalrusExpr _ _ pos -> pos
-    LambdaExpr _ _ pos -> pos
-    LambdaDefaultsExpr _ _ _ pos -> pos
-    UnaryMinusExpr _ pos -> pos
-    NotExpr _ pos -> pos
-    BinaryExpr _ _ _ pos -> pos
-    CallExpr _ _ pos -> pos
-    CallValueExpr _ _ pos -> pos
-    IndexExpr _ _ pos -> pos
-    SliceExpr _ _ _ pos -> pos
+    IntegerExpr { integerExprPos } -> integerExprPos
+    FloatExpr { floatExprPos } -> floatExprPos
+    StringExpr { stringExprPos } -> stringExprPos
+    NoneExpr { noneExprPos } -> noneExprPos
+    ListExpr { listExprPos } -> listExprPos
+    TupleExpr { tupleExprPos } -> tupleExprPos
+    ListComprehensionExpr { listComprehensionExprPos } -> listComprehensionExprPos
+    ListComprehensionClausesExpr { listComprehensionClausesExprPos } -> listComprehensionClausesExprPos
+    DictExpr { dictExprPos } -> dictExprPos
+    IdentifierExpr { identifierExprPos } -> identifierExprPos
+    KeywordArgExpr { keywordArgExprPos } -> keywordArgExprPos
+    StarArgExpr { starArgExprPos } -> starArgExprPos
+    KwStarArgExpr { kwStarArgExprPos } -> kwStarArgExprPos
+    WalrusExpr { walrusExprPos } -> walrusExprPos
+    LambdaExpr { lambdaExprPos } -> lambdaExprPos
+    LambdaDefaultsExpr { lambdaDefaultsExprPos } -> lambdaDefaultsExprPos
+    UnaryMinusExpr { unaryMinusExprPos } -> unaryMinusExprPos
+    NotExpr { notExprPos } -> notExprPos
+    BinaryExpr { binaryExprPos } -> binaryExprPos
+    CallExpr { callExprPos } -> callExprPos
+    CallValueExpr { callValueExprPos } -> callValueExprPos
+    IndexExpr { indexExprPos } -> indexExprPos
+    SliceExpr { sliceExprPos } -> sliceExprPos
