@@ -6,8 +6,9 @@ import PythonHS.Evaluator.Env (Env)
 import PythonHS.Evaluator.FuncEnv (FuncEnv)
 import PythonHS.Evaluator.MaxLoopIterations (maxLoopIterations)
 import PythonHS.Evaluator.ShowPos (showPos)
-import PythonHS.Evaluator.Value (Value (BreakValue, ContinueValue, DictValue, FloatValue, IntValue, ListValue, NoneValue, StringValue, TupleValue))
+import PythonHS.Evaluator.Value (Value (..))
 import PythonHS.Lexer.Position (Position)
+import PythonHS.Parser.ExprPos (exprPos)
 
 evalWhileStmt ::
   (Env -> FuncEnv -> [String] -> [Stmt] -> Either String (Env, FuncEnv, [String], Maybe (Value, Position))) ->
@@ -40,36 +41,12 @@ evalWhileStmt evalStatementsFn evalExprFn env fenv outputs cond body whilePos re
                 Just _ -> Right (envAfter, fenvAfter, outputs ++ nextOutputAcc [], ret)
                 Nothing -> nextIterations `seq` loop envAfter fenvAfter nextOutputAcc nextIterations
 
-    exprPos (IntegerExpr _ pos) = pos
-    exprPos (FloatExpr _ pos) = pos
-    exprPos (StringExpr _ pos) = pos
-    exprPos (NoneExpr pos) = pos
-    exprPos (ListExpr _ pos) = pos
-    exprPos (TupleExpr _ pos) = pos
-    exprPos (ListComprehensionExpr _ _ _ pos) = pos
-    exprPos (ListComprehensionClausesExpr _ _ pos) = pos
-    exprPos (DictExpr _ pos) = pos
-    exprPos (IdentifierExpr _ pos) = pos
-    exprPos (KeywordArgExpr _ _ pos) = pos
-    exprPos (StarArgExpr _ pos) = pos
-    exprPos (KwStarArgExpr _ pos) = pos
-    exprPos (WalrusExpr _ _ pos) = pos
-    exprPos (LambdaExpr _ _ pos) = pos
-    exprPos (LambdaDefaultsExpr _ _ _ pos) = pos
-    exprPos (UnaryMinusExpr _ pos) = pos
-    exprPos (NotExpr _ pos) = pos
-    exprPos (BinaryExpr _ _ _ pos) = pos
-    exprPos (CallExpr _ _ pos) = pos
-    exprPos (CallValueExpr _ _ pos) = pos
-    exprPos (IndexExpr _ _ pos) = pos
-    exprPos (SliceExpr _ _ _ pos) = pos
-
     expectTruthy :: String -> Position -> Value -> Either String Int
-    expectTruthy _ _ (IntValue n) = Right (if n == 0 then 0 else 1)
-    expectTruthy _ _ (FloatValue n) = Right (if n == 0 then 0 else 1)
+    expectTruthy _ _ IntValue {intValue = n} = Right (if n == 0 then 0 else 1)
+    expectTruthy _ _ FloatValue {floatValue = n} = Right (if n == 0 then 0 else 1)
     expectTruthy _ _ NoneValue = Right 0
-    expectTruthy _ _ (StringValue s) = Right (if null s then 0 else 1)
-    expectTruthy _ _ (ListValue vals) = Right (if null vals then 0 else 1)
-    expectTruthy _ _ (TupleValue vals) = Right (if null vals then 0 else 1)
-    expectTruthy _ _ (DictValue pairs) = Right (if null pairs then 0 else 1)
+    expectTruthy _ _ StringValue {stringValue = s} = Right (if null s then 0 else 1)
+    expectTruthy _ _ ListValue {listValueItems = vals} = Right (if null vals then 0 else 1)
+    expectTruthy _ _ TupleValue {tupleValueItems = vals} = Right (if null vals then 0 else 1)
+    expectTruthy _ _ DictValue {dictValuePairs = pairs} = Right (if null pairs then 0 else 1)
     expectTruthy context pos _ = Left $ "Type error: expected int in " ++ context ++ " at " ++ showPos pos

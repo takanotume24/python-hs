@@ -6,7 +6,7 @@ import PythonHS.Evaluator.Env (Env)
 import PythonHS.Evaluator.FuncEnv (FuncEnv)
 import PythonHS.Evaluator.RangeValues (rangeValues)
 import PythonHS.Evaluator.ShowPos (showPos)
-import PythonHS.Evaluator.Value (Value (DictValue, FloatValue, IntValue, ListValue, NoneValue, StringValue))
+import PythonHS.Evaluator.Value (Value (..))
 import PythonHS.Lexer.Position (Position)
 
 evalBuiltinExpr :: (Env -> FuncEnv -> Expr -> Either String (Value, [String], Env)) -> Env -> FuncEnv -> String -> [Expr] -> Position -> Maybe (Either String (Value, [String], Env))
@@ -15,26 +15,26 @@ evalBuiltinExpr evalExprFn env fenv fname args pos =
     "len" -> Just $ do
       (argVals, argOuts, envAfterArgs) <- evalArgs env fenv args
       case argVals of
-        [StringValue s] -> Right (IntValue (fromIntegral (length s)), argOuts, envAfterArgs)
-        [ListValue vals] -> Right (IntValue (fromIntegral (length vals)), argOuts, envAfterArgs)
+        [StringValue {stringValue = s}] -> Right (IntValue (fromIntegral (length s)), argOuts, envAfterArgs)
+        [ListValue {listValueItems = vals}] -> Right (IntValue (fromIntegral (length vals)), argOuts, envAfterArgs)
         [_] -> Left $ "Type error: len expects string or list at " ++ showPos pos
         _ -> Left $ "Argument count mismatch when calling len at " ++ showPos pos
     "bool" -> Just $ do
       (argVals, argOuts, envAfterArgs) <- evalArgs env fenv args
       case argVals of
-        [IntValue n] -> Right (IntValue (if n == 0 then 0 else 1), argOuts, envAfterArgs)
-        [FloatValue n] -> Right (IntValue (if n == 0 then 0 else 1), argOuts, envAfterArgs)
+        [IntValue {intValue = n}] -> Right (IntValue (if n == 0 then 0 else 1), argOuts, envAfterArgs)
+        [FloatValue {floatValue = n}] -> Right (IntValue (if n == 0 then 0 else 1), argOuts, envAfterArgs)
         [NoneValue] -> Right (IntValue 0, argOuts, envAfterArgs)
-        [StringValue s] -> Right (IntValue (if null s then 0 else 1), argOuts, envAfterArgs)
-        [ListValue vals] -> Right (IntValue (if null vals then 0 else 1), argOuts, envAfterArgs)
-        [DictValue pairs] -> Right (IntValue (if null pairs then 0 else 1), argOuts, envAfterArgs)
+        [StringValue {stringValue = s}] -> Right (IntValue (if null s then 0 else 1), argOuts, envAfterArgs)
+        [ListValue {listValueItems = vals}] -> Right (IntValue (if null vals then 0 else 1), argOuts, envAfterArgs)
+        [DictValue {dictValuePairs = pairs}] -> Right (IntValue (if null pairs then 0 else 1), argOuts, envAfterArgs)
         _ -> Left $ "Argument count mismatch when calling bool at " ++ showPos pos
     "range" -> Just $ do
       (argVals, argOuts, envAfterArgs) <- evalArgs env fenv args
       case argVals of
-        [IntValue n] -> Right (ListValue (map IntValue (rangeOne n)), argOuts, envAfterArgs)
-        [IntValue start, IntValue stop] -> Right (ListValue (map IntValue (rangeValues start stop 1)), argOuts, envAfterArgs)
-        [IntValue start, IntValue stop, IntValue step] ->
+        [IntValue {intValue = n}] -> Right (ListValue (map IntValue (rangeOne n)), argOuts, envAfterArgs)
+        [IntValue {intValue = start}, IntValue {intValue = stop}] -> Right (ListValue (map IntValue (rangeValues start stop 1)), argOuts, envAfterArgs)
+        [IntValue {intValue = start}, IntValue {intValue = stop}, IntValue {intValue = step}] ->
           if step == 0
             then Left $ "Value error: range step must not be zero at " ++ showPos pos
             else Right (ListValue (map IntValue (rangeValues start stop step)), argOuts, envAfterArgs)
@@ -45,13 +45,13 @@ evalBuiltinExpr evalExprFn env fenv fname args pos =
     "append" -> Just $ do
       (argVals, argOuts, envAfterArgs) <- evalArgs env fenv args
       case argVals of
-        [ListValue vals, value] -> Right (ListValue (vals ++ [value]), argOuts, envAfterArgs)
+        [ListValue {listValueItems = vals}, value] -> Right (ListValue (vals ++ [value]), argOuts, envAfterArgs)
         [_, _] -> Left $ "Type error: append expects list as first argument at " ++ showPos pos
         _ -> Left $ "Argument count mismatch when calling append at " ++ showPos pos
     "sort" -> Just $ do
       (argVals, argOuts, envAfterArgs) <- evalArgs env fenv args
       case argVals of
-        [ListValue vals] ->
+        [ListValue {listValueItems = vals}] ->
           case numberPairs vals of
             Just pairs -> Right (ListValue (map snd (sortOn fst pairs)), argOuts, envAfterArgs)
             Nothing -> Left $ "Type error: sort expects list of number at " ++ showPos pos
@@ -60,13 +60,13 @@ evalBuiltinExpr evalExprFn env fenv fname args pos =
     "reverse" -> Just $ do
       (argVals, argOuts, envAfterArgs) <- evalArgs env fenv args
       case argVals of
-        [ListValue vals] -> Right (ListValue (reverse vals), argOuts, envAfterArgs)
+        [ListValue {listValueItems = vals}] -> Right (ListValue (reverse vals), argOuts, envAfterArgs)
         [_] -> Left $ "Type error: reverse expects list as first argument at " ++ showPos pos
         _ -> Left $ "Argument count mismatch when calling reverse at " ++ showPos pos
     "remove" -> Just $ do
       (argVals, argOuts, envAfterArgs) <- evalArgs env fenv args
       case argVals of
-        [ListValue vals, target] ->
+        [ListValue {listValueItems = vals}, target] ->
           case removeFirstValue vals target of
             Just newVals -> Right (ListValue newVals, argOuts, envAfterArgs)
             Nothing -> Left $ "Value error: remove value not found at " ++ showPos pos
@@ -75,50 +75,50 @@ evalBuiltinExpr evalExprFn env fenv fname args pos =
     "insert" -> Just $ do
       (argVals, argOuts, envAfterArgs) <- evalArgs env fenv args
       case argVals of
-        [ListValue vals, IntValue index, value] -> Right (ListValue (insertAtIndex vals index value), argOuts, envAfterArgs)
-        [ListValue _, _, _] -> Left $ "Type error: insert expects int index at " ++ showPos pos
+        [ListValue {listValueItems = vals}, IntValue {intValue = index}, value] -> Right (ListValue (insertAtIndex vals index value), argOuts, envAfterArgs)
+        [ListValue {}, _, _] -> Left $ "Type error: insert expects int index at " ++ showPos pos
         [_, _, _] -> Left $ "Type error: insert expects list as first argument at " ++ showPos pos
         _ -> Left $ "Argument count mismatch when calling insert at " ++ showPos pos
     "pop" -> Just $ do
       (argVals, argOuts, envAfterArgs) <- evalArgs env fenv args
       case argVals of
-        [ListValue []] -> Left $ "Value error: pop from empty list at " ++ showPos pos
-        [ListValue vals] -> Right (last vals, argOuts, envAfterArgs)
-        [DictValue pairs, key] ->
+        [ListValue {listValueItems = []}] -> Left $ "Value error: pop from empty list at " ++ showPos pos
+        [ListValue {listValueItems = vals}] -> Right (last vals, argOuts, envAfterArgs)
+        [DictValue {dictValuePairs = pairs}, key] ->
           case lookupDictValue pairs key of
             Just value -> Right (value, argOuts, envAfterArgs)
             Nothing -> Left $ "Key not found in pop at " ++ showPos pos
-        [DictValue pairs, key, defaultValue] ->
+        [DictValue {dictValuePairs = pairs}, key, defaultValue] ->
           case lookupDictValue pairs key of
             Just value -> Right (value, argOuts, envAfterArgs)
             Nothing -> Right (defaultValue, argOuts, envAfterArgs)
         [_] -> Left $ "Type error: pop expects list at " ++ showPos pos
-        [ListValue _, _] -> Left $ "Argument count mismatch when calling pop at " ++ showPos pos
-        [ListValue _, _, _] -> Left $ "Argument count mismatch when calling pop at " ++ showPos pos
+        [ListValue {}, _] -> Left $ "Argument count mismatch when calling pop at " ++ showPos pos
+        [ListValue {}, _, _] -> Left $ "Argument count mismatch when calling pop at " ++ showPos pos
         [_, _] -> Left $ "Type error: pop expects dict as first argument at " ++ showPos pos
         [_, _, _] -> Left $ "Type error: pop expects dict as first argument at " ++ showPos pos
         _ -> Left $ "Argument count mismatch when calling pop at " ++ showPos pos
     "clear" -> Just $ do
       (argVals, argOuts, envAfterArgs) <- evalArgs env fenv args
       case argVals of
-        [ListValue _] -> Right (ListValue [], argOuts, envAfterArgs)
-        [DictValue _] -> Right (DictValue [], argOuts, envAfterArgs)
+        [ListValue {}] -> Right (ListValue [], argOuts, envAfterArgs)
+        [DictValue {}] -> Right (DictValue [], argOuts, envAfterArgs)
         [_] -> Left $ "Type error: clear expects list or dict at " ++ showPos pos
         _ -> Left $ "Argument count mismatch when calling clear at " ++ showPos pos
     "keys" -> Just $ do
       (argVals, argOuts, envAfterArgs) <- evalArgs env fenv args
       case argVals of
-        [DictValue pairs] -> Right (ListValue (map fst pairs), argOuts, envAfterArgs)
+        [DictValue {dictValuePairs = pairs}] -> Right (ListValue (map fst pairs), argOuts, envAfterArgs)
         [_] -> Left $ "Type error: keys expects dict at " ++ showPos pos
         _ -> Left $ "Argument count mismatch when calling keys at " ++ showPos pos
     "get" -> Just $ do
       (argVals, argOuts, envAfterArgs) <- evalArgs env fenv args
       case argVals of
-        [DictValue pairs, key] ->
+        [DictValue {dictValuePairs = pairs}, key] ->
           case lookupDictValue pairs key of
             Just value -> Right (value, argOuts, envAfterArgs)
             Nothing -> Left $ "Key not found in get at " ++ showPos pos
-        [DictValue pairs, key, defaultValue] ->
+        [DictValue {dictValuePairs = pairs}, key, defaultValue] ->
           case lookupDictValue pairs key of
             Just value -> Right (value, argOuts, envAfterArgs)
             Nothing -> Right (defaultValue, argOuts, envAfterArgs)
@@ -128,30 +128,30 @@ evalBuiltinExpr evalExprFn env fenv fname args pos =
     "update" -> Just $ do
       (argVals, argOuts, envAfterArgs) <- evalArgs env fenv args
       case argVals of
-        [DictValue pairs, DictValue otherPairs] -> Right (DictValue (mergeDictValues pairs otherPairs), argOuts, envAfterArgs)
-        [DictValue _, _] -> Left $ "Type error: update expects dict as second argument at " ++ showPos pos
-        [DictValue pairs, key, value] -> Right (DictValue (updateDictValue pairs key value), argOuts, envAfterArgs)
+        [DictValue {dictValuePairs = pairs}, DictValue {dictValuePairs = otherPairs}] -> Right (DictValue (mergeDictValues pairs otherPairs), argOuts, envAfterArgs)
+        [DictValue {}, _] -> Left $ "Type error: update expects dict as second argument at " ++ showPos pos
+        [DictValue {dictValuePairs = pairs}, key, value] -> Right (DictValue (updateDictValue pairs key value), argOuts, envAfterArgs)
         [_, _, _] -> Left $ "Type error: update expects dict as first argument at " ++ showPos pos
         [_, _] -> Left $ "Type error: update expects dict as first argument at " ++ showPos pos
         _ -> Left $ "Argument count mismatch when calling update at " ++ showPos pos
     "setdefault" -> Just $ do
       (argVals, argOuts, envAfterArgs) <- evalArgs env fenv args
       case argVals of
-        [DictValue pairs, key] -> Right (DictValue (setDefaultDictValue pairs key NoneValue), argOuts, envAfterArgs)
-        [DictValue pairs, key, defaultValue] -> Right (DictValue (setDefaultDictValue pairs key defaultValue), argOuts, envAfterArgs)
+        [DictValue {dictValuePairs = pairs}, key] -> Right (DictValue (setDefaultDictValue pairs key NoneValue), argOuts, envAfterArgs)
+        [DictValue {dictValuePairs = pairs}, key, defaultValue] -> Right (DictValue (setDefaultDictValue pairs key defaultValue), argOuts, envAfterArgs)
         [_, _] -> Left $ "Type error: setdefault expects dict as first argument at " ++ showPos pos
         [_, _, _] -> Left $ "Type error: setdefault expects dict as first argument at " ++ showPos pos
         _ -> Left $ "Argument count mismatch when calling setdefault at " ++ showPos pos
     "values" -> Just $ do
       (argVals, argOuts, envAfterArgs) <- evalArgs env fenv args
       case argVals of
-        [DictValue pairs] -> Right (ListValue (map snd pairs), argOuts, envAfterArgs)
+        [DictValue {dictValuePairs = pairs}] -> Right (ListValue (map snd pairs), argOuts, envAfterArgs)
         [_] -> Left $ "Type error: values expects dict at " ++ showPos pos
         _ -> Left $ "Argument count mismatch when calling values at " ++ showPos pos
     "items" -> Just $ do
       (argVals, argOuts, envAfterArgs) <- evalArgs env fenv args
       case argVals of
-        [DictValue pairs] -> Right (ListValue (map pairToList pairs), argOuts, envAfterArgs)
+        [DictValue {dictValuePairs = pairs}] -> Right (ListValue (map pairToList pairs), argOuts, envAfterArgs)
         [_] -> Left $ "Type error: items expects dict at " ++ showPos pos
         _ -> Left $ "Argument count mismatch when calling items at " ++ showPos pos
     _ -> Nothing
@@ -182,8 +182,8 @@ evalBuiltinExpr evalExprFn env fenv fname args pos =
       | v == target = Just restVals
       | otherwise = fmap (v :) (removeFirstValue restVals target)
     numberPairs [] = Just []
-    numberPairs (IntValue n : restVals) = fmap ((fromIntegral n, IntValue n) :) (numberPairs restVals)
-    numberPairs (FloatValue n : restVals) = fmap ((n, FloatValue n) :) (numberPairs restVals)
+    numberPairs (IntValue {intValue = n} : restVals) = fmap ((fromIntegral n, IntValue n) :) (numberPairs restVals)
+    numberPairs (FloatValue {floatValue = n} : restVals) = fmap ((n, FloatValue n) :) (numberPairs restVals)
     numberPairs (_ : _) = Nothing
 
     insertAtIndex values index value =

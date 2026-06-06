@@ -1,21 +1,21 @@
 module PythonHS.Evaluator.ValueToReplOutput (valueToReplOutput) where
 
-import PythonHS.Evaluator.Value (Value (BreakValue, ClassValue, ContinueValue, DictValue, FloatValue, FunctionRefValue, InstanceValue, IntValue, ListValue, ModuleValue, NoneValue, StringValue, TupleValue))
+import PythonHS.Evaluator.Value (Value (..))
 
 valueToReplOutput :: Value -> String
 valueToReplOutput value =
   case value of
-    IntValue n -> show n
-    FloatValue n -> show n
-    StringValue s -> "'" ++ escapeString s ++ "'"
+    IntValue {intValue = n} -> show n
+    FloatValue {floatValue = n} -> show n
+    StringValue {stringValue = s} -> "'" ++ escapeString s ++ "'"
     NoneValue -> "None"
-    ListValue vals -> "[" ++ joinWithCommaSpace (map valueToReplOutput vals) ++ "]"
-    TupleValue vals -> tupleToOutput vals
-    DictValue pairs -> "{" ++ joinWithCommaSpace (map pairToOutput pairs) ++ "}"
-    ModuleValue moduleName _ -> "<module:" ++ moduleName ++ ">"
-    FunctionRefValue name _ -> "<function " ++ name ++ ">"
-    ClassValue name _ _ -> "<class " ++ name ++ ">"
-    InstanceValue className _ -> "<" ++ className ++ " instance>"
+    ListValue {listValueItems = vals} -> "[" ++ joinWithCommaSpace (map valueToReplOutput vals) ++ "]"
+    TupleValue {tupleValueItems = vals} -> tupleToOutput vals
+    DictValue {dictValuePairs = pairs} -> "{" ++ joinWithCommaSpace (map pairToOutput pairs) ++ "}"
+    ModuleValue {moduleValueName} -> "<module:" ++ moduleValueName ++ ">"
+    FunctionRefValue {functionRefValueName = name} -> "<function " ++ name ++ ">"
+    ClassValue {classValueName = name} -> "<class " ++ name ++ ">"
+    InstanceValue {instanceValueClass = className} -> "<" ++ className ++ " instance>"
     BreakValue -> "<break>"
     ContinueValue -> "<continue>"
   where

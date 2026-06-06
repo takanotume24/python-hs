@@ -44,14 +44,14 @@ evalCallExpr evalStatementsFn evalExprFn env fenv fname args pos =
         Nothing -> Left $ "Name error: undefined function " ++ fname ++ " at " ++ showPos pos
   where
     firstKeywordArg [] = Nothing
-    firstKeywordArg (KeywordArgExpr argName _ kwPos : _) = Just (argName, kwPos)
+    firstKeywordArg (KeywordArgExpr {keywordArgExprName = argName, keywordArgExprPos = kwPos} : _) = Just (argName, kwPos)
     firstKeywordArg (_ : restArgs) = firstKeywordArg restArgs
 
     evalCallArgs currentEnv _ seenKw seenKwPos seenKwOrder _ positionalVals [] =
       Right (positionalVals, seenKw, seenKwPos, seenKwOrder, [], currentEnv)
     evalCallArgs currentEnv currentFenv seenKw seenKwPos seenKwOrder seenKeywordArg positionalVals (argExpr : restArgs) =
       case argExpr of
-        KeywordArgExpr argName valueExpr argPos ->
+        KeywordArgExpr {keywordArgExprName = argName, keywordArgExprValue = valueExpr, keywordArgExprPos = argPos} ->
           case Map.lookup argName seenKw of
             Just _ -> Left $ "Argument error: duplicate keyword argument " ++ argName ++ " at " ++ showPos argPos
             Nothing -> do
@@ -117,12 +117,12 @@ evalCallExpr evalStatementsFn evalExprFn env fenv fname args pos =
 
     collectGlobalNames stmts = nub (concatMap goStmt stmts)
       where
-        goStmt (GlobalStmt name _) = [name]
-        goStmt (IfStmt _ thenBranch maybeElse _) = concatMap goStmt thenBranch ++ maybe [] (concatMap goStmt) maybeElse
-        goStmt (WhileStmt _ body _) = concatMap goStmt body
-        goStmt (ForStmt _ _ body _) = concatMap goStmt body
-        goStmt (FunctionDefStmt _ _ _ _) = []
-        goStmt (FunctionDefDefaultsStmt _ _ _ _ _) = []
+        goStmt GlobalStmt {globalStmtName} = [globalStmtName]
+        goStmt IfStmt {ifStmtThen, ifStmtElse} = concatMap goStmt ifStmtThen ++ maybe [] (concatMap goStmt) ifStmtElse
+        goStmt WhileStmt {whileStmtBody} = concatMap goStmt whileStmtBody
+        goStmt ForStmt {forStmtBody} = concatMap goStmt forStmtBody
+        goStmt FunctionDefStmt {} = []
+        goStmt FunctionDefDefaultsStmt {} = []
         goStmt _ = []
 
     applyGlobalWrites outerEnv finalLocalEnv names =

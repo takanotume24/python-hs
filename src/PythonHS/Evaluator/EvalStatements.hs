@@ -11,7 +11,7 @@ import PythonHS.Evaluator.EvalWhileStmt (evalWhileStmt)
 import PythonHS.Evaluator.EvalWithStmt (evalWithStmt)
 import PythonHS.Evaluator.FuncEnv (FuncEnv)
 import PythonHS.Evaluator.ShowPos (showPos)
-import PythonHS.Evaluator.Value (Value (BreakValue, ContinueValue, DictValue, FloatValue, IntValue, ListValue, NoneValue, StringValue, TupleValue))
+import PythonHS.Evaluator.Value (Value (..))
 import PythonHS.Evaluator.ValueToOutput (valueToOutput)
 import PythonHS.Lexer.Position (Position)
 import PythonHS.Parser.ExprPos (exprPos)
@@ -20,75 +20,75 @@ evalStatements :: Env -> FuncEnv -> [String] -> [Stmt] -> Either String (Env, Fu
 evalStatements env fenv outputs [] = Right (env, fenv, outputs, Nothing)
 evalStatements env fenv outputs (stmt : rest) =
   case stmt of
-    AssignStmt name expr _ -> do
-      (val, exprOuts, envAfterExpr) <- evalExpr evalStatements env fenv expr
-      evalStatements (Map.insert name val envAfterExpr) fenv (outputs ++ exprOuts) rest
-    AssignUnpackStmt _ _ pos ->
-      Left $ "Runtime error: tuple unpack assignment is only supported in vm engine at " ++ showPos pos
-    AnnAssignStmt name _ maybeExpr _ ->
-      case maybeExpr of
+    AssignStmt {assignStmtName, assignStmtValue} -> do
+      (val, exprOuts, envAfterExpr) <- evalExpr evalStatements env fenv assignStmtValue
+      evalStatements (Map.insert assignStmtName val envAfterExpr) fenv (outputs ++ exprOuts) rest
+    AssignUnpackStmt {assignUnpackStmtPos} ->
+      Left $ "Runtime error: tuple unpack assignment is only supported in vm engine at " ++ showPos assignUnpackStmtPos
+    AnnAssignStmt {annAssignStmtName, annAssignStmtValue} ->
+      case annAssignStmtValue of
         Nothing -> evalStatements env fenv outputs rest
         Just expr -> do
           (val, exprOuts, envAfterExpr) <- evalExpr evalStatements env fenv expr
-          evalStatements (Map.insert name val envAfterExpr) fenv (outputs ++ exprOuts) rest
-    DecoratedStmt _ _ pos -> Left $ "Runtime error: decorator is only supported in vm engine at " ++ showPos pos
+          evalStatements (Map.insert annAssignStmtName val envAfterExpr) fenv (outputs ++ exprOuts) rest
+    DecoratedStmt {decoratedStmtPos} -> Left $ "Runtime error: decorator is only supported in vm engine at " ++ showPos decoratedStmtPos
 
-    AddAssignStmt name expr pos -> do
-      current <- lookupName env name pos
-      (rhs, exprOuts, envAfterExpr) <- evalExpr evalStatements env fenv expr
+    AddAssignStmt {addAssignStmtName, addAssignStmtValue, addAssignStmtPos} -> do
+      current <- lookupName env addAssignStmtName addAssignStmtPos
+      (rhs, exprOuts, envAfterExpr) <- evalExpr evalStatements env fenv addAssignStmtValue
       newValue <-
         case (current, rhs) of
-          (IntValue li, IntValue ri) -> Right (IntValue (li + ri))
-          (FloatValue li, FloatValue ri) -> Right (FloatValue (li + ri))
-          (IntValue li, FloatValue ri) -> Right (FloatValue (fromIntegral li + ri))
-          (FloatValue li, IntValue ri) -> Right (FloatValue (li + fromIntegral ri))
-          (StringValue ls, StringValue rs) -> Right (StringValue (ls ++ rs))
-          _ -> Left $ "Type error: + expects int+int or string+string at " ++ showPos pos
-      evalStatements (Map.insert name newValue envAfterExpr) fenv (outputs ++ exprOuts) rest
+          (IntValue {intValue = li}, IntValue {intValue = ri}) -> Right (IntValue (li + ri))
+          (FloatValue {floatValue = li}, FloatValue {floatValue = ri}) -> Right (FloatValue (li + ri))
+          (IntValue {intValue = li}, FloatValue {floatValue = ri}) -> Right (FloatValue (fromIntegral li + ri))
+          (FloatValue {floatValue = li}, IntValue {intValue = ri}) -> Right (FloatValue (li + fromIntegral ri))
+          (StringValue {stringValue = ls}, StringValue {stringValue = rs}) -> Right (StringValue (ls ++ rs))
+          _ -> Left $ "Type error: + expects int+int or string+string at " ++ showPos addAssignStmtPos
+      evalStatements (Map.insert addAssignStmtName newValue envAfterExpr) fenv (outputs ++ exprOuts) rest
 
-    SubAssignStmt name expr pos -> evalAssignNumeric name expr pos "-=" (\li ri -> li - ri)
-    MulAssignStmt name expr pos -> evalAssignNumeric name expr pos "*=" (\li ri -> li * ri)
-    DivAssignStmt name expr pos -> evalAssignDivide name expr pos
-    ModAssignStmt name expr pos -> evalAssignModulo name expr pos
-    FloorDivAssignStmt name expr pos -> evalAssignFloorDivide name expr pos
+    SubAssignStmt {subAssignStmtName, subAssignStmtValue, subAssignStmtPos} -> evalAssignNumeric subAssignStmtName subAssignStmtValue subAssignStmtPos "-=" (\li ri -> li - ri)
+    MulAssignStmt {mulAssignStmtName, mulAssignStmtValue, mulAssignStmtPos} -> evalAssignNumeric mulAssignStmtName mulAssignStmtValue mulAssignStmtPos "*=" (\li ri -> li * ri)
+    DivAssignStmt {divAssignStmtName, divAssignStmtValue, divAssignStmtPos} -> evalAssignDivide divAssignStmtName divAssignStmtValue divAssignStmtPos
+    ModAssignStmt {modAssignStmtName, modAssignStmtValue, modAssignStmtPos} -> evalAssignModulo modAssignStmtName modAssignStmtValue modAssignStmtPos
+    FloorDivAssignStmt {floorDivAssignStmtName, floorDivAssignStmtValue, floorDivAssignStmtPos} -> evalAssignFloorDivide floorDivAssignStmtName floorDivAssignStmtValue floorDivAssignStmtPos
 
-    PrintStmt expr _ ->
-      case expr of
-        StringExpr s _ -> evalStatements env fenv (outputs ++ [s]) rest
+    PrintStmt {printStmtValue} ->
+      case printStmtValue of
+        StringExpr {stringExprValue = s} -> evalStatements env fenv (outputs ++ [s]) rest
         _ -> do
-          (val, exprOuts, envAfterExpr) <- evalExpr evalStatements env fenv expr
+          (val, exprOuts, envAfterExpr) <- evalExpr evalStatements env fenv printStmtValue
           evalStatements envAfterExpr fenv (outputs ++ exprOuts ++ [valueToOutput val]) rest
 
-    ReturnStmt expr pos -> do
-      (val, exprOuts, envAfterExpr) <- evalExpr evalStatements env fenv expr
-      Right (envAfterExpr, fenv, outputs ++ exprOuts, Just (val, pos))
-    YieldStmt _ pos -> Left $ "Runtime error: yield is only supported in vm engine at " ++ showPos pos
-    YieldFromStmt _ pos -> Left $ "Runtime error: yield from is only supported in vm engine at " ++ showPos pos
+    ReturnStmt {returnStmtValue, returnStmtPos} -> do
+      (val, exprOuts, envAfterExpr) <- evalExpr evalStatements env fenv returnStmtValue
+      Right (envAfterExpr, fenv, outputs ++ exprOuts, Just (val, returnStmtPos))
+    YieldStmt {yieldStmtPos} -> Left $ "Runtime error: yield is only supported in vm engine at " ++ showPos yieldStmtPos
+    YieldFromStmt {yieldFromStmtPos} -> Left $ "Runtime error: yield from is only supported in vm engine at " ++ showPos yieldFromStmtPos
 
-    BreakStmt pos -> Right (env, fenv, outputs, Just (BreakValue, pos))
-    ContinueStmt pos -> Right (env, fenv, outputs, Just (ContinueValue, pos))
-    GlobalStmt _ _ -> evalStatements env fenv outputs rest
-    ImportStmt _ _ -> evalStatements env fenv outputs rest
-    FromImportStmt _ _ _ _ -> evalStatements env fenv outputs rest
-    TryExceptStmt _ _ _ pos -> Left $ "Runtime error: try/except is only supported in vm engine at " ++ showPos pos
-    MatchStmt _ _ pos -> Left $ "Runtime error: match/case is only supported in vm engine at " ++ showPos pos
-    RaiseStmt expr pos -> do
-      (val, _, _) <- evalExpr evalStatements env fenv expr
-      Left $ "Runtime error: " ++ valueToOutput val ++ " at " ++ showPos pos
-    PassStmt _ -> evalStatements env fenv outputs rest
-    WithStmt contextManager maybeVarName body withPos ->
-      evalWithStmt evalStatements (evalExpr evalStatements) env fenv outputs contextManager maybeVarName body withPos rest
+    BreakStmt {breakStmtPos} -> Right (env, fenv, outputs, Just (BreakValue, breakStmtPos))
+    ContinueStmt {continueStmtPos} -> Right (env, fenv, outputs, Just (ContinueValue, continueStmtPos))
+    GlobalStmt {} -> evalStatements env fenv outputs rest
+    ImportStmt {} -> evalStatements env fenv outputs rest
+    FromImportStmt {} -> evalStatements env fenv outputs rest
+    TryExceptStmt {tryExceptStmtPos} -> Left $ "Runtime error: try/except is only supported in vm engine at " ++ showPos tryExceptStmtPos
+    MatchStmt {matchStmtPos} -> Left $ "Runtime error: match/case is only supported in vm engine at " ++ showPos matchStmtPos
+    RaiseStmt {raiseStmtExpr, raiseStmtPos} -> do
+      (val, _, _) <- evalExpr evalStatements env fenv raiseStmtExpr
+      Left $ "Runtime error: " ++ valueToOutput val ++ " at " ++ showPos raiseStmtPos
+    PassStmt {} -> evalStatements env fenv outputs rest
+    WithStmt {withStmtContextManager, withStmtVarName, withStmtBody, withStmtPos} ->
+      evalWithStmt evalStatements (evalExpr evalStatements) env fenv outputs withStmtContextManager withStmtVarName withStmtBody withStmtPos rest
 
-    IfStmt cond thenBranch maybeElse _ -> do
-      (condVal, condOuts, envAfterCond) <- evalExpr evalStatements env fenv cond
-      condNum <- expectTruthy "if condition" (exprPos cond) condVal
+    IfStmt {ifStmtCond, ifStmtThen, ifStmtElse} -> do
+      (condVal, condOuts, envAfterCond) <- evalExpr evalStatements env fenv ifStmtCond
+      condNum <- expectTruthy "if condition" (exprPos ifStmtCond) condVal
       if condNum /= 0
         then do
-          (envThen, fenvThen, outputsThen, ret) <- evalStatements envAfterCond fenv [] thenBranch
+          (envThen, fenvThen, outputsThen, ret) <- evalStatements envAfterCond fenv [] ifStmtThen
           case ret of
             Just _ -> Right (envThen, fenvThen, outputs ++ condOuts ++ outputsThen, ret)
             Nothing -> evalStatements envThen fenvThen (outputs ++ condOuts ++ outputsThen) rest
-        else case maybeElse of
+        else case ifStmtElse of
           Just elseBranch -> do
             (envElse, fenvElse, outputsElse, ret) <- evalStatements envAfterCond fenv [] elseBranch
             case ret of
@@ -96,19 +96,19 @@ evalStatements env fenv outputs (stmt : rest) =
               Nothing -> evalStatements envElse fenvElse (outputs ++ condOuts ++ outputsElse) rest
           Nothing -> evalStatements envAfterCond fenv (outputs ++ condOuts) rest
 
-    WhileStmt cond body whilePos ->
-      evalWhileStmt evalStatements (evalExpr evalStatements) env fenv outputs cond body whilePos rest
+    WhileStmt {whileStmtCond, whileStmtBody, whileStmtPos} ->
+      evalWhileStmt evalStatements (evalExpr evalStatements) env fenv outputs whileStmtCond whileStmtBody whileStmtPos rest
 
-    ForStmt name iterExpr body forPos ->
-      evalForStmt evalStatements (evalExpr evalStatements) env fenv outputs name iterExpr body forPos rest
+    ForStmt {forStmtVar, forStmtIter, forStmtBody, forStmtPos} ->
+      evalForStmt evalStatements (evalExpr evalStatements) env fenv outputs forStmtVar forStmtIter forStmtBody forStmtPos rest
 
-    ClassDefStmt _ _ _ pos -> Left $ "Runtime error: class is only supported in vm engine at " ++ showPos pos
+    ClassDefStmt {classDefStmtPos} -> Left $ "Runtime error: class is only supported in vm engine at " ++ showPos classDefStmtPos
 
-    FunctionDefStmt name params body _ ->
-      evalStatements env (Map.insert name (params, [], body) fenv) outputs rest
+    FunctionDefStmt {functionDefStmtName, functionDefStmtParams, functionDefStmtBody} ->
+      evalStatements env (Map.insert functionDefStmtName (functionDefStmtParams, [], functionDefStmtBody) fenv) outputs rest
 
-    FunctionDefDefaultsStmt name params defaults body _ ->
-      evalStatements env (Map.insert name (params, defaults, body) fenv) outputs rest
+    FunctionDefDefaultsStmt {functionDefDefaultsStmtName, functionDefDefaultsStmtParams, functionDefDefaultsStmtDefaults, functionDefDefaultsStmtBody} ->
+      evalStatements env (Map.insert functionDefDefaultsStmtName (functionDefDefaultsStmtParams, functionDefDefaultsStmtDefaults, functionDefDefaultsStmtBody) fenv) outputs rest
   where
     lookupName env' name pos =
       case Map.lookup name env' of
@@ -169,17 +169,17 @@ evalStatements env fenv outputs (stmt : rest) =
                   _ -> FloatValue remainder
           evalStatements (Map.insert name newValue envAfterExpr) fenv (outputs ++ exprOuts) rest
 
-    expectNumber _ _ (IntValue n) = Right (fromIntegral n)
-    expectNumber _ _ (FloatValue n) = Right n
+    expectNumber _ _ IntValue {intValue = n} = Right (fromIntegral n)
+    expectNumber _ _ FloatValue {floatValue = n} = Right n
     expectNumber _ _ NoneValue = Right 0
     expectNumber context pos _ = Left $ "Type error: expected int in " ++ context ++ " at " ++ showPos pos
 
     expectTruthy :: String -> Position -> Value -> Either String Int
-    expectTruthy _ _ (IntValue n) = Right (if n == 0 then 0 else 1)
-    expectTruthy _ _ (FloatValue n) = Right (if n == 0 then 0 else 1)
+    expectTruthy _ _ IntValue {intValue = n} = Right (if n == 0 then 0 else 1)
+    expectTruthy _ _ FloatValue {floatValue = n} = Right (if n == 0 then 0 else 1)
     expectTruthy _ _ NoneValue = Right 0
-    expectTruthy _ _ (StringValue s) = Right (if null s then 0 else 1)
-    expectTruthy _ _ (ListValue vals) = Right (if null vals then 0 else 1)
-    expectTruthy _ _ (TupleValue vals) = Right (if null vals then 0 else 1)
-    expectTruthy _ _ (DictValue pairs) = Right (if null pairs then 0 else 1)
+    expectTruthy _ _ StringValue {stringValue = s} = Right (if null s then 0 else 1)
+    expectTruthy _ _ ListValue {listValueItems = vals} = Right (if null vals then 0 else 1)
+    expectTruthy _ _ TupleValue {tupleValueItems = vals} = Right (if null vals then 0 else 1)
+    expectTruthy _ _ DictValue {dictValuePairs = pairs} = Right (if null pairs then 0 else 1)
     expectTruthy context pos _ = Left $ "Type error: expected int in " ++ context ++ " at " ++ showPos pos

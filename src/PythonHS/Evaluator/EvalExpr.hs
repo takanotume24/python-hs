@@ -8,7 +8,7 @@ import PythonHS.Evaluator.EvalCallExpr (evalCallExpr)
 import PythonHS.Evaluator.EvalExprBinary (evalExprBinary)
 import PythonHS.Evaluator.FuncEnv (FuncEnv)
 import PythonHS.Evaluator.ShowPos (showPos)
-import PythonHS.Evaluator.Value (Value (DictValue, FloatValue, IntValue, ListValue, NoneValue, StringValue, TupleValue))
+import PythonHS.Evaluator.Value (Value (..))
 import PythonHS.Lexer.Position (Position)
 
 evalExpr ::
@@ -19,59 +19,59 @@ evalExpr ::
   Either String (Value, [String], Env)
 evalExpr evalStatementsFn env fenv expr =
   case expr of
-    IntegerExpr n _ -> Right (IntValue n, [], env)
-    FloatExpr n _ -> Right (FloatValue n, [], env)
-    StringExpr s _ -> Right (StringValue s, [], env)
-    NoneExpr _ -> Right (NoneValue, [], env)
-    ListExpr exprs _ -> do
-      (vals, outs, envAfterArgs) <- evalArgs env fenv exprs
+    IntegerExpr {integerExprValue} -> Right (IntValue integerExprValue, [], env)
+    FloatExpr {floatExprValue} -> Right (FloatValue floatExprValue, [], env)
+    StringExpr {stringExprValue} -> Right (StringValue stringExprValue, [], env)
+    NoneExpr {} -> Right (NoneValue, [], env)
+    ListExpr {listExprItems} -> do
+      (vals, outs, envAfterArgs) <- evalArgs env fenv listExprItems
       Right (ListValue vals, outs, envAfterArgs)
-    TupleExpr exprs _ -> do
-      (vals, outs, envAfterArgs) <- evalArgs env fenv exprs
+    TupleExpr {tupleExprItems} -> do
+      (vals, outs, envAfterArgs) <- evalArgs env fenv tupleExprItems
       Right (TupleValue vals, outs, envAfterArgs)
-    DictExpr entries _ -> do
-      (pairs, outs, envAfterEntries) <- evalDictEntries env fenv entries
+    DictExpr {dictExprEntries} -> do
+      (pairs, outs, envAfterEntries) <- evalDictEntries env fenv dictExprEntries
       Right (DictValue pairs, outs, envAfterEntries)
-    ListComprehensionExpr _ _ _ pos ->
-      Left $ "Runtime error: list comprehension is only supported in vm engine at " ++ showPos pos
-    ListComprehensionClausesExpr _ _ pos ->
-      Left $ "Runtime error: list comprehension is only supported in vm engine at " ++ showPos pos
-    IdentifierExpr name pos ->
-      case Map.lookup name env of
+    ListComprehensionExpr {listComprehensionExprPos} ->
+      Left $ "Runtime error: list comprehension is only supported in vm engine at " ++ showPos listComprehensionExprPos
+    ListComprehensionClausesExpr {listComprehensionClausesExprPos} ->
+      Left $ "Runtime error: list comprehension is only supported in vm engine at " ++ showPos listComprehensionClausesExprPos
+    IdentifierExpr {identifierExprName, identifierExprPos} ->
+      case Map.lookup identifierExprName env of
         Just v -> Right (v, [], env)
-        Nothing -> Left $ "Name error: undefined identifier " ++ name ++ " at " ++ showPos pos
-    KeywordArgExpr _ valueExpr _ ->
-      evalExpr evalStatementsFn env fenv valueExpr
-    StarArgExpr _ pos ->
-      Left $ "Runtime error: argument expansion is only supported in vm engine at " ++ showPos pos
-    KwStarArgExpr _ pos ->
-      Left $ "Runtime error: argument expansion is only supported in vm engine at " ++ showPos pos
-    WalrusExpr _ _ pos ->
-      Left $ "Runtime error: walrus is only supported in vm engine at " ++ showPos pos
-    LambdaExpr _ _ pos ->
-      Left $ "Runtime error: lambda is only supported in vm engine at " ++ showPos pos
-    LambdaDefaultsExpr _ _ _ pos ->
-      Left $ "Runtime error: lambda is only supported in vm engine at " ++ showPos pos
-    UnaryMinusExpr unaryExpr pos -> do
-      (v, outs, envAfterExpr) <- evalExpr evalStatementsFn env fenv unaryExpr
+        Nothing -> Left $ "Name error: undefined identifier " ++ identifierExprName ++ " at " ++ showPos identifierExprPos
+    KeywordArgExpr {keywordArgExprValue} ->
+      evalExpr evalStatementsFn env fenv keywordArgExprValue
+    StarArgExpr {starArgExprPos} ->
+      Left $ "Runtime error: argument expansion is only supported in vm engine at " ++ showPos starArgExprPos
+    KwStarArgExpr {kwStarArgExprPos} ->
+      Left $ "Runtime error: argument expansion is only supported in vm engine at " ++ showPos kwStarArgExprPos
+    WalrusExpr {} ->
+      Left $ "Runtime error: walrus is only supported in vm engine at " ++ showPos (exprPos expr)
+    LambdaExpr {} ->
+      Left $ "Runtime error: lambda is only supported in vm engine at " ++ showPos (exprPos expr)
+    LambdaDefaultsExpr {} ->
+      Left $ "Runtime error: lambda is only supported in vm engine at " ++ showPos (exprPos expr)
+    UnaryMinusExpr {unaryMinusExprValue, unaryMinusExprPos} -> do
+      (v, outs, envAfterExpr) <- evalExpr evalStatementsFn env fenv unaryMinusExprValue
       case v of
-        IntValue n -> Right (IntValue (negate n), outs, envAfterExpr)
-        FloatValue n -> Right (FloatValue (negate n), outs, envAfterExpr)
-        _ -> Left $ "Type error: unary - expects int at " ++ showPos pos
-    NotExpr notExpr _ -> do
-      (v, outs, envAfterExpr) <- evalExpr evalStatementsFn env fenv notExpr
-      nv <- expectTruthy "not" (exprPos notExpr) v
+        IntValue {intValue = n} -> Right (IntValue (negate n), outs, envAfterExpr)
+        FloatValue {floatValue = n} -> Right (FloatValue (negate n), outs, envAfterExpr)
+        _ -> Left $ "Type error: unary - expects int at " ++ showPos unaryMinusExprPos
+    NotExpr {notExprValue} -> do
+      (v, outs, envAfterExpr) <- evalExpr evalStatementsFn env fenv notExprValue
+      nv <- expectTruthy "not" (exprPos expr) v
       Right (IntValue (if nv == 0 then 1 else 0), outs, envAfterExpr)
-    BinaryExpr op leftExpr rightExpr pos ->
-      evalExprBinary (evalExpr evalStatementsFn) env fenv op leftExpr rightExpr pos
-    CallExpr fname args pos ->
-      evalCallExpr evalStatementsFn (evalExpr evalStatementsFn) env fenv fname args pos
-    CallValueExpr _ _ pos ->
-      Left $ "Runtime error: lambda is only supported in vm engine at " ++ showPos pos
-    IndexExpr _ _ pos ->
-      Left $ "Runtime error: indexing is only supported in vm engine at " ++ showPos pos
-    SliceExpr _ _ _ pos ->
-      Left $ "Runtime error: slicing is only supported in vm engine at " ++ showPos pos
+    BinaryExpr {binaryExprOp, binaryExprLeft, binaryExprRight, binaryExprPos} ->
+      evalExprBinary (evalExpr evalStatementsFn) env fenv binaryExprOp binaryExprLeft binaryExprRight binaryExprPos
+    CallExpr {callExprName, callExprArgs, callExprPos} ->
+      evalCallExpr evalStatementsFn (evalExpr evalStatementsFn) env fenv callExprName callExprArgs callExprPos
+    CallValueExpr {} ->
+      Left $ "Runtime error: lambda is only supported in vm engine at " ++ showPos (exprPos expr)
+    IndexExpr {} ->
+      Left $ "Runtime error: indexing is only supported in vm engine at " ++ showPos (exprPos expr)
+    SliceExpr {} ->
+      Left $ "Runtime error: slicing is only supported in vm engine at " ++ showPos (exprPos expr)
   where
     evalArgs currentEnv currentFenv = foldl go (Right ([], [], currentEnv))
       where
@@ -112,11 +112,11 @@ evalExpr evalStatementsFn env fenv expr =
     exprPos (SliceExpr _ _ _ pos) = pos
 
     expectTruthy :: String -> Position -> Value -> Either String Int
-    expectTruthy _ _ (IntValue n) = Right (if n == 0 then 0 else 1)
-    expectTruthy _ _ (FloatValue n) = Right (if n == 0 then 0 else 1)
+    expectTruthy _ _ IntValue {intValue = n} = Right (if n == 0 then 0 else 1)
+    expectTruthy _ _ FloatValue {floatValue = n} = Right (if n == 0 then 0 else 1)
     expectTruthy _ _ NoneValue = Right 0
-    expectTruthy _ _ (StringValue s) = Right (if null s then 0 else 1)
-    expectTruthy _ _ (ListValue vals) = Right (if null vals then 0 else 1)
-    expectTruthy _ _ (TupleValue vals) = Right (if null vals then 0 else 1)
-    expectTruthy _ _ (DictValue pairs) = Right (if null pairs then 0 else 1)
+    expectTruthy _ _ StringValue {stringValue = s} = Right (if null s then 0 else 1)
+    expectTruthy _ _ ListValue {listValueItems = vals} = Right (if null vals then 0 else 1)
+    expectTruthy _ _ TupleValue {tupleValueItems = vals} = Right (if null vals then 0 else 1)
+    expectTruthy _ _ DictValue {dictValuePairs = pairs} = Right (if null pairs then 0 else 1)
     expectTruthy context pos _ = Left $ "Type error: expected int in " ++ context ++ " at " ++ showPos pos

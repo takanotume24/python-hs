@@ -7,8 +7,9 @@ import PythonHS.Evaluator.Env (Env)
 import PythonHS.Evaluator.FuncEnv (FuncEnv)
 import PythonHS.Evaluator.MaxLoopIterations (maxLoopIterations)
 import PythonHS.Evaluator.ShowPos (showPos)
-import PythonHS.Evaluator.Value (Value (BreakValue, ContinueValue, DictValue, IntValue, ListValue, TupleValue))
+import PythonHS.Evaluator.Value (Value (..))
 import PythonHS.Lexer.Position (Position)
+import PythonHS.Parser.ExprPos (exprPos)
 
 evalForStmt ::
   (Env -> FuncEnv -> [String] -> [Stmt] -> Either String (Env, FuncEnv, [String], Maybe (Value, Position))) ->
@@ -25,14 +26,14 @@ evalForStmt ::
 evalForStmt evalStatementsFn evalExprFn env fenv outputs name iterExpr body forPos rest = do
   (iterVal, iterOuts, envAfterIter) <- evalExprFn env fenv iterExpr
   case iterVal of
-    IntValue maxN ->
+    IntValue {intValue = maxN} ->
       let upper = max 0 maxN
        in loopRange envAfterIter fenv 0 upper ((outputs ++) . (iterOuts ++)) 0
-    ListValue vals ->
+    ListValue {listValueItems = vals} ->
       loopList envAfterIter fenv vals ((outputs ++) . (iterOuts ++)) 0
-    TupleValue vals ->
+    TupleValue {tupleValueItems = vals} ->
       loopList envAfterIter fenv vals ((outputs ++) . (iterOuts ++)) 0
-    DictValue pairs ->
+    DictValue {dictValuePairs = pairs} ->
       loopList envAfterIter fenv (map fst pairs) ((outputs ++) . (iterOuts ++)) 0
     _ -> Left $ "Type error: for expects iterable (int range, list, or dict) at " ++ showPos (exprPos iterExpr)
   where
@@ -63,27 +64,3 @@ evalForStmt evalStatementsFn evalExprFn env fenv outputs name iterExpr body forP
             Just (ContinueValue, _) -> nextIterations `seq` loopList envAfter fenvAfter remaining nextOutputAcc nextIterations
             Just _ -> Right (envAfter, fenvAfter, nextOutputAcc [], ret)
             Nothing -> nextIterations `seq` loopList envAfter fenvAfter remaining nextOutputAcc nextIterations
-
-    exprPos (IntegerExpr _ pos) = pos
-    exprPos (FloatExpr _ pos) = pos
-    exprPos (StringExpr _ pos) = pos
-    exprPos (NoneExpr pos) = pos
-    exprPos (ListExpr _ pos) = pos
-    exprPos (TupleExpr _ pos) = pos
-    exprPos (ListComprehensionExpr _ _ _ pos) = pos
-    exprPos (ListComprehensionClausesExpr _ _ pos) = pos
-    exprPos (DictExpr _ pos) = pos
-    exprPos (IdentifierExpr _ pos) = pos
-    exprPos (KeywordArgExpr _ _ pos) = pos
-    exprPos (StarArgExpr _ pos) = pos
-    exprPos (KwStarArgExpr _ pos) = pos
-    exprPos (WalrusExpr _ _ pos) = pos
-    exprPos (LambdaExpr _ _ pos) = pos
-    exprPos (LambdaDefaultsExpr _ _ _ pos) = pos
-    exprPos (UnaryMinusExpr _ pos) = pos
-    exprPos (NotExpr _ pos) = pos
-    exprPos (BinaryExpr _ _ _ pos) = pos
-    exprPos (CallExpr _ _ pos) = pos
-    exprPos (CallValueExpr _ _ pos) = pos
-    exprPos (IndexExpr _ _ pos) = pos
-    exprPos (SliceExpr _ _ _ pos) = pos
