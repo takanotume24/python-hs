@@ -4,9 +4,7 @@ import PythonHS.AST.BinaryOperator (BinaryOperator (AddOperator, DivideOperator,
 import PythonHS.AST.Expr (Expr(CallExpr, NoneExpr, StringExpr))
 import PythonHS.AST.Program (Program (Program))
 import PythonHS.AST.Stmt (Stmt (AddAssignStmt, AnnAssignStmt, AssignStmt, AssignUnpackStmt, BreakStmt, ClassDefStmt, ContinueStmt, DecoratedStmt, DivAssignStmt, FloorDivAssignStmt, ForStmt, FromImportStmt, FunctionDefDefaultsStmt, FunctionDefStmt, GlobalStmt, IfStmt, ImportStmt, MatchStmt, ModAssignStmt, MulAssignStmt, PassStmt, PrintStmt, RaiseStmt, ReturnStmt, SubAssignStmt, TryExceptStmt, WhileStmt, WithStmt, YieldFromStmt, YieldStmt))
-import PythonHS.AST.WithContext (ContextManager(..), WithEntry(..), WithExit(..))
 import PythonHS.Evaluator.ShowPos (showPos)
-import PythonHS.Evaluator.Value (Value (NoneValue))
 import PythonHS.VM.CompileClassDefStmt (compileClassDefStmt)
 import PythonHS.VM.CompileCompoundAssign (compileCompoundAssign)
 import PythonHS.VM.CompileDefaults (compileDefaults)
@@ -16,9 +14,10 @@ import PythonHS.VM.CompileFunctionDefStmt (compileFunctionDefStmt)
 import PythonHS.VM.CompileImportStmt (compileImportStmt)
 import PythonHS.VM.CompileMatch (compileMatch)
 import PythonHS.VM.CompileTryExcept (compileTryExcept)
+import PythonHS.VM.CompileWithStmt (compileWithStmt)
 import PythonHS.VM.ExprPosition (exprPosition)
 import PythonHS.VM.CompileYieldCollectStmt (compileYieldCollectStmt)
-import PythonHS.VM.Instruction (Instruction (ApplyBinary, ApplyNot, ApplyUnaryMinus, BuildDict, BuildList, BuildListComprehension, BuildTuple, CallFunction, CheckWithResult, CreateLambda, DeclareGlobal, DefineClass, DefineFunction, ForNext, ForSetup, Halt, Jump, JumpIfFalse, LoadName, LoadPendingException, LoopGuard, PopExceptionHandler, PrintTop, PushConst, PushExceptionHandler, PushWithHandler, RaisePendingException, RaiseTop, ReturnTop, StoreName, UnpackToNames))
+import PythonHS.VM.Instruction (Instruction (DeclareGlobal, DefineFunction, ForNext, ForSetup, Halt, Jump, JumpIfFalse, LoopGuard, PrintTop, RaiseTop, ReturnTop, StoreName, UnpackToNames))
 import PythonHS.VM.StmtPosition (stmtPosition)
 
 compileProgram :: Program -> Either String [Instruction]
@@ -159,56 +158,5 @@ compileProgram (Program stmts) = do
           case maybeLoop of
             Just (_, continueTarget) -> Right ([Jump continueTarget], baseIndex + 1)
             Nothing -> Left ("Continue outside loop at " ++ showPos pos)
-        WithStmt contextManager maybeVarName body withPos -> do
-          let ctxManager = ContextManager contextManager maybeVarName withPos
-          (contextManagerCode, contextManagerEnd) <- compileExprAt baseIndex (contextManagerExpr ctxManager)
-          let contextManagerVar = "__context_manager_" ++ show baseIndex ++ "__"
-          let setupCode = contextManagerCode ++ [StoreName contextManagerVar]
-          
-          -- Create entry record
-          let entryInstruction = CallFunction "__enter__" [([LoadName contextManagerVar (contextManagerPos ctxManager)], Nothing, contextManagerPos ctxManager)] (contextManagerPos ctxManager)
-          let withEntry = WithEntry (CallExpr "__enter__" [contextManagerExpr ctxManager] (contextManagerPos ctxManager)) entryInstruction (contextManagerPos ctxManager)
-          let enterCode = [LoadName contextManagerVar (contextManagerPos ctxManager), entryCallInstruction withEntry]
-          
-          let storeCode = case contextManagerVarName ctxManager of
-                            Just varName -> [StoreName varName]
-                            Nothing -> []
-          let setupEndIndex = baseIndex + length setupCode + length enterCode + length storeCode
-          -- Set up exception handling for the body
-          let bodyStartIndex = setupEndIndex + 1  -- After PushExceptionHandler
-          (bodyCode, bodyEndIndex) <- compileStatements bodyStartIndex inFunction maybeLoop body
-          -- Exit code for normal completion (just call __exit__, don't check result)
-          let exitNormalStartIndex = bodyEndIndex + 2  -- Skip PopExceptionHandler and Jump
-          let nonePos = ([PushConst NoneValue], Nothing, contextManagerPos ctxManager)
-          
-          -- Create normal exit record
-          let exitNormalInstruction = CallFunction "__exit__" [
-                                  ([LoadName contextManagerVar (contextManagerPos ctxManager)], Nothing, contextManagerPos ctxManager),
-                                  nonePos,
-                                  nonePos,
-                                  nonePos
-                                ] (contextManagerPos ctxManager)
-          let exitNormal = WithExit (CallExpr "__exit__" [contextManagerExpr ctxManager, NoneExpr (contextManagerPos ctxManager), NoneExpr (contextManagerPos ctxManager), NoneExpr (contextManagerPos ctxManager)] (contextManagerPos ctxManager)) exitNormalInstruction (contextManagerPos ctxManager) False
-          let exitNormalCode = [LoadName contextManagerVar (contextManagerPos ctxManager), exitCallInstruction exitNormal]
-          
-          -- Exit code for exception handling (call __exit__ and check if it suppresses the exception)
-          let exitExceptionStartIndex = exitNormalStartIndex + length exitNormalCode
-          
-          -- Create exception exit record
-          let exitExceptionInstruction = CallFunction "__exit__" [
-                                     ([LoadName contextManagerVar (contextManagerPos ctxManager)], Nothing, contextManagerPos ctxManager),
-                                     ([LoadPendingException], Nothing, contextManagerPos ctxManager),  -- exc_type
-                                     ([LoadPendingException], Nothing, contextManagerPos ctxManager),  -- exc_value
-                                     nonePos  -- traceback
-                                   ] (contextManagerPos ctxManager)
-          let exitException = WithExit (CallExpr "__exit__" [contextManagerExpr ctxManager, StringExpr "Exception" (contextManagerPos ctxManager), StringExpr "error" (contextManagerPos ctxManager), NoneExpr (contextManagerPos ctxManager)] (contextManagerPos ctxManager)) exitExceptionInstruction (contextManagerPos ctxManager) True
-          let exitExceptionCode = [LoadName contextManagerVar (contextManagerPos ctxManager),
-                                  exitCallInstruction exitException,
-                                  CheckWithResult]
-          let allCode = setupCode ++ enterCode ++ storeCode ++
-                       [PushWithHandler exitExceptionStartIndex] ++
-                       bodyCode ++
-                       [PopExceptionHandler, Jump exitNormalStartIndex] ++
-                       exitNormalCode ++
-                       exitExceptionCode
-          pure (allCode, exitExceptionStartIndex + length exitExceptionCode)
+        WithStmt contextManager maybeVarName body withPos ->
+          compileWithStmt baseIndex inFunction maybeLoop contextManager maybeVarName body withPos compileStatements

@@ -126,25 +126,21 @@ runInstructions instructions = do
             instruction@RaisePendingException -> handleExceptionInstruction instruction code ip stack globalsEnv localEnv functions globalDecls forStates loopCounts exceptionHandlers outputs isTopLevel
             instruction@RaisePendingError -> handleExceptionInstruction instruction code ip stack globalsEnv localEnv functions globalDecls forStates loopCounts exceptionHandlers outputs isTopLevel
             CheckWithResult ->
-              -- Check if exceptionHandlers is empty before processing
-              if null exceptionHandlers
-                then Left "Runtime error: unhandled exception in with statement - no handlers available"
-                else
-                  case stack of
-                    resultValue : rest ->
-                      if isTruthy resultValue
-                        then execute code (ip + 1) rest globalsEnv localEnv functions globalDecls forStates loopCounts exceptionHandlers outputs isTopLevel
-                        else
-                          -- __exit__ returned falsy, reraise the pending exception
-                          case exceptionHandlers of
-                            handlerIp : restHandlers -> 
-                              let err = case Map.lookup "__python_hs_pending_except_error__" localEnv of
-                                    Just (StringValue s) -> s
-                                    _ -> "Runtime error: error at 9:3"
-                                  newLocals = Map.insert "__python_hs_pending_except_error__" (StringValue err) localEnv
-                              in execute code handlerIp rest globalsEnv newLocals functions globalDecls forStates loopCounts restHandlers outputs isTopLevel
-                            [] -> Left "Runtime error: unhandled exception in with statement"
-                    _ -> Left "VM runtime error: check with result requires one value on stack"
+              case stack of
+                resultValue : rest ->
+                  if isTruthy resultValue
+                    then execute code (ip + 1) rest globalsEnv localEnv functions globalDecls forStates loopCounts exceptionHandlers outputs isTopLevel
+                    else
+                      -- __exit__ returned falsy, reraise the pending exception
+                      case exceptionHandlers of
+                        handlerIp : restHandlers -> 
+                          let err = case Map.lookup "__python_hs_pending_except_error__" localEnv of
+                                Just (StringValue s) -> s
+                                _ -> "Runtime error: error at 9:3"
+                              newLocals = Map.insert "__python_hs_pending_except_error__" (StringValue err) localEnv
+                           in execute code handlerIp rest globalsEnv newLocals functions globalDecls forStates loopCounts restHandlers outputs isTopLevel
+                        [] -> Left "Runtime error: unhandled exception in with statement"
+                _ -> Left "VM runtime error: check with result requires one value on stack"
             DupTop ->
               case stack of
                 value : rest -> execute code (ip + 1) (value : value : rest) globalsEnv localEnv functions globalDecls forStates loopCounts exceptionHandlers outputs isTopLevel

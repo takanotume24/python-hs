@@ -144,8 +144,10 @@ library
     , PythonHS.VM.PopValues
     , PythonHS.VM.ToForIterable
     , PythonHS.VM.ToPairs
+    , PythonHS.VM.CompileWithStmt
     , PythonHS.VM.CompileProgram
     , PythonHS.VM.RunInstructions
+    , PythonHS.VM.VMState
   build-depends:
       base >=4.14 && <5
     , containers >=0.6 && <0.9
