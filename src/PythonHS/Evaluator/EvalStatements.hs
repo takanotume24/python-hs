@@ -4,7 +4,7 @@ import qualified Data.Map.Strict as Map
 import PythonHS.AST.Expr (Expr (..))
 import PythonHS.AST.Stmt (Stmt (..))
 import PythonHS.Evaluator.Env (Env)
-import PythonHS.Evaluator.EvalContextManager (bindContextResult, enterContextManager, exitContextManager)
+
 import PythonHS.Evaluator.EvalExpr (evalExpr)
 import PythonHS.Evaluator.EvalForStmt (evalForStmt)
 import PythonHS.Evaluator.EvalWhileStmt (evalWhileStmt)

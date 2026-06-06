@@ -15,6 +15,9 @@ library
     , PythonHS.AST.Pattern
     , PythonHS.AST.Stmt
     , PythonHS.AST.Program
+    ,       PythonHS.AST.ContextManager
+    , PythonHS.AST.WithEntry
+    , PythonHS.AST.WithExit
     , PythonHS.AST.WithContext
     , PythonHS.Lexer.Position
     , PythonHS.Parser.ParseError
@@ -67,7 +70,14 @@ library
       , PythonHS.Parser.ParseYieldStmt
     , PythonHS.Parser.ParseImportStmt
     , PythonHS.Parser.ParseWithStmt
+    , PythonHS.Parser.DropLeadingNewlines
+    , PythonHS.Parser.ParseUnpackAssign
+    , PythonHS.Parser.ParseUnpackNames
     , PythonHS.Structure.CheckStructureWarnings
+    , PythonHS.Evaluator.BindContextResult
+    , PythonHS.Evaluator.EnterContextManager
+    , PythonHS.Evaluator.ExitContextManager
+    , PythonHS.Evaluator.ExitContextManagerWithException
     , PythonHS.Evaluator.ValueToOutput
     , PythonHS.Evaluator.ValueToReplOutput
     , PythonHS.Evaluator.RangeValues
@@ -144,6 +154,13 @@ library
     , PythonHS.VM.PopValues
     , PythonHS.VM.ToForIterable
     , PythonHS.VM.ToPairs
+    , PythonHS.VM.EnvState
+    , PythonHS.VM.ExceptionState
+    , PythonHS.VM.LoopState
+    , PythonHS.VM.InitVMState
+    , PythonHS.VM.ExecuteOneInstruction
+    , PythonHS.VM.HandleExceptionInstruction
+    , PythonHS.VM.ExecuteDefineClassInstruction
     , PythonHS.VM.CompileWithStmt
     , PythonHS.VM.CompileProgram
     , PythonHS.VM.RunInstructions
