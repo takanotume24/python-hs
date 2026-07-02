@@ -43,6 +43,9 @@ library
     , PythonHS.Structure.ViolationCategory
     , PythonHS.Structure.DetectPositionalArgs
     , PythonHS.Structure.DetectPositionalArgsFromSource
+    , PythonHS.Structure.DetectPositionalArgsFromDirectory
+    , PythonHS.Structure.CollectHsFiles
+    , PythonHS.Structure.IsHaskellFile
     , PythonHS.Structure.FormatViolationsJson
   other-modules:
       PythonHS.CLI.ProcessSubmission
@@ -263,6 +266,7 @@ executable detect-positional-args
   main-is:             Main.hs
   build-depends:
       base >=4.14 && <5
+    , directory
     , python-hs
   default-language:    GHC2024
   ghc-options:         -Wall
