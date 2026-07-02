@@ -224,6 +224,12 @@
 - [ ] P46: Parser/Compiler 側のレコードパターンマッチ統一（`Stmt`/`Expr` の位置パターンマッチを `{field}` 構文へ統一）
 - [ ] P47: 細部の位置パターンマッチ掃討（`VM/EvalBinaryOp`, `IsTruthy`, `GetitemValue`, `SliceValue` など）
 - [ ] P48: VM 実行系のレコード構文適用による構造制約（200行/ファイル1関数）再整備
+- [x] P49: Haskell コードベース内の positional argument 検出 CLI (`detect-positional-args`) を導入
+  - [x] 失敗テスト先行: `DetectPositionalArgsSpec` を追加し、各カテゴリの検出を固定
+  - [x] `haskell-src-exts` を用いた AST ベース検出実装
+  - [x] JSON 出力フォーマット (`FormatViolationsJson`)
+  - [x] 新規 executable `detect-positional-args` の追加
+  - [x] 品質ゲート (`cabal test` / `cabal run check-structure` / warning 0) を再通過
 
 ## 現在のスコープ（P37: dotted import 束縛の CPython 互換化）
 - [x] P37 開始: `import pkg.sub` 時のトップレベル束縛を CPython 互換（bare `sub` 非束縛）へ整合するスコープを開始
