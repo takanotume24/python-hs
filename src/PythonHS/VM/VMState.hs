@@ -14,4 +14,5 @@ data VMState = VMState
   , vmLoop        :: LoopState
   , vmException   :: ExceptionState
   , vmIsTopLevel  :: Bool
+  , vmOutputs     :: [String]
   } deriving (Show)

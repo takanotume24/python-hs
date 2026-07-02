@@ -1,39 +1,32 @@
 module PythonHS.VM.HandleRuntimeError (handleRuntimeError) where
 
 import qualified Data.Map.Strict as Map
-import qualified Data.Set as Set
-import PythonHS.Evaluator.Value (Value (StringValue), Value)
-import PythonHS.VM.Instruction (Instruction)
+import PythonHS.Evaluator.Value (Value (StringValue))
+import PythonHS.VM.EnvState (EnvState (..))
+import PythonHS.VM.ExceptionState (ExceptionState (..))
+import PythonHS.VM.VMState (VMState (..))
 
 handleRuntimeError ::
-  ([Instruction] -> Int -> [Value] -> Map.Map String Value -> Map.Map String Value -> Map.Map String ([String], [(String, [Instruction])], [Instruction]) -> Set.Set String -> Map.Map Int [Value] -> Map.Map Int Int -> [Int] -> [String] -> Bool -> Either String (Maybe Value, Map.Map String Value, Map.Map String ([String], [(String, [Instruction])], [Instruction]), [String])) ->
-  [Instruction] ->
-  [Value] ->
-  Map.Map String Value ->
-  Map.Map String Value ->
-  Map.Map String ([String], [(String, [Instruction])], [Instruction]) ->
-  Set.Set String ->
-  Map.Map Int [Value] ->
-  Map.Map Int Int ->
-  [Int] ->
-  [String] ->
-  Bool ->
-  Either String (Maybe Value, Map.Map String Value, Map.Map String ([String], [(String, [Instruction])], [Instruction]), [String]) ->
-  Either String (Maybe Value, Map.Map String Value, Map.Map String ([String], [(String, [Instruction])], [Instruction]), [String])
-handleRuntimeError execute code stack globalsEnv localEnv functions globalDecls forStates loopCounts exceptionHandlers outputs isTopLevel result =
+  (VMState -> Either String VMState) ->
+  VMState ->
+  Either String VMState ->
+  Either String VMState
+handleRuntimeError execute state result =
   case result of
     Right value -> Right value
     Left err ->
-      case exceptionHandlers of
+      case exceptionHandlers (vmException state) of
         handlerIp : restHandlers ->
           if isFinallyHandler handlerIp
             then
               let finalIp = decodeFinallyHandler handlerIp
-                  newLocals = Map.insert pendingErrorName (StringValue err) localEnv
-                in execute code finalIp stack globalsEnv newLocals functions globalDecls forStates loopCounts restHandlers outputs isTopLevel
+                  newLocals = Map.insert pendingErrorName (StringValue err) (envLocals (vmEnv state))
+                  newEnv = (vmEnv state) {envLocals = newLocals}
+               in execute state {vmIp = finalIp, vmEnv = newEnv, vmException = (vmException state) {exceptionHandlers = restHandlers}}
             else
-              let newLocals = Map.insert pendingExceptErrorName (StringValue err) (Map.delete pendingErrorName localEnv)
-               in execute code handlerIp stack globalsEnv newLocals functions globalDecls forStates loopCounts restHandlers outputs isTopLevel
+              let newLocals = Map.insert pendingExceptErrorName (StringValue err) (Map.delete pendingErrorName (envLocals (vmEnv state)))
+                  newEnv = (vmEnv state) {envLocals = newLocals}
+               in execute state {vmIp = handlerIp, vmEnv = newEnv, vmException = (vmException state) {exceptionHandlers = restHandlers}}
         [] -> Left err
   where
     pendingErrorName = "__python_hs_pending_finally_error__"

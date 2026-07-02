@@ -29,4 +29,5 @@ initVMState instructions =
       , exceptionOutputs = []
       }
     , vmIsTopLevel = True
+    , vmOutputs = []
     }
