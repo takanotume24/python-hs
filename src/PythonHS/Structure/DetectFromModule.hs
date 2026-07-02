@@ -18,11 +18,14 @@ import PythonHS.Structure.PositionalArgViolation (PositionalArgViolation (..))
 import PythonHS.Structure.ViolationCategory (ViolationCategory (..))
 
 detectFromModule :: FilePath -> Module SrcSpanInfo -> [PositionalArgViolation]
-detectFromModule path m@(Module _ _ _ _ decls) =
-  concatMap goDecl decls
-    ++ everything (++) (mkQ [] goTupleExp) m
-    ++ everything (++) (mkQ [] goTuplePat) m
-    ++ everything (++) (mkQ [] goConApp) m
+detectFromModule path m =
+  case m of
+    Module _ _ _ _ decls ->
+      concatMap goDecl decls
+        ++ everything (++) (mkQ [] goTupleExp) m
+        ++ everything (++) (mkQ [] goTuplePat) m
+        ++ everything (++) (mkQ [] goConApp) m
+    _ -> []
   where
     goDecl (DataDecl _ _ _ _ qs _) = concatMap goQ qs
     goDecl (FunBind _ ms) = concatMap goM ms
@@ -30,7 +33,8 @@ detectFromModule path m@(Module _ _ _ _ decls) =
 
     goQ (QualConDecl _ _ _ c) = goC c
 
-    goC (ConDecl l n _)
+    goC (ConDecl l n types)
+      | null types = []
       | isSrcSpanInfo l = [mkViolation path l DataConCategory (prettyPrint n)]
       | otherwise = []
     goC (InfixConDecl l n1 _ n2)
@@ -57,9 +61,12 @@ detectFromModule path m@(Module _ _ _ _ decls) =
     goTuplePat _ = []
 
     goConApp (App l (Con _ n) _)
+      | isBuiltinCon (prettyPrint n) = []
       | isSrcSpanInfo l = [mkViolation path l ConAppCategory (prettyPrint n)]
       | otherwise = []
     goConApp _ = []
+
+    isBuiltinCon name = name `elem` ["Just", "Nothing", "Left", "Right", "LT", "EQ", "GT"]
 
     isSrcSpanInfo (SrcSpanInfo (SrcSpan _ line _ _ _) _) = line > 0
 

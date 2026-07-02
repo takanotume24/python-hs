@@ -35,6 +35,11 @@ spec = describe "detectPositionalArgs" $ do
     result <- detectPositionalArgsFromSource "Baz.hs" src
     result `shouldSatisfy` null
 
+  it "does not detect nullary constructors" $ do
+    let src = unlines ["module Foo where", "data Foo = A | B | C"]
+    result <- detectPositionalArgsFromSource "Foo.hs" src
+    result `shouldSatisfy` null
+
   it "detects function declarations with 2+ positional arguments" $ do
     let src = unlines ["module Quux where", "f a b = a + b"]
     result <- detectPositionalArgsFromSource "Quux.hs" src
@@ -50,6 +55,11 @@ spec = describe "detectPositionalArgs" $ do
     result <- detectPositionalArgsFromSource "Y.hs" src
     length result `shouldSatisfy` (>= 1)
     result `shouldSatisfy` any (\v -> category v == TupleCategory)
+
+  it "does not detect builtin constructors like Just and Left" $ do
+    let src = unlines ["module Foo where", "f = Just 1", "g = Left \"x\""]
+    result <- detectPositionalArgsFromSource "Foo.hs" src
+    result `shouldSatisfy` null
 
   it "produces valid JSON output" $ do
     let src = unlines ["module Z where", "data Z = Z Int"]
