@@ -4,10 +4,14 @@ import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import PythonHS.Evaluator.Value (Value (NoneValue), Value)
 import PythonHS.Lexer.Position (Position)
+import PythonHS.VM.EnvState (EnvState (..))
+import PythonHS.VM.ExceptionState (ExceptionState (..))
 import PythonHS.VM.Instruction (Instruction (ReturnTop), Instruction)
+import PythonHS.VM.LoopState (LoopState (..))
+import PythonHS.VM.VMState (VMState (..))
 
 evaluateBuiltinArgs ::
-  ([Instruction] -> Int -> [Value] -> Map.Map String Value -> Map.Map String Value -> Map.Map String ([String], [(String, [Instruction])], [Instruction]) -> Set.Set String -> Map.Map Int [Value] -> Map.Map Int Int -> [Int] -> [String] -> Bool -> Either String (Maybe Value, Map.Map String Value, Map.Map String ([String], [(String, [Instruction])], [Instruction]), [String])) ->
+  (VMState -> Either String VMState) ->
   Map.Map String Value ->
   [([Instruction], Maybe String, Position)] ->
   Map.Map String Value ->
@@ -24,10 +28,26 @@ evaluateBuiltinArgs executeFn currentLocalEnv remainingArgs currentGlobals curre
       evaluateBuiltinArgs executeFn currentLocalEnv restArgs globalsAfterArg functionsAfterArg outputsAfterArg (accValues ++ [argValue])
   where
     evalArgCode argCode globalsNow functionsNow outputsNow = do
-      (maybeArgValue, globalsAfterArg, functionsAfterArg, outputsAfterArg) <-
-        executeFn (argCode ++ [ReturnTop]) 0 [] globalsNow currentLocalEnv functionsNow Set.empty Map.empty Map.empty [] outputsNow False
+      let argState =
+            VMState
+              { vmCode = argCode ++ [ReturnTop]
+              , vmIp = 0
+              , vmStack = []
+              , vmEnv =
+                  EnvState
+                    { envGlobals = globalsNow
+                    , envLocals = currentLocalEnv
+                    , envFunctions = functionsNow
+                    , envGlobalDecls = Set.empty
+                    }
+              , vmLoop = LoopState {loopForStates = Map.empty, loopCounts = Map.empty}
+              , vmException = ExceptionState {exceptionHandlers = [], exceptionOutputs = []}
+              , vmIsTopLevel = False
+              , vmOutputs = outputsNow
+              }
+      finalState <- executeFn argState
       let argValue =
-            case maybeArgValue of
-              Just value -> value
-              Nothing -> NoneValue
-      Right (argValue, globalsAfterArg, functionsAfterArg, outputsAfterArg)
+            case vmStack finalState of
+              (value : _) -> value
+              [] -> NoneValue
+      Right (argValue, envGlobals (vmEnv finalState), envFunctions (vmEnv finalState), vmOutputs finalState)

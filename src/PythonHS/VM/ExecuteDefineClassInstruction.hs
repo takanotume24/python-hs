@@ -2,22 +2,28 @@ module PythonHS.VM.ExecuteDefineClassInstruction (executeDefineClassInstruction)
 
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
-import PythonHS.Evaluator.Value (Value(ClassValue))
-import PythonHS.VM.Instruction (Instruction(..))
+import PythonHS.Evaluator.Value (Value (ClassValue))
+import PythonHS.VM.EnvState (EnvState (..))
+import PythonHS.VM.Instruction (Instruction (..))
+import PythonHS.VM.VMState (VMState (..))
 
 executeDefineClassInstruction ::
-  ([Instruction] -> Int -> [Value] -> Map.Map String Value -> Map.Map String Value -> Map.Map String ([String], [(String, [Instruction])], [Instruction]) -> Set.Set String -> Map.Map Int [Value] -> Map.Map Int Int -> [Int] -> [String] -> Bool -> Either String (Maybe Value, Map.Map String Value, Map.Map String ([String], [(String, [Instruction])], [Instruction]), [String])) ->
-  [Instruction] -> Int -> [Value] -> Map.Map String Value -> Map.Map String Value -> Map.Map String ([String], [(String, [Instruction])], [Instruction]) -> Set.Set String -> Map.Map Int [Value] -> Map.Map Int Int -> [Int] -> [String] -> Bool -> Instruction -> Either String (Maybe Value, Map.Map String Value, Map.Map String ([String], [(String, [Instruction])], [Instruction]), [String])
-executeDefineClassInstruction execute code ip stack globalsEnv localEnv functions globalDecls forStates loopCounts exceptionHandlers outputs isTopLevel instruction =
+  (VMState -> Either String VMState) ->
+  VMState ->
+  Instruction ->
+  Either String VMState
+executeDefineClassInstruction execute state instruction =
   case instruction of
     DefineClass className maybeBase methods ->
       let classValue = ClassValue className maybeBase methods
-       in if isTopLevel || Set.member className globalDecls
+          env = vmEnv state
+       in if vmIsTopLevel state || Set.member className (envGlobalDecls env)
             then
-              let newGlobals = Map.insert className classValue globalsEnv
-                  newLocals = if isTopLevel then newGlobals else localEnv
-               in execute code (ip + 1) stack newGlobals newLocals functions globalDecls forStates loopCounts exceptionHandlers outputs isTopLevel
+              let newGlobals = Map.insert className classValue (envGlobals env)
+                  newEnv = env {envGlobals = newGlobals, envLocals = if vmIsTopLevel state then newGlobals else envLocals env}
+               in execute state {vmIp = vmIp state + 1, vmEnv = newEnv}
             else
-              let newLocals = Map.insert className classValue localEnv
-               in execute code (ip + 1) stack globalsEnv newLocals functions globalDecls forStates loopCounts exceptionHandlers outputs isTopLevel
+              let newLocals = Map.insert className classValue (envLocals env)
+                  newEnv = env {envLocals = newLocals}
+               in execute state {vmIp = vmIp state + 1, vmEnv = newEnv}
     _ -> Left "VM runtime error: unexpected instruction in executeDefineClassInstruction"

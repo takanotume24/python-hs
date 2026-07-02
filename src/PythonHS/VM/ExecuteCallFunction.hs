@@ -9,17 +9,21 @@ import PythonHS.VM.BindCallArguments (bindCallArguments)
 import PythonHS.VM.BindDefaults (bindDefaults)
 import PythonHS.VM.CallBuiltin (callBuiltin)
 import PythonHS.VM.CollectFunctionGlobalDecls (collectFunctionGlobalDecls)
+import PythonHS.VM.EnvState (EnvState (..))
 import PythonHS.VM.EvaluateBuiltinArgs (evaluateBuiltinArgs)
-import PythonHS.VM.ExecuteCallValueFunction (executeCallValueFunction)
 import PythonHS.VM.EvaluateUserArgs (evaluateUserArgs)
+import PythonHS.VM.ExceptionState (ExceptionState (..))
+import PythonHS.VM.ExecuteCallValueFunction (executeCallValueFunction)
 import PythonHS.VM.FindMethodFunctionName (findMethodFunctionName)
 import PythonHS.VM.FirstKeywordArg (firstKeywordArg)
 import PythonHS.VM.Instruction (Instruction)
+import PythonHS.VM.LoopState (LoopState (..))
 import PythonHS.VM.LookupName (lookupName)
 import PythonHS.VM.ModulePrefixFor (modulePrefixFor)
+import PythonHS.VM.VMState (VMState (..))
 
 executeCallFunction ::
-  ([Instruction] -> Int -> [Value] -> Map.Map String Value -> Map.Map String Value -> Map.Map String ([String], [(String, [Instruction])], [Instruction]) -> Set.Set String -> Map.Map Int [Value] -> Map.Map Int Int -> [Int] -> [String] -> Bool -> Either String (Maybe Value, Map.Map String Value, Map.Map String ([String], [(String, [Instruction])], [Instruction]), [String])) ->
+  (VMState -> Either String VMState) ->
   Bool ->
   String ->
   [([Instruction], Maybe String, Position)] ->
@@ -43,14 +47,16 @@ executeCallFunction execute isTopLevel fname compiledArgs pos stack globalsEnv l
           (functionLocals, globalsAfterDefaults, functionsAfterDefaults, outputsAfterDefaults) <-
             bindDefaults execute fname pos params defaultCodes initialLocals globalsAfterArgs functionsAfterArgs outputsAfterArgs
           let functionGlobalDecls = collectFunctionGlobalDecls functionCode
-          (maybeValue, newGlobals, newFunctions, newOutputs) <-
-            execute functionCode 0 [] globalsAfterDefaults functionLocals functionsAfterDefaults functionGlobalDecls Map.empty Map.empty [] outputsAfterDefaults False
-          let returnValue =
-                case maybeValue of
-                  Just value -> value
-                  Nothing -> IntValue 0
-          let newLocalEnv = if isTopLevel then newGlobals else localEnv
-          Right (returnValue : stack, newGlobals, newLocalEnv, newFunctions, newOutputs)
+              callState = VMState {vmCode = functionCode, vmIp = 0, vmStack = [],
+                vmEnv = EnvState {envGlobals = globalsAfterDefaults, envLocals = functionLocals,
+                  envFunctions = functionsAfterDefaults, envGlobalDecls = functionGlobalDecls},
+                vmLoop = LoopState {loopForStates = Map.empty, loopCounts = Map.empty},
+                vmException = ExceptionState {exceptionHandlers = [], exceptionOutputs = []},
+                vmIsTopLevel = False, vmOutputs = outputsAfterDefaults}
+          finalState <- execute callState
+          let returnValue = case vmStack finalState of (value : _) -> value; [] -> IntValue 0
+              newLocalEnv = if isTopLevel then envGlobals (vmEnv finalState) else localEnv
+          Right (returnValue : stack, envGlobals (vmEnv finalState), newLocalEnv, envFunctions (vmEnv finalState), vmOutputs finalState)
         Nothing ->
           case firstKeywordArg compiledArgs of
             Just (_, argPos)
@@ -90,14 +96,16 @@ executeCallFunction execute isTopLevel fname compiledArgs pos stack globalsEnv l
           (functionLocals, globalsAfterDefaults, functionsAfterDefaults, outputsAfterDefaults) <-
             bindDefaults execute targetName pos params defaultCodes mergedLocals globalsNow functionsNow outputsNow
           let functionGlobalDecls = collectFunctionGlobalDecls functionCode
-          (maybeValue, newGlobals, newFunctions, newOutputs) <-
-            execute functionCode 0 [] globalsAfterDefaults functionLocals functionsAfterDefaults functionGlobalDecls Map.empty Map.empty [] outputsAfterDefaults False
-          let returnValue =
-                case maybeValue of
-                  Just value -> value
-                  Nothing -> IntValue 0
-          let newLocalEnv = if isTopLevel then newGlobals else localEnv
-          Right (returnValue : stack, newGlobals, newLocalEnv, newFunctions, newOutputs)
+              callState = VMState {vmCode = functionCode, vmIp = 0, vmStack = [],
+                vmEnv = EnvState {envGlobals = globalsAfterDefaults, envLocals = functionLocals,
+                  envFunctions = functionsAfterDefaults, envGlobalDecls = functionGlobalDecls},
+                vmLoop = LoopState {loopForStates = Map.empty, loopCounts = Map.empty},
+                vmException = ExceptionState {exceptionHandlers = [], exceptionOutputs = []},
+                vmIsTopLevel = False, vmOutputs = outputsAfterDefaults}
+          finalState <- execute callState
+          let returnValue = case vmStack finalState of (value : _) -> value; [] -> IntValue 0
+              newLocalEnv = if isTopLevel then envGlobals (vmEnv finalState) else localEnv
+          Right (returnValue : stack, envGlobals (vmEnv finalState), newLocalEnv, envFunctions (vmEnv finalState), vmOutputs finalState)
 
     createInstance className args globalsNow functionsNow outputsNow =
       let instanceValue = InstanceValue className []
@@ -112,14 +120,16 @@ executeCallFunction execute isTopLevel fname compiledArgs pos stack globalsEnv l
                   (functionLocals, globalsAfterDefaults, functionsAfterDefaults, outputsAfterDefaults) <-
                     bindDefaults execute initFunctionName pos initParams initDefaults initialLocals globalsNow functionsNow outputsNow
                   let functionGlobalDecls = collectFunctionGlobalDecls initCode
-                  (maybeValue, newGlobals, newFunctions, newOutputs) <-
-                    execute initCode 0 [] globalsAfterDefaults functionLocals functionsAfterDefaults functionGlobalDecls Map.empty Map.empty [] outputsAfterDefaults False
-                  let constructedInstance =
-                        case maybeValue of
-                          Just instanceResult@(InstanceValue _ _) -> instanceResult
-                          _ -> instanceValue
-                  let newLocalEnv = if isTopLevel then newGlobals else localEnv
-                  Right (constructedInstance : stack, newGlobals, newLocalEnv, newFunctions, newOutputs)
+                      callState = VMState {vmCode = initCode, vmIp = 0, vmStack = [],
+                        vmEnv = EnvState {envGlobals = globalsAfterDefaults, envLocals = functionLocals,
+                          envFunctions = functionsAfterDefaults, envGlobalDecls = functionGlobalDecls},
+                        vmLoop = LoopState {loopForStates = Map.empty, loopCounts = Map.empty},
+                        vmException = ExceptionState {exceptionHandlers = [], exceptionOutputs = []},
+                        vmIsTopLevel = False, vmOutputs = outputsAfterDefaults}
+                  finalState <- execute callState
+                  let constructedInstance = case vmStack finalState of (instanceResult@(InstanceValue _ _) : _) -> instanceResult; _ -> instanceValue
+                      newLocalEnv = if isTopLevel then envGlobals (vmEnv finalState) else localEnv
+                  Right (constructedInstance : stack, envGlobals (vmEnv finalState), newLocalEnv, envFunctions (vmEnv finalState), vmOutputs finalState)
             Nothing ->
               let newLocalEnv = if isTopLevel then globalsNow else localEnv
                in Right (instanceValue : stack, globalsNow, newLocalEnv, functionsNow, outputsNow)

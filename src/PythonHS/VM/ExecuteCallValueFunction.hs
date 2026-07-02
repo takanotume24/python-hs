@@ -8,11 +8,15 @@ import PythonHS.Lexer.Position (Position)
 import PythonHS.VM.BindCallArguments (bindCallArguments)
 import PythonHS.VM.BindDefaults (bindDefaults)
 import PythonHS.VM.CollectFunctionGlobalDecls (collectFunctionGlobalDecls)
+import PythonHS.VM.EnvState (EnvState (..))
 import PythonHS.VM.EvaluateUserArgs (evaluateUserArgs)
+import PythonHS.VM.ExceptionState (ExceptionState (..))
 import PythonHS.VM.Instruction (Instruction)
+import PythonHS.VM.LoopState (LoopState (..))
+import PythonHS.VM.VMState (VMState (..))
 
 executeCallValueFunction ::
-  ([Instruction] -> Int -> [Value] -> Map.Map String Value -> Map.Map String Value -> Map.Map String ([String], [(String, [Instruction])], [Instruction]) -> Set.Set String -> Map.Map Int [Value] -> Map.Map Int Int -> [Int] -> [String] -> Bool -> Either String (Maybe Value, Map.Map String Value, Map.Map String ([String], [(String, [Instruction])], [Instruction]), [String])) ->
+  (VMState -> Either String VMState) ->
   Bool ->
   [([Instruction], Maybe String, Position)] ->
   Position ->
@@ -39,14 +43,30 @@ executeCallValueFunction execute isTopLevel compiledArgs pos stack globalsEnv lo
               (functionLocals, globalsAfterDefaults, functionsAfterDefaults, outputsAfterDefaults) <-
                 bindDefaults execute functionName pos params defaultCodes mergedLocals globalsAfterArgs functionsAfterArgs outputsAfterArgs
               let functionGlobalDecls = collectFunctionGlobalDecls functionCode
-              (maybeValue, newGlobals, newFunctions, newOutputs) <-
-                execute functionCode 0 [] globalsAfterDefaults functionLocals functionsAfterDefaults functionGlobalDecls Map.empty Map.empty [] outputsAfterDefaults False
+                  callState =
+                    VMState
+                      { vmCode = functionCode
+                      , vmIp = 0
+                      , vmStack = []
+                      , vmEnv =
+                          EnvState
+                            { envGlobals = globalsAfterDefaults
+                            , envLocals = functionLocals
+                            , envFunctions = functionsAfterDefaults
+                            , envGlobalDecls = functionGlobalDecls
+                            }
+                      , vmLoop = LoopState {loopForStates = Map.empty, loopCounts = Map.empty}
+                      , vmException = ExceptionState {exceptionHandlers = [], exceptionOutputs = []}
+                      , vmIsTopLevel = False
+                      , vmOutputs = outputsAfterDefaults
+                      }
+              finalState <- execute callState
               let returnValue =
-                    case maybeValue of
-                      Just value -> value
-                      Nothing -> IntValue 0
-                  newLocalEnv = if isTopLevel then newGlobals else localEnv
-              Right (returnValue : restStack, newGlobals, newLocalEnv, newFunctions, newOutputs)
+                    case vmStack finalState of
+                      (value : _) -> value
+                      [] -> IntValue 0
+                  newLocalEnv = if isTopLevel then envGlobals (vmEnv finalState) else localEnv
+              Right (returnValue : restStack, envGlobals (vmEnv finalState), newLocalEnv, envFunctions (vmEnv finalState), vmOutputs finalState)
         _ -> Left ("Type error: callable expected at " ++ showPos pos)
     _ -> Left "VM runtime error: call requires callable on stack"
   where

@@ -5,10 +5,14 @@ import qualified Data.Set as Set
 import PythonHS.Evaluator.ShowPos (showPos)
 import PythonHS.Evaluator.Value (Value (NoneValue), Value)
 import PythonHS.Lexer.Position (Position)
+import PythonHS.VM.EnvState (EnvState (..))
+import PythonHS.VM.ExceptionState (ExceptionState (..))
 import PythonHS.VM.Instruction (Instruction)
+import PythonHS.VM.LoopState (LoopState (..))
+import PythonHS.VM.VMState (VMState (..))
 
 bindDefaults ::
-  ([Instruction] -> Int -> [Value] -> Map.Map String Value -> Map.Map String Value -> Map.Map String ([String], [(String, [Instruction])], [Instruction]) -> Set.Set String -> Map.Map Int [Value] -> Map.Map Int Int -> [Int] -> [String] -> Bool -> Either String (Maybe Value, Map.Map String Value, Map.Map String ([String], [(String, [Instruction])], [Instruction]), [String])) ->
+  (VMState -> Either String VMState) ->
   String ->
   Position ->
   [String] ->
@@ -33,14 +37,30 @@ bindDefaults execute fname pos params defaultCodes initialLocals globalsNow func
               case Map.lookup (canonicalName paramName) defaultMap of
                 Nothing -> Left ("Argument count mismatch when calling " ++ fname ++ " at " ++ showPos pos)
                 Just defaultCode -> do
-                  (maybeDefaultValue, globalsAfterDefault, functionsAfterDefault, outputsAfterDefault) <-
-                    execute defaultCode 0 [] currentGlobals currentLocals currentFunctions Set.empty Map.empty Map.empty [] currentOutputs False
+                  let defaultState =
+                        VMState
+                          { vmCode = defaultCode
+                          , vmIp = 0
+                          , vmStack = []
+                          , vmEnv =
+                              EnvState
+                                { envGlobals = currentGlobals
+                                , envLocals = currentLocals
+                                , envFunctions = currentFunctions
+                                , envGlobalDecls = Set.empty
+                                }
+                          , vmLoop = LoopState {loopForStates = Map.empty, loopCounts = Map.empty}
+                          , vmException = ExceptionState {exceptionHandlers = [], exceptionOutputs = []}
+                          , vmIsTopLevel = False
+                          , vmOutputs = currentOutputs
+                          }
+                  finalState <- execute defaultState
                   let defaultValue =
-                        case maybeDefaultValue of
-                          Just value -> value
-                          Nothing -> NoneValue
-                  let newLocals = Map.insert (canonicalName paramName) defaultValue currentLocals
-                  fill restParams newLocals globalsAfterDefault functionsAfterDefault outputsAfterDefault
+                        case vmStack finalState of
+                          (value : _) -> value
+                          [] -> NoneValue
+                      newLocals = Map.insert (canonicalName paramName) defaultValue currentLocals
+                  fill restParams newLocals (envGlobals (vmEnv finalState)) (envFunctions (vmEnv finalState)) (vmOutputs finalState)
 
     canonicalName ('*' : '*' : rest) = rest
     canonicalName ('*' : rest) = rest

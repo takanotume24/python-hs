@@ -4,13 +4,17 @@ import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import PythonHS.Evaluator.ShowPos (showPos)
 import PythonHS.Evaluator.Value (Value (ListValue), Value)
-import PythonHS.VM.IsTruthy (isTruthy)
-import PythonHS.Lexer.Position (Position)
+import PythonHS.VM.EnvState (EnvState (..))
+import PythonHS.VM.ExceptionState (ExceptionState (..))
 import PythonHS.VM.Instruction (Instruction)
+import PythonHS.VM.IsTruthy (isTruthy)
+import PythonHS.VM.LoopState (LoopState (..))
+import PythonHS.Lexer.Position (Position)
 import PythonHS.VM.ToForIterable (toForIterable)
+import PythonHS.VM.VMState (VMState (..))
 
 executeListComprehension ::
-  ([Instruction] -> Int -> [Value] -> Map.Map String Value -> Map.Map String Value -> Map.Map String ([String], [(String, [Instruction])], [Instruction]) -> Set.Set String -> Map.Map Int [Value] -> Map.Map Int Int -> [Int] -> [String] -> Bool -> Either String (Maybe Value, Map.Map String Value, Map.Map String ([String], [(String, [Instruction])], [Instruction]), [String])) ->
+  (VMState -> Either String VMState) ->
   [([String], [Instruction], [[Instruction]])] ->
   [Instruction] ->
   Position ->
@@ -33,17 +37,40 @@ executeListComprehension execute clauses valueCode pos globalsEnv localEnv funct
     requireElement (Just value) = Right value
     requireElement Nothing = Left "VM runtime error: list comprehension value did not produce value"
 
+    emptyState code globals locals funcs outs =
+      VMState
+        { vmCode = code
+        , vmIp = 0
+        , vmStack = []
+        , vmEnv =
+            EnvState
+              { envGlobals = globals
+              , envLocals = locals
+              , envFunctions = funcs
+              , envGlobalDecls = Set.empty
+              }
+        , vmLoop = LoopState {loopForStates = Map.empty, loopCounts = Map.empty}
+        , vmException = ExceptionState {exceptionHandlers = [], exceptionOutputs = []}
+        , vmIsTopLevel = False
+        , vmOutputs = outs
+        }
+
+    extractReturnValue finalState =
+      case vmStack finalState of
+        (value : _) -> Just value
+        [] -> Nothing
+
     evalClauses [] localsNow acc globalsNow functionsNow outputsNow = do
-      (maybeValue, globalsAfterValue, functionsAfterValue, outputsAfterValue) <-
-        execute valueCode 0 [] globalsNow localsNow functionsNow Set.empty Map.empty Map.empty [] outputsNow False
-      value <- requireElement maybeValue
-      Right (acc ++ [value], globalsAfterValue, functionsAfterValue, outputsAfterValue)
+      let state = emptyState valueCode globalsNow localsNow functionsNow outputsNow
+      finalState <- execute state
+      value <- requireElement (extractReturnValue finalState)
+      Right (acc ++ [value], envGlobals (vmEnv finalState), envFunctions (vmEnv finalState), vmOutputs finalState)
     evalClauses ((loopTargets, iterCode, condCodes) : restClauses) localsNow acc globalsNow functionsNow outputsNow = do
-      (maybeIter, globalsAfterIter, functionsAfterIter, outputsAfterIter) <-
-        execute iterCode 0 [] globalsNow localsNow functionsNow Set.empty Map.empty Map.empty [] outputsNow False
-      iterValue <- requireValue maybeIter
+      let iterState = emptyState iterCode globalsNow localsNow functionsNow outputsNow
+      finalIterState <- execute iterState
+      iterValue <- requireValue (extractReturnValue finalIterState)
       iterItems <- toForIterable iterValue pos
-      evalClauseItems loopTargets condCodes restClauses localsNow iterItems acc globalsAfterIter functionsAfterIter outputsAfterIter
+      evalClauseItems loopTargets condCodes restClauses localsNow iterItems acc (envGlobals (vmEnv finalIterState)) (envFunctions (vmEnv finalIterState)) (vmOutputs finalIterState)
 
     evalClauseItems _ _ _ _ [] acc globalsNow functionsNow outputsNow =
       Right (acc, globalsNow, functionsNow, outputsNow)
@@ -60,12 +87,12 @@ executeListComprehension execute clauses valueCode pos globalsEnv localEnv funct
     evaluateConditions [] _ globalsNow functionsNow outputsNow =
       Right (True, globalsNow, functionsNow, outputsNow)
     evaluateConditions (condCode : restCodes) localsNow globalsNow functionsNow outputsNow = do
-      (maybeCond, globalsAfterCond, functionsAfterCond, outputsAfterCond) <-
-        execute condCode 0 [] globalsNow localsNow functionsNow Set.empty Map.empty Map.empty [] outputsNow False
-      condValue <- requireCondition maybeCond
+      let state = emptyState condCode globalsNow localsNow functionsNow outputsNow
+      finalState <- execute state
+      condValue <- requireCondition (extractReturnValue finalState)
       if isTruthy condValue
-        then evaluateConditions restCodes localsNow globalsAfterCond functionsAfterCond outputsAfterCond
-        else Right (False, globalsAfterCond, functionsAfterCond, outputsAfterCond)
+        then evaluateConditions restCodes localsNow (envGlobals (vmEnv finalState)) (envFunctions (vmEnv finalState)) (vmOutputs finalState)
+        else Right (False, envGlobals (vmEnv finalState), envFunctions (vmEnv finalState), vmOutputs finalState)
 
     bindTargets [] _ _ = Left ("Value error: empty comprehension target at " ++ showPos pos)
     bindTargets [name] value localsNow = Right (Map.insert name value localsNow)
