@@ -62,6 +62,11 @@ spec = describe "detectPositionalArgs" $ do
     result <- detectPositionalArgsFromSource (DetectSourceConfig "Foo.hs" src)
     result `shouldSatisfy` null
 
+  it "does not detect constructor applications in expressions" $ do
+    let src = unlines ["module Foo where", "f = Foo 1 2"]
+    result <- detectPositionalArgsFromSource (DetectSourceConfig "Foo.hs" src)
+    result `shouldSatisfy` null
+
   it "produces valid JSON output" $ do
     let src = unlines ["module Z where", "data Z = Z Int"]
     result <- detectPositionalArgsFromSource (DetectSourceConfig "Z.hs" src)

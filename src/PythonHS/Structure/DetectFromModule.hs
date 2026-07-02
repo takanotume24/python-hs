@@ -2,8 +2,7 @@ module PythonHS.Structure.DetectFromModule (detectFromModule) where
 
 import Data.Generics (everything, mkQ)
 import Language.Haskell.Exts
-  ( Boxed (..),
-    ConDecl (..),
+  ( ConDecl (..),
     Decl (..),
     Exp (..),
     Match (..),
@@ -46,22 +45,14 @@ detectFromModule config =
         where allPats = p : ps
 
       goTupleExp (Tuple l _ es)
-        | length es >= 2 && isSrcSpanInfo l = [mkViolation path l TupleCategory (prettyPrint (Tuple l Boxed es))]
+        | length es >= 2 && isSrcSpanInfo l = [mkViolation path l TupleCategory ("(" ++ unwords (map prettyPrint (take 3 es)) ++ ")")]
         | otherwise = []
       goTupleExp _ = []
 
       goTuplePat (PTuple l _ ps)
-        | length ps >= 2 && isSrcSpanInfo l = [mkViolation path l TupleCategory (prettyPrint (PTuple l Boxed ps))]
+        | length ps >= 2 && isSrcSpanInfo l = [mkViolation path l TupleCategory ("(" ++ unwords (map prettyPrint (take 3 ps)) ++ ")")]
         | otherwise = []
       goTuplePat _ = []
-
-      goConApp (App l (Con _ n) _)
-        | isBuiltinCon (prettyPrint n) = []
-        | isSrcSpanInfo l = [mkViolation path l ConAppCategory (prettyPrint n)]
-        | otherwise = []
-      goConApp _ = []
-
-      isBuiltinCon name = name `elem` ["Just", "Nothing", "Left", "Right", "LT", "EQ", "GT"]
 
       isSrcSpanInfo (SrcSpanInfo (SrcSpan _ line _ _ _) _) = line > 0
 
@@ -78,5 +69,4 @@ detectFromModule config =
           concatMap goDecl decls
             ++ everything (++) (mkQ [] goTupleExp) m
             ++ everything (++) (mkQ [] goTuplePat) m
-            ++ everything (++) (mkQ [] goConApp) m
         _ -> []
