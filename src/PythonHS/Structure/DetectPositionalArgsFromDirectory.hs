@@ -2,6 +2,7 @@ module PythonHS.Structure.DetectPositionalArgsFromDirectory (detectPositionalArg
 
 import PythonHS.Structure.CollectHsFiles (collectHsFiles)
 import PythonHS.Structure.DetectPositionalArgsFromSource (detectPositionalArgsFromSource)
+import PythonHS.Structure.DetectSourceConfig (DetectSourceConfig (..))
 import PythonHS.Structure.PositionalArgViolation (PositionalArgViolation)
 
 detectPositionalArgsFromDirectory :: FilePath -> IO [PositionalArgViolation]
@@ -11,4 +12,4 @@ detectPositionalArgsFromDirectory dir = do
   where
     goFile path = do
       src <- readFile path
-      detectPositionalArgsFromSource path src
+      detectPositionalArgsFromSource (DetectSourceConfig { sourceFilePath = path, sourceContent = src })

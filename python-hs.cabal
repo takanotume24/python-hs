@@ -43,6 +43,8 @@ library
     , PythonHS.Structure.ViolationCategory
     , PythonHS.Structure.DetectPositionalArgs
     , PythonHS.Structure.DetectPositionalArgsFromSource
+    , PythonHS.Structure.DetectSourceConfig
+    , PythonHS.Structure.DetectModuleConfig
     , PythonHS.Structure.DetectPositionalArgsFromDirectory
     , PythonHS.Structure.CollectHsFiles
     , PythonHS.Structure.IsHaskellFile
