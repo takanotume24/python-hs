@@ -205,6 +205,26 @@
 - [x] P36 実装: `CallBuiltin` から stdlib builtin dispatch を追加し、marker 依存を段階縮退
 - [x] P36 品質ゲート: `cabal test` / `cabal run check-structure` / warning 0 を再通過
 
+## 現在のスコープ（P38: レコード構文によるリファクタリング）
+- [x] P38 開始: レコード構文を用いた徹底的なリファクタリングを開始
+- [x] P38 実装: `VMState` をレコード構文で明確化し、各フィールドに名前付きアクセスを導入
+- [x] P38 実装: `EnvState` をレコード構文で明確化し、各フィールドに名前付きアクセスを導入
+- [x] P38 実装: `ExceptionState` をレコード構文で明確化し、各フィールドに名前付きアクセスを導入
+- [x] P38 実装: `LoopState` をレコード構文で明確化し、各フィールドに名前付きアクセスを導入
+- [x] P38 品質ゲート: `cabal test` / `cabal run check-structure` / warning 0 を再通過
+
+## 今後のリファクタリング候補
+- [x] P39: `LexerError` のレコード構文による明確化（P38 時点で完了済み）
+- [x] P40: `WithExit` のレコード構文による明確化（P38 時点で完了済み）
+- [x] P41: `WithEntry` のレコード構文による明確化（P38 時点で完了済み）
+- [x] P42: `ContextManager` のレコード構文による明確化（P38 時点で完了済み）
+- [x] P43: `Token` のレコード構文による明確化（P38 時点で完了済み）
+- [x] P44: `Position` のレコード構文による明確化（P38 時点で完了済み）
+- [ ] P45: VM 実行系のレコード構文による明確化（`VMState`/`EnvState`/`ExceptionState`/`LoopState` を VM 実行系で実際に使用する）
+- [ ] P46: Parser/Compiler 側のレコードパターンマッチ統一（`Stmt`/`Expr` の位置パターンマッチを `{field}` 構文へ統一）
+- [ ] P47: 細部の位置パターンマッチ掃討（`VM/EvalBinaryOp`, `IsTruthy`, `GetitemValue`, `SliceValue` など）
+- [ ] P48: VM 実行系のレコード構文適用による構造制約（200行/ファイル1関数）再整備
+
 ## 現在のスコープ（P37: dotted import 束縛の CPython 互換化）
 - [x] P37 開始: `import pkg.sub` 時のトップレベル束縛を CPython 互換（bare `sub` 非束縛）へ整合するスコープを開始
 - [x] P37 失敗テスト先行: `CLISpec` / `RunSourceVmSpec` に `import pkg.sub` 後の `sub` 直接参照を `Name error` とするケースを追加
@@ -792,3 +812,33 @@
   - [x] P18 開始: デコレータ（関数/クラス/複数/引数付き）を VM 専用で導入するスコープを開始
   - [x] P18 実装: `@` トークン、decorated stmt AST/Parser、VM デコレータ適用コンパイル、関数参照解決を追加
   - [x] P18 完了: `cabal test -j1`（747 examples）と `cabal run check-structure` 成功
+- [x] P38 完了: `VMState`/`EnvState`/`ExceptionState`/`LoopState` のレコード構文定義を導入し、品質ゲート再通過
+- [x] P45 開始: VM 実行系を定義済みレコード構文で実際に使用する徹底的リファクタリングを開始
+
+## 現在のスコープ（P45: VM 実行系のレコード構文化）
+- [x] P45 開始: VM 実行系を `VMState`/`EnvState`/`ExceptionState`/`LoopState` のレコード構文で明確化する
+- [x] P45-1: `RunInstructions` の `execute` コールバックを `VMState -> Either String VMState` に変更
+- [x] P45-2: `ExecuteOneInstruction` を `VMState` ベースに書き換え（型シグネチャ・全命令処理）
+- [x] P45-3: `HandleRuntimeError` / `HandleExceptionInstruction` を `VMState` ベースに変更
+- [x] P45-4: `ExecuteCallFunction` / `ExecuteCallValueFunction` を `VMState` ベースに変更
+- [x] P45-5: `ExecuteDefineClassInstruction` / `ExecuteListComprehension` / `ExecuteUnpackToNames` / `ExecuteMatchPattern` を `VMState` ベースに変更
+- [x] P45-6: `ApplyExceptionInstruction` / `ExecutePendingExceptionInstruction` / `ExecuteForNext` を `VMState` ベースに変更
+- [x] P45-7: `InitVMState` / 各 helper のレコード構文を活用した更新を徹底
+- [x] P45-8: 構造制約対応: VMState コンストラクションをコンパクト化し 200 行制約を維持
+- [x] P45-9: 品質ゲート: `cabal test` / `cabal run check-structure` / warning 0 を再通過
+
+## 現在のスコープ（P46: Parser/Compiler レコードパターンマッチ統一）
+- [x] P46-1: `CompileProgram` の `Stmt` パターンマッチを `{field}` 構文に統一
+- [x] P46-2: `TransformImportAliases` の `Stmt`/`Expr` パターンマッチを `{field}` 構文に統一
+- [x] P46-3: `CollectExports` の `Stmt` パターンマッチを `{field}` 構文に統一
+- [x] P46-4: `ResolveStarExportNames` の `Stmt` パターンマッチを `{field}` 構文に統一
+- [x] P46-5: 品質ゲート: `cabal test` / `cabal run check-structure` / warning 0 を再通過
+
+## 現在のスコープ（P47: 細部の位置パターンマッチ掃討）
+- [x] P47-1: `EvalBinaryOp` の `IntValue n` → `IntValue {intValue = n}` に統一
+- [x] P47-2: `IsTruthy` の位置パターンマッチをレコード構文に統一
+- [x] P47-3: `ToForIterable` の位置パターンマッチをレコード構文に統一
+- [x] P47-4: `GetitemValue` の位置パターンマッチをレコード構文に統一
+- [x] P47-5: `SliceValue` の位置パターンマッチをレコード構文に統一
+- [x] P47-6: その他の残存位置パターンマッチをレコード構文に統一（`MatchPatternBindings`, `ExecutePendingExceptionInstruction` など）
+- [x] P47-7: 品質ゲート: `cabal test` / `cabal run check-structure` / warning 0 を再通過
