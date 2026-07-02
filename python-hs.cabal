@@ -47,6 +47,7 @@ library
     , PythonHS.Structure.DetectModuleConfig
     , PythonHS.Structure.DetectPositionalArgsFromDirectory
     , PythonHS.Structure.CollectHsFiles
+    , PythonHS.Structure.ExemptFileInfo
     , PythonHS.Structure.IsHaskellFile
     , PythonHS.Structure.FormatViolationsJson
   other-modules:

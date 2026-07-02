@@ -5,6 +5,7 @@ import Data.List (sortOn)
 import Data.Ord (Down (Down))
 import System.Directory (doesFileExist)
 import System.FilePath ((</>))
+import PythonHS.Structure.ExemptFileInfo (ExemptFileInfo (..))
 
 checkStructureWarnings :: FilePath -> IO [String]
 checkStructureWarnings root = do
@@ -15,11 +16,14 @@ checkStructureWarnings root = do
       then do
         content <- readFile fullPath
         let lineCount = length (lines content)
-        return [(relPath, lineCount)]
+        return [ExemptFileInfo { filePathExempt = relPath, lineCountExempt = lineCount }]
       else return []
-  let sortedEntries = sortOn (Down . snd) entries
+  let sortedEntries = sortOn (Down . lineCountExempt) entries
   return (map formatWarning sortedEntries)
   where
-    formatWarning (relPath, lineCount) = "temporary line-limit exemption: " ++ relPath ++ " (" ++ show lineCount ++ " lines)"
+    formatWarning entry =
+      let relPath = filePathExempt entry
+          lineCount = lineCountExempt entry
+       in "temporary line-limit exemption: " ++ relPath ++ " (" ++ show lineCount ++ " lines)"
 
     legacyLineCountExemptions = []
