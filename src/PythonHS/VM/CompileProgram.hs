@@ -2,7 +2,7 @@ module PythonHS.VM.CompileProgram (compileProgram) where
 
 import PythonHS.AST.BinaryOperator (BinaryOperator (AddOperator, DivideOperator, FloorDivideOperator, ModuloOperator, MultiplyOperator, SubtractOperator))
 import PythonHS.AST.Program (Program (Program))
-import PythonHS.AST.Stmt (Stmt (AddAssignStmt, AnnAssignStmt, AssignStmt, AssignUnpackStmt, BreakStmt, ClassDefStmt, ContinueStmt, DecoratedStmt, DivAssignStmt, FloorDivAssignStmt, ForStmt, FromImportStmt, FunctionDefDefaultsStmt, FunctionDefStmt, GlobalStmt, IfStmt, ImportStmt, MatchStmt, ModAssignStmt, MulAssignStmt, PassStmt, PrintStmt, RaiseStmt, ReturnStmt, SubAssignStmt, TryExceptStmt, WhileStmt, WithStmt, YieldFromStmt, YieldStmt))
+import PythonHS.AST.Stmt (Stmt (..))
 import PythonHS.Evaluator.ShowPos (showPos)
 import PythonHS.VM.CompileClassDefStmt (compileClassDefStmt)
 import PythonHS.VM.CompileCompoundAssign (compileCompoundAssign)
@@ -36,8 +36,8 @@ compileProgram (Program stmts) = do
 
     compileStmt baseIndex inFunction maybeLoop stmt =
       case stmt of
-        PassStmt _ -> Right ([], baseIndex)
-        DecoratedStmt decorators targetStmt _ ->
+        PassStmt {} -> Right ([], baseIndex)
+        DecoratedStmt {decoratedStmtDecorators = decorators, decoratedStmtTarget = targetStmt} ->
           compileDecoratedStmt
             compileStmt
             (compileClassDefStmt compileDefaults compileStatements compileExprAt)
@@ -47,53 +47,53 @@ compileProgram (Program stmts) = do
             maybeLoop
             decorators
             targetStmt
-        GlobalStmt name _ -> Right ([DeclareGlobal name], baseIndex + 1)
-        RaiseStmt expr pos -> do
+        GlobalStmt {globalStmtName = name} -> Right ([DeclareGlobal name], baseIndex + 1)
+        RaiseStmt {raiseStmtExpr = expr, raiseStmtPos = pos} -> do
           (exprCode, exprEnd) <- compileExprAt baseIndex expr
           let code = exprCode ++ [RaiseTop pos]
           pure (code, exprEnd + 1)
-        TryExceptStmt tryStmts exceptStmts maybeFinally _ ->
+        TryExceptStmt {tryExceptStmtTryBody = tryStmts, tryExceptStmtExceptSuites = exceptStmts, tryExceptStmtFinallyBody = maybeFinally} ->
           compileTryExcept compileStatements baseIndex inFunction maybeLoop tryStmts exceptStmts maybeFinally
-        MatchStmt subjectExpr matchCases _ ->
+        MatchStmt {matchStmtSubject = subjectExpr, matchStmtCases = matchCases} ->
           compileMatch compileExprAt compileStatements baseIndex inFunction maybeLoop subjectExpr matchCases
-        ImportStmt _ _ ->
+        ImportStmt {} ->
           compileImportStmt baseIndex stmt
-        FromImportStmt _ _ _ _ ->
+        FromImportStmt {} ->
           compileImportStmt baseIndex stmt
-        AssignStmt name expr _ -> do
+        AssignStmt {assignStmtName = name, assignStmtValue = expr} -> do
           (exprCode, exprEnd) <- compileExprAt baseIndex expr
           let code = exprCode ++ [StoreName name]
           pure (code, exprEnd + 1)
-        AssignUnpackStmt names expr pos -> do
+        AssignUnpackStmt {assignUnpackStmtNames = names, assignUnpackStmtValue = expr, assignUnpackStmtPos = pos} -> do
           (exprCode, exprEnd) <- compileExprAt baseIndex expr
           let code = exprCode ++ [UnpackToNames names pos]
           pure (code, exprEnd + 1)
-        AnnAssignStmt name _ maybeExpr _ ->
+        AnnAssignStmt {annAssignStmtName = name, annAssignStmtValue = maybeExpr} ->
           case maybeExpr of
             Nothing -> Right ([], baseIndex)
             Just expr -> do
               (exprCode, exprEnd) <- compileExprAt baseIndex expr
               let code = exprCode ++ [StoreName name]
               pure (code, exprEnd + 1)
-        AddAssignStmt name expr pos -> compileCompoundAssign compileExprAt baseIndex name expr pos AddOperator
-        SubAssignStmt name expr pos -> compileCompoundAssign compileExprAt baseIndex name expr pos SubtractOperator
-        MulAssignStmt name expr pos -> compileCompoundAssign compileExprAt baseIndex name expr pos MultiplyOperator
-        DivAssignStmt name expr pos -> compileCompoundAssign compileExprAt baseIndex name expr pos DivideOperator
-        ModAssignStmt name expr pos -> compileCompoundAssign compileExprAt baseIndex name expr pos ModuloOperator
-        FloorDivAssignStmt name expr pos -> compileCompoundAssign compileExprAt baseIndex name expr pos FloorDivideOperator
-        PrintStmt expr _ -> do
+        AddAssignStmt {addAssignStmtName = name, addAssignStmtValue = expr, addAssignStmtPos = pos} -> compileCompoundAssign compileExprAt baseIndex name expr pos AddOperator
+        SubAssignStmt {subAssignStmtName = name, subAssignStmtValue = expr, subAssignStmtPos = pos} -> compileCompoundAssign compileExprAt baseIndex name expr pos SubtractOperator
+        MulAssignStmt {mulAssignStmtName = name, mulAssignStmtValue = expr, mulAssignStmtPos = pos} -> compileCompoundAssign compileExprAt baseIndex name expr pos MultiplyOperator
+        DivAssignStmt {divAssignStmtName = name, divAssignStmtValue = expr, divAssignStmtPos = pos} -> compileCompoundAssign compileExprAt baseIndex name expr pos DivideOperator
+        ModAssignStmt {modAssignStmtName = name, modAssignStmtValue = expr, modAssignStmtPos = pos} -> compileCompoundAssign compileExprAt baseIndex name expr pos ModuloOperator
+        FloorDivAssignStmt {floorDivAssignStmtName = name, floorDivAssignStmtValue = expr, floorDivAssignStmtPos = pos} -> compileCompoundAssign compileExprAt baseIndex name expr pos FloorDivideOperator
+        PrintStmt {printStmtValue = expr} -> do
           (exprCode, exprEnd) <- compileExprAt baseIndex expr
           let code = exprCode ++ [PrintTop]
           pure (code, exprEnd + 1)
-        YieldStmt expr pos ->
+        YieldStmt {yieldStmtValue = expr, yieldStmtPos = pos} ->
           if inFunction
             then compileYieldCollectStmt compileExprAt baseIndex "append" expr pos
             else Left ("VM compile error: unsupported statement at " ++ showPos (stmtPosition stmt))
-        YieldFromStmt expr pos ->
+        YieldFromStmt {yieldFromStmtValue = expr, yieldFromStmtPos = pos} ->
           if inFunction
             then compileYieldCollectStmt compileExprAt baseIndex "extend" expr pos
             else Left ("VM compile error: unsupported statement at " ++ showPos (stmtPosition stmt))
-        IfStmt cond thenStmts maybeElseStmts _ -> do
+        IfStmt {ifStmtCond = cond, ifStmtThen = thenStmts, ifStmtElse = maybeElseStmts} -> do
           (condCode, condEnd) <- compileExprAt baseIndex cond
           let jumpIfFalseIndex = condEnd
           let thenStartIndex = jumpIfFalseIndex + 1
@@ -109,7 +109,7 @@ compileProgram (Program stmts) = do
               (elseCode, elseEndIndex) <- compileStatements elseStartIndex inFunction maybeLoop elseStmts
               let code = condCode ++ [JumpIfFalse elseStartIndex] ++ thenCode ++ [Jump elseEndIndex] ++ elseCode
               pure (code, elseEndIndex)
-        WhileStmt cond body whilePos -> do
+        WhileStmt {whileStmtCond = cond, whileStmtBody = body, whileStmtPos = whilePos} -> do
           (condCode, condEnd) <- compileExprAt baseIndex cond
           let jumpIfFalseIndex = condEnd
           let bodyStartIndex = jumpIfFalseIndex + 1
@@ -122,7 +122,7 @@ compileProgram (Program stmts) = do
           (bodyCode, _) <- compileStatements firstBodyStmtIndex inFunction loopContext body
           let code = condCode ++ [JumpIfFalse loopEndIndex, LoopGuard whilePos] ++ bodyCode ++ [Jump baseIndex]
           pure (code, loopEndIndex)
-        ForStmt name iterExpr body forPos -> do
+        ForStmt {forStmtVar = name, forStmtIter = iterExpr, forStmtBody = body, forStmtPos = forPos} -> do
           (iterCode, iterEnd) <- compileExprAt baseIndex iterExpr
           let setupIndex = iterEnd
           let nextIndex = setupIndex + 1
@@ -136,26 +136,26 @@ compileProgram (Program stmts) = do
           let iterPos = exprPosition iterExpr
           let code = iterCode ++ [ForSetup nextIndex iterPos, ForNext name loopEndIndex iterPos, LoopGuard forPos] ++ bodyCode ++ [Jump nextIndex]
           pure (code, loopEndIndex)
-        ClassDefStmt className maybeBase body _ ->
+        ClassDefStmt {classDefStmtName = className, classDefStmtBase = maybeBase, classDefStmtBody = body} ->
           compileClassDefStmt compileDefaults compileStatements compileExprAt baseIndex className maybeBase body Nothing
-        FunctionDefStmt name params body posDef ->
+        FunctionDefStmt {functionDefStmtName = name, functionDefStmtParams = params, functionDefStmtBody = body, functionDefStmtPos = posDef} ->
           fmap (\(functionCode, _) -> ([DefineFunction name params [] functionCode], baseIndex + 1)) (compileFunctionDefStmt compileStatements compileExprAt posDef [] body)
-        FunctionDefDefaultsStmt name params defaults body posDef ->
+        FunctionDefDefaultsStmt {functionDefDefaultsStmtName = name, functionDefDefaultsStmtParams = params, functionDefDefaultsStmtDefaults = defaults, functionDefDefaultsStmtBody = body, functionDefDefaultsStmtPos = posDef} ->
           fmap (\(functionCode, defaultCodes) -> ([DefineFunction name params defaultCodes functionCode], baseIndex + 1)) (compileFunctionDefStmt compileStatements compileExprAt posDef defaults body)
-        ReturnStmt expr _ ->
+        ReturnStmt {returnStmtValue = expr} ->
           if inFunction
             then do
               (exprCode, exprEnd) <- compileExprAt baseIndex expr
               let code = exprCode ++ [ReturnTop]
               pure (code, exprEnd + 1)
             else Left ("VM compile error: unsupported statement at " ++ showPos (stmtPosition stmt))
-        BreakStmt pos ->
+        BreakStmt {breakStmtPos = pos} ->
           case maybeLoop of
             Just (breakTarget, _) -> Right ([Jump breakTarget], baseIndex + 1)
             Nothing -> Left ("Break outside loop at " ++ showPos pos)
-        ContinueStmt pos ->
+        ContinueStmt {continueStmtPos = pos} ->
           case maybeLoop of
             Just (_, continueTarget) -> Right ([Jump continueTarget], baseIndex + 1)
             Nothing -> Left ("Continue outside loop at " ++ showPos pos)
-        WithStmt contextManager maybeVarName body withPos ->
+        WithStmt {withStmtContextManager = contextManager, withStmtVarName = maybeVarName, withStmtBody = body, withStmtPos = withPos} ->
           compileWithStmt baseIndex inFunction maybeLoop contextManager maybeVarName body withPos compileStatements

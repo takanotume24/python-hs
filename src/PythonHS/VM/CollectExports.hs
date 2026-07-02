@@ -1,16 +1,7 @@
 module PythonHS.VM.CollectExports (collectExports) where
 
 import qualified Data.Map.Strict as Map
-import PythonHS.AST.Stmt
-  ( Stmt
-      ( AnnAssignStmt,
-        AssignStmt,
-        AssignUnpackStmt,
-        DecoratedStmt,
-        FunctionDefDefaultsStmt,
-        FunctionDefStmt
-      )
-  )
+import PythonHS.AST.Stmt (Stmt (..))
 import PythonHS.VM.ModulePrefixFor (modulePrefixFor)
 
 collectExports :: [String] -> [Stmt] -> Map.Map String String
@@ -18,15 +9,15 @@ collectExports modulePath stmts =
   foldl
     ( \acc stmt ->
         case stmt of
-          AssignStmt name _ _ -> Map.insert name (moduleMemberName name) acc
-          AssignUnpackStmt names _ _ -> foldl (\m name -> Map.insert name (moduleMemberName name) m) acc names
-          AnnAssignStmt name _ (Just _) _ -> Map.insert name (moduleMemberName name) acc
-          FunctionDefStmt name _ _ _ -> Map.insert name (moduleMemberName name) acc
-          FunctionDefDefaultsStmt name _ _ _ _ -> Map.insert name (moduleMemberName name) acc
-          DecoratedStmt _ innerStmt _ ->
+          AssignStmt {assignStmtName = name} -> Map.insert name (moduleMemberName name) acc
+          AssignUnpackStmt {assignUnpackStmtNames = names} -> foldl (\m name -> Map.insert name (moduleMemberName name) m) acc names
+          AnnAssignStmt {annAssignStmtName = name, annAssignStmtValue = Just _} -> Map.insert name (moduleMemberName name) acc
+          FunctionDefStmt {functionDefStmtName = name} -> Map.insert name (moduleMemberName name) acc
+          FunctionDefDefaultsStmt {functionDefDefaultsStmtName = name} -> Map.insert name (moduleMemberName name) acc
+          DecoratedStmt {decoratedStmtTarget = innerStmt} ->
             case innerStmt of
-              FunctionDefStmt name _ _ _ -> Map.insert name (moduleMemberName name) acc
-              FunctionDefDefaultsStmt name _ _ _ _ -> Map.insert name (moduleMemberName name) acc
+              FunctionDefStmt {functionDefStmtName = name} -> Map.insert name (moduleMemberName name) acc
+              FunctionDefDefaultsStmt {functionDefDefaultsStmtName = name} -> Map.insert name (moduleMemberName name) acc
               _ -> acc
           _ -> acc
     )

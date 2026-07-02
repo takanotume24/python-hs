@@ -2,8 +2,8 @@ module PythonHS.VM.ResolveStarExportNames (resolveStarExportNames) where
 
 import qualified Data.Map.Strict as Map
 import Data.List (isPrefixOf)
-import PythonHS.AST.Expr (Expr (ListExpr, StringExpr, TupleExpr))
-import PythonHS.AST.Stmt (Stmt (AssignStmt))
+import PythonHS.AST.Expr (Expr (..))
+import PythonHS.AST.Stmt (Stmt (..))
 
 resolveStarExportNames :: [Stmt] -> Map.Map String String -> [(String, String)]
 resolveStarExportNames moduleStmts exportMap =
@@ -24,14 +24,14 @@ resolveStarExportNames moduleStmts exportMap =
         [] -> Nothing
         stmt : rest ->
           case stmt of
-            AssignStmt name expr _
+            AssignStmt {assignStmtName = name, assignStmtValue = expr}
               | name == targetName -> Just expr
             _ -> findAssignedExpr targetName rest
 
     collectStringNames expr =
       case expr of
-        ListExpr items _ -> collectItems items
-        TupleExpr items _ -> collectItems items
+        ListExpr {listExprItems = items} -> collectItems items
+        TupleExpr {tupleExprItems = items} -> collectItems items
         _ -> Nothing
       where
         collectItems items =
@@ -39,5 +39,5 @@ resolveStarExportNames moduleStmts exportMap =
             [] -> Just []
             item : rest ->
               case (item, collectItems rest) of
-                (StringExpr name _, Just names) -> Just (name : names)
+                (StringExpr {stringExprValue = name}, Just names) -> Just (name : names)
                 _ -> Nothing
