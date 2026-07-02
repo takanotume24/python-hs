@@ -2,7 +2,7 @@ module PythonHS.VM.EvalBinaryOp (evalBinaryOp) where
 
 import PythonHS.AST.BinaryOperator (BinaryOperator (..))
 import PythonHS.Evaluator.ShowPos (showPos)
-import PythonHS.Evaluator.Value (Value (DictValue, FloatValue, InstanceValue, IntValue, ListValue, NoneValue, StringValue, TupleValue))
+import PythonHS.Evaluator.Value (Value (..))
 import PythonHS.Lexer.Position (Position)
 
 evalBinaryOp :: BinaryOperator -> Value -> Value -> Position -> Either String Value
@@ -10,11 +10,11 @@ evalBinaryOp op left right pos =
   case op of
     AddOperator ->
       case (left, right) of
-        (IntValue l, IntValue r) -> Right (IntValue (l + r))
-        (FloatValue l, FloatValue r) -> Right (FloatValue (l + r))
-        (IntValue l, FloatValue r) -> Right (FloatValue (fromIntegral l + r))
-        (FloatValue l, IntValue r) -> Right (FloatValue (l + fromIntegral r))
-        (StringValue l, StringValue r) -> Right (StringValue (l ++ r))
+        (IntValue {intValue = l}, IntValue {intValue = r}) -> Right (IntValue (l + r))
+        (FloatValue {floatValue = l}, FloatValue {floatValue = r}) -> Right (FloatValue (l + r))
+        (IntValue {intValue = l}, FloatValue {floatValue = r}) -> Right (FloatValue (fromIntegral l + r))
+        (FloatValue {floatValue = l}, IntValue {intValue = r}) -> Right (FloatValue (l + fromIntegral r))
+        (StringValue {stringValue = l}, StringValue {stringValue = r}) -> Right (StringValue (l ++ r))
         _ -> Left ("Type error: + expects int+int or string+string at " ++ showPos pos)
     SubtractOperator -> evalNumericBinary "-" pos left right (-)
     MultiplyOperator -> evalNumericBinary "*" pos left right (*)
@@ -72,21 +72,21 @@ evalBinaryOp op left right pos =
               floored = fromIntegral (floor quotient :: Int)
               remainder = leftNumber - rightNumber * floored
            in case (left', right') of
-                (IntValue leftInt, IntValue rightInt) -> Right (IntValue (leftInt `mod` rightInt))
+                (IntValue {intValue = leftInt}, IntValue {intValue = rightInt}) -> Right (IntValue (leftInt `mod` rightInt))
                 _ -> Right (FloatValue remainder)
 
     evalEqComparison left' right' =
       case (left', right') of
-        (IntValue leftInt, FloatValue rightFloat) -> Right (IntValue (if (fromIntegral leftInt :: Double) == rightFloat then 1 else 0))
-        (FloatValue leftFloat, IntValue rightInt) -> Right (IntValue (if leftFloat == (fromIntegral rightInt :: Double) then 1 else 0))
-        (TupleValue leftVals, TupleValue rightVals) -> Right (IntValue (if leftVals == rightVals then 1 else 0))
+        (IntValue {intValue = leftInt}, FloatValue {floatValue = rightFloat}) -> Right (IntValue (if (fromIntegral leftInt :: Double) == rightFloat then 1 else 0))
+        (FloatValue {floatValue = leftFloat}, IntValue {intValue = rightInt}) -> Right (IntValue (if leftFloat == (fromIntegral rightInt :: Double) then 1 else 0))
+        (TupleValue {tupleValueItems = leftVals}, TupleValue {tupleValueItems = rightVals}) -> Right (IntValue (if leftVals == rightVals then 1 else 0))
         _ -> Right (IntValue (if left' == right' then 1 else 0))
 
     evalNotEqComparison left' right' =
       case (left', right') of
-        (IntValue leftInt, FloatValue rightFloat) -> Right (IntValue (if (fromIntegral leftInt :: Double) /= rightFloat then 1 else 0))
-        (FloatValue leftFloat, IntValue rightInt) -> Right (IntValue (if leftFloat /= (fromIntegral rightInt :: Double) then 1 else 0))
-        (TupleValue leftVals, TupleValue rightVals) -> Right (IntValue (if leftVals /= rightVals then 1 else 0))
+        (IntValue {intValue = leftInt}, FloatValue {floatValue = rightFloat}) -> Right (IntValue (if (fromIntegral leftInt :: Double) /= rightFloat then 1 else 0))
+        (FloatValue {floatValue = leftFloat}, IntValue {intValue = rightInt}) -> Right (IntValue (if leftFloat /= (fromIntegral rightInt :: Double) then 1 else 0))
+        (TupleValue {tupleValueItems = leftVals}, TupleValue {tupleValueItems = rightVals}) -> Right (IntValue (if leftVals /= rightVals then 1 else 0))
         _ -> Right (IntValue (if left' /= right' then 1 else 0))
 
     evalNumericComparison context pos' left' right' cmp = do
@@ -96,13 +96,13 @@ evalBinaryOp op left right pos =
 
     evalOrderComparison context pos' left' right' cmp =
       case (left', right') of
-        (InstanceValue leftClass leftAttrs, InstanceValue rightClass rightAttrs) ->
+        (InstanceValue {instanceValueClass = leftClass, instanceValueAttrs = leftAttrs}, InstanceValue {instanceValueClass = rightClass, instanceValueAttrs = rightAttrs}) ->
           if leftClass == rightClass
             then do
               ordResult <- compareInstanceValues leftAttrs rightAttrs
               Right (IntValue (if cmp ordResult then 1 else 0))
             else Left ("Type error: expected int in " ++ context ++ " at " ++ showPos pos')
-        (TupleValue leftVals, TupleValue rightVals) -> do
+        (TupleValue {tupleValueItems = leftVals}, TupleValue {tupleValueItems = rightVals}) -> do
           ordResult <- compareLists leftVals rightVals
           Right (IntValue (if cmp ordResult then 1 else 0))
         _ -> evalNumericComparison context pos' left' right' (\l r -> cmp (compare l r))
@@ -131,23 +131,23 @@ evalBinaryOp op left right pos =
 
     compareSingleValue leftValue rightValue =
       case (leftValue, rightValue) of
-        (IntValue leftInt, IntValue rightInt) -> compare leftInt rightInt
+        (IntValue {intValue = leftInt}, IntValue {intValue = rightInt}) -> compare leftInt rightInt
         (FloatValue leftFloat, FloatValue rightFloat) -> compare leftFloat rightFloat
-        (IntValue leftInt, FloatValue rightFloat) -> compare (fromIntegral leftInt :: Double) rightFloat
-        (FloatValue leftFloat, IntValue rightInt) -> compare leftFloat (fromIntegral rightInt :: Double)
+        (IntValue {intValue = leftInt}, FloatValue {floatValue = rightFloat}) -> compare (fromIntegral leftInt :: Double) rightFloat
+        (FloatValue {floatValue = leftFloat}, IntValue {intValue = rightInt}) -> compare leftFloat (fromIntegral rightInt :: Double)
         (StringValue leftString, StringValue rightString) -> compare leftString rightString
         _ -> compare (show leftValue) (show rightValue)
 
-    expectNumber _ _ (IntValue n) = Right (fromIntegral n)
-    expectNumber _ _ (FloatValue n) = Right n
+    expectNumber _ _ IntValue {intValue = n} = Right (fromIntegral n)
+    expectNumber _ _ FloatValue {floatValue = n} = Right n
     expectNumber _ _ NoneValue = Right 0
     expectNumber context pos' _ = Left ("Type error: expected int in " ++ context ++ " at " ++ showPos pos')
 
     expectTruthy :: String -> Position -> Value -> Either String Int
-    expectTruthy _ _ (IntValue n) = Right (if n == 0 then 0 else 1)
-    expectTruthy _ _ (FloatValue n) = Right (if n == 0 then 0 else 1)
+    expectTruthy _ _ IntValue {intValue = n} = Right (if n == 0 then 0 else 1)
+    expectTruthy _ _ FloatValue {floatValue = n} = Right (if n == 0 then 0 else 1)
     expectTruthy _ _ NoneValue = Right 0
-    expectTruthy _ _ (StringValue s) = Right (if null s then 0 else 1)
-    expectTruthy _ _ (ListValue vals) = Right (if null vals then 0 else 1)
-    expectTruthy _ _ (DictValue pairs) = Right (if null pairs then 0 else 1)
+    expectTruthy _ _ StringValue {stringValue = s} = Right (if null s then 0 else 1)
+    expectTruthy _ _ ListValue {listValueItems = vals} = Right (if null vals then 0 else 1)
+    expectTruthy _ _ DictValue {dictValuePairs = pairs} = Right (if null pairs then 0 else 1)
     expectTruthy context pos' _ = Left ("Type error: expected int in " ++ context ++ " at " ++ showPos pos')

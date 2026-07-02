@@ -1,16 +1,16 @@
 module PythonHS.VM.GetitemValue (getitemValue) where
 
 import PythonHS.Evaluator.ShowPos (showPos)
-import PythonHS.Evaluator.Value (Value (IntValue, ListValue, StringValue, TupleValue), Value)
+import PythonHS.Evaluator.Value (Value (..))
 import PythonHS.Lexer.Position (Position)
 
 getitemValue :: Position -> Value -> Value -> Either String Value
 getitemValue pos seqValue indexValue =
   case (seqValue, indexValue) of
-    (ListValue vals, IntValue idx) -> getAtValues vals idx
-    (TupleValue vals, IntValue idx) -> getAtValues vals idx
-    (StringValue s, IntValue idx) -> getAtString s idx
-    (_, IntValue _) -> Left ("Type error: getitem expects list, tuple, or string as first argument at " ++ showPos pos)
+    (ListValue {listValueItems = vals}, IntValue {intValue = idx}) -> getAtValues vals idx
+    (TupleValue {tupleValueItems = vals}, IntValue {intValue = idx}) -> getAtValues vals idx
+    (StringValue {stringValue = s}, IntValue {intValue = idx}) -> getAtString s idx
+    (_, IntValue {}) -> Left ("Type error: getitem expects list, tuple, or string as first argument at " ++ showPos pos)
     _ -> Left ("Type error: getitem expects int index at " ++ showPos pos)
   where
     normalizeIndex lenNow idx =

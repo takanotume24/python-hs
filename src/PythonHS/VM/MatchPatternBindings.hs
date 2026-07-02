@@ -1,32 +1,32 @@
 module PythonHS.VM.MatchPatternBindings (matchPatternBindings) where
 
-import PythonHS.AST.Expr (Expr (DictExpr, FloatExpr, IntegerExpr, ListExpr, NoneExpr, StringExpr, TupleExpr))
-import PythonHS.AST.Pattern (Pattern (AsPattern, CapturePattern, MappingPattern, OrPattern, SequencePattern, ValuePattern, WildcardPattern))
-import PythonHS.Evaluator.Value (Value (DictValue, FloatValue, IntValue, ListValue, NoneValue, StringValue, TupleValue))
+import PythonHS.AST.Expr (Expr (..))
+import PythonHS.AST.Pattern (Pattern (..))
+import PythonHS.Evaluator.Value (Value (..))
 
 matchPatternBindings :: Pattern -> Value -> Maybe [(String, Value)]
 matchPatternBindings patternValue subjectValue =
   case patternValue of
-    WildcardPattern _ -> Just []
-    CapturePattern name _ -> Just [(name, subjectValue)]
-    AsPattern innerPattern aliasName _ -> do
+    WildcardPattern {} -> Just []
+    CapturePattern {capturePatternName = name} -> Just [(name, subjectValue)]
+    AsPattern {asPatternInner = innerPattern, asPatternAlias = aliasName} -> do
       innerBindings <- matchPatternBindings innerPattern subjectValue
       Just (innerBindings ++ [(aliasName, subjectValue)])
-    ValuePattern expr _ ->
+    ValuePattern {valuePatternExpr = expr} ->
       case exprToValue expr of
         Just expected -> if expected == subjectValue then Just [] else Nothing
         Nothing -> Nothing
-    OrPattern patterns _ -> firstMatch patterns
-    SequencePattern items maybeRest _ ->
+    OrPattern {orPatternItems = patterns} -> firstMatch patterns
+    SequencePattern {sequencePatternItems = items, sequencePatternRest = maybeRest} ->
       case subjectValue of
-        ListValue values ->
+        ListValue {listValueItems = values} ->
           matchSequenceValue items maybeRest values
-        TupleValue values ->
+        TupleValue {tupleValueItems = values} ->
           matchSequenceValue items maybeRest values
         _ -> Nothing
-    MappingPattern pairs maybeRestCapture _ ->
+    MappingPattern {mappingPatternPairs = pairs, mappingPatternRest = maybeRestCapture} ->
       case subjectValue of
-        DictValue entries ->
+        DictValue {dictValuePairs = entries} ->
           case matchMappingPairs pairs entries [] [] of
             Just (bindings, matchedKeys) ->
               case maybeRestCapture of
@@ -74,13 +74,13 @@ matchPatternBindings patternValue subjectValue =
       | key == k = Just v
       | otherwise = lookupKey key rest
 
-    exprToValue (IntegerExpr n _) = Just (IntValue n)
-    exprToValue (FloatExpr n _) = Just (FloatValue n)
-    exprToValue (StringExpr s _) = Just (StringValue s)
-    exprToValue (NoneExpr _) = Just NoneValue
-    exprToValue (ListExpr exprs _) = fmap ListValue (mapExprs exprs)
-    exprToValue (TupleExpr exprs _) = fmap TupleValue (mapExprs exprs)
-    exprToValue (DictExpr pairs _) = fmap DictValue (mapPairs pairs)
+    exprToValue IntegerExpr {integerExprValue = n} = Just (IntValue n)
+    exprToValue FloatExpr {floatExprValue = n} = Just (FloatValue n)
+    exprToValue StringExpr {stringExprValue = s} = Just (StringValue s)
+    exprToValue NoneExpr {} = Just NoneValue
+    exprToValue ListExpr {listExprItems = exprs} = fmap ListValue (mapExprs exprs)
+    exprToValue TupleExpr {tupleExprItems = exprs} = fmap TupleValue (mapExprs exprs)
+    exprToValue DictExpr {dictExprEntries = pairs} = fmap DictValue (mapPairs pairs)
     exprToValue _ = Nothing
 
     mapExprs [] = Just []

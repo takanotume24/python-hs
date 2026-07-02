@@ -1,7 +1,7 @@
 module PythonHS.VM.ExecutePendingExceptionInstruction (executePendingExceptionInstruction) where
 
 import qualified Data.Map.Strict as Map
-import PythonHS.Evaluator.Value (Value (IntValue, StringValue), Value)
+import PythonHS.Evaluator.Value (Value (..))
 import PythonHS.VM.Instruction (Instruction (LoadPendingException, MatchExceptionType, RaisePendingException))
 
 executePendingExceptionInstruction :: String -> Instruction -> [Value] -> Map.Map String Value -> Either String (Maybe String, [Value])
@@ -14,13 +14,13 @@ executePendingExceptionInstruction pendingExceptErrorName instruction stack loca
     MatchExceptionType maybeTypeName ->
       let matched =
             case Map.lookup pendingExceptErrorName localEnv of
-              Just (StringValue err) -> matchesExceptionType maybeTypeName err
+              Just StringValue {stringValue = err} -> matchesExceptionType maybeTypeName err
               _ -> False
           result = if matched then 1 else 0
        in Right (Nothing, IntValue result : stack)
     RaisePendingException ->
       case Map.lookup pendingExceptErrorName localEnv of
-        Just (StringValue err) -> Right (Just err, stack)
+        Just StringValue {stringValue = err} -> Right (Just err, stack)
         _ -> Left "VM runtime error: pending exception is not set"
     _ -> Left "VM runtime error: executePendingExceptionInstruction called with non-pending-exception instruction"
   where
