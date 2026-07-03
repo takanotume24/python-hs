@@ -36,7 +36,7 @@
 ## 品質ゲート
 - `cabal test` が成功すること。
 - `cabal run check-structure` が成功すること。
-- `cabal run detect-positional-args -- src` が成功すること（新規追加の positional argument 検出 CLI も回帰で確認する）。
+- `cabal run detect-positional-args -- src` を実行し、新規追加の positional argument の有無を確認すること（0件であれば `ExitSuccess`、1件以上であれば `ExitFailure 1` と JSON 出力で詳細を確認する）。
 - コンパイルに警告がないこと（警告が出たら修正してからコミットすること）
 
 ## リファクタリング指針

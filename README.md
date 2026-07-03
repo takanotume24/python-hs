@@ -136,17 +136,28 @@ cabal test
 cabal run check-structure
 ```
 
-### 3. ファイル実行
+### 3. 位置引数検出（レコード構文コンプライアンス）
+```bash
+# ディレクトリ全体をスキャン
+cabal run detect-positional-args -- src
+
+# 単一ファイルをスキャン
+cabal run detect-positional-args -- src/PythonHS/Structure/FooBar.hs
+```
+
+検出対象: `data`/`newtype` の非レコードコンストラクタ、関数の2+位置引数、2+要素タプル。JSON で出力されます。
+
+### 4. ファイル実行
 ```bash
 cabal run python-hs -- examples/sample.pyhs
 ```
 
-### 4. REPL起動
+### 5. REPL起動
 ```bash
 cabal run python-hs
 ```
 
-### 5. VMエンジンで起動
+### 6. VMエンジンで起動
 `cabal run` から実行ファイルへ引数を渡すときは `--` 区切りが必要です。
 
 ```bash
@@ -192,4 +203,5 @@ print id(x)
 ## 品質ゲート
 - `cabal test` が成功
 - `cabal run check-structure` が成功
+- `cabal run detect-positional-args -- src` を実行（0件で成功、1件以上で JSON 出力で詳細確認）
 - コンパイラ警告 0

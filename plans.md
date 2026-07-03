@@ -231,6 +231,9 @@
   - [x] 新規 executable `detect-positional-args` の追加
   - [x] 品質ゲート (`cabal test` / `cabal run check-structure` / warning 0) を再通過
   - [x] 検出精度向上: nullary constructor と builtin constructor (`Just`/`Left`/`Right` 等) を除外
+  - [x] コンストラクタ適用式（`ConAppCategory`）を検出対象から除外（定義箇所のみ対象）
+  - [x] `CheckStructureWarnings.hs` の残存タプルを `ExemptFileInfo` レコード型へ置き換え
+  - [x] 自己分析結果: 0件（完全クリア）
 
 ## 現在のスコープ（P37: dotted import 束縛の CPython 互換化）
 - [x] P37 開始: `import pkg.sub` 時のトップレベル束縛を CPython 互換（bare `sub` 非束縛）へ整合するスコープを開始
