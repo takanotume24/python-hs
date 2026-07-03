@@ -10,11 +10,11 @@ import PythonHS.Lexer.TokenType
   )
 import PythonHS.Parser.ParseError (ParseError(ExpectedExpression))
 import PythonHS.Parser.ParseExpr (parseExpr)
-import PythonHS.Parser.ParseUnpackNames (parseUnpackNames)
+import PythonHS.Parser.ParseUnpackNames (ParseUnpackNamesConfig (..), parseUnpackNames)
 
 parseUnpackAssign :: String -> Position -> [Token] -> Either ParseError (Stmt, [Token])
 parseUnpackAssign firstName pos rest = do
-  (names, afterNames) <- parseUnpackNames [firstName] rest
+  (names, afterNames) <- parseUnpackNames (ParseUnpackNamesConfig [firstName] rest)
   case afterNames of
     Token AssignToken _ _ : afterAssign -> do
       (valueExpr, remaining) <- parseExpr afterAssign

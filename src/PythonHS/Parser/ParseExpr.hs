@@ -7,15 +7,14 @@ import PythonHS.Lexer.TokenType (TokenType (AndToken, ColonToken, CommaToken, Do
 import PythonHS.Parser.ExprPos (exprPos)
 import PythonHS.Parser.ParseCallArgument (parseCallArgument)
 import PythonHS.Parser.ParseComprehensionTail (parseComprehensionTail)
-import PythonHS.Parser.ParseLambdaExpr (parseLambdaExpr)
+import PythonHS.Parser.ParseLambdaExpr (ParseLambdaExprConfig (..), parseLambdaExpr)
 import PythonHS.Parser.ParseParenTuple (parseParenTuple)
 import PythonHS.Parser.ParseError (ParseError (ExpectedExpression))
 import PythonHS.Parser.ParseSubscriptExpr (parseSubscriptExpr)
-import PythonHS.Parser.ParseWalrusExpr (parseWalrusExpr)
+import PythonHS.Parser.ParseWalrusExpr (ParseWalrusExprConfig (..), parseWalrusExpr)
 import PythonHS.Parser.NormalizeFloatLiteral (normalizeFloatLiteral)
 
-parseExpr :: [Token] -> Either ParseError (Expr, [Token])
-parseExpr = parseLambdaExpr (parseWalrusExpr parseOr)
+parseExpr tokens = parseLambdaExpr (ParseLambdaExprConfig (parseWalrusExpr . ParseWalrusExprConfig parseOr) tokens)
   where
     parseOr ts = do
       (left, rest) <- parseAnd ts

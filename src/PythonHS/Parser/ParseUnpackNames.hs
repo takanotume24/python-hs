@@ -1,19 +1,32 @@
-module PythonHS.Parser.ParseUnpackNames (parseUnpackNames) where
+module PythonHS.Parser.ParseUnpackNames
+  ( ParseUnpackNamesConfig (..),
+    parseUnpackNames,
+  )
+where
 
-import PythonHS.Lexer.Position (Position(Position))
-import PythonHS.Lexer.Token (Token(Token))
+import PythonHS.Lexer.Position (Position (Position))
+import PythonHS.Lexer.Token (Token (Token))
 import PythonHS.Lexer.TokenType
   ( TokenType
-      ( CommaToken
-      , IdentifierToken
-      )
+      ( CommaToken,
+        IdentifierToken
+      ),
   )
-import PythonHS.Parser.ParseError (ParseError(ExpectedExpression))
+import PythonHS.Parser.ParseError (ParseError (ExpectedExpression))
 
-parseUnpackNames :: [String] -> [Token] -> Either ParseError ([String], [Token])
-parseUnpackNames acc (Token IdentifierToken name _ : Token CommaToken _ _ : rest) =
-  parseUnpackNames (acc ++ [name]) rest
-parseUnpackNames acc (Token IdentifierToken name _ : rest) =
-  Right (acc ++ [name], rest)
-parseUnpackNames _ (Token _ _ pos' : _) = Left (ExpectedExpression pos')
-parseUnpackNames _ _ = Left (ExpectedExpression (Position 0 0))
+data ParseUnpackNamesConfig = ParseUnpackNamesConfig
+  { unpackNamesAcc :: [String],
+    unpackNamesTokens :: [Token]
+  }
+
+parseUnpackNames :: ParseUnpackNamesConfig -> Either ParseError ([String], [Token])
+parseUnpackNames config =
+  case (unpackNamesAcc config, unpackNamesTokens config) of
+    (acc, Token IdentifierToken name _ : Token CommaToken _ _ : rest) ->
+      parseUnpackNames (ParseUnpackNamesConfig (acc ++ [name]) rest)
+    (acc, Token IdentifierToken name _ : rest) ->
+      Right (acc ++ [name], rest)
+    (_, Token _ _ pos' : _) ->
+      Left (ExpectedExpression pos')
+    _ ->
+      Left (ExpectedExpression (Position 0 0))
