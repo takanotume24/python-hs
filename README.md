@@ -153,6 +153,9 @@ cabal run detect-positional-args -- src
 
 # JSON
 cabal run detect-positional-args -- --json src
+
+# 特定パスの除外（複数指定可）
+cabal run detect-positional-args -- --exclude test/ --exclude app/ src
 ```
 
 ### 4. ファイル実行

@@ -86,3 +86,11 @@ spec = describe "detectPositionalArgs" $ do
     let src = unlines ["module X where", "f = 1"]
     result <- detectPositionalArgsFromSource (DetectSourceConfig "X.hs" src)
     formatViolationsPlain result `shouldBe` ""
+
+  it "respects exclude patterns" $ do
+    let src = unlines ["module Test where", "f a b = a + b"]
+    result <- detectPositionalArgsFromSource (DetectSourceConfig "test/Test/Foo.hs" src)
+    length result `shouldSatisfy` (>= 1)
+    let matchesExclude patterns v = any (\p -> p `isInfixOf` filePath v) patterns
+        filtered = filter (not . matchesExclude ["test/"]) result
+    filtered `shouldSatisfy` null

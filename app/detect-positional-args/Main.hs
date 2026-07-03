@@ -12,19 +12,26 @@ import System.Exit (exitFailure)
 main :: IO ()
 main = do
   args <- getArgs
-  let run formatter path = do
-        isDir <- doesDirectoryExist path
-        violations <-
-          if isDir
-            then detectPositionalArgsFromDirectory path
-            else detectPositionalArgs path
-        putStrLn (formatter violations)
-        if null violations
-          then pure ()
-          else exitFailure
-   in case args of
-        ["--json", path] -> run formatViolationsJson path
-        [path] -> run formatViolationsPlain path
-        _ -> do
-          putStrLn "Usage: detect-positional-args [--json] <path>"
-          exitFailure
+  case parseArgs args of
+    Just (excludes, path, isJson) ->
+      let formatter = if isJson then formatViolationsJson else formatViolationsPlain
+       in do
+            isDir <- doesDirectoryExist path
+            violations <-
+              if isDir
+                then detectPositionalArgsFromDirectory path excludes
+                else detectPositionalArgs path
+            putStrLn (formatter violations)
+            if null violations
+              then pure ()
+              else exitFailure
+    Nothing -> do
+      putStrLn "Usage: detect-positional-args [--json] [--exclude PATTERN]... <path>"
+      exitFailure
+  where
+    parseArgs [] = Just ([], "", False)
+    parseArgs [path] = Just ([], path, False)
+    parseArgs ("--json" : rest) = fmap (\(e, p, _) -> (e, p, True)) (parseArgs rest)
+    parseArgs ("--exclude" : _ : []) = Nothing
+    parseArgs ("--exclude" : pattern : rest) = fmap (\(e, p, j) -> (pattern : e, p, j)) (parseArgs rest)
+    parseArgs _ = Nothing
