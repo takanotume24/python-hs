@@ -1,8 +1,4 @@
-module PythonHS.Parser.ParseLambdaExpr
-  ( ParseLambdaExprConfig (..),
-    parseLambdaExpr,
-  )
-where
+module PythonHS.Parser.ParseLambdaExpr (parseLambdaExpr) where
 
 import qualified Data.Set as Set
 import PythonHS.AST.Expr (Expr (LambdaDefaultsExpr, LambdaExpr))
@@ -10,11 +6,7 @@ import PythonHS.Lexer.Position (Position (Position))
 import PythonHS.Lexer.Token (Token (Token), position)
 import PythonHS.Lexer.TokenType (TokenType (AssignToken, ColonToken, CommaToken, IdentifierToken, LambdaToken))
 import PythonHS.Parser.ParseError (ParseError (ExpectedExpression))
-
-data ParseLambdaExprConfig = ParseLambdaExprConfig
-  { lambdaExprFallback :: [Token] -> Either ParseError (Expr, [Token]),
-    lambdaExprTokens :: [Token]
-  }
+import PythonHS.Parser.ParseLambdaExprConfig (ParseLambdaExprConfig (..))
 
 parseLambdaExpr :: ParseLambdaExprConfig -> Either ParseError (Expr, [Token])
 parseLambdaExpr config =

@@ -1,8 +1,4 @@
-module PythonHS.Parser.ParseUnpackNames
-  ( ParseUnpackNamesConfig (..),
-    parseUnpackNames,
-  )
-where
+module PythonHS.Parser.ParseUnpackNames (parseUnpackNames) where
 
 import PythonHS.Lexer.Position (Position (Position))
 import PythonHS.Lexer.Token (Token (Token))
@@ -13,11 +9,7 @@ import PythonHS.Lexer.TokenType
       ),
   )
 import PythonHS.Parser.ParseError (ParseError (ExpectedExpression))
-
-data ParseUnpackNamesConfig = ParseUnpackNamesConfig
-  { unpackNamesAcc :: [String],
-    unpackNamesTokens :: [Token]
-  }
+import PythonHS.Parser.ParseUnpackNamesConfig (ParseUnpackNamesConfig (..))
 
 parseUnpackNames :: ParseUnpackNamesConfig -> Either ParseError ([String], [Token])
 parseUnpackNames config =

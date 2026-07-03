@@ -262,18 +262,23 @@
 
 ## 今後のリファクタリング計画（レコード構文統一）
 
-- [ ] P50: Parser 系 function_declaration のレコード構文化
-  - [ ] `ParseUnpackNames.hs`（4件）— `UnpackConfig` レコードを導入
-  - [ ] `ParseWalrusExpr.hs`（2件）— `WalrusConfig` レコードを導入
-  - [ ] `ParseLambdaExpr.hs`（2件）— `LambdaConfig` レコードを導入
+- [x] P50: Parser 系 function_declaration のレコード構文化
+  - [x] `ParseUnpackNames.hs` — `ParseUnpackNamesConfig` レコードを導入
+  - [x] `ParseWalrusExpr.hs` — `ParseWalrusExprConfig` レコードを導入
+  - [x] `ParseLambdaExpr.hs` — `ParseLambdaExprConfig` レコードを導入
 - [ ] P51: VM 系 function_declaration の検討
   - [ ] 内部DSLとして正当なもの（`execute state instruction` 等）は除外
   - [ ] 純粋なヘルパー関数（`SliceValue`, `GetitemValue` 等）はケースバイケースで対応
 - [ ] P52: VM コンパイラ系 tuple の段階的レコード化
   - [ ] `CompileResult { code :: [Instruction], endIndex :: Int }` 型の導入検討
   - [ ] `CompileDictEntryResult`, `CompileExprResult` 等の分離検討
-- [ ] P53: CLI 系 tuple のレコード構文化
-  - [ ] `ReplEvalResult { replEnv :: Env, replFunctionEnv :: FuncEnv, replOutputs :: [String] }` 型を導入
+- [x] P53-1: CLI 系 tuple のレコード構文化（ReplEvalLines）
+  - [x] `ReplEvalState { replEnv :: Env, replFunctionEnv :: FuncEnv, replOutputs :: [String] }` 型を導入
+  - [x] `VmReplState { vmLines :: [String], vmOutputs :: [String], vmAcc :: [String] }` 型を導入
+- [ ] P53-2: CLI 系残タスク
+  - [ ] `StartRepl.hs`（15件）— `ReplEnvState` 型の導入検討
+  - [ ] `ProcessSubmission.hs`（1件 function_declaration + 4件 tuple）
+  - [ ] `ProcessVmSubmission.hs`（1件 function_declaration + 1件 tuple）
 
 ## 現在のスコープ（P37: dotted import 束縛の CPython 互換化）
 - [x] P37 開始: `import pkg.sub` 時のトップレベル束縛を CPython 互換（bare `sub` 非束縛）へ整合するスコープを開始

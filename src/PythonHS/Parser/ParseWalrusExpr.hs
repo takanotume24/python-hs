@@ -1,18 +1,10 @@
-module PythonHS.Parser.ParseWalrusExpr
-  ( ParseWalrusExprConfig (..),
-    parseWalrusExpr,
-  )
-where
+module PythonHS.Parser.ParseWalrusExpr (parseWalrusExpr) where
 
 import PythonHS.AST.Expr (Expr (WalrusExpr), Expr)
 import PythonHS.Lexer.Token (Token (Token))
 import PythonHS.Lexer.TokenType (TokenType (ColonAssignToken, IdentifierToken))
 import PythonHS.Parser.ParseError (ParseError)
-
-data ParseWalrusExprConfig = ParseWalrusExprConfig
-  { walrusExprFallback :: [Token] -> Either ParseError (Expr, [Token]),
-    walrusExprTokens :: [Token]
-  }
+import PythonHS.Parser.ParseWalrusExprConfig (ParseWalrusExprConfig (..))
 
 parseWalrusExpr :: ParseWalrusExprConfig -> Either ParseError (Expr, [Token])
 parseWalrusExpr config =

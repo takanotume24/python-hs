@@ -21,6 +21,9 @@ library
     , PythonHS.AST.WithContext
     , PythonHS.Lexer.Position
     , PythonHS.Parser.ParseError
+    , PythonHS.Parser.ParseUnpackNamesConfig
+    , PythonHS.Parser.ParseWalrusExprConfig
+    , PythonHS.Parser.ParseLambdaExprConfig
     , PythonHS.Parser.ParseProgram
     , PythonHS.RunSource
     , PythonHS.RunSourceVm
