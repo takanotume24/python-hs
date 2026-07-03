@@ -60,7 +60,9 @@ import PythonHS.Parser.ParseParameters (parseParameters)
 import PythonHS.Parser.ParseSuite (parseSuite)
 import PythonHS.Parser.ParseUnpackAssign (parseUnpackAssign)
 import PythonHS.Parser.ParseWithStmt (parseWithStmt)
+import PythonHS.Parser.ParseWithStmtConfig (ParseWithStmtConfig (..))
 import PythonHS.Parser.ParseYieldStmt (parseYieldStmt)
+import PythonHS.Parser.ParseYieldStmtConfig (ParseYieldStmtConfig (..))
 
 parseStatement :: [Token] -> Either ParseError (Stmt, [Token])
 parseStatement tokenStream =
@@ -77,7 +79,7 @@ parseStatement tokenStream =
           (valueExpr, remaining) <- parseExpr rest
           Right (ReturnStmt valueExpr pos, remaining)
         Token YieldToken _ pos : rest ->
-          parseYieldStmt parseExpr pos rest
+          parseYieldStmt (ParseYieldStmtConfig parseExpr pos) rest
         Token RaiseToken _ pos : rest -> do
           (valueExpr, remaining) <- parseExpr rest
           Right (RaiseStmt valueExpr pos, remaining)
@@ -178,7 +180,7 @@ parseStatement tokenStream =
             Token _ _ pos' : _ -> Left (ExpectedExpression pos')
             _ -> Left (ExpectedExpression (Position 0 0))
         Token WithToken _ pos : rest ->
-          parseWithStmt parseStatement pos rest
+          parseWithStmt (ParseWithStmtConfig parseStatement pos) rest
         Token ClassToken _ posClass : Token IdentifierToken name _ : rest ->
           parseClassStmt (ParseClassStmtConfig parseSuiteWithStatements posClass name) rest
         Token IdentifierToken _ pos : _ -> Left (ExpectedAssignAfterIdentifier pos)

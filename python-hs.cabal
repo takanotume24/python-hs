@@ -91,8 +91,10 @@ library
       , PythonHS.Parser.ParseIfTail
       , PythonHS.Parser.ParseSuite
       , PythonHS.Parser.ParseYieldStmt
+      , PythonHS.Parser.ParseYieldStmtConfig
     , PythonHS.Parser.ParseImportStmt
     , PythonHS.Parser.ParseWithStmt
+    , PythonHS.Parser.ParseWithStmtConfig
     , PythonHS.Parser.DropLeadingNewlines
     , PythonHS.Parser.ParseUnpackAssign
     , PythonHS.Parser.ParseUnpackNames
