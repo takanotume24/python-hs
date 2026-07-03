@@ -234,6 +234,46 @@
   - [x] コンストラクタ適用式（`ConAppCategory`）を検出対象から除外（定義箇所のみ対象）
   - [x] `CheckStructureWarnings.hs` の残存タプルを `ExemptFileInfo` レコード型へ置き換え
   - [x] 自己分析結果: 0件（完全クリア）
+  - [x] プレーンテキスト出力をデフォルトにし、`--json` フラグで JSON に切り替え可能
+  - [x] `--exclude PATTERN` オプションでディレクトリスキャン時に特定パスを除外可能
+
+## detect-positional-args プロジェクト全体分析結果（2026-07-03）
+
+### 分析概要
+`cabal run detect-positional-args -- src app` でプロジェクト全体を分析した結果:
+
+| カテゴリ | 件数 | 備考 |
+|---|---|---|
+| `function_declaration` | 95件 | 宣言レベルの位置引数（2+引数関数） |
+| `data_constructor` | 0件 | nullary/record/builtin 除外後は0 |
+| `tuple` | 1079件 | 既存コードの内部DSL・戻り値タプルが大半 |
+| **合計** | **~1,184件** | テストコード（test/）を除く |
+
+### function_declaration の重点ファイル（上位）
+- `ParseUnpackNames.hs` 4件
+- `ParseWalrusExpr.hs` 2件
+- `ParseLambdaExpr.hs` 2件
+- その他 VM 系・Evaluator 系 1件ずつ（約90ファイル）
+
+### tuple の内訳（代表例）
+- VM コンパイラ戻り値 `(code, endIndex)` — 数十箇所
+- VM 実行時の環境更新 `(newStack, newGlobals, newLocals)` — 数十箇所
+- `CLI/*` の env/output タプル — 数箇所
+
+## 今後のリファクタリング計画（レコード構文統一）
+
+- [ ] P50: Parser 系 function_declaration のレコード構文化
+  - [ ] `ParseUnpackNames.hs`（4件）— `UnpackConfig` レコードを導入
+  - [ ] `ParseWalrusExpr.hs`（2件）— `WalrusConfig` レコードを導入
+  - [ ] `ParseLambdaExpr.hs`（2件）— `LambdaConfig` レコードを導入
+- [ ] P51: VM 系 function_declaration の検討
+  - [ ] 内部DSLとして正当なもの（`execute state instruction` 等）は除外
+  - [ ] 純粋なヘルパー関数（`SliceValue`, `GetitemValue` 等）はケースバイケースで対応
+- [ ] P52: VM コンパイラ系 tuple の段階的レコード化
+  - [ ] `CompileResult { code :: [Instruction], endIndex :: Int }` 型の導入検討
+  - [ ] `CompileDictEntryResult`, `CompileExprResult` 等の分離検討
+- [ ] P53: CLI 系 tuple のレコード構文化
+  - [ ] `ReplEvalResult { replEnv :: Env, replFunctionEnv :: FuncEnv, replOutputs :: [String] }` 型を導入
 
 ## 現在のスコープ（P37: dotted import 束縛の CPython 互換化）
 - [x] P37 開始: `import pkg.sub` 時のトップレベル束縛を CPython 互換（bare `sub` 非束縛）へ整合するスコープを開始
