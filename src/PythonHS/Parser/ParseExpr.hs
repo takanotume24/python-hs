@@ -6,16 +6,21 @@ import PythonHS.Lexer.Token (Token (Token), position)
 import PythonHS.Lexer.TokenType (TokenType (AndToken, ColonToken, CommaToken, DotToken, DoubleSlashToken, EqToken, FalseToken, FloatToken, ForToken, GtToken, GteToken, IdentifierToken, IntegerToken, LBraceToken, LBracketToken, LParenToken, LtToken, LteToken, MinusToken, NoneToken, NotEqToken, NotToken, OrToken, PercentToken, PlusToken, RBraceToken, RBracketToken, RParenToken, SlashToken, StarToken, StringToken, TrueToken))
 import PythonHS.Parser.ExprPos (exprPos)
 import PythonHS.Parser.ParseCallArgument (parseCallArgument)
+import PythonHS.Parser.ParseCallArgumentConfig (ParseCallArgumentConfig (..))
 import PythonHS.Parser.ParseComprehensionTail (parseComprehensionTail)
+import PythonHS.Parser.ParseComprehensionTailConfig (ParseComprehensionTailConfig (..))
 import PythonHS.Parser.ParseLambdaExpr (parseLambdaExpr)
 import PythonHS.Parser.ParseLambdaExprConfig (ParseLambdaExprConfig (..))
 import PythonHS.Parser.ParseParenTuple (parseParenTuple)
+import PythonHS.Parser.ParseParenTupleConfig (ParseParenTupleConfig (..))
 import PythonHS.Parser.ParseError (ParseError (ExpectedExpression))
 import PythonHS.Parser.ParseSubscriptExpr (parseSubscriptExpr)
+import PythonHS.Parser.ParseSubscriptExprConfig (ParseSubscriptExprConfig (..))
 import PythonHS.Parser.ParseWalrusExpr (parseWalrusExpr)
 import PythonHS.Parser.ParseWalrusExprConfig (ParseWalrusExprConfig (..))
 import PythonHS.Parser.NormalizeFloatLiteral (normalizeFloatLiteral)
 
+parseExpr :: [Token] -> Either ParseError (Expr, [Token])
 parseExpr tokens = parseLambdaExpr (ParseLambdaExprConfig (parseWalrusExpr . ParseWalrusExprConfig parseOr) tokens)
   where
     parseOr ts = do
@@ -113,7 +118,7 @@ parseExpr tokens = parseLambdaExpr (ParseLambdaExprConfig (parseWalrusExpr . Par
     parseAtom (Token LBracketToken _ pos : rest) = parseListElements pos rest
     parseAtom (Token LBraceToken _ pos : rest) = parseDictEntries pos rest
     parseAtom (Token LParenToken _ parenPos : rest) =
-      parseParenTuple parseExpr parenPos rest
+      parseParenTuple (ParseParenTupleConfig parseExpr parenPos) rest
     parseAtom (Token IdentifierToken value pos : rest) = Right (IdentifierExpr value pos, rest)
     parseAtom (tok : _) = Left (ExpectedExpression (position tok))
     parseAtom _ = Left (ExpectedExpression (Position 0 0))
@@ -128,7 +133,7 @@ parseExpr tokens = parseLambdaExpr (ParseLambdaExprConfig (parseWalrusExpr . Par
       (args, afterArgs) <- parseArguments rest
       parsePostfix (CallExpr methodName (receiverExpr : args) methodPos) afterArgs
     parsePostfix receiverExpr (Token LBracketToken _ pos : rest) = do
-      (subscriptExpr, afterSubscript) <- parseSubscriptExpr parseExpr receiverExpr pos rest
+      (subscriptExpr, afterSubscript) <- parseSubscriptExpr (ParseSubscriptExprConfig parseExpr receiverExpr pos) rest
       parsePostfix subscriptExpr afterSubscript
     parsePostfix (IdentifierExpr receiverName receiverPos) (Token DotToken _ _ : Token IdentifierToken attrName _ : rest) =
       parsePostfix (IdentifierExpr (receiverName ++ "." ++ attrName) receiverPos) rest
@@ -140,7 +145,7 @@ parseExpr tokens = parseLambdaExpr (ParseLambdaExprConfig (parseWalrusExpr . Par
       (firstExpr, afterFirst) <- parseExpr ts
       case afterFirst of
         forTokens@(Token ForToken _ _ : _) ->
-          parseComprehensionTail parseExpr firstExpr listPos [] forTokens
+           parseComprehensionTail (ParseComprehensionTailConfig parseExpr firstExpr listPos) [] forTokens
         _ -> parseListTail listPos [firstExpr] afterFirst
 
     parseListTail listPos exprs (Token CommaToken _ _ : rest) = do
@@ -181,7 +186,7 @@ parseExpr tokens = parseLambdaExpr (ParseLambdaExprConfig (parseWalrusExpr . Par
     parseArguments (Token RParenToken _ _ : rest) = Right ([], rest)
     parseArguments ts = parseArgumentsTail False [] ts
     parseArgumentsTail seenKeywordArg accArgs tokenStream = do
-      (argExpr, isKeywordArg, mismatchPos, afterArg) <- parseCallArgument parseExpr tokenStream
+      (argExpr, isKeywordArg, mismatchPos, afterArg) <- parseCallArgument (ParseCallArgumentConfig parseExpr) tokenStream
       if seenKeywordArg && not isKeywordArg
         then Left (ExpectedExpression mismatchPos)
         else

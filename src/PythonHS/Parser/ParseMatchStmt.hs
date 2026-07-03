@@ -1,6 +1,5 @@
 module PythonHS.Parser.ParseMatchStmt (parseMatchStmt) where
 
-import PythonHS.AST.Expr (Expr)
 import PythonHS.AST.Stmt (Stmt (MatchStmt), Stmt)
 import PythonHS.Lexer.Position (Position (Position))
 import PythonHS.Lexer.Token (Token (Token), position)
@@ -8,6 +7,7 @@ import PythonHS.Lexer.TokenType (TokenType (CaseToken, ColonToken, DedentToken, 
 import PythonHS.Parser.ParseError (ParseError (ExpectedExpression, ExpectedNewlineAfterStatement))
 import PythonHS.Parser.ParseMatchStmtConfig (ParseMatchStmtConfig (..))
 import PythonHS.Parser.ParsePattern (parsePattern)
+import PythonHS.Parser.ParsePatternConfig (ParsePatternConfig (..))
 
 parseMatchStmt ::
   ParseMatchStmtConfig ->
@@ -26,7 +26,7 @@ parseMatchStmt config pos rest = do
     tok : _ -> Left (ExpectedExpression (position tok))
     _ -> Left (ExpectedExpression (Position 0 0))
   where
-    parseCaseClauses parseExprFn parseSuiteFn (Token DedentToken _ dedentPos : _) =
+    parseCaseClauses _ _ (Token DedentToken _ dedentPos : _) =
       Left (ExpectedExpression dedentPos)
     parseCaseClauses parseExprFn parseSuiteFn ts = do
       (firstCase, afterFirst) <- parseCaseClause parseExprFn parseSuiteFn ts
@@ -44,7 +44,7 @@ parseMatchStmt config pos rest = do
           parseCaseTail parseExprFn parseSuiteFn (nextCase : acc) afterNext
 
     parseCaseClause parseExprFn parseSuiteFn (Token CaseToken _ casePos : ts) = do
-      (patternExpr, afterPattern) <- parsePattern parseExprFn ts
+      (patternExpr, afterPattern) <- parsePattern (ParsePatternConfig parseExprFn) ts
       (guardExpr, afterGuard) <-
         case afterPattern of
           Token IfToken _ _ : afterIf -> do

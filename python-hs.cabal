@@ -69,13 +69,18 @@ library
     , PythonHS.Lexer.ParseExponent
     , PythonHS.Lexer.ScanTokenStep
       , PythonHS.Parser.ParseExpr
-      , PythonHS.Parser.ParseAnnAssignStmt
-      , PythonHS.Parser.ParseCallArgument
+    , PythonHS.Parser.ParseAnnAssignStmt
+    , PythonHS.Parser.ParseAnnAssignStmtConfig
+    , PythonHS.Parser.ParseCallArgument
+    , PythonHS.Parser.ParseCallArgumentConfig
     , PythonHS.Parser.ParseDecoratedStmt
     , PythonHS.Parser.ParseDecoratedStmtConfig
     , PythonHS.Parser.ParseComprehensionTail
+    , PythonHS.Parser.ParseComprehensionTailConfig
     , PythonHS.Parser.ParseParenTuple
+    , PythonHS.Parser.ParseParenTupleConfig
     , PythonHS.Parser.ParseSubscriptExpr
+    , PythonHS.Parser.ParseSubscriptExprConfig
     , PythonHS.Parser.ParseLambdaExpr
     , PythonHS.Parser.ParseWalrusExpr
     , PythonHS.Parser.ExprPos
@@ -85,10 +90,13 @@ library
     , PythonHS.Parser.ParseClassStmtConfig
     , PythonHS.Parser.ParseParameters
     , PythonHS.Parser.ParseExceptSuites
+    , PythonHS.Parser.ParseExceptSuitesConfig
     , PythonHS.Parser.ParsePattern
+    , PythonHS.Parser.ParsePatternConfig
     , PythonHS.Parser.ParseMatchStmt
     , PythonHS.Parser.ParseMatchStmtConfig
       , PythonHS.Parser.ParseIfTail
+      , PythonHS.Parser.ParseIfTailConfig
       , PythonHS.Parser.ParseSuite
       , PythonHS.Parser.ParseYieldStmt
       , PythonHS.Parser.ParseYieldStmtConfig
@@ -97,6 +105,7 @@ library
     , PythonHS.Parser.ParseWithStmtConfig
     , PythonHS.Parser.DropLeadingNewlines
     , PythonHS.Parser.ParseUnpackAssign
+    , PythonHS.Parser.ParseUnpackAssignConfig
     , PythonHS.Parser.ParseUnpackNames
     , PythonHS.Structure.CheckStructureWarnings
     , PythonHS.Structure.DetectFromModule

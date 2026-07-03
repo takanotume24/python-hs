@@ -45,20 +45,24 @@ import PythonHS.Lexer.TokenType
   )
 import PythonHS.Parser.DropLeadingNewlines (dropLeadingNewlines)
 import PythonHS.Parser.ParseAnnAssignStmt (parseAnnAssignStmt)
+import PythonHS.Parser.ParseAnnAssignStmtConfig (ParseAnnAssignStmtConfig (..))
 import PythonHS.Parser.ParseClassStmt (parseClassStmt)
 import PythonHS.Parser.ParseClassStmtConfig (ParseClassStmtConfig (..))
 import PythonHS.Parser.ParseDecoratedStmt (parseDecoratedStmt)
 import PythonHS.Parser.ParseDecoratedStmtConfig (ParseDecoratedStmtConfig (..))
 import PythonHS.Parser.ParseError (ParseError (ExpectedAssignAfterIdentifier, ExpectedExpression))
 import PythonHS.Parser.ParseExceptSuites (parseExceptSuites)
+import PythonHS.Parser.ParseExceptSuitesConfig (ParseExceptSuitesConfig (..))
 import PythonHS.Parser.ParseExpr (parseExpr)
 import PythonHS.Parser.ParseIfTail (parseIfTail)
+import PythonHS.Parser.ParseIfTailConfig (ParseIfTailConfig (..))
 import PythonHS.Parser.ParseImportStmt (parseImportStmt)
 import PythonHS.Parser.ParseMatchStmt (parseMatchStmt)
 import PythonHS.Parser.ParseMatchStmtConfig (ParseMatchStmtConfig (..))
 import PythonHS.Parser.ParseParameters (parseParameters)
 import PythonHS.Parser.ParseSuite (parseSuite)
 import PythonHS.Parser.ParseUnpackAssign (parseUnpackAssign)
+import PythonHS.Parser.ParseUnpackAssignConfig (ParseUnpackAssignConfig (..))
 import PythonHS.Parser.ParseWithStmt (parseWithStmt)
 import PythonHS.Parser.ParseWithStmtConfig (ParseWithStmtConfig (..))
 import PythonHS.Parser.ParseYieldStmt (parseYieldStmt)
@@ -94,9 +98,9 @@ parseStatement tokenStream =
           (valueExpr, remaining) <- parseExpr rest
           Right (AssignStmt (obj ++ "." ++ attr) valueExpr pos, remaining)
         Token IdentifierToken firstName pos : Token CommaToken _ _ : rest ->
-          parseUnpackAssign firstName pos rest
+          parseUnpackAssign (ParseUnpackAssignConfig firstName pos) rest
         Token IdentifierToken name pos : Token ColonToken _ _ : rest ->
-          parseAnnAssignStmt parseExpr name pos rest
+          parseAnnAssignStmt (ParseAnnAssignStmtConfig parseExpr name pos) rest
         Token IdentifierToken name pos : Token AssignToken _ _ : rest -> do
           (valueExpr, remaining) <- parseExpr rest
           Right (AssignStmt name valueExpr pos, remaining)
@@ -123,7 +127,7 @@ parseStatement tokenStream =
           case afterCond of
             Token ColonToken _ _ : afterColon -> do
               (thenSuite, afterThen) <- parseSuiteWithStatements afterColon
-              (elseBranch, finalRest) <- parseIfTail parseSuiteWithStatements afterThen
+              (elseBranch, finalRest) <- parseIfTail (ParseIfTailConfig parseSuiteWithStatements) afterThen
               Right (IfStmt cond thenSuite elseBranch pos, finalRest)
             Token _ _ pos' : _ -> Left (ExpectedExpression pos')
             _ -> Left (ExpectedExpression (Position 0 0))
@@ -131,7 +135,7 @@ parseStatement tokenStream =
           case rest of
             Token ColonToken _ _ : afterColon -> do
               (trySuite, afterTrySuite) <- parseSuiteWithStatements afterColon
-              case parseExceptSuites parseSuiteWithStatements (dropLeadingNewlines afterTrySuite) of
+              case parseExceptSuites (ParseExceptSuitesConfig parseSuiteWithStatements) (dropLeadingNewlines afterTrySuite) of
                 Right (exceptSuites, afterExceptSuites) ->
                   case dropLeadingNewlines afterExceptSuites of
                     Token FinallyToken _ _ : Token ColonToken _ _ : afterFinallyColon -> do

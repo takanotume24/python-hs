@@ -5,19 +5,21 @@ import PythonHS.Lexer.Position (Position (Position))
 import PythonHS.Lexer.Token (Token (Token))
 import PythonHS.Lexer.TokenType (TokenType (AsToken, ColonToken, ExceptToken, IdentifierToken, NewlineToken))
 import PythonHS.Parser.ParseError (ParseError (ExpectedExpression))
+import PythonHS.Parser.ParseExceptSuitesConfig (ParseExceptSuitesConfig (..))
 
-parseExceptSuites :: ([Token] -> Either ParseError ([Stmt], [Token])) -> [Token] -> Either ParseError ([(Maybe String, Maybe String, [Stmt], Position)], [Token])
-parseExceptSuites parseSuite ts =
-  case ts of
-    Token ExceptToken _ exceptPos : restAfterExcept -> do
-      (maybeTypeName, maybeAliasName, afterExceptHeader) <- parseExceptHeader restAfterExcept
-      (exceptSuite, afterExceptSuite) <- parseSuite afterExceptHeader
-      let afterCurrent = dropLeadingNewlines afterExceptSuite
-      case parseExceptSuites parseSuite afterCurrent of
-        Right (otherSuites, finalRest) -> Right ((maybeTypeName, maybeAliasName, exceptSuite, exceptPos) : otherSuites, finalRest)
-        Left _ -> Right ([(maybeTypeName, maybeAliasName, exceptSuite, exceptPos)], afterExceptSuite)
-    Token _ _ pos' : _ -> Left (ExpectedExpression pos')
-    _ -> Left (ExpectedExpression (Position 0 0))
+parseExceptSuites :: ParseExceptSuitesConfig -> [Token] -> Either ParseError ([(Maybe String, Maybe String, [Stmt], Position)], [Token])
+parseExceptSuites config ts =
+  let parseSuite = parseExceptSuitesSuite config
+   in case ts of
+        Token ExceptToken _ exceptPos : restAfterExcept -> do
+          (maybeTypeName, maybeAliasName, afterExceptHeader) <- parseExceptHeader restAfterExcept
+          (exceptSuite, afterExceptSuite) <- parseSuite afterExceptHeader
+          let afterCurrent = dropLeadingNewlines afterExceptSuite
+          case parseExceptSuites config afterCurrent of
+            Right (otherSuites, finalRest) -> Right ((maybeTypeName, maybeAliasName, exceptSuite, exceptPos) : otherSuites, finalRest)
+            Left _ -> Right ([(maybeTypeName, maybeAliasName, exceptSuite, exceptPos)], afterExceptSuite)
+        Token _ _ pos' : _ -> Left (ExpectedExpression pos')
+        _ -> Left (ExpectedExpression (Position 0 0))
   where
     parseExceptHeader tokens =
       case tokens of
