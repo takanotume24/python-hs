@@ -57,8 +57,11 @@ library
   other-modules:
       PythonHS.CLI.ProcessSubmission
     , PythonHS.CLI.ProcessVmSubmission
+    , PythonHS.CLI.ReplEnvState
     , PythonHS.CLI.ReplEvalState
+    , PythonHS.CLI.SubmissionResult
     , PythonHS.CLI.VmReplState
+    , PythonHS.CLI.VmSubmissionResult
     , PythonHS.CLI.ReplEvalLines
     , PythonHS.CLI.RunFile
     , PythonHS.CLI.StartRepl
@@ -131,6 +134,7 @@ library
       , PythonHS.VM.CompileDefaults
       , PythonHS.VM.CompileExprAt
       , PythonHS.VM.CompileExprItemsAt
+      , PythonHS.VM.CompileExprResult
     , PythonHS.VM.CompileImportStmt
     , PythonHS.VM.CompileLogicalExpr
     , PythonHS.VM.CompileMatch

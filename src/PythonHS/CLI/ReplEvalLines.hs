@@ -5,7 +5,9 @@ import qualified Data.Map.Strict as Map
 import PythonHS.CLI.ProcessSubmission (processSubmission)
 import PythonHS.CLI.ProcessVmSubmission (processVmSubmission)
 import PythonHS.CLI.ReplEvalState (ReplEvalState (..))
+import PythonHS.CLI.SubmissionResult (SubmissionResult (..))
 import PythonHS.CLI.VmReplState (VmReplState (..))
+import PythonHS.CLI.VmSubmissionResult (VmSubmissionResult (..))
 import PythonHS.Runner.ResolveRunnerEngine (resolveRunnerEngine)
 import PythonHS.Runner.RunnerEngine (RunnerEngine (AstEngine, VmEngine))
 import System.Environment (lookupEnv)
@@ -26,7 +28,7 @@ replEvalLines inputs = do
       let src = unlines buf
        in case processSubmission env fenv src of
             Left err -> ReplEvalState env fenv (outsAcc ++ ["Error: " ++ err])
-            Right (env', fenv', outs) -> ReplEvalState env' fenv' (outsAcc ++ outs)
+            Right result -> ReplEvalState (submissionEnv result) (submissionFuncEnv result) (outsAcc ++ submissionOutputs result)
 
     go [] _ _ [] outsAcc = return outsAcc
     go [] env fenv buf outsAcc =
@@ -39,7 +41,7 @@ replEvalLines inputs = do
       | otherwise =
         case processSubmission env fenv (ln ++ "\n") of
           Left err -> go rest env fenv [] (outsAcc ++ ["Error: " ++ err])
-          Right (env', fenv', outs) -> go rest env' fenv' [] (outsAcc ++ outs)
+          Right result -> go rest (submissionEnv result) (submissionFuncEnv result) [] (outsAcc ++ submissionOutputs result)
     go (ln : rest) env fenv buf outsAcc
       | trimRight ln == "" =
         let result = submitBuffer env fenv buf outsAcc
@@ -49,7 +51,7 @@ replEvalLines inputs = do
     submitVmBuffer acceptedLines acceptedOutputs buf outsAcc =
       case processVmSubmission acceptedLines acceptedOutputs buf of
         Left err -> VmReplState acceptedLines acceptedOutputs (outsAcc ++ ["Error: " ++ err])
-        Right (newLines, newOutputs, deltaOutputs) -> VmReplState newLines newOutputs (outsAcc ++ deltaOutputs)
+        Right result -> VmReplState (vmResultLines result) (vmResultOutputs result) (outsAcc ++ vmResultDeltaOutputs result)
 
     goVm [] _ _ [] outsAcc = return outsAcc
     goVm [] acceptedLines acceptedOutputs buf outsAcc =

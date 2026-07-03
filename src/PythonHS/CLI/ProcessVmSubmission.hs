@@ -1,13 +1,14 @@
 module PythonHS.CLI.ProcessVmSubmission (processVmSubmission) where
 
 import Data.List (stripPrefix)
+import PythonHS.CLI.VmSubmissionResult (VmSubmissionResult (..))
 import PythonHS.Lexer.ScanTokens (scanTokens)
 import PythonHS.Lexer.Token (Token (Token))
 import PythonHS.Lexer.TokenType (TokenType (EOFToken, NewlineToken))
 import PythonHS.Parser.ParseExpr (parseExpr)
 import PythonHS.RunSourceVm (runSourceVm)
 
-processVmSubmission :: [String] -> [String] -> [String] -> Either String ([String], [String], [String])
+processVmSubmission :: [String] -> [String] -> [String] -> Either String VmSubmissionResult
 processVmSubmission acceptedSourceLines acceptedOutputs submissionLines =
   let candidateSourceLines = acceptedSourceLines ++ submissionLines
       candidateSource = unlines candidateSourceLines
@@ -16,7 +17,7 @@ processVmSubmission acceptedSourceLines acceptedOutputs submissionLines =
               case stripPrefix acceptedOutputs allOutputs of
                 Just suffix -> suffix
                 Nothing -> drop (length acceptedOutputs) allOutputs
-         in Right (newSourceLines, allOutputs, deltaOutputs)
+         in Right VmSubmissionResult {vmResultLines = newSourceLines, vmResultOutputs = allOutputs, vmResultDeltaOutputs = deltaOutputs}
    in case runSourceVm candidateSource of
         Right allOutputs -> formatSuccess candidateSourceLines allOutputs
         Left originalErr ->

@@ -1,6 +1,7 @@
 module PythonHS.CLI.ProcessSubmission (processSubmission) where
 
 import PythonHS.AST.Program (Program (Program))
+import PythonHS.CLI.SubmissionResult (SubmissionResult (..))
 import PythonHS.Evaluator.EvalStatements (evalStatements)
 import PythonHS.Evaluator.EvalExpr (evalExpr)
 import PythonHS.Evaluator.Env (Env)
@@ -14,7 +15,7 @@ import PythonHS.Lexer.TokenType (TokenType (EOFToken, NewlineToken))
 import PythonHS.Parser.ParseExpr (parseExpr)
 import PythonHS.Parser.ParseProgram (parseProgram)
 
-processSubmission :: Env -> FuncEnv -> String -> Either String (Env, FuncEnv, [String])
+processSubmission :: Env -> FuncEnv -> String -> Either String SubmissionResult
 processSubmission env fenv src =
   case scanTokens src of
     Left lexErr -> Left (show lexErr)
@@ -30,7 +31,7 @@ processSubmission env fenv src =
                         case val of
                           NoneValue -> []
                           _ -> [valueToReplOutput val]
-                   in Right (envAfterExpr, fenv, exprOuts ++ resultOuts)
+                   in Right SubmissionResult {submissionEnv = envAfterExpr, submissionFuncEnv = fenv, submissionOutputs = exprOuts ++ resultOuts}
             Nothing -> Left (show parseErr)
         Right (Program stmts) ->
           case evalStatements env fenv [] stmts of
@@ -40,7 +41,7 @@ processSubmission env fenv src =
                 Just (BreakValue, pos) -> Left $ "Break outside loop at " ++ showPos pos
                 Just (ContinueValue, pos) -> Left $ "Continue outside loop at " ++ showPos pos
                 Just (_, pos) -> Left $ "Return outside function at " ++ showPos pos
-                Nothing -> Right (env', fenv', outs)
+                Nothing -> Right SubmissionResult {submissionEnv = env', submissionFuncEnv = fenv', submissionOutputs = outs}
   where
     parseReplExpr tokens =
       case parseExpr tokens of

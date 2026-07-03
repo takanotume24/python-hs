@@ -5,6 +5,9 @@ import qualified Data.Map.Strict as Map
 import System.Console.Haskeline (defaultSettings, getInputLine, outputStrLn, runInputT)
 import PythonHS.CLI.ProcessSubmission (processSubmission)
 import PythonHS.CLI.ProcessVmSubmission (processVmSubmission)
+import PythonHS.CLI.ReplEnvState (ReplEnvState (..))
+import PythonHS.CLI.SubmissionResult (SubmissionResult (..))
+import PythonHS.CLI.VmSubmissionResult (VmSubmissionResult (..))
 import PythonHS.Runner.RunnerEngine (RunnerEngine (AstEngine, VmEngine))
 import PythonHS.Runner.ResolveRunnerEngine (resolveRunnerEngine)
 import System.Environment (lookupEnv)
@@ -13,7 +16,7 @@ startRepl :: IO ()
 startRepl = do
   envEngine <- lookupEnv "PYTHON_HS_RUNNER_ENGINE"
   case resolveRunnerEngine envEngine of
-    AstEngine -> runInputT defaultSettings (loop Map.empty Map.empty [])
+    AstEngine -> runInputT defaultSettings (loop (ReplEnvState Map.empty Map.empty) [])
     VmEngine -> runInputT defaultSettings (loopVm [] [] [])
   where
     trimRight = reverse . dropWhile isSpace . reverse
@@ -21,20 +24,24 @@ startRepl = do
     endsWithColon s = not (null (trimRight s)) && last (trimRight s) == ':'
     isExitCommand s = trim s == "exit()"
 
-    submitBufferIO env fenv buf =
-      let src = unlines buf
+    submitBufferIO state buf =
+      let env = replEnvStateEnv state
+          fenv = replEnvStateFuncEnv state
+          src = unlines buf
        in case processSubmission env fenv src of
-            Left err -> outputStrLn ("Error: " ++ err) >> return (env, fenv)
-            Right (env', fenv', outs) -> mapM_ outputStrLn outs >> return (env', fenv')
+            Left err -> outputStrLn ("Error: " ++ err) >> return state
+            Right result -> mapM_ outputStrLn (submissionOutputs result) >> return (ReplEnvState (submissionEnv result) (submissionFuncEnv result))
 
-    loop env fenv buf = do
+    loop state buf = do
+      let env = replEnvStateEnv state
+          fenv = replEnvStateFuncEnv state
       mLine <- getInputLine (if null buf then ">>> " else "... ")
       case mLine of
         Nothing -> do
           if null buf
             then return ()
             else do
-              _ <- submitBufferIO env fenv buf
+              _ <- submitBufferIO state buf
               return ()
           outputStrLn ""
         Just line ->
@@ -42,25 +49,25 @@ startRepl = do
             then return ()
             else
               if null buf && trimRight line == ""
-                then loop env fenv []
+                then loop state []
                 else
                   if null buf && not (endsWithColon line)
                     then do
-                      (env', fenv') <- case processSubmission env fenv (line ++ "\n") of
-                        Left err -> outputStrLn ("Error: " ++ err) >> return (env, fenv)
-                        Right (env'', fenv'', outs) -> mapM_ outputStrLn outs >> return (env'', fenv'')
-                      loop env' fenv' []
+                      state' <- case processSubmission env fenv (line ++ "\n") of
+                        Left err -> outputStrLn ("Error: " ++ err) >> return state
+                        Right result -> mapM_ outputStrLn (submissionOutputs result) >> return (ReplEnvState (submissionEnv result) (submissionFuncEnv result))
+                      loop state' []
                     else
                       if not (null buf) && trimRight line == ""
                         then do
-                          (env', fenv') <- submitBufferIO env fenv (init (buf ++ [line]))
-                          loop env' fenv' []
-                        else loop env fenv (buf ++ [line])
+                          state' <- submitBufferIO state (init (buf ++ [line]))
+                          loop state' []
+                        else loop state (buf ++ [line])
 
     submitVmBufferIO acceptedLines acceptedOutputs buf =
       case processVmSubmission acceptedLines acceptedOutputs buf of
         Left err -> outputStrLn ("Error: " ++ err) >> return (acceptedLines, acceptedOutputs)
-        Right (newLines, newOutputs, deltaOutputs) -> mapM_ outputStrLn deltaOutputs >> return (newLines, newOutputs)
+        Right result -> mapM_ outputStrLn (vmResultDeltaOutputs result) >> return (vmResultLines result, vmResultOutputs result)
 
     loopVm acceptedLines acceptedOutputs buf = do
       mLine <- getInputLine (if null buf then ">>> " else "... ")

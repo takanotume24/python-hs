@@ -220,10 +220,10 @@
 - [x] P42: `ContextManager` のレコード構文による明確化（P38 時点で完了済み）
 - [x] P43: `Token` のレコード構文による明確化（P38 時点で完了済み）
 - [x] P44: `Position` のレコード構文による明確化（P38 時点で完了済み）
-- [ ] P45: VM 実行系のレコード構文による明確化（`VMState`/`EnvState`/`ExceptionState`/`LoopState` を VM 実行系で実際に使用する）
-- [ ] P46: Parser/Compiler 側のレコードパターンマッチ統一（`Stmt`/`Expr` の位置パターンマッチを `{field}` 構文へ統一）
-- [ ] P47: 細部の位置パターンマッチ掃討（`VM/EvalBinaryOp`, `IsTruthy`, `GetitemValue`, `SliceValue` など）
-- [ ] P48: VM 実行系のレコード構文適用による構造制約（200行/ファイル1関数）再整備
+- [x] P45: VM 実行系のレコード構文による明確化（`VMState`/`EnvState`/`ExceptionState`/`LoopState` を VM 実行系で実際に使用する）
+- [x] P46: Parser/Compiler 側のレコードパターンマッチ統一（`Stmt`/`Expr` の位置パターンマッチを `{field}` 構文へ統一）
+- [x] P47: 細部の位置パターンマッチ掃討（`VM/EvalBinaryOp`, `IsTruthy`, `GetitemValue`, `SliceValue` など）
+- [x] P48: VM 実行系のレコード構文適用による構造制約（200行/ファイル1関数）再整備
 - [x] P49: Haskell コードベース内の positional argument 検出 CLI (`detect-positional-args`) を導入
   - [x] 失敗テスト先行: `DetectPositionalArgsSpec` を追加し、各カテゴリの検出を固定
   - [x] `haskell-src-exts` を用いた AST ベース検出実装
@@ -266,19 +266,19 @@
   - [x] `ParseUnpackNames.hs` — `ParseUnpackNamesConfig` レコードを導入
   - [x] `ParseWalrusExpr.hs` — `ParseWalrusExprConfig` レコードを導入
   - [x] `ParseLambdaExpr.hs` — `ParseLambdaExprConfig` レコードを導入
-- [ ] P51: VM 系 function_declaration の検討
-  - [ ] 内部DSLとして正当なもの（`execute state instruction` 等）は除外
-  - [ ] 純粋なヘルパー関数（`SliceValue`, `GetitemValue` 等）はケースバイケースで対応
-- [ ] P52: VM コンパイラ系 tuple の段階的レコード化
-  - [ ] `CompileResult { code :: [Instruction], endIndex :: Int }` 型の導入検討
-  - [ ] `CompileDictEntryResult`, `CompileExprResult` 等の分離検討
+- [x] P51: VM 系 function_declaration の検討
+  - [x] 内部DSLとして正当なもの（`execute state instruction` 等）は除外
+  - [x] 純粋なヘルパー関数（`SliceValue`, `GetitemValue`, `EvalBinaryOp` 等）は各引数が明確な独立した意味を持つため、レコード型化は冗長として現状維持
+- [x] P52: VM コンパイラ系 tuple の段階的レコード化開始
+  - [x] `CompileExprResult { compileExprResultCode :: [Instruction], compileExprResultEndIndex :: Int }` 型を導入
+  - [ ] `CompileExprAt` / `CompileProgram` 等への段階的適用（次回スコープ）
 - [x] P53-1: CLI 系 tuple のレコード構文化（ReplEvalLines）
   - [x] `ReplEvalState { replEnv :: Env, replFunctionEnv :: FuncEnv, replOutputs :: [String] }` 型を導入
   - [x] `VmReplState { vmLines :: [String], vmOutputs :: [String], vmAcc :: [String] }` 型を導入
-- [ ] P53-2: CLI 系残タスク
-  - [ ] `StartRepl.hs`（15件）— `ReplEnvState` 型の導入検討
-  - [ ] `ProcessSubmission.hs`（1件 function_declaration + 4件 tuple）
-  - [ ] `ProcessVmSubmission.hs`（1件 function_declaration + 1件 tuple）
+- [x] P53-2: CLI 系残タスク
+  - [x] `StartRepl.hs`（15件）— `ReplEnvState` 型の導入
+  - [x] `ProcessSubmission.hs`（1件 function_declaration + 4件 tuple）— `SubmissionResult` 型の導入
+  - [x] `ProcessVmSubmission.hs`（1件 function_declaration + 1件 tuple）— `VmSubmissionResult` 型の導入
 
 ## 現在のスコープ（P37: dotted import 束縛の CPython 互換化）
 - [x] P37 開始: `import pkg.sub` 時のトップレベル束縛を CPython 互換（bare `sub` 非束縛）へ整合するスコープを開始
