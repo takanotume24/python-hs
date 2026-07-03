@@ -8,6 +8,7 @@ import PythonHS.Evaluator.EvalCallExpr (evalCallExpr)
 import PythonHS.Evaluator.EvalExprBinary (evalExprBinary)
 import PythonHS.Evaluator.FuncEnv (FuncEnv)
 import PythonHS.Evaluator.ShowPos (showPos)
+import PythonHS.Evaluator.EvalExprResult (EvalExprResult (..))
 import PythonHS.Evaluator.Value (Value (..))
 import PythonHS.Lexer.Position (Position)
 
@@ -16,29 +17,29 @@ evalExpr ::
   Env ->
   FuncEnv ->
   Expr ->
-  Either String (Value, [String], Env)
+  Either String EvalExprResult
 evalExpr evalStatementsFn env fenv expr =
   case expr of
-    IntegerExpr {integerExprValue} -> Right (IntValue integerExprValue, [], env)
-    FloatExpr {floatExprValue} -> Right (FloatValue floatExprValue, [], env)
-    StringExpr {stringExprValue} -> Right (StringValue stringExprValue, [], env)
-    NoneExpr {} -> Right (NoneValue, [], env)
+    IntegerExpr {integerExprValue} -> Right (EvalExprResult (IntValue integerExprValue) [] env)
+    FloatExpr {floatExprValue} -> Right (EvalExprResult (FloatValue floatExprValue) [] env)
+    StringExpr {stringExprValue} -> Right (EvalExprResult (StringValue stringExprValue) [] env)
+    NoneExpr {} -> Right (EvalExprResult NoneValue [] env)
     ListExpr {listExprItems} -> do
       (vals, outs, envAfterArgs) <- evalArgs env fenv listExprItems
-      Right (ListValue vals, outs, envAfterArgs)
+      Right (EvalExprResult (ListValue vals) outs envAfterArgs)
     TupleExpr {tupleExprItems} -> do
       (vals, outs, envAfterArgs) <- evalArgs env fenv tupleExprItems
-      Right (TupleValue vals, outs, envAfterArgs)
+      Right (EvalExprResult (TupleValue vals) outs envAfterArgs)
     DictExpr {dictExprEntries} -> do
       (pairs, outs, envAfterEntries) <- evalDictEntries env fenv dictExprEntries
-      Right (DictValue pairs, outs, envAfterEntries)
+      Right (EvalExprResult (DictValue pairs) outs envAfterEntries)
     ListComprehensionExpr {listComprehensionExprPos} ->
       Left $ "Runtime error: list comprehension is only supported in vm engine at " ++ showPos listComprehensionExprPos
     ListComprehensionClausesExpr {listComprehensionClausesExprPos} ->
       Left $ "Runtime error: list comprehension is only supported in vm engine at " ++ showPos listComprehensionClausesExprPos
     IdentifierExpr {identifierExprName, identifierExprPos} ->
       case Map.lookup identifierExprName env of
-        Just v -> Right (v, [], env)
+        Just v -> Right (EvalExprResult v [] env)
         Nothing -> Left $ "Name error: undefined identifier " ++ identifierExprName ++ " at " ++ showPos identifierExprPos
     KeywordArgExpr {keywordArgExprValue} ->
       evalExpr evalStatementsFn env fenv keywordArgExprValue
@@ -53,15 +54,15 @@ evalExpr evalStatementsFn env fenv expr =
     LambdaDefaultsExpr {} ->
       Left $ "Runtime error: lambda is only supported in vm engine at " ++ showPos (exprPos expr)
     UnaryMinusExpr {unaryMinusExprValue, unaryMinusExprPos} -> do
-      (v, outs, envAfterExpr) <- evalExpr evalStatementsFn env fenv unaryMinusExprValue
+      EvalExprResult v outs envAfterExpr <- evalExpr evalStatementsFn env fenv unaryMinusExprValue
       case v of
-        IntValue {intValue = n} -> Right (IntValue (negate n), outs, envAfterExpr)
-        FloatValue {floatValue = n} -> Right (FloatValue (negate n), outs, envAfterExpr)
+        IntValue {intValue = n} -> Right (EvalExprResult (IntValue (negate n)) outs envAfterExpr)
+        FloatValue {floatValue = n} -> Right (EvalExprResult (FloatValue (negate n)) outs envAfterExpr)
         _ -> Left $ "Type error: unary - expects int at " ++ showPos unaryMinusExprPos
     NotExpr {notExprValue} -> do
-      (v, outs, envAfterExpr) <- evalExpr evalStatementsFn env fenv notExprValue
+      EvalExprResult v outs envAfterExpr <- evalExpr evalStatementsFn env fenv notExprValue
       nv <- expectTruthy "not" (exprPos expr) v
-      Right (IntValue (if nv == 0 then 1 else 0), outs, envAfterExpr)
+      Right (EvalExprResult (IntValue (if nv == 0 then 1 else 0)) outs envAfterExpr)
     BinaryExpr {binaryExprOp, binaryExprLeft, binaryExprRight, binaryExprPos} ->
       evalExprBinary (evalExpr evalStatementsFn) env fenv binaryExprOp binaryExprLeft binaryExprRight binaryExprPos
     CallExpr {callExprName, callExprArgs, callExprPos} ->
@@ -77,13 +78,13 @@ evalExpr evalStatementsFn env fenv expr =
       where
         go acc argExpr = do
           (vals, outs, envNow) <- acc
-          (value, exprOuts, envNext) <- evalExpr evalStatementsFn envNow currentFenv argExpr
+          EvalExprResult value exprOuts envNext <- evalExpr evalStatementsFn envNow currentFenv argExpr
           Right (vals ++ [value], outs ++ exprOuts, envNext)
 
     evalDictEntries currentEnv _ [] = Right ([], [], currentEnv)
     evalDictEntries currentEnv currentFenv ((keyExpr, valueExpr) : restEntries) = do
-      (keyVal, keyOuts, envAfterKey) <- evalExpr evalStatementsFn currentEnv currentFenv keyExpr
-      (valueVal, valueOuts, envAfterValue) <- evalExpr evalStatementsFn envAfterKey currentFenv valueExpr
+      EvalExprResult keyVal keyOuts envAfterKey <- evalExpr evalStatementsFn currentEnv currentFenv keyExpr
+      EvalExprResult valueVal valueOuts envAfterValue <- evalExpr evalStatementsFn envAfterKey currentFenv valueExpr
       (restVals, restOuts, envAfterRest) <- evalDictEntries envAfterValue currentFenv restEntries
       Right ((keyVal, valueVal) : restVals, keyOuts ++ valueOuts ++ restOuts, envAfterRest)
 

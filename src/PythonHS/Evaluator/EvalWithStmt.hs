@@ -7,6 +7,7 @@ import PythonHS.Evaluator.Env (Env)
 import PythonHS.Evaluator.EvalContextManager (bindContextResult, enterContextManager, exitContextManager, exitContextManagerWithException)
 import PythonHS.Evaluator.EvalWithStmtConfig (EvalWithStmtConfig (..))
 import PythonHS.Evaluator.FuncEnv (FuncEnv)
+import PythonHS.Evaluator.EvalExprResult (EvalExprResult (..))
 import PythonHS.Evaluator.Value (Value (IntValue))
 import PythonHS.Lexer.Position (Position)
 
@@ -28,10 +29,15 @@ evalWithStmt config env fenv outputs contextManager maybeVarName body withPos re
   let ctxManager = ContextManager contextManager maybeVarName withPos
   
   -- Evaluate the context manager expression
-  (_, cmOuts, envAfterCM) <- evalExprFn env fenv (contextManagerExpr ctxManager)
+  cmResult <- evalExprFn env fenv (contextManagerExpr ctxManager)
+  let cmOuts = evalExprResultOutputs cmResult
+      envAfterCM = evalExprResultEnv cmResult
   
   -- Enter the context manager using the record
-  (enterValue, enterOuts, envAfterEnter) <- enterContextManager evalExprFn envAfterCM fenv ctxManager
+  enterResult <- enterContextManager evalExprFn envAfterCM fenv ctxManager
+  let enterValue = evalExprResultValue enterResult
+      enterOuts = evalExprResultOutputs enterResult
+      envAfterEnter = evalExprResultEnv enterResult
   
   -- Bind the result of __enter__ to the variable if specified
   let envAfterBind = bindContextResult (contextManagerVarName ctxManager) enterValue envAfterEnter
@@ -41,12 +47,15 @@ evalWithStmt config env fenv outputs contextManager maybeVarName body withPos re
   case execBody of
     Right (envAfterBody, fenvAfterBody, bodyOuts, _) -> do
       -- Exit the context manager normally
-      (_, exitOuts, _) <- exitContextManager evalExprFn envAfterBody fenvAfterBody ctxManager
+      exitResult <- exitContextManager evalExprFn envAfterBody fenvAfterBody ctxManager
+      let exitOuts = evalExprResultOutputs exitResult
       -- Continue with the rest of the statements
       evalStatementsFn envAfterBody fenvAfterBody (outputs ++ cmOuts ++ enterOuts ++ bodyOuts ++ exitOuts) rest
     Left err -> do
       -- Exit the context manager with exception
-      (exitValue, exitOuts, _) <- exitContextManagerWithException evalExprFn envAfterEnter fenv ctxManager err
+      exitResult <- exitContextManagerWithException evalExprFn envAfterEnter fenv ctxManager err
+      let exitValue = evalExprResultValue exitResult
+          exitOuts = evalExprResultOutputs exitResult
       case exitValue of
         IntValue 0 -> 
           -- Exception not suppressed (exit returned falsy value), re-raise the original error

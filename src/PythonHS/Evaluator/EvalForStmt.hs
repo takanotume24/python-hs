@@ -8,6 +8,7 @@ import PythonHS.Evaluator.EvalForStmtConfig (EvalForStmtConfig (..))
 import PythonHS.Evaluator.FuncEnv (FuncEnv)
 import PythonHS.Evaluator.MaxLoopIterations (maxLoopIterations)
 import PythonHS.Evaluator.ShowPos (showPos)
+import PythonHS.Evaluator.EvalExprResult (EvalExprResult (..))
 import PythonHS.Evaluator.Value (Value (..))
 import PythonHS.Lexer.Position (Position)
 import PythonHS.Parser.ExprPos (exprPos)
@@ -26,7 +27,10 @@ evalForStmt ::
 evalForStmt config env fenv outputs name iterExpr body forPos rest = do
   let evalStatementsFn = evalForStmtEvalStatements config
       evalExprFn = evalForStmtEvalExpr config
-  (iterVal, iterOuts, envAfterIter) <- evalExprFn env fenv iterExpr
+  iterResult <- evalExprFn env fenv iterExpr
+  let iterVal = evalExprResultValue iterResult
+      iterOuts = evalExprResultOutputs iterResult
+      envAfterIter = evalExprResultEnv iterResult
   case iterVal of
     IntValue {intValue = maxN} ->
       let upper = max 0 maxN

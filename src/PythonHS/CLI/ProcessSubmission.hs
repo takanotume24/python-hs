@@ -4,6 +4,7 @@ import PythonHS.AST.Program (Program (Program))
 import PythonHS.CLI.SubmissionResult (SubmissionResult (..))
 import PythonHS.Evaluator.EvalStatements (evalStatements)
 import PythonHS.Evaluator.EvalExpr (evalExpr)
+import PythonHS.Evaluator.EvalExprResult (EvalExprResult (..))
 import PythonHS.Evaluator.Env (Env)
 import PythonHS.Evaluator.FuncEnv (FuncEnv)
 import PythonHS.Evaluator.ShowPos (showPos)
@@ -26,7 +27,10 @@ processSubmission env fenv src =
             Just expr ->
               case evalExpr evalStatements env fenv expr of
                 Left err -> Left err
-                Right (val, exprOuts, envAfterExpr) ->
+                Right exprResult ->
+                  let val = evalExprResultValue exprResult
+                      exprOuts = evalExprResultOutputs exprResult
+                      envAfterExpr = evalExprResultEnv exprResult in
                   let resultOuts =
                         case val of
                           NoneValue -> []

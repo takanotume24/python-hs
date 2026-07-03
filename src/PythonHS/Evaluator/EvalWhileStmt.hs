@@ -7,6 +7,7 @@ import PythonHS.Evaluator.EvalWhileStmtConfig (EvalWhileStmtConfig (..))
 import PythonHS.Evaluator.FuncEnv (FuncEnv)
 import PythonHS.Evaluator.MaxLoopIterations (maxLoopIterations)
 import PythonHS.Evaluator.ShowPos (showPos)
+import PythonHS.Evaluator.EvalExprResult (EvalExprResult (..))
 import PythonHS.Evaluator.Value (Value (..))
 import PythonHS.Lexer.Position (Position)
 import PythonHS.Parser.ExprPos (exprPos)
@@ -27,7 +28,10 @@ evalWhileStmt config env fenv outputs cond body whilePos rest =
    in loop evalStatementsFn evalExprFn env fenv id 0
   where
     loop evalStatementsFn evalExprFn env' fenv' outputAcc iterations = do
-      (condVal, condOuts, envAfterCond) <- evalExprFn env' fenv' cond
+      condResult <- evalExprFn env' fenv' cond
+      let condVal = evalExprResultValue condResult
+          condOuts = evalExprResultOutputs condResult
+          envAfterCond = evalExprResultEnv condResult
       condNum <- expectTruthy "while condition" (exprPos cond) condVal
       if condNum == 0
         then evalStatementsFn envAfterCond fenv' (outputs ++ outputAcc condOuts) rest

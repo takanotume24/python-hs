@@ -8,18 +8,19 @@ import PythonHS.Evaluator.Env (Env)
 import PythonHS.Evaluator.EvalBuiltinExpr (evalBuiltinExpr)
 import PythonHS.Evaluator.FuncEnv (FuncEnv)
 import PythonHS.Evaluator.ShowPos (showPos)
+import PythonHS.Evaluator.EvalExprResult (EvalExprResult (..))
 import PythonHS.Evaluator.Value (Value (IntValue))
 import PythonHS.Lexer.Position (Position)
 
 evalCallExpr ::
   (Env -> FuncEnv -> [String] -> [Stmt] -> Either String (Env, FuncEnv, [String], Maybe (Value, Position))) ->
-  (Env -> FuncEnv -> Expr -> Either String (Value, [String], Env)) ->
+  (Env -> FuncEnv -> Expr -> Either String EvalExprResult) ->
   Env ->
   FuncEnv ->
   String ->
   [Expr] ->
   Position ->
-  Either String (Value, [String], Env)
+  Either String EvalExprResult
 evalCallExpr evalStatementsFn evalExprFn env fenv fname args pos =
   case Map.lookup fname fenv of
     Just (params, defaults, body) -> do
@@ -34,7 +35,7 @@ evalCallExpr evalStatementsFn evalExprFn env fenv fname args pos =
             Just (v, _) -> v
             Nothing -> IntValue 0
       let propagatedEnv = applyGlobalWrites envAfterDefaults finalEnv globalNames
-      Right (retVal, argOuts ++ defaultOuts ++ bodyOuts, propagatedEnv)
+      Right (EvalExprResult retVal (argOuts ++ defaultOuts ++ bodyOuts) propagatedEnv)
     Nothing ->
       case evalBuiltinExpr evalExprFn env fenv fname args pos of
         Just result ->
@@ -55,7 +56,7 @@ evalCallExpr evalStatementsFn evalExprFn env fenv fname args pos =
           case Map.lookup argName seenKw of
             Just _ -> Left $ "Argument error: duplicate keyword argument " ++ argName ++ " at " ++ showPos argPos
             Nothing -> do
-              (value, exprOuts, envAfterExpr) <- evalExprFn currentEnv currentFenv valueExpr
+              EvalExprResult value exprOuts envAfterExpr <- evalExprFn currentEnv currentFenv valueExpr
               (nextPosVals, nextKwVals, nextKwPosVals, nextKwOrder, restOuts, finalEnv) <-
                 evalCallArgs
                   envAfterExpr
@@ -71,7 +72,7 @@ evalCallExpr evalStatementsFn evalExprFn env fenv fname args pos =
           if seenKeywordArg
             then Left $ "Argument count mismatch when calling " ++ fname ++ " at " ++ showPos pos
             else do
-              (value, exprOuts, envAfterExpr) <- evalExprFn currentEnv currentFenv argExpr
+              EvalExprResult value exprOuts envAfterExpr <- evalExprFn currentEnv currentFenv argExpr
               (nextPosVals, nextKwVals, nextKwPosVals, nextKwOrder, restOuts, finalEnv) <-
                 evalCallArgs envAfterExpr currentFenv seenKw seenKwPos seenKwOrder False (positionalVals ++ [value]) restArgs
               Right (nextPosVals, nextKwVals, nextKwPosVals, nextKwOrder, exprOuts ++ restOuts, finalEnv)
@@ -147,6 +148,6 @@ evalCallExpr evalStatementsFn evalExprFn env fenv fname args pos =
                 Nothing -> Left $ "Argument count mismatch when calling " ++ fname ++ " at " ++ showPos pos
                 Just defaultExpr -> do
                   let defaultEnv = Map.union acc envNow
-                  (v, exprOuts, envAfterExpr) <- evalExprFn defaultEnv currentFenv defaultExpr
+                  EvalExprResult v exprOuts envAfterExpr <- evalExprFn defaultEnv currentFenv defaultExpr
                   (nextAcc, otherOuts, finalEnv) <- fill envAfterExpr remaining (Map.insert paramName v acc)
                   Right (nextAcc, exprOuts ++ otherOuts, finalEnv)

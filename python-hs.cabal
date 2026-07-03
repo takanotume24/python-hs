@@ -41,6 +41,7 @@ library
     , PythonHS.Evaluator.Value
     , PythonHS.Evaluator.FuncEnv
     , PythonHS.Evaluator.EvalContextManager
+    , PythonHS.Evaluator.EvalExprResult
     , PythonHS.Structure.CheckStructure
     , PythonHS.Structure.CheckStructureViolations
     , PythonHS.Structure.PositionalArgViolation
