@@ -2,11 +2,13 @@ module Test.Structure.DetectPositionalArgsSpec (spec) where
 
 import Data.Aeson (decode)
 import Data.Aeson.Types (Object)
+import Data.List (isInfixOf)
 import Data.Maybe (isJust)
 import qualified Data.ByteString.Lazy.Char8 as BSL
 import PythonHS.Structure.DetectPositionalArgs (detectPositionalArgsFromSource)
 import PythonHS.Structure.DetectSourceConfig (DetectSourceConfig (..))
 import PythonHS.Structure.FormatViolationsJson (formatViolationsJson)
+import PythonHS.Structure.FormatViolationsPlain (formatViolationsPlain)
 import PythonHS.Structure.PositionalArgViolation (PositionalArgViolation (..))
 import PythonHS.Structure.ViolationCategory (ViolationCategory (..))
 import Test.Hspec (Spec, describe, it, shouldBe, shouldSatisfy)
@@ -72,3 +74,15 @@ spec = describe "detectPositionalArgs" $ do
     result <- detectPositionalArgsFromSource (DetectSourceConfig "Z.hs" src)
     let json = formatViolationsJson result
     (decode (BSL.pack json) :: Maybe [Object]) `shouldSatisfy` isJust
+
+  it "produces plain text output" $ do
+    let src = unlines ["module Z where", "data Z = Z Int"]
+    result <- detectPositionalArgsFromSource (DetectSourceConfig "Z.hs" src)
+    let text = formatViolationsPlain result
+    text `shouldSatisfy` ("Z.hs" `isInfixOf`)
+    text `shouldSatisfy` ("data_constructor" `isInfixOf`)
+
+  it "produces empty plain text for no violations" $ do
+    let src = unlines ["module X where", "f = 1"]
+    result <- detectPositionalArgsFromSource (DetectSourceConfig "X.hs" src)
+    formatViolationsPlain result `shouldBe` ""

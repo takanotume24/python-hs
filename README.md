@@ -145,7 +145,15 @@ cabal run detect-positional-args -- src
 cabal run detect-positional-args -- src/PythonHS/Structure/FooBar.hs
 ```
 
-検出対象: `data`/`newtype` の非レコードコンストラクタ、関数の2+位置引数、2+要素タプル。JSON で出力されます。
+検出対象: `data`/`newtype` の非レコードコンストラクタ、関数の2+位置引数、2+要素タプル。デフォルトはプレーンテキスト、`--json` で JSON 出力に切り替え可能です。
+
+```bash
+# プレーンテキスト（デフォルト）
+cabal run detect-positional-args -- src
+
+# JSON
+cabal run detect-positional-args -- --json src
+```
 
 ### 4. ファイル実行
 ```bash

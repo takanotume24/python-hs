@@ -50,6 +50,7 @@ library
     , PythonHS.Structure.ExemptFileInfo
     , PythonHS.Structure.IsHaskellFile
     , PythonHS.Structure.FormatViolationsJson
+    , PythonHS.Structure.FormatViolationsPlain
   other-modules:
       PythonHS.CLI.ProcessSubmission
     , PythonHS.CLI.ProcessVmSubmission
