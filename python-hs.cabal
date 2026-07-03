@@ -72,6 +72,7 @@ library
       , PythonHS.Parser.ParseAnnAssignStmt
       , PythonHS.Parser.ParseCallArgument
     , PythonHS.Parser.ParseDecoratedStmt
+    , PythonHS.Parser.ParseDecoratedStmtConfig
     , PythonHS.Parser.ParseComprehensionTail
     , PythonHS.Parser.ParseParenTuple
     , PythonHS.Parser.ParseSubscriptExpr
@@ -81,10 +82,12 @@ library
     , PythonHS.Parser.NormalizeFloatLiteral
     , PythonHS.Parser.ParseStatement
     , PythonHS.Parser.ParseClassStmt
+    , PythonHS.Parser.ParseClassStmtConfig
     , PythonHS.Parser.ParseParameters
     , PythonHS.Parser.ParseExceptSuites
     , PythonHS.Parser.ParsePattern
     , PythonHS.Parser.ParseMatchStmt
+    , PythonHS.Parser.ParseMatchStmtConfig
       , PythonHS.Parser.ParseIfTail
       , PythonHS.Parser.ParseSuite
       , PythonHS.Parser.ParseYieldStmt

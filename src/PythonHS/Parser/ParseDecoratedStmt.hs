@@ -5,17 +5,19 @@ import PythonHS.AST.Stmt (Stmt (ClassDefStmt, DecoratedStmt, FunctionDefDefaults
 import PythonHS.Lexer.Position (Position (Position))
 import PythonHS.Lexer.Token (Token (Token), position)
 import PythonHS.Lexer.TokenType (TokenType (AtToken, NewlineToken))
+import PythonHS.Parser.ParseDecoratedStmtConfig (ParseDecoratedStmtConfig (..))
 import PythonHS.Parser.ParseError (ParseError (ExpectedExpression))
 
 parseDecoratedStmt ::
-  ([Token] -> Either ParseError (Expr, [Token])) ->
-  ([Token] -> Either ParseError (Stmt, [Token])) ->
-  Position ->
+  ParseDecoratedStmtConfig ->
   [Token] ->
   Either ParseError (Stmt, [Token])
-parseDecoratedStmt parseExpr parseStatement atPos tokenStream = do
-  (decorators, afterDecorators) <- parseDecoratorLines [] tokenStream
-  (targetStmt, afterTarget) <- parseStatement afterDecorators
+parseDecoratedStmt config tokenStream = do
+  let parseExprFn = parseDecoratedStmtExpr config
+      parseStatementFn = parseDecoratedStmtStatement config
+      atPos = parseDecoratedStmtPos config
+  (decorators, afterDecorators) <- parseDecoratorLines parseExprFn [] tokenStream
+  (targetStmt, afterTarget) <- parseStatementFn afterDecorators
   case targetStmt of
     FunctionDefStmt {} -> Right (DecoratedStmt decorators targetStmt atPos, afterTarget)
     FunctionDefDefaultsStmt {} -> Right (DecoratedStmt decorators targetStmt atPos, afterTarget)
@@ -25,11 +27,11 @@ parseDecoratedStmt parseExpr parseStatement atPos tokenStream = do
         tok : _ -> Left (ExpectedExpression (position tok))
         _ -> Left (ExpectedExpression (Position 0 0))
   where
-    parseDecoratorLines acc (Token AtToken _ _ : rest) = do
-      (decoratorExpr, afterExpr) <- parseExpr rest
+    parseDecoratorLines parseExprFn acc (Token AtToken _ _ : rest) = do
+      (decoratorExpr, afterExpr) <- parseExprFn rest
       case afterExpr of
         Token NewlineToken _ _ : afterNewline ->
-          parseDecoratorLines (acc ++ [decoratorExpr]) afterNewline
+          parseDecoratorLines parseExprFn (acc ++ [decoratorExpr]) afterNewline
         tok : _ -> Left (ExpectedExpression (position tok))
         _ -> Left (ExpectedExpression (Position 0 0))
-    parseDecoratorLines acc remaining = Right (acc, remaining)
+    parseDecoratorLines _ acc remaining = Right (acc, remaining)

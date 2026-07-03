@@ -6,57 +6,59 @@ import PythonHS.Lexer.Position (Position (Position))
 import PythonHS.Lexer.Token (Token (Token), position)
 import PythonHS.Lexer.TokenType (TokenType (CaseToken, ColonToken, DedentToken, IfToken, IndentToken, NewlineToken))
 import PythonHS.Parser.ParseError (ParseError (ExpectedExpression, ExpectedNewlineAfterStatement))
+import PythonHS.Parser.ParseMatchStmtConfig (ParseMatchStmtConfig (..))
 import PythonHS.Parser.ParsePattern (parsePattern)
 
 parseMatchStmt ::
-  ([Token] -> Either ParseError (Expr, [Token])) ->
-  ([Token] -> Either ParseError ([Stmt], [Token])) ->
+  ParseMatchStmtConfig ->
   Position ->
   [Token] ->
   Either ParseError (Stmt, [Token])
-parseMatchStmt parseExpr parseSuite pos rest = do
-  (subjectExpr, afterSubject) <- parseExpr rest
+parseMatchStmt config pos rest = do
+  let parseExprFn = parseMatchStmtExpr config
+      parseSuiteFn = parseMatchStmtSuite config
+  (subjectExpr, afterSubject) <- parseExprFn rest
   case afterSubject of
     Token ColonToken _ _ : Token NewlineToken _ _ : Token IndentToken _ _ : afterIndent -> do
-      (cases, afterCases) <- parseCaseClauses afterIndent
+      (cases, afterCases) <- parseCaseClauses parseExprFn parseSuiteFn afterIndent
       Right (MatchStmt subjectExpr cases pos, afterCases)
     Token ColonToken _ _ : _ -> Left (ExpectedExpression pos)
     tok : _ -> Left (ExpectedExpression (position tok))
     _ -> Left (ExpectedExpression (Position 0 0))
   where
-    parseCaseClauses (Token DedentToken _ dedentPos : _) =
+    parseCaseClauses parseExprFn parseSuiteFn (Token DedentToken _ dedentPos : _) =
       Left (ExpectedExpression dedentPos)
-    parseCaseClauses ts = do
-      (firstCase, afterFirst) <- parseCaseClause ts
-      parseCaseTail [firstCase] afterFirst
+    parseCaseClauses parseExprFn parseSuiteFn ts = do
+      (firstCase, afterFirst) <- parseCaseClause parseExprFn parseSuiteFn ts
+      parseCaseTail parseExprFn parseSuiteFn [firstCase] afterFirst
 
-    parseCaseTail acc (Token DedentToken _ dedentPos : restTokens) =
+    parseCaseTail _ _ acc (Token DedentToken _ dedentPos : restTokens) =
       Right (reverse acc, Token NewlineToken "\\n" dedentPos : restTokens)
-    parseCaseTail acc ts = do
+    parseCaseTail parseExprFn parseSuiteFn acc ts = do
       restAfterNewline <- consumeNewline ts
       case restAfterNewline of
         Token DedentToken _ dedentPos : restTokens ->
           Right (reverse acc, Token NewlineToken "\\n" dedentPos : restTokens)
         _ -> do
-          (nextCase, afterNext) <- parseCaseClause restAfterNewline
-          parseCaseTail (nextCase : acc) afterNext
+          (nextCase, afterNext) <- parseCaseClause parseExprFn parseSuiteFn restAfterNewline
+          parseCaseTail parseExprFn parseSuiteFn (nextCase : acc) afterNext
 
-    parseCaseClause (Token CaseToken _ casePos : ts) = do
-      (patternExpr, afterPattern) <- parsePattern parseExpr ts
+    parseCaseClause parseExprFn parseSuiteFn (Token CaseToken _ casePos : ts) = do
+      (patternExpr, afterPattern) <- parsePattern parseExprFn ts
       (guardExpr, afterGuard) <-
         case afterPattern of
           Token IfToken _ _ : afterIf -> do
-            (guardValue, guardRest) <- parseExpr afterIf
+            (guardValue, guardRest) <- parseExprFn afterIf
             Right (Just guardValue, guardRest)
           _ -> Right (Nothing, afterPattern)
       case afterGuard of
         Token ColonToken _ _ : afterColon -> do
-          (suite, finalRest) <- parseSuite afterColon
+          (suite, finalRest) <- parseSuiteFn afterColon
           Right ((patternExpr, guardExpr, suite, casePos), finalRest)
         tok : _ -> Left (ExpectedExpression (position tok))
         _ -> Left (ExpectedExpression (Position 0 0))
-    parseCaseClause (tok : _) = Left (ExpectedExpression (position tok))
-    parseCaseClause _ = Left (ExpectedExpression (Position 0 0))
+    parseCaseClause _ _ (tok : _) = Left (ExpectedExpression (position tok))
+    parseCaseClause _ _ _ = Left (ExpectedExpression (Position 0 0))
 
     consumeNewline (Token NewlineToken _ _ : restTokens) = Right restTokens
     consumeNewline (Token _ _ pos' : _) = Left (ExpectedNewlineAfterStatement pos')

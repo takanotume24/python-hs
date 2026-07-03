@@ -46,13 +46,16 @@ import PythonHS.Lexer.TokenType
 import PythonHS.Parser.DropLeadingNewlines (dropLeadingNewlines)
 import PythonHS.Parser.ParseAnnAssignStmt (parseAnnAssignStmt)
 import PythonHS.Parser.ParseClassStmt (parseClassStmt)
+import PythonHS.Parser.ParseClassStmtConfig (ParseClassStmtConfig (..))
 import PythonHS.Parser.ParseDecoratedStmt (parseDecoratedStmt)
+import PythonHS.Parser.ParseDecoratedStmtConfig (ParseDecoratedStmtConfig (..))
 import PythonHS.Parser.ParseError (ParseError (ExpectedAssignAfterIdentifier, ExpectedExpression))
 import PythonHS.Parser.ParseExceptSuites (parseExceptSuites)
 import PythonHS.Parser.ParseExpr (parseExpr)
 import PythonHS.Parser.ParseIfTail (parseIfTail)
 import PythonHS.Parser.ParseImportStmt (parseImportStmt)
 import PythonHS.Parser.ParseMatchStmt (parseMatchStmt)
+import PythonHS.Parser.ParseMatchStmtConfig (ParseMatchStmtConfig (..))
 import PythonHS.Parser.ParseParameters (parseParameters)
 import PythonHS.Parser.ParseSuite (parseSuite)
 import PythonHS.Parser.ParseUnpackAssign (parseUnpackAssign)
@@ -64,7 +67,7 @@ parseStatement tokenStream =
   let parseSuiteWithStatements = parseSuite parseStatement
    in case tokenStream of
         Token AtToken _ pos : _ ->
-          parseDecoratedStmt parseExpr parseStatement pos tokenStream
+          parseDecoratedStmt (ParseDecoratedStmtConfig parseExpr parseStatement pos) tokenStream
         Token PrintToken _ pos : rest -> do
           (valueExpr, remaining) <- parseExpr rest
           Right (PrintStmt valueExpr pos, remaining)
@@ -137,7 +140,7 @@ parseStatement tokenStream =
             Token _ _ pos' : _ -> Left (ExpectedExpression pos')
             _ -> Left (ExpectedExpression (Position 0 0))
         Token MatchToken _ pos : rest ->
-          parseMatchStmt parseExpr parseSuiteWithStatements pos rest
+          parseMatchStmt (ParseMatchStmtConfig parseExpr parseSuiteWithStatements) pos rest
         Token WhileToken _ pos : rest -> do
           (cond, afterCond) <- parseExpr rest
           case afterCond of
@@ -177,7 +180,7 @@ parseStatement tokenStream =
         Token WithToken _ pos : rest ->
           parseWithStmt parseStatement pos rest
         Token ClassToken _ posClass : Token IdentifierToken name _ : rest ->
-          parseClassStmt parseSuiteWithStatements posClass name rest
+          parseClassStmt (ParseClassStmtConfig parseSuiteWithStatements posClass name) rest
         Token IdentifierToken _ pos : _ -> Left (ExpectedAssignAfterIdentifier pos)
         tok : _ -> Left (ExpectedExpression (position tok))
         [] -> Left (ExpectedExpression (Position 0 0))
