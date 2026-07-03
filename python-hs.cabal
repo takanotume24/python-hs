@@ -54,6 +54,8 @@ library
   other-modules:
       PythonHS.CLI.ProcessSubmission
     , PythonHS.CLI.ProcessVmSubmission
+    , PythonHS.CLI.ReplEvalState
+    , PythonHS.CLI.VmReplState
     , PythonHS.CLI.ReplEvalLines
     , PythonHS.CLI.RunFile
     , PythonHS.CLI.StartRepl

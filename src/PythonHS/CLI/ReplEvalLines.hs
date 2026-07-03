@@ -4,8 +4,10 @@ import Data.Char (isSpace)
 import qualified Data.Map.Strict as Map
 import PythonHS.CLI.ProcessSubmission (processSubmission)
 import PythonHS.CLI.ProcessVmSubmission (processVmSubmission)
-import PythonHS.Runner.RunnerEngine (RunnerEngine (AstEngine, VmEngine))
+import PythonHS.CLI.ReplEvalState (ReplEvalState (..))
+import PythonHS.CLI.VmReplState (VmReplState (..))
 import PythonHS.Runner.ResolveRunnerEngine (resolveRunnerEngine)
+import PythonHS.Runner.RunnerEngine (RunnerEngine (AstEngine, VmEngine))
 import System.Environment (lookupEnv)
 
 replEvalLines :: [String] -> IO [String]
@@ -23,13 +25,13 @@ replEvalLines inputs = do
     submitBuffer env fenv buf outsAcc =
       let src = unlines buf
        in case processSubmission env fenv src of
-            Left err -> (env, fenv, outsAcc ++ ["Error: " ++ err])
-            Right (env', fenv', outs) -> (env', fenv', outsAcc ++ outs)
+            Left err -> ReplEvalState env fenv (outsAcc ++ ["Error: " ++ err])
+            Right (env', fenv', outs) -> ReplEvalState env' fenv' (outsAcc ++ outs)
 
     go [] _ _ [] outsAcc = return outsAcc
     go [] env fenv buf outsAcc =
-      let (_, _, outsAcc') = submitBuffer env fenv buf outsAcc
-       in return outsAcc'
+      let result = submitBuffer env fenv buf outsAcc
+       in return (replOutputs result)
     go (ln : rest) env fenv [] outsAcc
       | isExitCommand ln = return outsAcc
       | trimRight ln == "" = go rest env fenv [] outsAcc
@@ -40,28 +42,28 @@ replEvalLines inputs = do
           Right (env', fenv', outs) -> go rest env' fenv' [] (outsAcc ++ outs)
     go (ln : rest) env fenv buf outsAcc
       | trimRight ln == "" =
-        let (env', fenv', outsAcc') = submitBuffer env fenv buf outsAcc
-         in go rest env' fenv' [] outsAcc'
+        let result = submitBuffer env fenv buf outsAcc
+         in go rest (replEnv result) (replFunctionEnv result) [] (replOutputs result)
       | otherwise = go rest env fenv (buf ++ [ln]) outsAcc
 
     submitVmBuffer acceptedLines acceptedOutputs buf outsAcc =
       case processVmSubmission acceptedLines acceptedOutputs buf of
-        Left err -> (acceptedLines, acceptedOutputs, outsAcc ++ ["Error: " ++ err])
-        Right (newLines, newOutputs, deltaOutputs) -> (newLines, newOutputs, outsAcc ++ deltaOutputs)
+        Left err -> VmReplState acceptedLines acceptedOutputs (outsAcc ++ ["Error: " ++ err])
+        Right (newLines, newOutputs, deltaOutputs) -> VmReplState newLines newOutputs (outsAcc ++ deltaOutputs)
 
     goVm [] _ _ [] outsAcc = return outsAcc
     goVm [] acceptedLines acceptedOutputs buf outsAcc =
-      let (_, _, outsAcc') = submitVmBuffer acceptedLines acceptedOutputs buf outsAcc
-       in return outsAcc'
+      let result = submitVmBuffer acceptedLines acceptedOutputs buf outsAcc
+       in return (vmAcc result)
     goVm (ln : rest) acceptedLines acceptedOutputs [] outsAcc
       | isExitCommand ln = return outsAcc
       | trimRight ln == "" = goVm rest acceptedLines acceptedOutputs [] outsAcc
       | endsWithColon ln = goVm rest acceptedLines acceptedOutputs [ln] outsAcc
       | otherwise =
-        let (newLines, newOutputs, outsAcc') = submitVmBuffer acceptedLines acceptedOutputs [ln] outsAcc
-         in goVm rest newLines newOutputs [] outsAcc'
+        let result = submitVmBuffer acceptedLines acceptedOutputs [ln] outsAcc
+         in goVm rest (vmLines result) (vmOutputs result) [] (vmAcc result)
     goVm (ln : rest) acceptedLines acceptedOutputs buf outsAcc
       | trimRight ln == "" =
-        let (newLines, newOutputs, outsAcc') = submitVmBuffer acceptedLines acceptedOutputs buf outsAcc
-         in goVm rest newLines newOutputs [] outsAcc'
+        let result = submitVmBuffer acceptedLines acceptedOutputs buf outsAcc
+         in goVm rest (vmLines result) (vmOutputs result) [] (vmAcc result)
       | otherwise = goVm rest acceptedLines acceptedOutputs (buf ++ [ln]) outsAcc
