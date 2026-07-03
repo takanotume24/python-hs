@@ -5,13 +5,13 @@ import PythonHS.AST.Stmt (Stmt)
 import PythonHS.AST.WithContext (ContextManager(..))
 import PythonHS.Evaluator.Env (Env)
 import PythonHS.Evaluator.EvalContextManager (bindContextResult, enterContextManager, exitContextManager, exitContextManagerWithException)
+import PythonHS.Evaluator.EvalWithStmtConfig (EvalWithStmtConfig (..))
 import PythonHS.Evaluator.FuncEnv (FuncEnv)
 import PythonHS.Evaluator.Value (Value (IntValue))
 import PythonHS.Lexer.Position (Position)
 
 evalWithStmt ::
-  (Env -> FuncEnv -> [String] -> [Stmt] -> Either String (Env, FuncEnv, [String], Maybe (Value, Position))) ->
-  (Env -> FuncEnv -> Expr -> Either String (Value, [String], Env)) ->
+  EvalWithStmtConfig ->
   Env ->
   FuncEnv ->
   [String] ->
@@ -21,7 +21,9 @@ evalWithStmt ::
   Position ->
   [Stmt] ->
   Either String (Env, FuncEnv, [String], Maybe (Value, Position))
-evalWithStmt evalStatementsFn evalExprFn env fenv outputs contextManager maybeVarName body withPos rest = do
+evalWithStmt config env fenv outputs contextManager maybeVarName body withPos rest = do
+  let evalStatementsFn = evalWithStmtEvalStatements config
+      evalExprFn = evalWithStmtEvalExpr config
   -- Create context manager record
   let ctxManager = ContextManager contextManager maybeVarName withPos
   

@@ -7,8 +7,11 @@ import PythonHS.Evaluator.Env (Env)
 
 import PythonHS.Evaluator.EvalExpr (evalExpr)
 import PythonHS.Evaluator.EvalForStmt (evalForStmt)
+import PythonHS.Evaluator.EvalForStmtConfig (EvalForStmtConfig (..))
 import PythonHS.Evaluator.EvalWhileStmt (evalWhileStmt)
+import PythonHS.Evaluator.EvalWhileStmtConfig (EvalWhileStmtConfig (..))
 import PythonHS.Evaluator.EvalWithStmt (evalWithStmt)
+import PythonHS.Evaluator.EvalWithStmtConfig (EvalWithStmtConfig (..))
 import PythonHS.Evaluator.FuncEnv (FuncEnv)
 import PythonHS.Evaluator.ShowPos (showPos)
 import PythonHS.Evaluator.Value (Value (..))
@@ -77,7 +80,7 @@ evalStatements env fenv outputs (stmt : rest) =
       Left $ "Runtime error: " ++ valueToOutput val ++ " at " ++ showPos raiseStmtPos
     PassStmt {} -> evalStatements env fenv outputs rest
     WithStmt {withStmtContextManager, withStmtVarName, withStmtBody, withStmtPos} ->
-      evalWithStmt evalStatements (evalExpr evalStatements) env fenv outputs withStmtContextManager withStmtVarName withStmtBody withStmtPos rest
+      evalWithStmt (EvalWithStmtConfig evalStatements (evalExpr evalStatements)) env fenv outputs withStmtContextManager withStmtVarName withStmtBody withStmtPos rest
 
     IfStmt {ifStmtCond, ifStmtThen, ifStmtElse} -> do
       (condVal, condOuts, envAfterCond) <- evalExpr evalStatements env fenv ifStmtCond
@@ -97,10 +100,10 @@ evalStatements env fenv outputs (stmt : rest) =
           Nothing -> evalStatements envAfterCond fenv (outputs ++ condOuts) rest
 
     WhileStmt {whileStmtCond, whileStmtBody, whileStmtPos} ->
-      evalWhileStmt evalStatements (evalExpr evalStatements) env fenv outputs whileStmtCond whileStmtBody whileStmtPos rest
+      evalWhileStmt (EvalWhileStmtConfig evalStatements (evalExpr evalStatements)) env fenv outputs whileStmtCond whileStmtBody whileStmtPos rest
 
     ForStmt {forStmtVar, forStmtIter, forStmtBody, forStmtPos} ->
-      evalForStmt evalStatements (evalExpr evalStatements) env fenv outputs forStmtVar forStmtIter forStmtBody forStmtPos rest
+      evalForStmt (EvalForStmtConfig evalStatements (evalExpr evalStatements)) env fenv outputs forStmtVar forStmtIter forStmtBody forStmtPos rest
 
     ClassDefStmt {classDefStmtPos} -> Left $ "Runtime error: class is only supported in vm engine at " ++ showPos classDefStmtPos
 

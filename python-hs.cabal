@@ -117,10 +117,13 @@ library
     , PythonHS.Evaluator.ValueToReplOutput
     , PythonHS.Evaluator.RangeValues
     , PythonHS.Evaluator.EvalWhileStmt
+    , PythonHS.Evaluator.EvalWhileStmtConfig
     , PythonHS.Evaluator.EvalForStmt
-    , PythonHS.Evaluator.EvalExpr
+    , PythonHS.Evaluator.EvalForStmtConfig
     , PythonHS.Evaluator.EvalWithStmt
+    , PythonHS.Evaluator.EvalWithStmtConfig
     , PythonHS.Evaluator.EvalExprBinary
+    , PythonHS.Evaluator.EvalExpr
     , PythonHS.Evaluator.EvalCallExpr
     , PythonHS.Evaluator.EvalBuiltinExpr
     , PythonHS.Evaluator.MaxLoopIterations

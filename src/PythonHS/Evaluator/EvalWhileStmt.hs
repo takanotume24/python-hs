@@ -3,6 +3,7 @@ module PythonHS.Evaluator.EvalWhileStmt (evalWhileStmt) where
 import PythonHS.AST.Expr (Expr (..))
 import PythonHS.AST.Stmt (Stmt)
 import PythonHS.Evaluator.Env (Env)
+import PythonHS.Evaluator.EvalWhileStmtConfig (EvalWhileStmtConfig (..))
 import PythonHS.Evaluator.FuncEnv (FuncEnv)
 import PythonHS.Evaluator.MaxLoopIterations (maxLoopIterations)
 import PythonHS.Evaluator.ShowPos (showPos)
@@ -11,8 +12,7 @@ import PythonHS.Lexer.Position (Position)
 import PythonHS.Parser.ExprPos (exprPos)
 
 evalWhileStmt ::
-  (Env -> FuncEnv -> [String] -> [Stmt] -> Either String (Env, FuncEnv, [String], Maybe (Value, Position))) ->
-  (Env -> FuncEnv -> Expr -> Either String (Value, [String], Env)) ->
+  EvalWhileStmtConfig ->
   Env ->
   FuncEnv ->
   [String] ->
@@ -21,9 +21,12 @@ evalWhileStmt ::
   Position ->
   [Stmt] ->
   Either String (Env, FuncEnv, [String], Maybe (Value, Position))
-evalWhileStmt evalStatementsFn evalExprFn env fenv outputs cond body whilePos rest = loop env fenv id 0
+evalWhileStmt config env fenv outputs cond body whilePos rest =
+  let evalStatementsFn = evalWhileStmtEvalStatements config
+      evalExprFn = evalWhileStmtEvalExpr config
+   in loop evalStatementsFn evalExprFn env fenv id 0
   where
-    loop env' fenv' outputAcc iterations = do
+    loop evalStatementsFn evalExprFn env' fenv' outputAcc iterations = do
       (condVal, condOuts, envAfterCond) <- evalExprFn env' fenv' cond
       condNum <- expectTruthy "while condition" (exprPos cond) condVal
       if condNum == 0
@@ -37,9 +40,9 @@ evalWhileStmt evalStatementsFn evalExprFn env fenv outputs cond body whilePos re
               let nextIterations = iterations + 1
               case ret of
                 Just (BreakValue, _) -> evalStatementsFn envAfter fenvAfter (outputs ++ nextOutputAcc []) rest
-                Just (ContinueValue, _) -> nextIterations `seq` loop envAfter fenvAfter nextOutputAcc nextIterations
+                Just (ContinueValue, _) -> nextIterations `seq` loop evalStatementsFn evalExprFn envAfter fenvAfter nextOutputAcc nextIterations
                 Just _ -> Right (envAfter, fenvAfter, outputs ++ nextOutputAcc [], ret)
-                Nothing -> nextIterations `seq` loop envAfter fenvAfter nextOutputAcc nextIterations
+                Nothing -> nextIterations `seq` loop evalStatementsFn evalExprFn envAfter fenvAfter nextOutputAcc nextIterations
 
     expectTruthy :: String -> Position -> Value -> Either String Int
     expectTruthy _ _ IntValue {intValue = n} = Right (if n == 0 then 0 else 1)

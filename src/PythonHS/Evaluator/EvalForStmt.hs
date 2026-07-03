@@ -4,6 +4,7 @@ import qualified Data.Map.Strict as Map
 import PythonHS.AST.Expr (Expr (..))
 import PythonHS.AST.Stmt (Stmt)
 import PythonHS.Evaluator.Env (Env)
+import PythonHS.Evaluator.EvalForStmtConfig (EvalForStmtConfig (..))
 import PythonHS.Evaluator.FuncEnv (FuncEnv)
 import PythonHS.Evaluator.MaxLoopIterations (maxLoopIterations)
 import PythonHS.Evaluator.ShowPos (showPos)
@@ -12,8 +13,7 @@ import PythonHS.Lexer.Position (Position)
 import PythonHS.Parser.ExprPos (exprPos)
 
 evalForStmt ::
-  (Env -> FuncEnv -> [String] -> [Stmt] -> Either String (Env, FuncEnv, [String], Maybe (Value, Position))) ->
-  (Env -> FuncEnv -> Expr -> Either String (Value, [String], Env)) ->
+  EvalForStmtConfig ->
   Env ->
   FuncEnv ->
   [String] ->
@@ -23,21 +23,23 @@ evalForStmt ::
   Position ->
   [Stmt] ->
   Either String (Env, FuncEnv, [String], Maybe (Value, Position))
-evalForStmt evalStatementsFn evalExprFn env fenv outputs name iterExpr body forPos rest = do
+evalForStmt config env fenv outputs name iterExpr body forPos rest = do
+  let evalStatementsFn = evalForStmtEvalStatements config
+      evalExprFn = evalForStmtEvalExpr config
   (iterVal, iterOuts, envAfterIter) <- evalExprFn env fenv iterExpr
   case iterVal of
     IntValue {intValue = maxN} ->
       let upper = max 0 maxN
-       in loopRange envAfterIter fenv 0 upper ((outputs ++) . (iterOuts ++)) 0
+       in loopRange evalStatementsFn envAfterIter fenv 0 upper ((outputs ++) . (iterOuts ++)) 0
     ListValue {listValueItems = vals} ->
-      loopList envAfterIter fenv vals ((outputs ++) . (iterOuts ++)) 0
+      loopList evalStatementsFn envAfterIter fenv vals ((outputs ++) . (iterOuts ++)) 0
     TupleValue {tupleValueItems = vals} ->
-      loopList envAfterIter fenv vals ((outputs ++) . (iterOuts ++)) 0
+      loopList evalStatementsFn envAfterIter fenv vals ((outputs ++) . (iterOuts ++)) 0
     DictValue {dictValuePairs = pairs} ->
-      loopList envAfterIter fenv (map fst pairs) ((outputs ++) . (iterOuts ++)) 0
+      loopList evalStatementsFn envAfterIter fenv (map fst pairs) ((outputs ++) . (iterOuts ++)) 0
     _ -> Left $ "Type error: for expects iterable (int range, list, or dict) at " ++ showPos (exprPos iterExpr)
   where
-    loopRange env' fenv' idx upper outputAcc iterations
+    loopRange evalStatementsFn env' fenv' idx upper outputAcc iterations
       | idx >= upper = evalStatementsFn env' fenv' (outputAcc []) rest
       | iterations >= maxLoopIterations = Left $ "Value error: iteration limit exceeded at " ++ showPos forPos
       | otherwise = do
@@ -47,12 +49,12 @@ evalForStmt evalStatementsFn evalExprFn env fenv outputs name iterExpr body forP
           let nextIterations = iterations + 1
           case ret of
             Just (BreakValue, _) -> evalStatementsFn envAfter fenvAfter (nextOutputAcc []) rest
-            Just (ContinueValue, _) -> nextIterations `seq` loopRange envAfter fenvAfter (idx + 1) upper nextOutputAcc nextIterations
+            Just (ContinueValue, _) -> nextIterations `seq` loopRange evalStatementsFn envAfter fenvAfter (idx + 1) upper nextOutputAcc nextIterations
             Just _ -> Right (envAfter, fenvAfter, nextOutputAcc [], ret)
-            Nothing -> nextIterations `seq` loopRange envAfter fenvAfter (idx + 1) upper nextOutputAcc nextIterations
+            Nothing -> nextIterations `seq` loopRange evalStatementsFn envAfter fenvAfter (idx + 1) upper nextOutputAcc nextIterations
 
-    loopList env' fenv' [] outputAcc _ = evalStatementsFn env' fenv' (outputAcc []) rest
-    loopList env' fenv' (value : remaining) outputAcc iterations
+    loopList evalStatementsFn env' fenv' [] outputAcc _ = evalStatementsFn env' fenv' (outputAcc []) rest
+    loopList evalStatementsFn env' fenv' (value : remaining) outputAcc iterations
       | iterations >= maxLoopIterations = Left $ "Value error: iteration limit exceeded at " ++ showPos forPos
       | otherwise = do
           let envWithVar = Map.insert name value env'
@@ -61,6 +63,6 @@ evalForStmt evalStatementsFn evalExprFn env fenv outputs name iterExpr body forP
           let nextIterations = iterations + 1
           case ret of
             Just (BreakValue, _) -> evalStatementsFn envAfter fenvAfter (nextOutputAcc []) rest
-            Just (ContinueValue, _) -> nextIterations `seq` loopList envAfter fenvAfter remaining nextOutputAcc nextIterations
+            Just (ContinueValue, _) -> nextIterations `seq` loopList evalStatementsFn envAfter fenvAfter remaining nextOutputAcc nextIterations
             Just _ -> Right (envAfter, fenvAfter, nextOutputAcc [], ret)
-            Nothing -> nextIterations `seq` loopList envAfter fenvAfter remaining nextOutputAcc nextIterations
+            Nothing -> nextIterations `seq` loopList evalStatementsFn envAfter fenvAfter remaining nextOutputAcc nextIterations
