@@ -33,6 +33,12 @@
 - ランタイム機能を拡張する前に、言語の振る舞いに対する受け入れテストを追加する。
 - TDD の例（2026-02-17）：評価器用の失敗するユニットテストを追加（`EvalSpec`）、その後 `PythonHS.Evaluator.evalProgram` を実装してテストを通した — リポジトリにコミット済み。
 
+## ツール・ユーティリティの実装方針
+- コードベースの分析・検査・変換などの機能が必要になった場合は、**独立した executable（CLI）として実装する**ことを原則とする。
+- ライブラリ関数として閉じず、`python-hs.cabal` に `executable` を追加し、`cabal run <tool-name>` で実行可能にする。
+- 入出力はテキストまたは JSON とし、CI や他ツールからのパイプ利用を想定する。
+- 実装例: `check-structure`（構造チェック）、`detect-positional-args`（位置引数検出）、`check-runner-case-coverage`（テストケース網羅性チェック）。
+
 ## 品質ゲート
 - `cabal test` が成功すること。
 - `cabal run check-structure` が成功すること。
