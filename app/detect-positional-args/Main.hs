@@ -2,6 +2,7 @@ module Main (main) where
 
 import PythonHS.Structure.DetectPositionalArgs (detectPositionalArgs)
 import PythonHS.Structure.DetectPositionalArgsFromDirectory (detectPositionalArgsFromDirectory)
+import PythonHS.Structure.DetectPositionalArgsFromDirectoryConfig (DetectPositionalArgsFromDirectoryConfig (..))
 import PythonHS.Structure.FormatViolationsJson (formatViolationsJson)
 import PythonHS.Structure.FormatViolationsPlain (formatViolationsPlain)
 import PythonHS.Structure.PositionalArgViolation (PositionalArgViolation)
@@ -19,7 +20,7 @@ main = do
             isDir <- doesDirectoryExist path
             violations <-
               if isDir
-                then detectPositionalArgsFromDirectory path excludes
+                then detectPositionalArgsFromDirectory (DetectPositionalArgsFromDirectoryConfig path excludes)
                 else detectPositionalArgs path
             putStrLn (formatter violations)
             if null violations

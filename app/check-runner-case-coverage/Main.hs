@@ -2,6 +2,7 @@ module Main (main) where
 
 import PythonHS.Runner.RunnerCaseCoverageHasMissing (runnerCaseCoverageHasMissing)
 import PythonHS.Runner.RunnerCaseCoverageReport (runnerCaseCoverageReport)
+import PythonHS.Runner.RunnerCaseCoverageReportConfig (RunnerCaseCoverageReportConfig (..))
 import System.Environment (getArgs)
 import System.Exit (exitFailure)
 
@@ -10,7 +11,7 @@ main = do
   args <- getArgs
   case args of
     [edgePath, parityPath, vmPath] -> do
-      report <- runnerCaseCoverageReport edgePath parityPath vmPath
+      report <- runnerCaseCoverageReport (RunnerCaseCoverageReportConfig edgePath parityPath vmPath)
       putStr report
       if runnerCaseCoverageHasMissing report
         then exitFailure

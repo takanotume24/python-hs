@@ -31,6 +31,7 @@ library
     , PythonHS.Runner
     , PythonHS.Runner.RunnerCaseCoverageHasMissing
     , PythonHS.Runner.RunnerCaseCoverageReport
+    , PythonHS.Runner.RunnerCaseCoverageReportConfig
     , PythonHS.EvalProgram
     , PythonHS.CLI
     , PythonHS.Evaluator
@@ -49,6 +50,7 @@ library
     , PythonHS.Structure.DetectSourceConfig
     , PythonHS.Structure.DetectModuleConfig
     , PythonHS.Structure.DetectPositionalArgsFromDirectory
+    , PythonHS.Structure.DetectPositionalArgsFromDirectoryConfig
     , PythonHS.Structure.CollectHsFiles
     , PythonHS.Structure.ExemptFileInfo
     , PythonHS.Structure.IsHaskellFile

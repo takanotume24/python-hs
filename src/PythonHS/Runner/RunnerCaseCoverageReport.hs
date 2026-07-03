@@ -1,9 +1,13 @@
 module PythonHS.Runner.RunnerCaseCoverageReport (runnerCaseCoverageReport) where
 
 import Data.List (sort)
+import PythonHS.Runner.RunnerCaseCoverageReportConfig (RunnerCaseCoverageReportConfig (..))
 
-runnerCaseCoverageReport :: FilePath -> FilePath -> FilePath -> IO String
-runnerCaseCoverageReport edgePath parityPath vmPath = do
+runnerCaseCoverageReport :: RunnerCaseCoverageReportConfig -> IO String
+runnerCaseCoverageReport config = do
+  let edgePath = runnerCaseCoverageReportEdgePath config
+      parityPath = runnerCaseCoverageReportParityPath config
+      vmPath = runnerCaseCoverageReportVmPath config
   edgeSource <- readFile edgePath
   paritySource <- readFile parityPath
   vmSource <- readFile vmPath

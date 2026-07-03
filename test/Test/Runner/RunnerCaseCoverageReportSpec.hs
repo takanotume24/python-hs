@@ -2,6 +2,7 @@ module Test.Runner.RunnerCaseCoverageReportSpec (spec) where
 
 import qualified Paths_python_hs
 import PythonHS.Runner.RunnerCaseCoverageReport (runnerCaseCoverageReport)
+import PythonHS.Runner.RunnerCaseCoverageReportConfig (RunnerCaseCoverageReportConfig (..))
 import System.Directory (createDirectoryIfMissing, doesFileExist)
 import System.Environment (getExecutablePath)
 import System.Exit (ExitCode (ExitFailure, ExitSuccess))
@@ -32,7 +33,7 @@ spec = describe "runnerCaseCoverageReport" $ do
         [ "runSourceVm \"A\\n\" `shouldBe` Right [\"A\"]"
         ]
 
-      report <- runnerCaseCoverageReport edgePath parityPath vmPath
+      report <- runnerCaseCoverageReport (RunnerCaseCoverageReportConfig edgePath parityPath vmPath)
 
       report
         `shouldBe` unlines
