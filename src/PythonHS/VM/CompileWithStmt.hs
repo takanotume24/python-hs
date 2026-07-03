@@ -6,6 +6,7 @@ import PythonHS.AST.Stmt (Stmt)
 import PythonHS.AST.WithContext (ContextManager (..), WithEntry (..), WithExit (..))
 import PythonHS.Evaluator.Value (Value (NoneValue))
 import PythonHS.VM.CompileExprAt (compileExprAt)
+import PythonHS.VM.CompileExprResult (CompileExprResult (..))
 import PythonHS.VM.Instruction (Instruction (CallFunction, CheckWithResult, Jump, LoadName, LoadPendingException, PopExceptionHandler, PushConst, PushWithHandler, StoreName))
 
 compileWithStmt ::
@@ -16,11 +17,12 @@ compileWithStmt ::
   Maybe String ->
   [Stmt] ->
   Position ->
-  (Int -> Bool -> Maybe (Int, Int) -> [Stmt] -> Either String ([Instruction], Int)) ->
-  Either String ([Instruction], Int)
+  (Int -> Bool -> Maybe (Int, Int) -> [Stmt] -> Either String CompileExprResult) ->
+  Either String CompileExprResult
 compileWithStmt baseIndex inFunction maybeLoop cmExpr maybeVarName body withPos compileStatementsFn = do
   let ctxManager = ContextManager cmExpr maybeVarName withPos
-  (contextManagerCode, _contextManagerEnd) <- compileExprAt baseIndex (contextManagerExpr ctxManager)
+  contextManagerResult <- compileExprAt baseIndex (contextManagerExpr ctxManager)
+  let contextManagerCode = compileExprResultCode contextManagerResult
   let contextManagerVar = "__context_manager_" ++ show baseIndex ++ "__"
   let setupCode = contextManagerCode ++ [StoreName contextManagerVar]
 
@@ -33,7 +35,9 @@ compileWithStmt baseIndex inFunction maybeLoop cmExpr maybeVarName body withPos 
         Nothing -> []
   let setupEndIndex = baseIndex + length setupCode + length enterCode + length storeCode
   let bodyStartIndex = setupEndIndex + 1
-  (bodyCode, bodyEndIndex) <- compileStatementsFn bodyStartIndex inFunction maybeLoop body
+  bodyResult <- compileStatementsFn bodyStartIndex inFunction maybeLoop body
+  let bodyCode = compileExprResultCode bodyResult
+  let bodyEndIndex = compileExprResultEndIndex bodyResult
   let exitNormalStartIndex = bodyEndIndex + 2
   let nonePos = ([PushConst NoneValue], Nothing, contextManagerPos ctxManager)
 
@@ -66,4 +70,4 @@ compileWithStmt baseIndex inFunction maybeLoop cmExpr maybeVarName body withPos 
                exitNormalCode ++
                [Jump nextIndex] ++
                exitExceptionCode
-  pure (allCode, nextIndex)
+  pure (CompileExprResult allCode nextIndex)

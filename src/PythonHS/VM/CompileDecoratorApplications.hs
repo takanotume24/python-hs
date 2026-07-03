@@ -1,21 +1,23 @@
 module PythonHS.VM.CompileDecoratorApplications (compileDecoratorApplications) where
 
 import PythonHS.AST.Expr (Expr (IdentifierExpr), Expr)
+import PythonHS.VM.CompileExprResult (CompileExprResult (..))
 import PythonHS.VM.ExprPosition (exprPosition)
 import PythonHS.VM.Instruction (Instruction (CallFunction, CallValueFunction, LoadName, StoreName), Instruction)
 
 compileDecoratorApplications ::
-  (Int -> Expr -> Either String ([Instruction], Int)) ->
+  (Int -> Expr -> Either String CompileExprResult) ->
   Int ->
   String ->
   [Expr] ->
-  Either String ([Instruction], Int)
+  Either String CompileExprResult
 compileDecoratorApplications compileExprAt baseIndex targetName decorators =
   compileAt baseIndex (reverse decorators)
   where
+    compileAt :: Int -> [Expr] -> Either String CompileExprResult
     compileAt idx remaining =
       case remaining of
-        [] -> Right ([], idx)
+        [] -> Right (CompileExprResult [] idx)
         decoratorExpr : rest -> do
           let pos = exprPosition decoratorExpr
           (applyCode, afterApply) <-
@@ -23,7 +25,7 @@ compileDecoratorApplications compileExprAt baseIndex targetName decorators =
               IdentifierExpr decoratorName _ ->
                 Right ([CallFunction decoratorName [([LoadName targetName pos], Nothing, pos)] pos, StoreName targetName], idx + 2)
               _ -> do
-                (decoratorCode, decoratorEnd) <- compileExprAt idx decoratorExpr
-                Right (decoratorCode ++ [CallValueFunction [([LoadName targetName pos], Nothing, pos)] pos, StoreName targetName], decoratorEnd + 2)
-          (restCode, afterRest) <- compileAt afterApply rest
-          Right (applyCode ++ restCode, afterRest)
+                decoratorResult <- compileExprAt idx decoratorExpr
+                Right (compileExprResultCode decoratorResult ++ [CallValueFunction [([LoadName targetName pos], Nothing, pos)] pos, StoreName targetName], compileExprResultEndIndex decoratorResult + 2)
+          restResult <- compileAt afterApply rest
+          Right (CompileExprResult (applyCode ++ compileExprResultCode restResult) (compileExprResultEndIndex restResult))

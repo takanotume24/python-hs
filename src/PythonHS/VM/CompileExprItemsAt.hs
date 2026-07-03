@@ -1,13 +1,14 @@
 module PythonHS.VM.CompileExprItemsAt (compileExprItemsAt) where
 
 import PythonHS.AST.Expr (Expr)
+import PythonHS.VM.CompileExprResult (CompileExprResult (..))
 import PythonHS.VM.Instruction (Instruction)
 
-compileExprItemsAt :: (Int -> Expr -> Either String ([Instruction], Int)) -> Int -> [Expr] -> Either String ([Instruction], Int)
+compileExprItemsAt :: (Int -> Expr -> Either String CompileExprResult) -> Int -> [Expr] -> Either String CompileExprResult
 compileExprItemsAt compileExprAt baseIndex exprs =
   case exprs of
-    [] -> Right ([], baseIndex)
+    [] -> Right (CompileExprResult [] baseIndex)
     expr : rest -> do
-      (exprCode, exprEnd) <- compileExprAt baseIndex expr
-      (restCode, restEnd) <- compileExprItemsAt compileExprAt exprEnd rest
-      Right (exprCode ++ restCode, restEnd)
+      exprResult <- compileExprAt baseIndex expr
+      restResult <- compileExprItemsAt compileExprAt (compileExprResultEndIndex exprResult) rest
+      pure (CompileExprResult (compileExprResultCode exprResult ++ compileExprResultCode restResult) (compileExprResultEndIndex restResult))

@@ -5,12 +5,13 @@ import PythonHS.AST.Stmt (Stmt)
 import PythonHS.Evaluator.Value (Value (IntValue, ListValue))
 import PythonHS.Lexer.Position (Position)
 import PythonHS.VM.CompileDefaults (compileDefaults)
+import PythonHS.VM.CompileExprResult (CompileExprResult (..))
 import PythonHS.VM.HasYieldInStmts (hasYieldInStmts)
 import PythonHS.VM.Instruction (Instruction (LoadName, PushConst, ReturnTop, StoreName), Instruction)
 
 compileFunctionDefStmt ::
-  (Int -> Bool -> Maybe (Int, Int) -> [Stmt] -> Either String ([Instruction], Int)) ->
-  (Int -> Expr -> Either String ([Instruction], Int)) ->
+  (Int -> Bool -> Maybe (Int, Int) -> [Stmt] -> Either String CompileExprResult) ->
+  (Int -> Expr -> Either String CompileExprResult) ->
   Position ->
   [(String, Expr)] ->
   [Stmt] ->
@@ -20,9 +21,9 @@ compileFunctionDefStmt compileStatements compileExprAt posDef defaults body = do
   functionCode <-
     if hasYieldInStmts body
       then do
-        (bodyCode, _) <- compileStatements 2 True Nothing body
-        pure ([PushConst (ListValue []), StoreName "__yield_acc__"] ++ bodyCode ++ [LoadName "__yield_acc__" posDef, ReturnTop])
+        bodyResult <- compileStatements 2 True Nothing body
+        pure ([PushConst (ListValue []), StoreName "__yield_acc__"] ++ compileExprResultCode bodyResult ++ [LoadName "__yield_acc__" posDef, ReturnTop])
       else do
-        (bodyCode, _) <- compileStatements 0 True Nothing body
-        pure (bodyCode ++ [PushConst (IntValue 0), ReturnTop])
+        bodyResult <- compileStatements 0 True Nothing body
+        pure (compileExprResultCode bodyResult ++ [PushConst (IntValue 0), ReturnTop])
   pure (functionCode, compiledDefaults)

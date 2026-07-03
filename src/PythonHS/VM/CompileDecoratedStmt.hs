@@ -4,19 +4,20 @@ import PythonHS.AST.Expr (Expr (CallExpr, IdentifierExpr, IntegerExpr, KeywordAr
 import PythonHS.AST.Stmt (Stmt (ClassDefStmt, FunctionDefDefaultsStmt, FunctionDefStmt), Stmt)
 import PythonHS.Evaluator.ShowPos (showPos)
 import PythonHS.VM.CompileDecoratorApplications (compileDecoratorApplications)
+import PythonHS.VM.CompileExprResult (CompileExprResult (..))
 import PythonHS.VM.Instruction (Instruction)
 import PythonHS.VM.StmtPosition (stmtPosition)
 
 compileDecoratedStmt ::
-  (Int -> Bool -> Maybe (Int, Int) -> Stmt -> Either String ([Instruction], Int)) ->
-  (Int -> String -> Maybe String -> [Stmt] -> Maybe (Bool, Bool) -> Either String ([Instruction], Int)) ->
-  (Int -> Expr -> Either String ([Instruction], Int)) ->
+  (Int -> Bool -> Maybe (Int, Int) -> Stmt -> Either String CompileExprResult) ->
+  (Int -> String -> Maybe String -> [Stmt] -> Maybe (Bool, Bool) -> Either String CompileExprResult) ->
+  (Int -> Expr -> Either String CompileExprResult) ->
   Int ->
   Bool ->
   Maybe (Int, Int) ->
   [Expr] ->
   Stmt ->
-  Either String ([Instruction], Int)
+  Either String CompileExprResult
 compileDecoratedStmt compileStmt compileDataclassClass compileExprAt baseIndex inFunction maybeLoop decorators targetStmt =
   case parseDataclassConfig decorators of
     Right (Just dataclassConfig) ->
@@ -28,10 +29,10 @@ compileDecoratedStmt compileStmt compileDataclassClass compileExprAt baseIndex i
     Left err -> Left err
   where
     compileDefault = do
-      (targetCode, targetEnd) <- compileStmt baseIndex inFunction maybeLoop targetStmt
+      targetResult <- compileStmt baseIndex inFunction maybeLoop targetStmt
       targetName <- decoratedTargetName targetStmt
-      (decoratorCode, decoratorEnd) <- compileDecoratorApplications compileExprAt targetEnd targetName decorators
-      pure (targetCode ++ decoratorCode, decoratorEnd)
+      decoratorResult <- compileDecoratorApplications compileExprAt (compileExprResultEndIndex targetResult) targetName decorators
+      pure (CompileExprResult (compileExprResultCode targetResult ++ compileExprResultCode decoratorResult) (compileExprResultEndIndex decoratorResult))
 
     decoratedTargetName stmt =
       case stmt of

@@ -269,9 +269,11 @@
 - [x] P51: VM 系 function_declaration の検討
   - [x] 内部DSLとして正当なもの（`execute state instruction` 等）は除外
   - [x] 純粋なヘルパー関数（`SliceValue`, `GetitemValue`, `EvalBinaryOp` 等）は各引数が明確な独立した意味を持つため、レコード型化は冗長として現状維持
-- [x] P52: VM コンパイラ系 tuple の段階的レコード化開始
+- [x] P52: VM コンパイラ系 tuple の段階的レコード化
   - [x] `CompileExprResult { compileExprResultCode :: [Instruction], compileExprResultEndIndex :: Int }` 型を導入
-  - [ ] `CompileExprAt` / `CompileProgram` 等への段階的適用（次回スコープ）
+  - [x] `CompileExprAt` / `CompileExprItemsAt` / `CompileLogicalExpr` / `CompileDefaults` / `CompileComprehensionClauses` のシグネチャを `CompileExprResult` ベースに変更
+  - [x] `CompileProgram` / `CompileClassStmt` / `CompileClassDefStmt` / `CompileDecoratedStmt` / `CompileDecoratorApplications` / `CompileCompoundAssign` / `CompileYieldCollectStmt` / `CompileWithStmt` / `CompileMatch` / `CompileFunctionDefStmt` / `CompileTryExcept` / `CompileImportStmt` のシグネチャと内部を `CompileExprResult` ベースに変更
+  - [x] `CompileDictEntriesAt` / `CompileCallArgsAt` は多相型のためアダプタ経由で対応（シグネチャは維持）
 - [x] P53-1: CLI 系 tuple のレコード構文化（ReplEvalLines）
   - [x] `ReplEvalState { replEnv :: Env, replFunctionEnv :: FuncEnv, replOutputs :: [String] }` 型を導入
   - [x] `VmReplState { vmLines :: [String], vmOutputs :: [String], vmAcc :: [String] }` 型を導入

@@ -5,18 +5,19 @@ import PythonHS.AST.Expr (Expr (BinaryExpr, CallExpr, IdentifierExpr, IntegerExp
 import PythonHS.AST.Stmt (Stmt (AnnAssignStmt, FunctionDefDefaultsStmt, FunctionDefStmt), Stmt)
 import PythonHS.Evaluator.Value (Value (IntValue, StringValue))
 import PythonHS.Lexer.Position (Position (Position))
+import PythonHS.VM.CompileExprResult (CompileExprResult (..))
 import PythonHS.VM.Instruction (Instruction (ApplyBinary, BuildList, CallFunction, DefineClass, DefineFunction, LoadName, PushConst, ReturnTop, StoreName), Instruction)
 
 compileClassStmt ::
-  ((Int -> Expr -> Either String ([Instruction], Int)) -> [(String, Expr)] -> Either String ([(String, [Instruction])], Int)) ->
-  (Int -> Bool -> Maybe (Int, Int) -> [Stmt] -> Either String ([Instruction], Int)) ->
-  (Int -> Expr -> Either String ([Instruction], Int)) ->
+  ((Int -> Expr -> Either String CompileExprResult) -> [(String, Expr)] -> Either String ([(String, [Instruction])], Int)) ->
+  (Int -> Bool -> Maybe (Int, Int) -> [Stmt] -> Either String CompileExprResult) ->
+  (Int -> Expr -> Either String CompileExprResult) ->
   Int ->
   String ->
   Maybe String ->
   [Stmt] ->
   Maybe (Bool, Bool) ->
-  Either String ([Instruction], Int)
+  Either String CompileExprResult
 compileClassStmt compileDefaults compileStatements compileExprAt baseIndex className maybeBase body maybeDataclass =
   let methods = collectMethods body
       fields = collectFields body
@@ -24,23 +25,23 @@ compileClassStmt compileDefaults compileStatements compileExprAt baseIndex class
       compileMethodAt idx (methodName, params, defaults, methodBody, methodPos) = do
         let mangledName = className ++ "." ++ methodName
         (defaultCodes, _) <- compileDefaults compileExprAt defaults
-        (bodyCode, _) <- compileStatements 0 True Nothing methodBody
+        bodyResult <- compileStatements 0 True Nothing methodBody
         let functionCode =
               if methodName == "__init__"
-                then bodyCode ++ [LoadName "self" methodPos, ReturnTop]
-                else bodyCode ++ [PushConst (IntValue 0), ReturnTop]
+                then compileExprResultCode bodyResult ++ [LoadName "self" methodPos, ReturnTop]
+                else compileExprResultCode bodyResult ++ [PushConst (IntValue 0), ReturnTop]
         let methodInstr = DefineFunction mangledName params defaultCodes functionCode
-        Right ([methodInstr], idx + 1, (methodName, mangledName))
-      compileMethodsAt idx [] = Right ([], idx, [])
+        Right (CompileExprResult [methodInstr] (idx + 1), (methodName, mangledName))
+      compileMethodsAt idx [] = Right (CompileExprResult [] idx, [])
       compileMethodsAt idx (method : restMethods) = do
-        (methodCode, afterMethod, methodPair) <- compileMethodAt idx method
-        (restCode, afterRest, restPairs) <- compileMethodsAt afterMethod restMethods
-        Right (methodCode ++ restCode, afterRest, methodPair : restPairs)
+        (methodResult, methodPair) <- compileMethodAt idx method
+        (restResult, restPairs) <- compileMethodsAt (compileExprResultEndIndex methodResult) restMethods
+        pure (CompileExprResult (compileExprResultCode methodResult ++ compileExprResultCode restResult) (compileExprResultEndIndex restResult), methodPair : restPairs)
    in do
-        (methodCode, afterMethods, methodPairs) <- compileMethodsAt baseIndex methods
+        (methodsResult, methodPairs) <- compileMethodsAt baseIndex methods
         (dataclassCode, dataclassPairs, dataclassCount) <- compileDataclassMethods fields methodNames maybeDataclass
-        let classCode = methodCode ++ dataclassCode ++ [DefineClass className maybeBase (methodPairs ++ dataclassPairs)]
-        Right (classCode, afterMethods + dataclassCount + 1)
+        let classCode = compileExprResultCode methodsResult ++ dataclassCode ++ [DefineClass className maybeBase (methodPairs ++ dataclassPairs)]
+        pure (CompileExprResult classCode (compileExprResultEndIndex methodsResult + dataclassCount + 1))
   where
     collectMethods items =
       case items of
@@ -100,7 +101,7 @@ compileClassStmt compileDefaults compileStatements compileExprAt baseIndex class
                 Just (CallExpr "field" [KeywordArgExpr "default_factory" (IdentifierExpr "list" _) _] _) ->
                   compileDefaultsForFields rest ((fieldName, [BuildList 0, ReturnTop]) : acc)
                 Just defaultExpr -> do
-                  (defaultCode, _) <- compileExprAt 0 defaultExpr
+                  defaultCode <- fmap compileExprResultCode (compileExprAt 0 defaultExpr)
                   compileDefaultsForFields rest ((fieldName, defaultCode ++ [ReturnTop]) : acc)
 
     buildInitMethod pos fieldNames initDefaults isFrozen =
@@ -135,12 +136,12 @@ compileClassStmt compileDefaults compileStatements compileExprAt baseIndex class
 
     buildEqMethod pos fieldNames = do
       eqExpr <- buildEqExpr pos fieldNames
-      (eqCode, _) <- compileExprAt 0 eqExpr
+      eqCode <- fmap compileExprResultCode (compileExprAt 0 eqExpr)
       Right ("__eq__", ["self", "other"], [], eqCode ++ [ReturnTop])
 
     buildOrderMethod op pos fieldNames = do
       orderExpr <- buildOrderExpr op pos fieldNames
-      (orderCode, _) <- compileExprAt 0 orderExpr
+      orderCode <- fmap compileExprResultCode (compileExprAt 0 orderExpr)
       Right (Just (methodName op, ["self", "other"], [], orderCode ++ [ReturnTop]))
       where
         methodName LtOperator = "__lt__"
