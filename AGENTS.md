@@ -53,7 +53,11 @@
   - `cabal run check-structure`
   - `ormolu --mode check $(git ls-files '*.hs')`
   - `hlint src app`
-- `cabal run detect-positional-args -- src` を実行し、新規追加の positional argument の有無を確認すること（0件であれば `ExitSuccess`、1件以上であれば `ExitFailure 1` と JSON 出力で詳細を確認する）。
+- `cabal run detect-positional-args -- src` を実行し、**すべてのカテゴリ**が0件であることを確認すること：
+  - `positional_record_con` — レコード型の初期化にレコード構文を使用していること
+  - `function_declaration` — 2つ以上の引数を持つ関数はレコード型にまとめて単一引数にすること
+  - `tuple` — 2つ以上の要素を持つタプルは専用のレコード型にすること
+  - いずれか1件以上であれば `ExitFailure 1` となり、品質ゲートは失敗する
 - コンパイルに警告がないこと（警告が出たら修正してからコミットすること）
 
 ## リファクタリング指針
@@ -63,4 +67,6 @@
 - パターンマッチングにおいてもレコード構文を利用し、フィールドの明示的な指定を行う
 - コンパイル時の堅牢性向上のため、レコードのフィールドは常に名前付きでアクセスする
 - **レコード型の初期化（コンストラクタ呼び出し）時は、必ず `{ field = value }` 形式のレコード構文を用いる。positional constructor application（例: `Foo a b c`）は禁止する。**
-- `cabal run detect-positional-args -- src` で `positional_record_con` カテゴリが0件であることを確認し、違反があればレコード構文化してからコミットする。
+- **2つ以上の引数を持つ関数は、引数をレコード型にまとめて単一引数にリファクタリングすること。**
+- **2つ以上の要素を持つタプル `(a, b)` は、専用のレコード型に置き換えること。**
+- `cabal run detect-positional-args -- src` で `positional_record_con` / `function_declaration` / `tuple` カテゴリがすべて0件であることを確認し、違反があればレコード構文化してからコミットする。

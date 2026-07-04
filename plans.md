@@ -237,6 +237,53 @@
   - [x] プレーンテキスト出力をデフォルトにし、`--json` フラグで JSON に切り替え可能
   - [x] `--exclude PATTERN` オプションでディレクトリスキャン時に特定パスを除外可能
 
+## detect-positional-args プロジェクト全体分析結果（2026-07-05 最新）
+
+### 分析概要
+`cabal run detect-positional-args -- src` でプロジェクト全体を分析した結果:
+
+| カテゴリ | 件数 | 備考 |
+|---|---|---|
+| `positional_record_con` | **0件** | レコード構文化完了 ✅ |
+| `function_declaration` | **57件** | 2+引数関数。Parser/VM/Evaluator/CLIに広く分散 |
+| `tuple` | **541件** | 2要素タプルが大半。戻り値分解・一時パターンが中心 |
+| **合計** | **598件** | テストコード（test/）を除く |
+
+### positional_record_con の経緯
+- 2026-07-04: Parser ディレクトリ一括対応（119件→0件）
+- 2026-07-04: Evaluator ディレクトリ一括対応（0件確認）
+- 2026-07-05: VM Compiler 小〜中規模ファイル一括対応（210件→81件）
+- 2026-07-05: VM Compiler 主要ファイル対応（CompileExprAt/CompileProgram）
+- 2026-07-05: 主要4ファイル（CallCollectionBuiltin/EvalBinaryOp/CallMathBuiltin/ParseStatement）
+- 2026-07-05: 残存14ファイル一括対応。 **src全体で0件を達成** ✅
+
+### function_declaration の内訳（57件）
+- Parser 系: `parseStatement`, `parseClassStmt`, `parseIfTail`, `parseComprehensionTail` など（15ファイル）
+- Evaluator 系: `exitContextManager`, `enterContextManager`, `evalBuiltinExpr`, `evalExprBinary` など（4ファイル）
+- VM 系: `compileExprAt`, `compileProgram`, `compileWithStmt`, `compileMatch` など多数
+- CLI 系: `runFile` など
+
+### tuple の内訳（541件）
+- VM コンパイラ戻り値分解 `(code, endIndex)` — 数十箇所（CompileExprResult を導入済みで削減済み）
+- Parser の戻り値 `(Stmt, [Token])` — 数十箇所
+- Evaluator の env/fenv ペア — 数箇所
+- CLI の env/output タプル — 数箇所
+- `forM` / `mapM` の結果分解 `(value, rest)` — 多数
+
+## 現在のスコープ（P54: function_declaration 段階的削減）
+- [ ] P54 開始: function_declaration（57件）をレコード型にまとめるリファクタリングを開始
+- [ ] P54-1: Parser 系 function_declaration（15ファイル）— 各 Config 型を導入し2引数を1引数に
+- [ ] P54-2: Evaluator 系 function_declaration（4ファイル）— `EvalExprInput` / `EvalStmtInput` 型を検討
+- [ ] P54-3: VM 系 function_declaration — `CompileExprInput` / `CompileStmtInput` 型を検討
+- [ ] P54-4: CLI 系 function_declaration — `RunFileInput` 型を検討
+
+## 現在のスコープ（P55: tuple 段階的削減）
+- [ ] P55 開始: tuple（541件）を専用レコード型に置き換えるリファクタリングを開始
+- [ ] P55-1: Parser の `(Expr, [Token])` 戻り値 — `ParseResult` レコード型を検討
+- [ ] P55-2: VM コンパイラの残存タプル — `CompileExprResult` で未対応の箇所を確認
+- [ ] P55-3: Evaluator の env/fenv ペア — `EvalContext` レコード型を検討
+- [ ] P55-4: `forM` / `mapM` の結果分解 — 個別対応が必要な箇所を特定
+
 ## detect-positional-args プロジェクト全体分析結果（2026-07-03）
 
 ### 分析概要
