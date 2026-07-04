@@ -3,34 +3,34 @@ module PythonHS.VM.CompileDecoratedStmt (compileDecoratedStmt) where
 import PythonHS.AST.Expr (Expr (..))
 import PythonHS.AST.Stmt (Stmt (..))
 import PythonHS.Evaluator.ShowPos (showPos)
+import PythonHS.VM.CompileDecoratedStmtConfig (CompileDecoratedStmtConfig (..))
 import PythonHS.VM.CompileDecoratorApplications (compileDecoratorApplications)
+import PythonHS.VM.CompileDecoratorApplicationsConfig (CompileDecoratorApplicationsConfig (..))
 import PythonHS.VM.CompileExprResult (CompileExprResult (..))
 import PythonHS.VM.StmtPosition (stmtPosition)
 
-compileDecoratedStmt ::
-  (Int -> Bool -> Maybe (Int, Int) -> Stmt -> Either String CompileExprResult) ->
-  (Int -> String -> Maybe String -> [Stmt] -> Maybe (Bool, Bool) -> Either String CompileExprResult) ->
-  (Int -> Expr -> Either String CompileExprResult) ->
-  Int ->
-  Bool ->
-  Maybe (Int, Int) ->
-  [Expr] ->
-  Stmt ->
-  Either String CompileExprResult
-compileDecoratedStmt compileStmt compileDataclassClass compileExprAt baseIndex inFunction maybeLoop decorators targetStmt =
-  case parseDataclassConfig decorators of
-    Right (Just dataclassConfig) ->
-      case targetStmt of
-        ClassDefStmt {classDefStmtName = className, classDefStmtBase = maybeBase, classDefStmtBody = body} ->
-          compileDataclassClass baseIndex className maybeBase body (Just dataclassConfig)
-        _ -> compileDefault
-    Right Nothing -> compileDefault
-    Left err -> Left err
+compileDecoratedStmt :: CompileDecoratedStmtConfig -> Either String CompileExprResult
+compileDecoratedStmt config = case parseDataclassConfig decorators of
+  Right (Just dataclassConfig) ->
+    case targetStmt of
+      ClassDefStmt {classDefStmtName = className, classDefStmtBase = maybeBase, classDefStmtBody = body} ->
+        compileDataclassClass baseIndex className maybeBase body (Just dataclassConfig)
+      _ -> compileDefault
+  Right Nothing -> compileDefault
+  Left err -> Left err
   where
+    compileStmt = compileDecoratedStmtCompileStmt config
+    compileDataclassClass = compileDecoratedStmtCompileDataclassClass config
+    compileExpr = compileDecoratedStmtCompileExpr config
+    baseIndex = compileDecoratedStmtBaseIndex config
+    inFunction = compileDecoratedStmtInFunction config
+    maybeLoop = compileDecoratedStmtMaybeLoop config
+    decorators = compileDecoratedStmtDecorators config
+    targetStmt = compileDecoratedStmtTargetStmt config
     compileDefault = do
       targetResult <- compileStmt baseIndex inFunction maybeLoop targetStmt
       targetName <- decoratedTargetName targetStmt
-      decoratorResult <- compileDecoratorApplications compileExprAt (compileExprResultEndIndex targetResult) targetName decorators
+      decoratorResult <- compileDecoratorApplications CompileDecoratorApplicationsConfig {compileDecoratorApplicationsCompileExpr = compileExpr, compileDecoratorApplicationsBaseIndex = compileExprResultEndIndex targetResult, compileDecoratorApplicationsTargetName = targetName, compileDecoratorApplicationsDecorators = decorators}
       pure (CompileExprResult {compileExprResultCode = compileExprResultCode targetResult ++ compileExprResultCode decoratorResult, compileExprResultEndIndex = compileExprResultEndIndex decoratorResult})
 
     decoratedTargetName stmt =

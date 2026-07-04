@@ -4,7 +4,7 @@ import Data.Map.Strict qualified as Map
 import PythonHS.AST.Expr (Expr (..))
 import PythonHS.AST.WithContext (ContextManager (..), WithEntry (..), WithExit (..))
 import PythonHS.Evaluator.Env (Env)
-import PythonHS.Evaluator.EvalContextManager (bindContextResult, enterContextManager, exitContextManager, exitContextManagerWithException)
+import PythonHS.Evaluator.EvalContextManager (EnterContextManagerInput (..), ExitContextManagerInput (..), ExitContextManagerWithExceptionInput (..), bindContextResult, enterContextManager, exitContextManager, exitContextManagerWithException)
 import PythonHS.Evaluator.EvalExprResult (EvalExprResult (..))
 import PythonHS.Evaluator.FuncEnv (FuncEnv)
 import PythonHS.Evaluator.Value (Value (IntValue, StringValue))
@@ -29,7 +29,7 @@ spec = describe "EvalContextManager" $ do
     it "calls __enter__ method on context manager" $ do
       let contextManagerExpr = IdentifierExpr "cm" dummyPos
           contextManager = ContextManager contextManagerExpr Nothing dummyPos
-      enterContextManager dummyEvalExpr dummyEnv dummyFEnv contextManager
+      enterContextManager EnterContextManagerInput {enterContextManagerEvalExprFn = dummyEvalExpr, enterContextManagerEnv = dummyEnv, enterContextManagerFuncEnv = dummyFEnv, enterContextManagerContextManager = contextManager}
         `shouldBe` Right (EvalExprResult (IntValue 42) [] mempty)
 
     it "creates WithEntry record with correct fields" $ do
@@ -38,7 +38,7 @@ spec = describe "EvalContextManager" $ do
           testEvalExpr :: Env -> FuncEnv -> Expr -> Either String EvalExprResult
           testEvalExpr _ _ (CallExpr "__enter__" [IdentifierExpr "cm" _] _) = Right (EvalExprResult (StringValue "entered") [] (Map.singleton "entered" (StringValue "value")))
           testEvalExpr _ _ _ = Left "Unexpected expression"
-      case enterContextManager testEvalExpr dummyEnv dummyFEnv contextManager of
+      case enterContextManager EnterContextManagerInput {enterContextManagerEvalExprFn = testEvalExpr, enterContextManagerEnv = dummyEnv, enterContextManagerFuncEnv = dummyFEnv, enterContextManagerContextManager = contextManager} of
         Right (EvalExprResult value outputs env) -> do
           value `shouldBe` StringValue "entered"
         Left err -> fail err
@@ -49,14 +49,14 @@ spec = describe "EvalContextManager" $ do
           testEvalExpr :: Env -> FuncEnv -> Expr -> Either String EvalExprResult
           testEvalExpr _ _ (CallExpr "__enter__" [IdentifierExpr "cm" pos] _) = Right (EvalExprResult (StringValue "result") [] mempty)
           testEvalExpr _ _ _ = Left "Wrong expression passed to evalExprFn"
-      enterContextManager testEvalExpr dummyEnv dummyFEnv contextManager
+      enterContextManager EnterContextManagerInput {enterContextManagerEvalExprFn = testEvalExpr, enterContextManagerEnv = dummyEnv, enterContextManagerFuncEnv = dummyFEnv, enterContextManagerContextManager = contextManager}
         `shouldBe` Right (EvalExprResult (StringValue "result") [] mempty)
 
   describe "exitContextManager" $ do
     it "calls __exit__ method with None arguments" $ do
       let contextManagerExpr = IdentifierExpr "cm" dummyPos
           contextManager = ContextManager contextManagerExpr Nothing dummyPos
-      exitContextManager dummyEvalExpr dummyEnv dummyFEnv contextManager
+      exitContextManager ExitContextManagerInput {exitContextManagerEvalExprFn = dummyEvalExpr, exitContextManagerEnv = dummyEnv, exitContextManagerFuncEnv = dummyFEnv, exitContextManagerContextManager = contextManager}
         `shouldBe` Right (EvalExprResult (IntValue 42) [] mempty)
 
     it "creates WithExit record with correct fields for normal exit" $ do
@@ -65,7 +65,7 @@ spec = describe "EvalContextManager" $ do
           testEvalExpr :: Env -> FuncEnv -> Expr -> Either String EvalExprResult
           testEvalExpr _ _ (CallExpr "__exit__" [IdentifierExpr "cm" _, NoneExpr _, NoneExpr _, NoneExpr _] _) = Right (EvalExprResult (IntValue 1) [] mempty)
           testEvalExpr _ _ _ = Left "Unexpected expression"
-      case exitContextManager testEvalExpr dummyEnv dummyFEnv contextManager of
+      case exitContextManager ExitContextManagerInput {exitContextManagerEvalExprFn = testEvalExpr, exitContextManagerEnv = dummyEnv, exitContextManagerFuncEnv = dummyFEnv, exitContextManagerContextManager = contextManager} of
         Right (EvalExprResult value outputs env) -> do
           value `shouldBe` IntValue 1
         Left err -> fail err
@@ -76,7 +76,7 @@ spec = describe "EvalContextManager" $ do
           testEvalExpr :: Env -> FuncEnv -> Expr -> Either String EvalExprResult
           testEvalExpr _ _ (CallExpr "__exit__" [IdentifierExpr "cm" _, NoneExpr _, NoneExpr _, NoneExpr _] _) = Right (EvalExprResult (IntValue 0) [] mempty)
           testEvalExpr _ _ _ = Left "Wrong expression passed to evalExprFn"
-      exitContextManager testEvalExpr dummyEnv dummyFEnv contextManager
+      exitContextManager ExitContextManagerInput {exitContextManagerEvalExprFn = testEvalExpr, exitContextManagerEnv = dummyEnv, exitContextManagerFuncEnv = dummyFEnv, exitContextManagerContextManager = contextManager}
         `shouldBe` Right (EvalExprResult (IntValue 0) [] mempty)
 
   describe "exitContextManagerWithException" $ do
@@ -84,7 +84,7 @@ spec = describe "EvalContextManager" $ do
       let contextManagerExpr = IdentifierExpr "cm" dummyPos
           contextManager = ContextManager contextManagerExpr Nothing dummyPos
           errorMessage = "Runtime error: test exception"
-      exitContextManagerWithException dummyEvalExpr dummyEnv dummyFEnv contextManager errorMessage
+      exitContextManagerWithException ExitContextManagerWithExceptionInput {exitContextManagerWithExceptionEvalExprFn = dummyEvalExpr, exitContextManagerWithExceptionEnv = dummyEnv, exitContextManagerWithExceptionFuncEnv = dummyFEnv, exitContextManagerWithExceptionContextManager = contextManager, exitContextManagerWithExceptionErr = errorMessage}
         `shouldBe` Right (EvalExprResult (IntValue 42) [] mempty)
 
     it "creates WithExit record with correct fields for exception exit" $ do
@@ -94,7 +94,7 @@ spec = describe "EvalContextManager" $ do
           testEvalExpr :: Env -> FuncEnv -> Expr -> Either String EvalExprResult
           testEvalExpr _ _ (CallExpr "__exit__" [IdentifierExpr "cm" _, StringExpr "Exception" _, StringExpr "Runtime error: test exception" _, NoneExpr _] _) = Right (EvalExprResult (IntValue 1) [] mempty)
           testEvalExpr _ _ _ = Left "Unexpected expression"
-      case exitContextManagerWithException testEvalExpr dummyEnv dummyFEnv contextManager errorMessage of
+      case exitContextManagerWithException ExitContextManagerWithExceptionInput {exitContextManagerWithExceptionEvalExprFn = testEvalExpr, exitContextManagerWithExceptionEnv = dummyEnv, exitContextManagerWithExceptionFuncEnv = dummyFEnv, exitContextManagerWithExceptionContextManager = contextManager, exitContextManagerWithExceptionErr = errorMessage} of
         Right (EvalExprResult value outputs env) -> do
           value `shouldBe` IntValue 1
         Left err -> fail err
@@ -106,7 +106,7 @@ spec = describe "EvalContextManager" $ do
           testEvalExpr :: Env -> FuncEnv -> Expr -> Either String EvalExprResult
           testEvalExpr _ _ (CallExpr "__exit__" [IdentifierExpr "cm" _, StringExpr "Exception" _, StringExpr "Runtime error: test exception" _, NoneExpr _] _) = Right (EvalExprResult (IntValue 1) [] mempty)
           testEvalExpr _ _ _ = Left "Wrong expression passed to evalExprFn"
-      exitContextManagerWithException testEvalExpr dummyEnv dummyFEnv contextManager errorMessage
+      exitContextManagerWithException ExitContextManagerWithExceptionInput {exitContextManagerWithExceptionEvalExprFn = testEvalExpr, exitContextManagerWithExceptionEnv = dummyEnv, exitContextManagerWithExceptionFuncEnv = dummyFEnv, exitContextManagerWithExceptionContextManager = contextManager, exitContextManagerWithExceptionErr = errorMessage}
         `shouldBe` Right (EvalExprResult (IntValue 1) [] mempty)
 
   describe "bindContextResult" $ do

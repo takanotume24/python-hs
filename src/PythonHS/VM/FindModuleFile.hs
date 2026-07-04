@@ -1,14 +1,17 @@
 module PythonHS.VM.FindModuleFile (findModuleFile) where
 
+import PythonHS.VM.FindModuleFileConfig (FindModuleFileConfig (..))
 import System.Directory (doesFileExist)
 import System.FilePath ((</>))
 
-findModuleFile :: [String] -> [FilePath] -> IO (Either String FilePath)
-findModuleFile modulePath paths =
+findModuleFile :: FindModuleFileConfig -> IO (Either String FilePath)
+findModuleFile config =
   let relModule = foldl1Join "/" modulePath ++ ".py"
       relPackageInit = foldl1Join "/" modulePath </> "__init__.py"
    in search [relModule, relPackageInit] paths
   where
+    modulePath = findModuleFileModulePath config
+    paths = findModuleFilePaths config
     search relPaths candidates =
       case candidates of
         [] -> pure (Left ("Import error: module not found " ++ foldl1Join "." modulePath))

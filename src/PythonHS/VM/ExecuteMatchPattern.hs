@@ -5,6 +5,7 @@ import PythonHS.AST.Pattern (Pattern)
 import PythonHS.Evaluator.Value (Value (IntValue))
 import PythonHS.VM.BindPatternCaptures (bindPatternCaptures)
 import PythonHS.VM.MatchPatternBindings (matchPatternBindings)
+import PythonHS.VM.MatchPatternBindingsConfig (MatchPatternBindingsConfig (..))
 import PythonHS.VM.VMScopeContext (VMScopeContext)
 
 executeMatchPattern ::
@@ -17,7 +18,7 @@ executeMatchPattern ::
 executeMatchPattern scopeCtx patternValue stack globalsEnv localEnv =
   case stack of
     value : rest ->
-      case matchPatternBindings patternValue value of
+      case matchPatternBindings MatchPatternBindingsConfig {matchPatternBindingsPattern = patternValue, matchPatternBindingsSubject = value} of
         Just captures ->
           let (newGlobals, newLocals) = bindPatternCaptures scopeCtx captures globalsEnv localEnv
            in Right (IntValue 1 : rest, newGlobals, newLocals)

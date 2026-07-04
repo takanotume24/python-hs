@@ -13,11 +13,13 @@ import PythonHS.Lexer.ScanTokens (scanTokens)
 import PythonHS.Parser.ParseProgram (parseProgram)
 import PythonHS.VM.CollectExports (collectExports)
 import PythonHS.VM.FindModuleFile (findModuleFile)
+import PythonHS.VM.FindModuleFileConfig (FindModuleFileConfig (..))
 import PythonHS.VM.IsBuiltinImportModule (isBuiltinImportModule)
 import PythonHS.VM.ModuleKeyFor (moduleKeyFor)
 import PythonHS.VM.ModulePrefixFor (modulePrefixFor)
 import PythonHS.VM.ResolveStarExportNames (resolveStarExportNames)
 import PythonHS.VM.ResolveTargetModulePath (resolveTargetModulePath)
+import PythonHS.VM.ResolveTargetModulePathConfig (ResolveTargetModulePathConfig (..))
 import PythonHS.VM.TransformImportAliases (transformImportAliases)
 import System.FilePath (takeFileName)
 
@@ -46,7 +48,7 @@ resolveLocalImports searchPaths (Program rootStmts) = do
                               else [ImportStmt keptBuiltinEntries pos]
                        in pure (Right (localPrefixed ++ builtinStmt ++ restStmts, cacheAfterRest, includedAfterRest))
             FromImportStmt relativeLevel modulePath importedNames pos -> do
-              let targetModulePath = resolveTargetModulePath currentPackage relativeLevel modulePath
+              let targetModulePath = resolveTargetModulePath ResolveTargetModulePathConfig {resolveTargetModulePathCurrentPackage = currentPackage, resolveTargetModulePathRelativeLevel = relativeLevel, resolveTargetModulePathModulePath = modulePath}
               case targetModulePath of
                 Left err -> pure (Left err)
                 Right resolvedModulePath ->
@@ -129,7 +131,7 @@ resolveLocalImports searchPaths (Program rootStmts) = do
               then pure (Right ([], cachedExports, cache, included))
               else pure (Right (cachedStmts, cachedExports, cache, Set.insert moduleKey included))
           Nothing -> do
-            modulePathResult <- findModuleFile modulePath searchPaths
+            modulePathResult <- findModuleFile FindModuleFileConfig {findModuleFileModulePath = modulePath, findModuleFilePaths = searchPaths}
             case modulePathResult of
               Left err -> pure (Left err)
               Right moduleFile -> do
@@ -166,7 +168,7 @@ resolveLocalImports searchPaths (Program rootStmts) = do
                in resolveFromImports cache visiting included modulePath moduleAlias (Map.insert aliasName mappedName callAlias) (Map.insert aliasName mappedName identAlias) collected rest exportMap
             Nothing -> do
               let submodulePath = modulePath ++ [memberName]
-              moduleFileResult <- findModuleFile submodulePath searchPaths
+              moduleFileResult <- findModuleFile FindModuleFileConfig {findModuleFileModulePath = submodulePath, findModuleFilePaths = searchPaths}
               case moduleFileResult of
                 Left _ ->
                   pure (Left ("Import error: name not found " ++ memberName ++ " in " ++ moduleKeyFor modulePath))

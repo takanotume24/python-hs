@@ -11,6 +11,7 @@ import PythonHS.VM.Instruction (Instruction)
 import PythonHS.VM.IsTruthy (isTruthy)
 import PythonHS.VM.LoopState (LoopState (..))
 import PythonHS.VM.ToForIterable (toForIterable)
+import PythonHS.VM.ToForIterableConfig (ToForIterableConfig (..))
 import PythonHS.VM.VMState (VMState (..))
 
 executeListComprehension ::
@@ -69,7 +70,7 @@ executeListComprehension execute clauses valueCode pos globalsEnv localEnv funct
       let iterState = emptyState iterCode globalsNow localsNow functionsNow outputsNow
       finalIterState <- execute iterState
       iterValue <- requireValue (extractReturnValue finalIterState)
-      iterItems <- toForIterable iterValue pos
+      iterItems <- toForIterable ToForIterableConfig {toForIterableValue = iterValue, toForIterablePos = pos}
       evalClauseItems loopTargets condCodes restClauses localsNow iterItems acc (envGlobals (vmEnv finalIterState)) (envFunctions (vmEnv finalIterState)) (vmOutputs finalIterState)
 
     evalClauseItems _ _ _ _ [] acc globalsNow functionsNow outputsNow =

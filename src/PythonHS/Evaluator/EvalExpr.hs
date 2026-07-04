@@ -6,6 +6,7 @@ import PythonHS.AST.Stmt (Stmt)
 import PythonHS.Evaluator.Env (Env)
 import PythonHS.Evaluator.EvalCallExpr (evalCallExpr)
 import PythonHS.Evaluator.EvalExprBinary (evalExprBinary)
+import PythonHS.Evaluator.EvalExprBinaryInput (EvalExprBinaryInput (..))
 import PythonHS.Evaluator.EvalExprResult (EvalExprResult (..))
 import PythonHS.Evaluator.FuncEnv (FuncEnv)
 import PythonHS.Evaluator.ShowPos (showPos)
@@ -64,7 +65,7 @@ evalExpr evalStatementsFn env fenv expr =
       nv <- expectTruthy "not" (exprPos expr) v
       Right (EvalExprResult (IntValue (if nv == 0 then 1 else 0)) outs envAfterExpr)
     BinaryExpr {binaryExprOp, binaryExprLeft, binaryExprRight, binaryExprPos} ->
-      evalExprBinary (evalExpr evalStatementsFn) env fenv binaryExprOp binaryExprLeft binaryExprRight binaryExprPos
+      evalExprBinary (EvalExprBinaryInput (evalExpr evalStatementsFn) env fenv binaryExprOp binaryExprLeft binaryExprRight binaryExprPos)
     CallExpr {callExprName, callExprArgs, callExprPos} ->
       evalCallExpr evalStatementsFn (evalExpr evalStatementsFn) env fenv callExprName callExprArgs callExprPos
     CallValueExpr {} ->

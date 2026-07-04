@@ -8,6 +8,7 @@ import PythonHS.Lexer.Position (Position)
 import PythonHS.VM.BindCallArguments (bindCallArguments)
 import PythonHS.VM.BindDefaults (bindDefaults)
 import PythonHS.VM.CallBuiltin (callBuiltin)
+import PythonHS.VM.CallBuiltinConfig (CallBuiltinConfig (..))
 import PythonHS.VM.CollectFunctionGlobalDecls (collectFunctionGlobalDecls)
 import PythonHS.VM.EnvState (EnvState (..))
 import PythonHS.VM.EvaluateBuiltinArgs (evaluateBuiltinArgs)
@@ -105,14 +106,14 @@ executeCallFunction execute isTopLevel fname compiledArgs pos stack globalsEnv l
               | isBuiltinName fname ->
                   Left ("Argument error: keyword arguments are not supported for builtin " ++ fname ++ " at " ++ showPos argPos)
             Nothing ->
-              case callBuiltin fname args pos of
+              case callBuiltin CallBuiltinConfig {callBuiltinName = fname, callBuiltinArgs = args, callBuiltinPos = pos} of
                 Just (Left err) -> Left err
                 Just (Right builtinValue) ->
                   let newLocalEnv = if isTopLevel then globalsAfterArgs else localEnv
                    in Right (builtinValue : stack, globalsAfterArgs, newLocalEnv, functionsAfterArgs, outputsAfterArgs)
                 Nothing -> Left ("Name error: undefined function " ++ fname ++ " at " ++ showPos pos)
             _ ->
-              case callBuiltin fname args pos of
+              case callBuiltin CallBuiltinConfig {callBuiltinName = fname, callBuiltinArgs = args, callBuiltinPos = pos} of
                 Just (Left err) -> Left err
                 Just (Right builtinValue) ->
                   let newLocalEnv = if isTopLevel then globalsAfterArgs else localEnv
@@ -135,6 +136,6 @@ executeCallFunction execute isTopLevel fname compiledArgs pos stack globalsEnv l
         _ -> [text]
 
     isBuiltinName name =
-      case callBuiltin name [] pos of
+      case callBuiltin CallBuiltinConfig {callBuiltinName = name, callBuiltinArgs = [], callBuiltinPos = pos} of
         Just _ -> True
         Nothing -> False

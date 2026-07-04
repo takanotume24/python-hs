@@ -1,6 +1,7 @@
 module PythonHS.CLI.ProcessVmSubmission (processVmSubmission) where
 
 import Data.List (stripPrefix)
+import PythonHS.CLI.ProcessVmSubmissionConfig (ProcessVmSubmissionConfig (..))
 import PythonHS.CLI.VmSubmissionResult (VmSubmissionResult (..))
 import PythonHS.Lexer.ScanTokens (scanTokens)
 import PythonHS.Lexer.Token (Token (Token))
@@ -8,9 +9,12 @@ import PythonHS.Lexer.TokenType (TokenType (EOFToken, NewlineToken))
 import PythonHS.Parser.ParseExpr (parseExpr)
 import PythonHS.RunSourceVm (runSourceVm)
 
-processVmSubmission :: [String] -> [String] -> [String] -> Either String VmSubmissionResult
-processVmSubmission acceptedSourceLines acceptedOutputs submissionLines =
-  let candidateSourceLines = acceptedSourceLines ++ submissionLines
+processVmSubmission :: ProcessVmSubmissionConfig -> Either String VmSubmissionResult
+processVmSubmission config =
+  let acceptedSourceLines = processVmSubmissionAcceptedSourceLines config
+      acceptedOutputs = processVmSubmissionAcceptedOutputs config
+      submissionLines = processVmSubmissionSubmissionLines config
+      candidateSourceLines = acceptedSourceLines ++ submissionLines
       candidateSource = unlines candidateSourceLines
       formatSuccess newSourceLines allOutputs =
         let deltaOutputs =

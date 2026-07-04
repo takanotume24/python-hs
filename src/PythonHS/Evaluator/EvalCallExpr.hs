@@ -6,6 +6,7 @@ import PythonHS.AST.Expr (Expr (..))
 import PythonHS.AST.Stmt (Stmt (..))
 import PythonHS.Evaluator.Env (Env)
 import PythonHS.Evaluator.EvalBuiltinExpr (evalBuiltinExpr)
+import PythonHS.Evaluator.EvalBuiltinExprInput (EvalBuiltinExprInput (..))
 import PythonHS.Evaluator.EvalExprResult (EvalExprResult (..))
 import PythonHS.Evaluator.FuncEnv (FuncEnv)
 import PythonHS.Evaluator.ShowPos (showPos)
@@ -37,7 +38,7 @@ evalCallExpr evalStatementsFn evalExprFn env fenv fname args pos =
       let propagatedEnv = applyGlobalWrites envAfterDefaults finalEnv globalNames
       Right (EvalExprResult retVal (argOuts ++ defaultOuts ++ bodyOuts) propagatedEnv)
     Nothing ->
-      case evalBuiltinExpr evalExprFn env fenv fname args pos of
+      case evalBuiltinExpr (EvalBuiltinExprInput evalExprFn env fenv fname args pos) of
         Just result ->
           case firstKeywordArg args of
             Just (_, kwPos) -> Left $ "Argument error: keyword arguments are not supported for builtin " ++ fname ++ " at " ++ showPos kwPos

@@ -9,6 +9,7 @@ import PythonHS.Evaluator.ValueToOutput (valueToOutput)
 import PythonHS.VM.EnvState (EnvState (..))
 import PythonHS.VM.ExceptionState (ExceptionState (..))
 import PythonHS.VM.ExecuteArithmeticInstruction (executeArithmeticInstruction)
+import PythonHS.VM.ExecuteArithmeticInstructionConfig (ExecuteArithmeticInstructionConfig (..))
 import PythonHS.VM.ExecuteCallFunction (executeCallFunction)
 import PythonHS.VM.ExecuteCallValueFunction (executeCallValueFunction)
 import PythonHS.VM.ExecuteDefineClassInstruction (executeDefineClassInstruction)
@@ -17,20 +18,23 @@ import PythonHS.VM.ExecuteListComprehension (executeListComprehension)
 import PythonHS.VM.ExecuteMatchPattern (executeMatchPattern)
 import PythonHS.VM.ExecuteUnpackToNames (executeUnpackToNames)
 import PythonHS.VM.HandleExceptionInstruction (handleExceptionInstruction)
+import PythonHS.VM.HandleExceptionInstructionConfig (HandleExceptionInstructionConfig (..))
 import PythonHS.VM.Instruction (Instruction (..))
 import PythonHS.VM.IsTruthy (isTruthy)
 import PythonHS.VM.LookupNameWithAttr (lookupNameWithAttr)
 import PythonHS.VM.LoopState (LoopState (..))
 import PythonHS.VM.PopValues (popValues)
+import PythonHS.VM.PopValuesConfig (PopValuesConfig (..))
 import PythonHS.VM.StoreNameWithAttr (storeNameWithAttr)
 import PythonHS.VM.ToForIterable (toForIterable)
+import PythonHS.VM.ToForIterableConfig (ToForIterableConfig (..))
 import PythonHS.VM.ToPairs (toPairs)
 import PythonHS.VM.VMScopeContext (VMScopeContext (VMScopeContext))
 import PythonHS.VM.VMState (VMState (..))
 
 executeOneInstruction :: (VMState -> Either String VMState) -> VMState -> Instruction -> Either String VMState
 executeOneInstruction execute state instruction =
-  case executeArithmeticInstruction execute state instruction of
+  case executeArithmeticInstruction ExecuteArithmeticInstructionConfig {executeArithmeticInstructionExecute = execute, executeArithmeticInstructionState = state, executeArithmeticInstructionInstruction = instruction} of
     Just result -> result
     Nothing ->
       let scopeCtx = VMScopeContext (vmIsTopLevel state) (envGlobalDecls (vmEnv state))
@@ -55,17 +59,17 @@ executeOneInstruction execute state instruction =
                        in execute state {vmIp = vmIp state + 1, vmStack = rest, vmEnv = newEnv}
                 _ -> Left "VM runtime error: store requires one value on stack"
             BuildList count ->
-              case popValues count (vmStack state) of
+              case popValues PopValuesConfig {popValuesCount = count, popValuesStack = vmStack state} of
                 Left err -> Left err
                 Right (values, rest) ->
                   execute state {vmIp = vmIp state + 1, vmStack = ListValue values : rest}
             BuildTuple count ->
-              case popValues count (vmStack state) of
+              case popValues PopValuesConfig {popValuesCount = count, popValuesStack = vmStack state} of
                 Left err -> Left err
                 Right (values, rest) ->
                   execute state {vmIp = vmIp state + 1, vmStack = TupleValue values : rest}
             BuildDict count ->
-              case popValues (count * 2) (vmStack state) of
+              case popValues PopValuesConfig {popValuesCount = count * 2, popValuesStack = vmStack state} of
                 Left err -> Left err
                 Right (flatValues, rest) ->
                   case toPairs flatValues of
@@ -92,7 +96,7 @@ executeOneInstruction execute state instruction =
             ForSetup forNextIndex pos ->
               case vmStack state of
                 iterableValue : rest -> do
-                  iterableValues <- toForIterable iterableValue pos
+                  iterableValues <- toForIterable ToForIterableConfig {toForIterableValue = iterableValue, toForIterablePos = pos}
                   execute state {vmIp = vmIp state + 1, vmStack = rest, vmLoop = (vmLoop state) {loopForStates = Map.insert forNextIndex iterableValues (loopForStates (vmLoop state))}}
                 _ -> Left "VM runtime error: for setup requires iterable value on stack"
             ForNext name loopEndIndex _ ->
@@ -185,10 +189,11 @@ executeOneInstruction execute state instruction =
                 value : rest -> execute state {vmIp = vmIp state + 1, vmStack = rest, vmOutputs = vmOutputs state ++ [valueToOutput value]}
                 _ -> Left "VM runtime error: print requires one value on stack"
             Halt -> Right state
-            instruction'@(PushExceptionHandler _) -> handleExceptionInstruction execute state instruction'
-            instruction'@(PushFinallyHandler _) -> handleExceptionInstruction execute state instruction'
-            instruction'@PopExceptionHandler -> handleExceptionInstruction execute state instruction'
-            instruction'@LoadPendingException -> handleExceptionInstruction execute state instruction'
-            instruction'@(MatchExceptionType _) -> handleExceptionInstruction execute state instruction'
-            instruction'@RaisePendingException -> handleExceptionInstruction execute state instruction'
-            instruction'@RaisePendingError -> handleExceptionInstruction execute state instruction'
+            instruction'@(PushExceptionHandler _) -> handleExceptionInstruction HandleExceptionInstructionConfig {handleExceptionInstructionExecute = execute, handleExceptionInstructionState = state, handleExceptionInstructionInstruction = instruction'}
+            instruction'@(PushFinallyHandler _) -> handleExceptionInstruction HandleExceptionInstructionConfig {handleExceptionInstructionExecute = execute, handleExceptionInstructionState = state, handleExceptionInstructionInstruction = instruction'}
+            instruction'@PopExceptionHandler -> handleExceptionInstruction HandleExceptionInstructionConfig {handleExceptionInstructionExecute = execute, handleExceptionInstructionState = state, handleExceptionInstructionInstruction = instruction'}
+            instruction'@LoadPendingException -> handleExceptionInstruction HandleExceptionInstructionConfig {handleExceptionInstructionExecute = execute, handleExceptionInstructionState = state, handleExceptionInstructionInstruction = instruction'}
+            instruction'@(MatchExceptionType _) -> handleExceptionInstruction HandleExceptionInstructionConfig {handleExceptionInstructionExecute = execute, handleExceptionInstructionState = state, handleExceptionInstructionInstruction = instruction'}
+            instruction'@RaisePendingException -> handleExceptionInstruction HandleExceptionInstructionConfig {handleExceptionInstructionExecute = execute, handleExceptionInstructionState = state, handleExceptionInstructionInstruction = instruction'}
+            instruction'@RaisePendingError -> handleExceptionInstruction HandleExceptionInstructionConfig {handleExceptionInstructionExecute = execute, handleExceptionInstructionState = state, handleExceptionInstructionInstruction = instruction'}
+            _ -> Left "VM runtime error: unknown instruction"

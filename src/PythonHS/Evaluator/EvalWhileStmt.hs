@@ -5,6 +5,7 @@ import PythonHS.AST.Stmt (Stmt)
 import PythonHS.Evaluator.Env (Env)
 import PythonHS.Evaluator.EvalExprResult (EvalExprResult (..))
 import PythonHS.Evaluator.EvalWhileStmtConfig (EvalWhileStmtConfig (..))
+import PythonHS.Evaluator.EvalWhileStmtInput (EvalWhileStmtInput (..))
 import PythonHS.Evaluator.FuncEnv (FuncEnv)
 import PythonHS.Evaluator.MaxLoopIterations (maxLoopIterations)
 import PythonHS.Evaluator.ShowPos (showPos)
@@ -12,22 +13,21 @@ import PythonHS.Evaluator.Value (Value (..))
 import PythonHS.Lexer.Position (Position)
 import PythonHS.Parser.ExprPos (exprPos)
 
-evalWhileStmt ::
-  EvalWhileStmtConfig ->
-  Env ->
-  FuncEnv ->
-  [String] ->
-  Expr ->
-  [Stmt] ->
-  Position ->
-  [Stmt] ->
-  Either String (Env, FuncEnv, [String], Maybe (Value, Position))
-evalWhileStmt config env fenv outputs cond body whilePos rest =
-  let evalStatementsFn = evalWhileStmtEvalStatements config
-      evalExprFn = evalWhileStmtEvalExpr config
-   in loop evalStatementsFn evalExprFn env fenv id 0
+evalWhileStmt :: EvalWhileStmtInput -> Either String (Env, FuncEnv, [String], Maybe (Value, Position))
+evalWhileStmt input = loop env fenv id 0
   where
-    loop evalStatementsFn evalExprFn env' fenv' outputAcc iterations = do
+    config = evalWhileStmtInputConfig input
+    env = evalWhileStmtInputEnv input
+    fenv = evalWhileStmtInputFuncEnv input
+    outputs = evalWhileStmtInputOutputs input
+    cond = evalWhileStmtInputCond input
+    body = evalWhileStmtInputBody input
+    whilePos = evalWhileStmtInputPos input
+    rest = evalWhileStmtInputRest input
+    evalStatementsFn = evalWhileStmtEvalStatements config
+    evalExprFn = evalWhileStmtEvalExpr config
+
+    loop env' fenv' outputAcc iterations = do
       condResult <- evalExprFn env' fenv' cond
       let condVal = evalExprResultValue condResult
           condOuts = evalExprResultOutputs condResult
@@ -44,9 +44,9 @@ evalWhileStmt config env fenv outputs cond body whilePos rest =
               let nextIterations = iterations + 1
               case ret of
                 Just (BreakValue, _) -> evalStatementsFn envAfter fenvAfter (outputs ++ nextOutputAcc []) rest
-                Just (ContinueValue, _) -> nextIterations `seq` loop evalStatementsFn evalExprFn envAfter fenvAfter nextOutputAcc nextIterations
+                Just (ContinueValue, _) -> nextIterations `seq` loop envAfter fenvAfter nextOutputAcc nextIterations
                 Just _ -> Right (envAfter, fenvAfter, outputs ++ nextOutputAcc [], ret)
-                Nothing -> nextIterations `seq` loop evalStatementsFn evalExprFn envAfter fenvAfter nextOutputAcc nextIterations
+                Nothing -> nextIterations `seq` loop envAfter fenvAfter nextOutputAcc nextIterations
 
     expectTruthy :: String -> Position -> Value -> Either String Int
     expectTruthy _ _ IntValue {intValue = n} = Right (if n == 0 then 0 else 1)
@@ -56,4 +56,4 @@ evalWhileStmt config env fenv outputs cond body whilePos rest =
     expectTruthy _ _ ListValue {listValueItems = vals} = Right (if null vals then 0 else 1)
     expectTruthy _ _ TupleValue {tupleValueItems = vals} = Right (if null vals then 0 else 1)
     expectTruthy _ _ DictValue {dictValuePairs = pairs} = Right (if null pairs then 0 else 1)
-    expectTruthy context pos _ = Left $ "Type error: expected int in " ++ context ++ " at " ++ showPos pos
+    expectTruthy context pos' _ = Left $ "Type error: expected int in " ++ context ++ " at " ++ showPos pos'

@@ -4,37 +4,42 @@ import PythonHS.AST.BinaryOperator (BinaryOperator (..))
 import PythonHS.Evaluator.ShowPos (showPos)
 import PythonHS.Evaluator.Value (Value (..))
 import PythonHS.Lexer.Position (Position)
+import PythonHS.VM.EvalBinaryOpConfig (EvalBinaryOpConfig (..))
 
-evalBinaryOp :: BinaryOperator -> Value -> Value -> Position -> Either String Value
-evalBinaryOp op left right pos =
-  case op of
-    AddOperator ->
-      case (left, right) of
-        (IntValue {intValue = l}, IntValue {intValue = r}) -> Right (IntValue {intValue = l + r})
-        (FloatValue {floatValue = l}, FloatValue {floatValue = r}) -> Right (FloatValue {floatValue = l + r})
-        (IntValue {intValue = l}, FloatValue {floatValue = r}) -> Right (FloatValue {floatValue = fromIntegral l + r})
-        (FloatValue {floatValue = l}, IntValue {intValue = r}) -> Right (FloatValue {floatValue = l + fromIntegral r})
-        (StringValue {stringValue = l}, StringValue {stringValue = r}) -> Right (StringValue {stringValue = l ++ r})
-        _ -> Left ("Type error: + expects int+int or string+string at " ++ showPos pos)
-    SubtractOperator -> evalNumericBinary "-" pos left right (-)
-    MultiplyOperator -> evalNumericBinary "*" pos left right (*)
-    DivideOperator -> evalDivide pos left right
-    FloorDivideOperator -> evalFloorDivide pos left right
-    ModuloOperator -> evalModulo pos left right
-    EqOperator -> evalEqComparison left right
-    NotEqOperator -> evalNotEqComparison left right
-    LtOperator -> evalOrderComparison "<" pos left right (\ordResult -> ordResult == LT)
-    GtOperator -> evalOrderComparison ">" pos left right (\ordResult -> ordResult == GT)
-    LteOperator -> evalOrderComparison "<=" pos left right (\ordResult -> ordResult /= GT)
-    GteOperator -> evalOrderComparison ">=" pos left right (\ordResult -> ordResult /= LT)
-    AndOperator -> do
-      leftTruthy <- expectTruthy "and" pos left
-      rightTruthy <- expectTruthy "and" pos right
-      Right (IntValue {intValue = if leftTruthy /= 0 && rightTruthy /= 0 then 1 else 0})
-    OrOperator -> do
-      leftTruthy <- expectTruthy "or" pos left
-      rightTruthy <- expectTruthy "or" pos right
-      Right (IntValue {intValue = if leftTruthy /= 0 || rightTruthy /= 0 then 1 else 0})
+evalBinaryOp :: EvalBinaryOpConfig -> Either String Value
+evalBinaryOp config =
+  let op = evalBinaryOpOp config
+      left = evalBinaryOpLeft config
+      right = evalBinaryOpRight config
+      pos = evalBinaryOpPos config
+   in case op of
+        AddOperator ->
+          case (left, right) of
+            (IntValue {intValue = l}, IntValue {intValue = r}) -> Right (IntValue {intValue = l + r})
+            (FloatValue {floatValue = l}, FloatValue {floatValue = r}) -> Right (FloatValue {floatValue = l + r})
+            (IntValue {intValue = l}, FloatValue {floatValue = r}) -> Right (FloatValue {floatValue = fromIntegral l + r})
+            (FloatValue {floatValue = l}, IntValue {intValue = r}) -> Right (FloatValue {floatValue = l + fromIntegral r})
+            (StringValue {stringValue = l}, StringValue {stringValue = r}) -> Right (StringValue {stringValue = l ++ r})
+            _ -> Left ("Type error: + expects int+int or string+string at " ++ showPos pos)
+        SubtractOperator -> evalNumericBinary "-" pos left right (-)
+        MultiplyOperator -> evalNumericBinary "*" pos left right (*)
+        DivideOperator -> evalDivide pos left right
+        FloorDivideOperator -> evalFloorDivide pos left right
+        ModuloOperator -> evalModulo pos left right
+        EqOperator -> evalEqComparison left right
+        NotEqOperator -> evalNotEqComparison left right
+        LtOperator -> evalOrderComparison "<" pos left right (\ordResult -> ordResult == LT)
+        GtOperator -> evalOrderComparison ">" pos left right (\ordResult -> ordResult == GT)
+        LteOperator -> evalOrderComparison "<=" pos left right (\ordResult -> ordResult /= GT)
+        GteOperator -> evalOrderComparison ">=" pos left right (\ordResult -> ordResult /= LT)
+        AndOperator -> do
+          leftTruthy <- expectTruthy "and" pos left
+          rightTruthy <- expectTruthy "and" pos right
+          Right (IntValue {intValue = if leftTruthy /= 0 && rightTruthy /= 0 then 1 else 0})
+        OrOperator -> do
+          leftTruthy <- expectTruthy "or" pos left
+          rightTruthy <- expectTruthy "or" pos right
+          Right (IntValue {intValue = if leftTruthy /= 0 || rightTruthy /= 0 then 1 else 0})
   where
     evalNumericBinary context pos' left' right' opFn = do
       leftNumber <- expectNumber context pos' left'

@@ -6,6 +6,7 @@ import PythonHS.Evaluator.Value (Value)
 import PythonHS.Lexer.Position (Position)
 import PythonHS.VM.StoreNameWithAttr (storeNameWithAttr)
 import PythonHS.VM.ToForIterable (toForIterable)
+import PythonHS.VM.ToForIterableConfig (ToForIterableConfig (..))
 import PythonHS.VM.VMScopeContext (VMScopeContext)
 
 executeUnpackToNames ::
@@ -17,7 +18,7 @@ executeUnpackToNames ::
   Map.Map String Value ->
   Either String (Map.Map String Value, Map.Map String Value)
 executeUnpackToNames scopeCtx pos names value globalsNow localsNow = do
-  unpackedValues <- toForIterable value pos
+  unpackedValues <- toForIterable ToForIterableConfig {toForIterableValue = value, toForIterablePos = pos}
   if length unpackedValues /= length names
     then Left ("Value error: unpack mismatch at " ++ showPos pos)
     else storeUnpacked names unpackedValues globalsNow localsNow

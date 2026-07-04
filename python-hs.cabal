@@ -60,7 +60,9 @@ library
     , PythonHS.Structure.FormatViolationsPlain
   other-modules:
       PythonHS.CLI.ProcessSubmission
+    , PythonHS.CLI.ProcessSubmissionConfig
     , PythonHS.CLI.ProcessVmSubmission
+    , PythonHS.CLI.ProcessVmSubmissionConfig
     , PythonHS.CLI.ReplEnvState
     , PythonHS.CLI.ReplEvalState
     , PythonHS.CLI.SubmissionResult
@@ -141,6 +143,18 @@ library
     , PythonHS.Evaluator.EvalCallExpr
     , PythonHS.Evaluator.EvalBuiltinExpr
     , PythonHS.Evaluator.MaxLoopIterations
+    , PythonHS.Evaluator.EnterContextManagerInput
+    , PythonHS.Evaluator.EvalBuiltinExprInput
+    , PythonHS.Evaluator.EvalExprBinaryInput
+    , PythonHS.Evaluator.EvalWhileStmtInput
+    , PythonHS.Evaluator.EvalWithStmtInput
+    , PythonHS.Evaluator.ExitContextManagerInput
+    , PythonHS.Evaluator.ExitContextManagerWithExceptionInput
+    , PythonHS.Evaluator.RangeValuesConfig
+    , PythonHS.Evaluator.InsertAtIndex
+    , PythonHS.Evaluator.InsertAtIndexConfig
+    , PythonHS.Evaluator.PairToList
+    , PythonHS.Evaluator.RangeOne
     , PythonHS.Runner.RunnerEngine
     , PythonHS.Runner.ResolveRunnerEngine
     , PythonHS.Runner.RunSourceWithEngine
@@ -223,6 +237,38 @@ library
     , PythonHS.VM.RunInstructions
     , PythonHS.VM.VMScopeContext
     , PythonHS.VM.VMState
+    , PythonHS.VM.CallBuiltinConfig
+    , PythonHS.VM.CallCollectionBuiltinConfig
+    , PythonHS.VM.CallMathBuiltinConfig
+    , PythonHS.VM.CallStdlibBuiltinConfig
+    , PythonHS.VM.CompileCallArgsAtConfig
+    , PythonHS.VM.CompileClassDefStmtConfig
+    , PythonHS.VM.CompileClassStmtConfig
+    , PythonHS.VM.CompileCompoundAssignConfig
+    , PythonHS.VM.CompileComprehensionClausesConfig
+    , PythonHS.VM.CompileDecoratedStmtConfig
+    , PythonHS.VM.CompileDecoratorApplicationsConfig
+    , PythonHS.VM.CompileDefaultsConfig
+    , PythonHS.VM.CompileDictEntriesAtConfig
+    , PythonHS.VM.CompileExprAtConfig
+    , PythonHS.VM.CompileExprItemsAtConfig
+    , PythonHS.VM.CompileFunctionDefStmtConfig
+    , PythonHS.VM.CompileImportStmtConfig
+    , PythonHS.VM.CompileLogicalExprConfig
+    , PythonHS.VM.CompileMatchConfig
+    , PythonHS.VM.CompileTryExceptConfig
+    , PythonHS.VM.CompileWithStmtConfig
+    , PythonHS.VM.CompileYieldCollectStmtConfig
+    , PythonHS.VM.EvalBinaryOpConfig
+    , PythonHS.VM.ExecuteArithmeticInstructionConfig
+    , PythonHS.VM.FindModuleFileConfig
+    , PythonHS.VM.GetitemValueConfig
+    , PythonHS.VM.HandleExceptionInstructionConfig
+    , PythonHS.VM.MatchPatternBindingsConfig
+    , PythonHS.VM.PopValuesConfig
+    , PythonHS.VM.ResolveTargetModulePathConfig
+    , PythonHS.VM.SliceValueConfig
+    , PythonHS.VM.ToForIterableConfig
   build-depends:
       base >=4.14 && <5
     , containers >=0.6 && <0.9

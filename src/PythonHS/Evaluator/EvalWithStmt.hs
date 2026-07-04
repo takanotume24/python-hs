@@ -3,63 +3,55 @@ module PythonHS.Evaluator.EvalWithStmt (evalWithStmt) where
 import PythonHS.AST.Expr (Expr)
 import PythonHS.AST.Stmt (Stmt)
 import PythonHS.AST.WithContext (ContextManager (..))
+import PythonHS.Evaluator.BindContextResult (bindContextResult)
+import PythonHS.Evaluator.EnterContextManager (enterContextManager)
+import PythonHS.Evaluator.EnterContextManagerInput (EnterContextManagerInput (..))
 import PythonHS.Evaluator.Env (Env)
-import PythonHS.Evaluator.EvalContextManager (bindContextResult, enterContextManager, exitContextManager, exitContextManagerWithException)
+import PythonHS.Evaluator.EvalContextManager (exitContextManager, exitContextManagerWithException)
 import PythonHS.Evaluator.EvalExprResult (EvalExprResult (..))
 import PythonHS.Evaluator.EvalWithStmtConfig (EvalWithStmtConfig (..))
+import PythonHS.Evaluator.EvalWithStmtInput (EvalWithStmtInput (..))
+import PythonHS.Evaluator.ExitContextManagerInput (ExitContextManagerInput (..))
+import PythonHS.Evaluator.ExitContextManagerWithExceptionInput (ExitContextManagerWithExceptionInput (..))
 import PythonHS.Evaluator.FuncEnv (FuncEnv)
 import PythonHS.Evaluator.Value (Value (IntValue))
 import PythonHS.Lexer.Position (Position)
 
-evalWithStmt ::
-  EvalWithStmtConfig ->
-  Env ->
-  FuncEnv ->
-  [String] ->
-  Expr ->
-  Maybe String ->
-  [Stmt] ->
-  Position ->
-  [Stmt] ->
-  Either String (Env, FuncEnv, [String], Maybe (Value, Position))
-evalWithStmt config env fenv outputs contextManager maybeVarName body withPos rest = do
-  let evalStatementsFn = evalWithStmtEvalStatements config
+evalWithStmt :: EvalWithStmtInput -> Either String (Env, FuncEnv, [String], Maybe (Value, Position))
+evalWithStmt input =
+  let config = evalWithStmtInputConfig input
+      env = evalWithStmtInputEnv input
+      fenv = evalWithStmtInputFuncEnv input
+      outputs = evalWithStmtInputOutputs input
+      managerExpr = evalWithStmtInputContextManager input
+      maybeVarName = evalWithStmtInputMaybeVarName input
+      body = evalWithStmtInputBody input
+      withPos = evalWithStmtInputPos input
+      rest = evalWithStmtInputRest input
+      evalStatementsFn = evalWithStmtEvalStatements config
       evalExprFn = evalWithStmtEvalExpr config
-  -- Create context manager record
-  let ctxManager = ContextManager {contextManagerExpr = contextManager, contextManagerVarName = maybeVarName, contextManagerPos = withPos}
+      ctxManager = ContextManager {contextManagerExpr = managerExpr, contextManagerVarName = maybeVarName, contextManagerPos = withPos}
+   in do
+        cmResult <- evalExprFn env fenv (contextManagerExpr ctxManager)
+        let cmOuts = evalExprResultOutputs cmResult
+            envAfterCM = evalExprResultEnv cmResult
 
-  -- Evaluate the context manager expression
-  cmResult <- evalExprFn env fenv (contextManagerExpr ctxManager)
-  let cmOuts = evalExprResultOutputs cmResult
-      envAfterCM = evalExprResultEnv cmResult
+        enterResult <- enterContextManager EnterContextManagerInput {enterContextManagerEvalExprFn = evalExprFn, enterContextManagerEnv = envAfterCM, enterContextManagerFuncEnv = fenv, enterContextManagerContextManager = ctxManager}
+        let enterValue = evalExprResultValue enterResult
+            enterOuts = evalExprResultOutputs enterResult
+            envAfterEnter = evalExprResultEnv enterResult
 
-  -- Enter the context manager using the record
-  enterResult <- enterContextManager evalExprFn envAfterCM fenv ctxManager
-  let enterValue = evalExprResultValue enterResult
-      enterOuts = evalExprResultOutputs enterResult
-      envAfterEnter = evalExprResultEnv enterResult
+        let envAfterBind = bindContextResult (contextManagerVarName ctxManager) enterValue envAfterEnter
 
-  -- Bind the result of __enter__ to the variable if specified
-  let envAfterBind = bindContextResult (contextManagerVarName ctxManager) enterValue envAfterEnter
-
-  -- Execute the body of the with statement and handle exceptions
-  let execBody = evalStatementsFn envAfterBind fenv [] body
-  case execBody of
-    Right (envAfterBody, fenvAfterBody, bodyOuts, _) -> do
-      -- Exit the context manager normally
-      exitResult <- exitContextManager evalExprFn envAfterBody fenvAfterBody ctxManager
-      let exitOuts = evalExprResultOutputs exitResult
-      -- Continue with the rest of the statements
-      evalStatementsFn envAfterBody fenvAfterBody (outputs ++ cmOuts ++ enterOuts ++ bodyOuts ++ exitOuts) rest
-    Left err -> do
-      -- Exit the context manager with exception
-      exitResult <- exitContextManagerWithException evalExprFn envAfterEnter fenv ctxManager err
-      let exitValue = evalExprResultValue exitResult
-          exitOuts = evalExprResultOutputs exitResult
-      case exitValue of
-        IntValue 0 ->
-          -- Exception not suppressed (exit returned falsy value), re-raise the original error
-          Left err
-        _ ->
-          -- Exception suppressed (exit returned truthy value), continue with the rest of the statements
-          evalStatementsFn envAfterEnter fenv (outputs ++ cmOuts ++ enterOuts ++ exitOuts) rest
+        case evalStatementsFn envAfterBind fenv [] body of
+          Right (envAfterBody, fenvAfterBody, bodyOuts, _) -> do
+            exitResult <- exitContextManager ExitContextManagerInput {exitContextManagerEvalExprFn = evalExprFn, exitContextManagerEnv = envAfterBody, exitContextManagerFuncEnv = fenvAfterBody, exitContextManagerContextManager = ctxManager}
+            let exitOuts = evalExprResultOutputs exitResult
+            evalStatementsFn envAfterBody fenvAfterBody (outputs ++ cmOuts ++ enterOuts ++ bodyOuts ++ exitOuts) rest
+          Left err -> do
+            exitResult <- exitContextManagerWithException ExitContextManagerWithExceptionInput {exitContextManagerWithExceptionEvalExprFn = evalExprFn, exitContextManagerWithExceptionEnv = envAfterEnter, exitContextManagerWithExceptionFuncEnv = fenv, exitContextManagerWithExceptionContextManager = ctxManager, exitContextManagerWithExceptionErr = err}
+            let exitValue = evalExprResultValue exitResult
+                exitOuts = evalExprResultOutputs exitResult
+            case exitValue of
+              IntValue 0 -> Left err
+              _ -> evalStatementsFn envAfterEnter fenv (outputs ++ cmOuts ++ enterOuts ++ exitOuts) rest

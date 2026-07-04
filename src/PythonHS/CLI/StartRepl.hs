@@ -3,7 +3,9 @@ module PythonHS.CLI.StartRepl (startRepl) where
 import Data.Char (isSpace)
 import Data.Map.Strict qualified as Map
 import PythonHS.CLI.ProcessSubmission (processSubmission)
+import PythonHS.CLI.ProcessSubmissionConfig (ProcessSubmissionConfig (..))
 import PythonHS.CLI.ProcessVmSubmission (processVmSubmission)
+import PythonHS.CLI.ProcessVmSubmissionConfig (ProcessVmSubmissionConfig (..))
 import PythonHS.CLI.ReplEnvState (ReplEnvState (..))
 import PythonHS.CLI.SubmissionResult (SubmissionResult (..))
 import PythonHS.CLI.VmSubmissionResult (VmSubmissionResult (..))
@@ -28,7 +30,7 @@ startRepl = do
       let env = replEnvStateEnv state
           fenv = replEnvStateFuncEnv state
           src = unlines buf
-       in case processSubmission env fenv src of
+       in case processSubmission ProcessSubmissionConfig {processSubmissionEnv = env, processSubmissionFuncEnv = fenv, processSubmissionSrc = src} of
             Left err -> outputStrLn ("Error: " ++ err) >> return state
             Right result -> mapM_ outputStrLn (submissionOutputs result) >> return (ReplEnvState {replEnvStateEnv = submissionEnv result, replEnvStateFuncEnv = submissionFuncEnv result})
 
@@ -53,7 +55,7 @@ startRepl = do
                 else
                   if null buf && not (endsWithColon line)
                     then do
-                      state' <- case processSubmission env fenv (line ++ "\n") of
+                      state' <- case processSubmission ProcessSubmissionConfig {processSubmissionEnv = env, processSubmissionFuncEnv = fenv, processSubmissionSrc = line ++ "\n"} of
                         Left err -> outputStrLn ("Error: " ++ err) >> return state
                         Right result -> mapM_ outputStrLn (submissionOutputs result) >> return (ReplEnvState {replEnvStateEnv = submissionEnv result, replEnvStateFuncEnv = submissionFuncEnv result})
                       loop state' []
@@ -65,7 +67,7 @@ startRepl = do
                         else loop state (buf ++ [line])
 
     submitVmBufferIO acceptedLines acceptedOutputs buf =
-      case processVmSubmission acceptedLines acceptedOutputs buf of
+      case processVmSubmission ProcessVmSubmissionConfig {processVmSubmissionAcceptedSourceLines = acceptedLines, processVmSubmissionAcceptedOutputs = acceptedOutputs, processVmSubmissionSubmissionLines = buf} of
         Left err -> outputStrLn ("Error: " ++ err) >> return (acceptedLines, acceptedOutputs)
         Right result -> mapM_ outputStrLn (vmResultDeltaOutputs result) >> return (vmResultLines result, vmResultOutputs result)
 

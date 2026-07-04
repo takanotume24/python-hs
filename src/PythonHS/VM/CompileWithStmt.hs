@@ -6,22 +6,23 @@ import PythonHS.AST.WithContext (ContextManager (..), WithEntry (..), WithExit (
 import PythonHS.Evaluator.Value (Value (NoneValue))
 import PythonHS.Lexer.Position (Position)
 import PythonHS.VM.CompileExprAt (compileExprAt)
+import PythonHS.VM.CompileExprAtConfig (CompileExprAtConfig (..))
 import PythonHS.VM.CompileExprResult (CompileExprResult (..))
+import PythonHS.VM.CompileWithStmtConfig (CompileWithStmtConfig (..))
 import PythonHS.VM.Instruction (Instruction (..))
 
-compileWithStmt ::
-  Int ->
-  Bool ->
-  Maybe (Int, Int) ->
-  Expr ->
-  Maybe String ->
-  [Stmt] ->
-  Position ->
-  (Int -> Bool -> Maybe (Int, Int) -> [Stmt] -> Either String CompileExprResult) ->
-  Either String CompileExprResult
-compileWithStmt baseIndex inFunction maybeLoop cmExpr maybeVarName body withPos compileStatementsFn = do
-  let ctxManager = ContextManager {contextManagerExpr = cmExpr, contextManagerVarName = maybeVarName, contextManagerPos = withPos}
-  contextManagerResult <- compileExprAt baseIndex (contextManagerExpr ctxManager)
+compileWithStmt :: CompileWithStmtConfig -> Either String CompileExprResult
+compileWithStmt config = do
+  let baseIndex = compileWithStmtBaseIndex config
+      inFunction = compileWithStmtInFunction config
+      maybeLoop = compileWithStmtMaybeLoop config
+      cmExpr = compileWithStmtCmExpr config
+      maybeVarName = compileWithStmtMaybeVarName config
+      body = compileWithStmtBody config
+      withPos = compileWithStmtWithPos config
+      compileStatementsFn = compileWithStmtCompileStatements config
+      ctxManager = ContextManager {contextManagerExpr = cmExpr, contextManagerVarName = maybeVarName, contextManagerPos = withPos}
+  contextManagerResult <- compileExprAt' baseIndex (contextManagerExpr ctxManager)
   let contextManagerCode = compileExprResultCode contextManagerResult
   let contextManagerVar = "__context_manager_" ++ show baseIndex ++ "__"
   let setupCode = contextManagerCode ++ [StoreName {storeNameName = contextManagerVar}]
@@ -86,3 +87,5 @@ compileWithStmt baseIndex inFunction maybeLoop cmExpr maybeVarName body withPos 
           ++ [Jump {jumpTarget = nextIndex}]
           ++ exitExceptionCode
   pure (CompileExprResult {compileExprResultCode = allCode, compileExprResultEndIndex = nextIndex})
+  where
+    compileExprAt' b e = compileExprAt CompileExprAtConfig {compileExprAtBaseIndex = b, compileExprAtExpr = e}

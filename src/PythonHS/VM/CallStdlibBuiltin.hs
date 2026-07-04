@@ -3,17 +3,20 @@ module PythonHS.VM.CallStdlibBuiltin (callStdlibBuiltin) where
 import PythonHS.Evaluator.ShowPos (showPos)
 import PythonHS.Evaluator.Value (Value (..))
 import PythonHS.Lexer.Position (Position)
+import PythonHS.VM.CallStdlibBuiltinConfig (CallStdlibBuiltinConfig (..))
 
-callStdlibBuiltin :: String -> [Value] -> Position -> Maybe (Either String Value)
-callStdlibBuiltin name args pos =
-  case name of
-    "dumps" -> Just (evalJsonDumps args)
-    "loads" -> Just (evalJsonLoads args)
-    "Path" -> Just (evalPathlibPath args)
-    "getcwd" -> Just (evalOsGetcwd args)
-    "getattr" -> Just (evalGetattr args pos)
-    _ -> Nothing
+callStdlibBuiltin :: CallStdlibBuiltinConfig -> Maybe (Either String Value)
+callStdlibBuiltin config = case name of
+  "dumps" -> Just (evalJsonDumps args)
+  "loads" -> Just (evalJsonLoads args)
+  "Path" -> Just (evalPathlibPath args)
+  "getcwd" -> Just (evalOsGetcwd args)
+  "getattr" -> Just (evalGetattr args pos)
+  _ -> Nothing
   where
+    name = callStdlibBuiltinName config
+    args = callStdlibBuiltinArgs config
+    pos = callStdlibBuiltinPos config
     evalJsonDumps values =
       case values of
         [ModuleValue {moduleValueName = moduleName}, IntValue {intValue = n}]
