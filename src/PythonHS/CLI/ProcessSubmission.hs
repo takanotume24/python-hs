@@ -2,10 +2,10 @@ module PythonHS.CLI.ProcessSubmission (processSubmission) where
 
 import PythonHS.AST.Program (Program (Program))
 import PythonHS.CLI.SubmissionResult (SubmissionResult (..))
-import PythonHS.Evaluator.EvalStatements (evalStatements)
+import PythonHS.Evaluator.Env (Env)
 import PythonHS.Evaluator.EvalExpr (evalExpr)
 import PythonHS.Evaluator.EvalExprResult (EvalExprResult (..))
-import PythonHS.Evaluator.Env (Env)
+import PythonHS.Evaluator.EvalStatements (evalStatements)
 import PythonHS.Evaluator.FuncEnv (FuncEnv)
 import PythonHS.Evaluator.ShowPos (showPos)
 import PythonHS.Evaluator.Value (Value (BreakValue, ContinueValue, NoneValue))
@@ -30,12 +30,12 @@ processSubmission env fenv src =
                 Right exprResult ->
                   let val = evalExprResultValue exprResult
                       exprOuts = evalExprResultOutputs exprResult
-                      envAfterExpr = evalExprResultEnv exprResult in
-                  let resultOuts =
-                        case val of
-                          NoneValue -> []
-                          _ -> [valueToReplOutput val]
-                   in Right SubmissionResult {submissionEnv = envAfterExpr, submissionFuncEnv = fenv, submissionOutputs = exprOuts ++ resultOuts}
+                      envAfterExpr = evalExprResultEnv exprResult
+                   in let resultOuts =
+                            case val of
+                              NoneValue -> []
+                              _ -> [valueToReplOutput val]
+                       in Right SubmissionResult {submissionEnv = envAfterExpr, submissionFuncEnv = fenv, submissionOutputs = exprOuts ++ resultOuts}
             Nothing -> Left (show parseErr)
         Right (Program stmts) ->
           case evalStatements env fenv [] stmts of

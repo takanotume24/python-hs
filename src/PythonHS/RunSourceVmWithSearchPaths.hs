@@ -3,10 +3,10 @@ module PythonHS.RunSourceVmWithSearchPaths (runSourceVmWithSearchPaths) where
 import PythonHS.AST.Program (Program)
 import PythonHS.Lexer.ScanTokens (scanTokens)
 import PythonHS.Parser.ParseProgram (parseProgram)
+import PythonHS.RunSourceVmWithSearchPathsConfig (RunSourceVmWithSearchPathsConfig (..))
 import PythonHS.VM.CompileProgram (compileProgram)
 import PythonHS.VM.ResolveLocalImports (resolveLocalImports)
 import PythonHS.VM.RunInstructions (runInstructions)
-import PythonHS.RunSourceVmWithSearchPathsConfig (RunSourceVmWithSearchPathsConfig (..))
 
 runSourceVmWithSearchPaths :: RunSourceVmWithSearchPathsConfig -> IO (Either String [String])
 runSourceVmWithSearchPaths config =

@@ -1,12 +1,12 @@
 module PythonHS.VM.EvaluateBuiltinArgs (evaluateBuiltinArgs) where
 
-import qualified Data.Map.Strict as Map
-import qualified Data.Set as Set
-import PythonHS.Evaluator.Value (Value (NoneValue), Value)
+import Data.Map.Strict qualified as Map
+import Data.Set qualified as Set
+import PythonHS.Evaluator.Value (Value (NoneValue))
 import PythonHS.Lexer.Position (Position)
 import PythonHS.VM.EnvState (EnvState (..))
 import PythonHS.VM.ExceptionState (ExceptionState (..))
-import PythonHS.VM.Instruction (Instruction (ReturnTop), Instruction)
+import PythonHS.VM.Instruction (Instruction (ReturnTop))
 import PythonHS.VM.LoopState (LoopState (..))
 import PythonHS.VM.VMState (VMState (..))
 
@@ -30,20 +30,20 @@ evaluateBuiltinArgs executeFn currentLocalEnv remainingArgs currentGlobals curre
     evalArgCode argCode globalsNow functionsNow outputsNow = do
       let argState =
             VMState
-              { vmCode = argCode ++ [ReturnTop]
-              , vmIp = 0
-              , vmStack = []
-              , vmEnv =
+              { vmCode = argCode ++ [ReturnTop],
+                vmIp = 0,
+                vmStack = [],
+                vmEnv =
                   EnvState
-                    { envGlobals = globalsNow
-                    , envLocals = currentLocalEnv
-                    , envFunctions = functionsNow
-                    , envGlobalDecls = Set.empty
-                    }
-              , vmLoop = LoopState {loopForStates = Map.empty, loopCounts = Map.empty}
-              , vmException = ExceptionState {exceptionHandlers = [], exceptionOutputs = []}
-              , vmIsTopLevel = False
-              , vmOutputs = outputsNow
+                    { envGlobals = globalsNow,
+                      envLocals = currentLocalEnv,
+                      envFunctions = functionsNow,
+                      envGlobalDecls = Set.empty
+                    },
+                vmLoop = LoopState {loopForStates = Map.empty, loopCounts = Map.empty},
+                vmException = ExceptionState {exceptionHandlers = [], exceptionOutputs = []},
+                vmIsTopLevel = False,
+                vmOutputs = outputsNow
               }
       finalState <- executeFn argState
       let argValue =

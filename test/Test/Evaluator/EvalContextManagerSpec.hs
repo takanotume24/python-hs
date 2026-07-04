@@ -1,27 +1,27 @@
 module Test.Evaluator.EvalContextManagerSpec (spec) where
 
+import Data.Map.Strict qualified as Map
 import PythonHS.AST.Expr (Expr (..))
-import PythonHS.AST.WithContext (ContextManager(..), WithEntry(..), WithExit(..))
+import PythonHS.AST.WithContext (ContextManager (..), WithEntry (..), WithExit (..))
 import PythonHS.Evaluator.Env (Env)
 import PythonHS.Evaluator.EvalContextManager (bindContextResult, enterContextManager, exitContextManager, exitContextManagerWithException)
-import PythonHS.Evaluator.FuncEnv (FuncEnv)
 import PythonHS.Evaluator.EvalExprResult (EvalExprResult (..))
+import PythonHS.Evaluator.FuncEnv (FuncEnv)
 import PythonHS.Evaluator.Value (Value (IntValue, StringValue))
 import PythonHS.Lexer.Position (Position (Position))
 import Test.Hspec (Spec, describe, it, shouldBe)
-import qualified Data.Map.Strict as Map
 
 spec :: Spec
 spec = describe "EvalContextManager" $ do
   let dummyEnv :: Env
       dummyEnv = mempty
-      
+
       dummyFEnv :: FuncEnv
       dummyFEnv = mempty
-      
+
       dummyPos :: Position
       dummyPos = Position 0 0
-      
+
       dummyEvalExpr :: Env -> FuncEnv -> Expr -> Either String EvalExprResult
       dummyEvalExpr _ _ _ = Right (EvalExprResult (IntValue 42) [] mempty)
 

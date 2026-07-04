@@ -125,7 +125,8 @@ checkStructureViolations root = do
         (kw : name : _)
           | kw `elem` ["data", "newtype", "class", "type"]
               && startsWithUpperIdent name
-              && all validIdentChar name -> Just name
+              && all validIdentChar name ->
+              Just name
         _ -> Nothing
 
     takeBeforeDecl txt
@@ -146,15 +147,17 @@ checkStructureViolations root = do
         chunks -> concatMap capitalize chunks
 
     splitByUnderscore txt =
-      let parts = foldr
-            (\c acc ->
-              if c == '_'
-                then "" : acc
-                else case acc of
-                  [] -> [[c]]
-                  (p : ps) -> (c : p) : ps)
-            []
-            txt
+      let parts =
+            foldr
+              ( \c acc ->
+                  if c == '_'
+                    then "" : acc
+                    else case acc of
+                      [] -> [[c]]
+                      (p : ps) -> (c : p) : ps
+              )
+              []
+              txt
        in filter (not . null) parts
 
     capitalize [] = []

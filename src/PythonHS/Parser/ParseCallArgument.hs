@@ -1,6 +1,6 @@
 module PythonHS.Parser.ParseCallArgument (parseCallArgument) where
 
-import PythonHS.AST.Expr (Expr (KeywordArgExpr, KwStarArgExpr, StarArgExpr), Expr)
+import PythonHS.AST.Expr (Expr (KeywordArgExpr, KwStarArgExpr, StarArgExpr))
 import PythonHS.Lexer.Position (Position)
 import PythonHS.Lexer.Token (Token (Token))
 import PythonHS.Lexer.TokenType (TokenType (AssignToken, IdentifierToken, StarToken))

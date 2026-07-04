@@ -74,8 +74,8 @@ data Stmt
       { returnStmtValue :: Expr,
         returnStmtPos :: Position
       }
-  | BreakStmt { breakStmtPos :: Position }
-  | ContinueStmt { continueStmtPos :: Position }
+  | BreakStmt {breakStmtPos :: Position}
+  | ContinueStmt {continueStmtPos :: Position}
   | GlobalStmt
       { globalStmtName :: String,
         globalStmtPos :: Position
@@ -105,7 +105,7 @@ data Stmt
       { raiseStmtExpr :: Expr,
         raiseStmtPos :: Position
       }
-  | PassStmt { passStmtPos :: Position }
+  | PassStmt {passStmtPos :: Position}
   | IfStmt
       { ifStmtCond :: Expr,
         ifStmtThen :: [Stmt],

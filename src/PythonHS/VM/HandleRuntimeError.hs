@@ -1,6 +1,6 @@
 module PythonHS.VM.HandleRuntimeError (handleRuntimeError) where
 
-import qualified Data.Map.Strict as Map
+import Data.Map.Strict qualified as Map
 import PythonHS.Evaluator.Value (Value (StringValue))
 import PythonHS.VM.EnvState (EnvState (..))
 import PythonHS.VM.ExceptionState (ExceptionState (..))

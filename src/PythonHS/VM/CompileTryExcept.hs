@@ -3,7 +3,7 @@ module PythonHS.VM.CompileTryExcept (compileTryExcept) where
 import PythonHS.AST.Stmt (Stmt)
 import PythonHS.Lexer.Position (Position)
 import PythonHS.VM.CompileExprResult (CompileExprResult (..))
-import PythonHS.VM.Instruction (Instruction (Jump, JumpIfFalse, LoadPendingException, MatchExceptionType, PopExceptionHandler, PushExceptionHandler, PushFinallyHandler, RaisePendingError, RaisePendingException, StoreName), Instruction)
+import PythonHS.VM.Instruction (Instruction (Jump, JumpIfFalse, LoadPendingException, MatchExceptionType, PopExceptionHandler, PushExceptionHandler, PushFinallyHandler, RaisePendingError, RaisePendingException, StoreName))
 
 compileTryExcept ::
   (Int -> Bool -> Maybe (Int, Int) -> [Stmt] -> Either String CompileExprResult) ->

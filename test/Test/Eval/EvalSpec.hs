@@ -4,8 +4,8 @@ import PythonHS.AST.BinaryOperator (BinaryOperator (..))
 import PythonHS.AST.Expr (Expr (BinaryExpr, CallExpr, DictExpr, FloatExpr, IdentifierExpr, IntegerExpr, ListExpr, NoneExpr, NotExpr, StringExpr, UnaryMinusExpr))
 import PythonHS.AST.Program (Program (Program))
 import PythonHS.AST.Stmt (Stmt (AssignStmt, BreakStmt, ContinueStmt, ForStmt, FunctionDefStmt, GlobalStmt, IfStmt, PassStmt, PrintStmt, ReturnStmt, WhileStmt))
-import PythonHS.Lexer.Position (Position (Position))
 import PythonHS.Evaluator (evalProgram)
+import PythonHS.Lexer.Position (Position (Position))
 import Test.Hspec (Spec, describe, it, shouldBe)
 
 spec :: Spec

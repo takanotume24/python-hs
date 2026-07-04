@@ -1,6 +1,6 @@
 module PythonHS.Parser.ParseLambdaExpr (parseLambdaExpr) where
 
-import qualified Data.Set as Set
+import Data.Set qualified as Set
 import PythonHS.AST.Expr (Expr (LambdaDefaultsExpr, LambdaExpr))
 import PythonHS.Lexer.Position (Position (Position))
 import PythonHS.Lexer.Token (Token (Token), position)

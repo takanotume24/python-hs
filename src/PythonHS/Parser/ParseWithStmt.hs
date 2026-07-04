@@ -1,10 +1,10 @@
 module PythonHS.Parser.ParseWithStmt (parseWithStmt) where
 
-import PythonHS.AST.Stmt (Stmt (WithStmt))
-import PythonHS.Lexer.Position (Position (Position))
-import PythonHS.Lexer.Token (Token (Token))
+import PythonHS.AST.Stmt (Stmt (..))
+import PythonHS.Lexer.Position (Position (..))
+import PythonHS.Lexer.Token (Token (..))
 import PythonHS.Lexer.TokenType (TokenType (AsToken, ColonToken, IdentifierToken))
-import PythonHS.Parser.ParseError (ParseError (ExpectedExpression))
+import PythonHS.Parser.ParseError (ParseError (..))
 import PythonHS.Parser.ParseExpr (parseExpr)
 import PythonHS.Parser.ParseSuite (parseSuite)
 import PythonHS.Parser.ParseWithStmtConfig (ParseWithStmtConfig (..))
@@ -15,11 +15,11 @@ parseWithStmt config rest = do
       pos = parseWithStmtPos config
   (contextManager, afterContextManager) <- parseExpr rest
   case afterContextManager of
-    Token AsToken _ _ : Token IdentifierToken varName _ : Token ColonToken _ _ : afterColon -> do
+    Token {tokenType = AsToken} : Token {tokenType = IdentifierToken, lexeme = varName} : Token {tokenType = ColonToken} : afterColon -> do
       (bodySuite, finalRest) <- parseSuite parseStatementFn afterColon
-      Right (WithStmt contextManager (Just varName) bodySuite pos, finalRest)
-    Token ColonToken _ _ : afterColon -> do
+      Right (WithStmt {withStmtContextManager = contextManager, withStmtVarName = Just varName, withStmtBody = bodySuite, withStmtPos = pos}, finalRest)
+    Token {tokenType = ColonToken} : afterColon -> do
       (bodySuite, finalRest) <- parseSuite parseStatementFn afterColon
-      Right (WithStmt contextManager Nothing bodySuite pos, finalRest)
-    Token _ _ pos' : _ -> Left (ExpectedExpression pos')
-    _ -> Left (ExpectedExpression (Position 0 0))
+      Right (WithStmt {withStmtContextManager = contextManager, withStmtVarName = Nothing, withStmtBody = bodySuite, withStmtPos = pos}, finalRest)
+    Token {position = pos'} : _ -> Left (ExpectedExpression {parseErrorPosition = pos'})
+    _ -> Left (ExpectedExpression {parseErrorPosition = Position {line = 0, column = 0}})

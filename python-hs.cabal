@@ -69,11 +69,15 @@ library
     , PythonHS.CLI.ReplEvalLines
     , PythonHS.CLI.RunFile
     , PythonHS.CLI.StartRepl
+    , PythonHS.Lexer.AdjustIndentResult
+    , PythonHS.Lexer.DedentToResult
     , PythonHS.Lexer.KeywordOrIdentifier
     , PythonHS.Lexer.ParseExponent
+    , PythonHS.Lexer.ParseExponentResult
     , PythonHS.Lexer.ScanTokenStep
     , PythonHS.Lexer.ScanTokenStepConfig
     , PythonHS.Lexer.ScanTokenStepResult
+    , PythonHS.Lexer.SpanDigits
       , PythonHS.Parser.ParseExpr
     , PythonHS.Parser.ParseAnnAssignStmt
     , PythonHS.Parser.ParseAnnAssignStmtConfig
@@ -116,6 +120,8 @@ library
     , PythonHS.Structure.CheckStructureWarnings
     , PythonHS.Structure.CollectRecordConNames
     , PythonHS.Structure.DetectFromModule
+    , PythonHS.Structure.DetectFromModuleConfig
+    , PythonHS.Structure.ExtractConAppResult
     , PythonHS.Evaluator.BindContextResult
     , PythonHS.Evaluator.EnterContextManager
     , PythonHS.Evaluator.ExitContextManager
@@ -178,7 +184,9 @@ library
     , PythonHS.VM.EvaluateBuiltinArgs
     , PythonHS.VM.ExecuteArithmeticInstruction
     , PythonHS.VM.ExecuteCallFunction
+    , PythonHS.VM.ExecuteCallUserFunction
     , PythonHS.VM.ExecuteCallValueFunction
+    , PythonHS.VM.ExecuteCreateInstance
     , PythonHS.VM.ExecuteForNext
     , PythonHS.VM.ExecuteListComprehension
     , PythonHS.VM.ExecutePendingExceptionInstruction

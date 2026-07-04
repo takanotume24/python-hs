@@ -1,9 +1,8 @@
 module Main (main) where
 
-import System.Environment (getArgs)
-import System.Environment (setEnv)
-import System.Exit (exitFailure)
 import PythonHS.CLI (runFile, startRepl)
+import System.Environment (getArgs, setEnv)
+import System.Exit (exitFailure)
 
 main :: IO ()
 main = do

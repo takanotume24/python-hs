@@ -1,8 +1,8 @@
 module PythonHS.VM.ExecuteMatchPattern (executeMatchPattern) where
 
-import qualified Data.Map.Strict as Map
+import Data.Map.Strict qualified as Map
 import PythonHS.AST.Pattern (Pattern)
-import PythonHS.Evaluator.Value (Value (IntValue), Value)
+import PythonHS.Evaluator.Value (Value (IntValue))
 import PythonHS.VM.BindPatternCaptures (bindPatternCaptures)
 import PythonHS.VM.MatchPatternBindings (matchPatternBindings)
 import PythonHS.VM.VMScopeContext (VMScopeContext)

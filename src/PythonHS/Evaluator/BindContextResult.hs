@@ -1,6 +1,6 @@
 module PythonHS.Evaluator.BindContextResult (bindContextResult) where
 
-import qualified Data.Map.Strict as Map
+import Data.Map.Strict qualified as Map
 import PythonHS.Evaluator.Env (Env)
 import PythonHS.Evaluator.Value (Value)
 

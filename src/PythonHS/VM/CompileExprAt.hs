@@ -1,7 +1,7 @@
 module PythonHS.VM.CompileExprAt (compileExprAt) where
 
 import PythonHS.AST.BinaryOperator (BinaryOperator (AndOperator, OrOperator))
-import PythonHS.AST.Expr (Expr (BinaryExpr, CallExpr, CallValueExpr, DictExpr, FloatExpr, IdentifierExpr, IndexExpr, IntegerExpr, LambdaDefaultsExpr, LambdaExpr, ListComprehensionClausesExpr, ListComprehensionExpr, ListExpr, NoneExpr, NotExpr, SliceExpr, StringExpr, TupleExpr, UnaryMinusExpr, WalrusExpr), Expr)
+import PythonHS.AST.Expr (Expr (BinaryExpr, CallExpr, CallValueExpr, DictExpr, FloatExpr, IdentifierExpr, IndexExpr, IntegerExpr, LambdaDefaultsExpr, LambdaExpr, ListComprehensionClausesExpr, ListComprehensionExpr, ListExpr, NoneExpr, NotExpr, SliceExpr, StringExpr, TupleExpr, UnaryMinusExpr, WalrusExpr))
 import PythonHS.Evaluator.ShowPos (showPos)
 import PythonHS.Evaluator.Value (Value (FloatValue, IntValue, NoneValue, StringValue))
 import PythonHS.VM.CompileCallArgsAt (compileCallArgsAt)
@@ -12,7 +12,7 @@ import PythonHS.VM.CompileExprItemsAt (compileExprItemsAt)
 import PythonHS.VM.CompileExprResult (CompileExprResult (..))
 import PythonHS.VM.CompileLogicalExpr (compileLogicalExpr)
 import PythonHS.VM.ExprPosition (exprPosition)
-import PythonHS.VM.Instruction (Instruction (ApplyBinary, ApplyNot, ApplyUnaryMinus, BuildDict, BuildList, BuildListComprehension, BuildTuple, CallFunction, CallValueFunction, CreateLambda, DupTop, LoadName, PushConst, ReturnTop, StoreName), Instruction)
+import PythonHS.VM.Instruction (Instruction (ApplyBinary, ApplyNot, ApplyUnaryMinus, BuildDict, BuildList, BuildListComprehension, BuildTuple, CallFunction, CallValueFunction, CreateLambda, DupTop, LoadName, PushConst, ReturnTop, StoreName))
 
 compileExprAt :: Int -> Expr -> Either String CompileExprResult
 compileExprAt baseIndex expr =

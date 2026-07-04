@@ -1,6 +1,6 @@
 module PythonHS.VM.TransformImportAliases (transformImportAliases) where
 
-import qualified Data.Map.Strict as Map
+import Data.Map.Strict qualified as Map
 import PythonHS.AST.Expr (Expr (..))
 import PythonHS.AST.Stmt (Stmt (..))
 

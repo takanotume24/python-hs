@@ -1,6 +1,6 @@
 module PythonHS.Parser.ParseParameters (parseParameters) where
 
-import qualified Data.Set as Set
+import Data.Set qualified as Set
 import PythonHS.AST.Expr (Expr)
 import PythonHS.Lexer.Position (Position (Position))
 import PythonHS.Lexer.Token (Token (Token), position)
@@ -23,21 +23,20 @@ parseParameters parseExpr = parseParametersWithState False False False Set.empty
           hasDuplicate = Set.member normalizedName seenNames
       if hasInvalidOrder || hasDuplicate
         then Left (ExpectedExpression paramPos)
-        else
-          case afterParam of
-            Token RParenToken _ _ : rest ->
-              Right ([paramName], paramDefaultPair paramName paramDefault, rest)
-            Token CommaToken _ _ : rest -> do
-              (otherParams, otherDefaults, after) <-
-                parseParametersWithState
-                  (seenDefault || paramDefault /= Nothing)
-                  (seenVarArg || isVarArg)
-                  (seenKwArg || isKwArg)
-                  (Set.insert normalizedName seenNames)
-                  rest
-              Right (paramName : otherParams, paramDefaultPair paramName paramDefault ++ otherDefaults, after)
-            tok : _ -> Left (ExpectedExpression (position tok))
-            _ -> Left (ExpectedExpression (Position 0 0))
+        else case afterParam of
+          Token RParenToken _ _ : rest ->
+            Right ([paramName], paramDefaultPair paramName paramDefault, rest)
+          Token CommaToken _ _ : rest -> do
+            (otherParams, otherDefaults, after) <-
+              parseParametersWithState
+                (seenDefault || paramDefault /= Nothing)
+                (seenVarArg || isVarArg)
+                (seenKwArg || isKwArg)
+                (Set.insert normalizedName seenNames)
+                rest
+            Right (paramName : otherParams, paramDefaultPair paramName paramDefault ++ otherDefaults, after)
+          tok : _ -> Left (ExpectedExpression (position tok))
+          _ -> Left (ExpectedExpression (Position 0 0))
 
     parseSingleParameter (Token StarToken _ pPos : Token StarToken _ _ : Token IdentifierToken p _ : rest) =
       Right (("**" ++ p, Nothing, pPos), rest)

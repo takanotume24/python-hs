@@ -1,11 +1,13 @@
 module PythonHS.VM.ExecuteOneInstruction (executeOneInstruction) where
 
-import qualified Data.Map.Strict as Map
-import qualified Data.Set as Set
+import Data.Map.Strict qualified as Map
+import Data.Set qualified as Set
 import PythonHS.Evaluator.MaxLoopIterations (maxLoopIterations)
 import PythonHS.Evaluator.ShowPos (showPos)
 import PythonHS.Evaluator.Value (Value (DictValue, FunctionRefValue, ListValue, StringValue, TupleValue))
 import PythonHS.Evaluator.ValueToOutput (valueToOutput)
+import PythonHS.VM.EnvState (EnvState (..))
+import PythonHS.VM.ExceptionState (ExceptionState (..))
 import PythonHS.VM.ExecuteArithmeticInstruction (executeArithmeticInstruction)
 import PythonHS.VM.ExecuteCallFunction (executeCallFunction)
 import PythonHS.VM.ExecuteCallValueFunction (executeCallValueFunction)
@@ -18,15 +20,13 @@ import PythonHS.VM.HandleExceptionInstruction (handleExceptionInstruction)
 import PythonHS.VM.Instruction (Instruction (..))
 import PythonHS.VM.IsTruthy (isTruthy)
 import PythonHS.VM.LookupNameWithAttr (lookupNameWithAttr)
+import PythonHS.VM.LoopState (LoopState (..))
 import PythonHS.VM.PopValues (popValues)
 import PythonHS.VM.StoreNameWithAttr (storeNameWithAttr)
 import PythonHS.VM.ToForIterable (toForIterable)
 import PythonHS.VM.ToPairs (toPairs)
-import PythonHS.VM.EnvState (EnvState (..))
-import PythonHS.VM.ExceptionState (ExceptionState (..))
-import PythonHS.VM.LoopState (LoopState (..))
-import PythonHS.VM.VMState (VMState (..))
 import PythonHS.VM.VMScopeContext (VMScopeContext (VMScopeContext))
+import PythonHS.VM.VMState (VMState (..))
 
 executeOneInstruction :: (VMState -> Either String VMState) -> VMState -> Instruction -> Either String VMState
 executeOneInstruction execute state instruction =
@@ -71,9 +71,9 @@ executeOneInstruction execute state instruction =
                   case toPairs flatValues of
                     Left err -> Left err
                     Right pairs -> execute state {vmIp = vmIp state + 1, vmStack = DictValue pairs : rest}
-            MatchPattern pattern _ -> do
+            MatchPattern pat _ -> do
               (newStack, newGlobals, newLocals) <-
-                executeMatchPattern scopeCtx pattern (vmStack state) (envGlobals (vmEnv state)) (envLocals (vmEnv state))
+                executeMatchPattern scopeCtx pat (vmStack state) (envGlobals (vmEnv state)) (envLocals (vmEnv state))
               let newEnv = (vmEnv state) {envGlobals = newGlobals, envLocals = newLocals}
               execute state {vmIp = vmIp state + 1, vmStack = newStack, vmEnv = newEnv}
             Jump target -> execute state {vmIp = target}
@@ -111,17 +111,16 @@ executeOneInstruction execute state instruction =
                 resultValue : rest ->
                   if isTruthy resultValue
                     then execute state {vmIp = vmIp state + 1, vmStack = rest}
-                    else
-                      case exceptionHandlers (vmException state) of
-                        handlerIp : restHandlers ->
-                          let err = case Map.lookup "__python_hs_pending_except_error__" (envLocals (vmEnv state)) of
-                                Just (StringValue s) -> s
-                                _ -> "Runtime error: error at 9:3"
-                              newLocals = Map.insert "__python_hs_pending_except_error__" (StringValue err) (envLocals (vmEnv state))
-                              newEnv = (vmEnv state) {envLocals = newLocals}
-                              newException = (vmException state) {exceptionHandlers = restHandlers}
-                           in execute state {vmIp = handlerIp, vmStack = rest, vmEnv = newEnv, vmException = newException}
-                        [] -> Left "Runtime error: unhandled exception in with statement"
+                    else case exceptionHandlers (vmException state) of
+                      handlerIp : restHandlers ->
+                        let err = case Map.lookup "__python_hs_pending_except_error__" (envLocals (vmEnv state)) of
+                              Just (StringValue s) -> s
+                              _ -> "Runtime error: error at 9:3"
+                            newLocals = Map.insert "__python_hs_pending_except_error__" (StringValue err) (envLocals (vmEnv state))
+                            newEnv = (vmEnv state) {envLocals = newLocals}
+                            newException = (vmException state) {exceptionHandlers = restHandlers}
+                         in execute state {vmIp = handlerIp, vmStack = rest, vmEnv = newEnv, vmException = newException}
+                      [] -> Left "Runtime error: unhandled exception in with statement"
                 _ -> Left "VM runtime error: check with result requires one value on stack"
             DupTop ->
               case vmStack state of
@@ -131,8 +130,12 @@ executeOneInstruction execute state instruction =
               execute state {vmIp = vmIp state + 1, vmEnv = (vmEnv state) {envFunctions = Map.insert name (params, defaultCodes, functionCode) (envFunctions (vmEnv state))}}
             CreateLambda name params defaultCodes functionCode ->
               let captured = Map.toList (envLocals (vmEnv state))
-               in execute state {vmIp = vmIp state + 1, vmStack = FunctionRefValue name captured : vmStack state,
-                    vmEnv = (vmEnv state) {envFunctions = Map.insert name (params, defaultCodes, functionCode) (envFunctions (vmEnv state))}}
+               in execute
+                    state
+                      { vmIp = vmIp state + 1,
+                        vmStack = FunctionRefValue name captured : vmStack state,
+                        vmEnv = (vmEnv state) {envFunctions = Map.insert name (params, defaultCodes, functionCode) (envFunctions (vmEnv state))}
+                      }
             DefineClass className maybeBase methods ->
               executeDefineClassInstruction execute state (DefineClass className maybeBase methods)
             CallFunction fname compiledArgs pos -> do
@@ -156,8 +159,13 @@ executeOneInstruction execute state instruction =
             BuildListComprehension clauses valueCode pos -> do
               (listValue, newGlobals, newFunctions, newOutputs) <-
                 executeListComprehension execute clauses valueCode pos (envGlobals (vmEnv state)) (envLocals (vmEnv state)) (envFunctions (vmEnv state)) (vmOutputs state)
-              execute state {vmIp = vmIp state + 1, vmStack = listValue : vmStack state,
-                vmEnv = (vmEnv state) {envGlobals = newGlobals, envFunctions = newFunctions}, vmOutputs = newOutputs}
+              execute
+                state
+                  { vmIp = vmIp state + 1,
+                    vmStack = listValue : vmStack state,
+                    vmEnv = (vmEnv state) {envGlobals = newGlobals, envFunctions = newFunctions},
+                    vmOutputs = newOutputs
+                  }
             RaiseTop pos ->
               case vmStack state of
                 value : rest ->

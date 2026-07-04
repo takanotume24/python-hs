@@ -1,10 +1,9 @@
 module PythonHS.VM.StoreNameWithAttr (storeNameWithAttr) where
 
-import qualified Data.Map.Strict as Map
-import qualified Data.Set as Set
-import PythonHS.Evaluator.Value (Value (InstanceValue, IntValue), Value)
+import Data.Map.Strict qualified as Map
+import Data.Set qualified as Set
+import PythonHS.Evaluator.Value (Value (InstanceValue, IntValue))
 import PythonHS.VM.LookupName (lookupName)
-
 import PythonHS.VM.VMScopeContext (VMScopeContext (vmScopeContextGlobalDecls, vmScopeContextIsTopLevel))
 
 storeNameWithAttr :: VMScopeContext -> String -> Value -> Map.Map String Value -> Map.Map String Value -> Either String (Map.Map String Value, Map.Map String Value)

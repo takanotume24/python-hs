@@ -1,9 +1,9 @@
 module PythonHS.Structure.CollectHsFiles (collectHsFiles) where
 
 import Control.Monad (forM)
+import PythonHS.Structure.IsHaskellFile (isHaskellFile)
 import System.Directory (doesDirectoryExist, listDirectory)
 import System.FilePath ((</>))
-import PythonHS.Structure.IsHaskellFile (isHaskellFile)
 
 collectHsFiles :: FilePath -> IO [FilePath]
 collectHsFiles dir = do

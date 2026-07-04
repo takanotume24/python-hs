@@ -1,14 +1,14 @@
 module PythonHS.Parser.ParseUnpackAssign (parseUnpackAssign) where
 
-import PythonHS.AST.Stmt (Stmt(AssignUnpackStmt))
-import PythonHS.Lexer.Position (Position(Position))
-import PythonHS.Lexer.Token (Token(Token))
+import PythonHS.AST.Stmt (Stmt (..))
+import PythonHS.Lexer.Position (Position (..))
+import PythonHS.Lexer.Token (Token (..))
 import PythonHS.Lexer.TokenType
   ( TokenType
       ( AssignToken
-      )
+      ),
   )
-import PythonHS.Parser.ParseError (ParseError(ExpectedExpression))
+import PythonHS.Parser.ParseError (ParseError (..))
 import PythonHS.Parser.ParseExpr (parseExpr)
 import PythonHS.Parser.ParseUnpackAssignConfig (ParseUnpackAssignConfig (..))
 import PythonHS.Parser.ParseUnpackNames (parseUnpackNames)
@@ -18,10 +18,10 @@ parseUnpackAssign :: ParseUnpackAssignConfig -> [Token] -> Either ParseError (St
 parseUnpackAssign config rest = do
   let firstName = parseUnpackAssignFirstName config
       pos = parseUnpackAssignPos config
-  (names, afterNames) <- parseUnpackNames (ParseUnpackNamesConfig [firstName] rest)
+  (names, afterNames) <- parseUnpackNames (ParseUnpackNamesConfig {unpackNamesAcc = [firstName], unpackNamesTokens = rest})
   case afterNames of
-    Token AssignToken _ _ : afterAssign -> do
+    Token {tokenType = AssignToken} : afterAssign -> do
       (valueExpr, remaining) <- parseExpr afterAssign
-      Right (AssignUnpackStmt names valueExpr pos, remaining)
-    Token _ _ pos' : _ -> Left (ExpectedExpression pos')
-    _ -> Left (ExpectedExpression (Position 0 0))
+      Right (AssignUnpackStmt {assignUnpackStmtNames = names, assignUnpackStmtValue = valueExpr, assignUnpackStmtPos = pos}, remaining)
+    Token {position = pos'} : _ -> Left (ExpectedExpression {parseErrorPosition = pos'})
+    _ -> Left (ExpectedExpression {parseErrorPosition = Position {line = 0, column = 0}})

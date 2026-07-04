@@ -1,6 +1,6 @@
 module PythonHS.VM.ExecutePendingExceptionInstruction (executePendingExceptionInstruction) where
 
-import qualified Data.Map.Strict as Map
+import Data.Map.Strict qualified as Map
 import PythonHS.Evaluator.Value (Value (..))
 import PythonHS.VM.Instruction (Instruction (LoadPendingException, MatchExceptionType, RaisePendingException))
 

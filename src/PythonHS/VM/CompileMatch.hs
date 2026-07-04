@@ -5,7 +5,7 @@ import PythonHS.AST.Pattern (Pattern)
 import PythonHS.AST.Stmt (Stmt)
 import PythonHS.Lexer.Position (Position)
 import PythonHS.VM.CompileExprResult (CompileExprResult (..))
-import PythonHS.VM.Instruction (Instruction (Jump, JumpIfFalse, LoadName, MatchPattern, StoreName), Instruction)
+import PythonHS.VM.Instruction (Instruction (Jump, JumpIfFalse, LoadName, MatchPattern, StoreName))
 
 compileMatch ::
   (Int -> Expr -> Either String CompileExprResult) ->

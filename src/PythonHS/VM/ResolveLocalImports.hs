@@ -1,23 +1,23 @@
 module PythonHS.VM.ResolveLocalImports (resolveLocalImports) where
 
-import qualified Data.Map.Strict as Map
-import qualified Data.Set as Set
+import Data.Map.Strict qualified as Map
+import Data.Set qualified as Set
 import PythonHS.AST.Program (Program (Program))
 import PythonHS.AST.Stmt
-      ( Stmt
+  ( Stmt
       ( FromImportStmt,
         ImportStmt
-      )
+      ),
   )
 import PythonHS.Lexer.ScanTokens (scanTokens)
+import PythonHS.Parser.ParseProgram (parseProgram)
 import PythonHS.VM.CollectExports (collectExports)
+import PythonHS.VM.FindModuleFile (findModuleFile)
+import PythonHS.VM.IsBuiltinImportModule (isBuiltinImportModule)
 import PythonHS.VM.ModuleKeyFor (moduleKeyFor)
 import PythonHS.VM.ModulePrefixFor (modulePrefixFor)
-import PythonHS.VM.ResolveTargetModulePath (resolveTargetModulePath)
-import PythonHS.VM.IsBuiltinImportModule (isBuiltinImportModule)
-import PythonHS.Parser.ParseProgram (parseProgram)
-import PythonHS.VM.FindModuleFile (findModuleFile)
 import PythonHS.VM.ResolveStarExportNames (resolveStarExportNames)
+import PythonHS.VM.ResolveTargetModulePath (resolveTargetModulePath)
 import PythonHS.VM.TransformImportAliases (transformImportAliases)
 import System.FilePath (takeFileName)
 
@@ -120,43 +120,41 @@ resolveLocalImports searchPaths (Program rootStmts) = do
     loadModule cache visiting included modulePath = do
       let moduleKey = moduleKeyFor modulePath
       if Set.member moduleKey visiting
-        then
-          case Map.lookup moduleKey cache of
-            Just (_cachedStmts, cachedExports) -> pure (Right ([], cachedExports, cache, included))
-            Nothing -> pure (Left ("Import error: circular import " ++ moduleKey))
-        else
-          case Map.lookup moduleKey cache of
-            Just (cachedStmts, cachedExports) ->
-              if Set.member moduleKey included
-                then pure (Right ([], cachedExports, cache, included))
-                else pure (Right (cachedStmts, cachedExports, cache, Set.insert moduleKey included))
-            Nothing -> do
-              modulePathResult <- findModuleFile modulePath searchPaths
-              case modulePathResult of
-                Left err -> pure (Left err)
-                Right moduleFile -> do
-                  source <- readFile moduleFile
-                  case scanTokens source of
-                    Left lexErr -> pure (Left (show lexErr))
-                    Right tokens ->
-                      case parseProgram tokens of
-                        Left parseErr -> pure (Left (show parseErr))
-                        Right (Program moduleStmts) -> do
-                          let preloadedCache = Map.insert moduleKey ([], Map.empty) cache
-                          let packagePath =
-                                if takeFileName moduleFile == "__init__.py"
-                                  then modulePath
-                                  else dropLast modulePath
-                          resolvedModule <- resolveStmts preloadedCache (Set.insert moduleKey visiting) included packagePath Map.empty Map.empty Map.empty moduleStmts
-                          case resolvedModule of
-                            Left err -> pure (Left err)
-                            Right (moduleResolvedStmts, cacheAfterResolve, includedAfterResolve) -> do
-                              let exportMap = collectExports modulePath moduleResolvedStmts
-                                  renamedModuleStmts = fmap (transformImportAliases True Map.empty exportMap exportMap) moduleResolvedStmts
-                                  updatedCache = Map.insert moduleKey (renamedModuleStmts, exportMap) cacheAfterResolve
-                              if Set.member moduleKey includedAfterResolve
-                                then pure (Right ([], exportMap, updatedCache, includedAfterResolve))
-                                else pure (Right (renamedModuleStmts, exportMap, updatedCache, Set.insert moduleKey includedAfterResolve))
+        then case Map.lookup moduleKey cache of
+          Just (_cachedStmts, cachedExports) -> pure (Right ([], cachedExports, cache, included))
+          Nothing -> pure (Left ("Import error: circular import " ++ moduleKey))
+        else case Map.lookup moduleKey cache of
+          Just (cachedStmts, cachedExports) ->
+            if Set.member moduleKey included
+              then pure (Right ([], cachedExports, cache, included))
+              else pure (Right (cachedStmts, cachedExports, cache, Set.insert moduleKey included))
+          Nothing -> do
+            modulePathResult <- findModuleFile modulePath searchPaths
+            case modulePathResult of
+              Left err -> pure (Left err)
+              Right moduleFile -> do
+                source <- readFile moduleFile
+                case scanTokens source of
+                  Left lexErr -> pure (Left (show lexErr))
+                  Right tokens ->
+                    case parseProgram tokens of
+                      Left parseErr -> pure (Left (show parseErr))
+                      Right (Program moduleStmts) -> do
+                        let preloadedCache = Map.insert moduleKey ([], Map.empty) cache
+                        let packagePath =
+                              if takeFileName moduleFile == "__init__.py"
+                                then modulePath
+                                else dropLast modulePath
+                        resolvedModule <- resolveStmts preloadedCache (Set.insert moduleKey visiting) included packagePath Map.empty Map.empty Map.empty moduleStmts
+                        case resolvedModule of
+                          Left err -> pure (Left err)
+                          Right (moduleResolvedStmts, cacheAfterResolve, includedAfterResolve) -> do
+                            let exportMap = collectExports modulePath moduleResolvedStmts
+                                renamedModuleStmts = fmap (transformImportAliases True Map.empty exportMap exportMap) moduleResolvedStmts
+                                updatedCache = Map.insert moduleKey (renamedModuleStmts, exportMap) cacheAfterResolve
+                            if Set.member moduleKey includedAfterResolve
+                              then pure (Right ([], exportMap, updatedCache, includedAfterResolve))
+                              else pure (Right (renamedModuleStmts, exportMap, updatedCache, Set.insert moduleKey includedAfterResolve))
 
     resolveFromImports cache visiting included modulePath moduleAlias callAlias identAlias collected importedNames exportMap =
       case importedNames of

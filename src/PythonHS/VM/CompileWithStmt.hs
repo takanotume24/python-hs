@@ -1,10 +1,10 @@
 module PythonHS.VM.CompileWithStmt (compileWithStmt) where
 
 import PythonHS.AST.Expr (Expr (CallExpr, NoneExpr, StringExpr))
-import PythonHS.Lexer.Position (Position)
 import PythonHS.AST.Stmt (Stmt)
 import PythonHS.AST.WithContext (ContextManager (..), WithEntry (..), WithExit (..))
 import PythonHS.Evaluator.Value (Value (NoneValue))
+import PythonHS.Lexer.Position (Position)
 import PythonHS.VM.CompileExprAt (compileExprAt)
 import PythonHS.VM.CompileExprResult (CompileExprResult (..))
 import PythonHS.VM.Instruction (Instruction (CallFunction, CheckWithResult, Jump, LoadName, LoadPendingException, PopExceptionHandler, PushConst, PushWithHandler, StoreName))
@@ -41,33 +41,44 @@ compileWithStmt baseIndex inFunction maybeLoop cmExpr maybeVarName body withPos 
   let exitNormalStartIndex = bodyEndIndex + 2
   let nonePos = ([PushConst NoneValue], Nothing, contextManagerPos ctxManager)
 
-  let exitNormalInstruction = CallFunction "__exit__" [
-          ([LoadName contextManagerVar (contextManagerPos ctxManager)], Nothing, contextManagerPos ctxManager),
-          nonePos,
-          nonePos,
-          nonePos
-        ] (contextManagerPos ctxManager)
+  let exitNormalInstruction =
+        CallFunction
+          "__exit__"
+          [ ([LoadName contextManagerVar (contextManagerPos ctxManager)], Nothing, contextManagerPos ctxManager),
+            nonePos,
+            nonePos,
+            nonePos
+          ]
+          (contextManagerPos ctxManager)
   let exitNormal = WithExit (CallExpr "__exit__" [contextManagerExpr ctxManager, NoneExpr (contextManagerPos ctxManager), NoneExpr (contextManagerPos ctxManager), NoneExpr (contextManagerPos ctxManager)] (contextManagerPos ctxManager)) exitNormalInstruction (contextManagerPos ctxManager) False
   let exitNormalCode = [LoadName contextManagerVar (contextManagerPos ctxManager), exitCallInstruction exitNormal]
 
   let exitExceptionStartIndex = exitNormalStartIndex + length exitNormalCode + 1
 
-  let exitExceptionInstruction = CallFunction "__exit__" [
-          ([LoadName contextManagerVar (contextManagerPos ctxManager)], Nothing, contextManagerPos ctxManager),
-          ([LoadPendingException], Nothing, contextManagerPos ctxManager),
-          ([LoadPendingException], Nothing, contextManagerPos ctxManager),
-          nonePos
-        ] (contextManagerPos ctxManager)
+  let exitExceptionInstruction =
+        CallFunction
+          "__exit__"
+          [ ([LoadName contextManagerVar (contextManagerPos ctxManager)], Nothing, contextManagerPos ctxManager),
+            ([LoadPendingException], Nothing, contextManagerPos ctxManager),
+            ([LoadPendingException], Nothing, contextManagerPos ctxManager),
+            nonePos
+          ]
+          (contextManagerPos ctxManager)
   let exitException = WithExit (CallExpr "__exit__" [contextManagerExpr ctxManager, StringExpr "Exception" (contextManagerPos ctxManager), StringExpr "error" (contextManagerPos ctxManager), NoneExpr (contextManagerPos ctxManager)] (contextManagerPos ctxManager)) exitExceptionInstruction (contextManagerPos ctxManager) True
-  let exitExceptionCode = [LoadName contextManagerVar (contextManagerPos ctxManager),
-                           exitCallInstruction exitException,
-                           CheckWithResult]
+  let exitExceptionCode =
+        [ LoadName contextManagerVar (contextManagerPos ctxManager),
+          exitCallInstruction exitException,
+          CheckWithResult
+        ]
   let nextIndex = exitExceptionStartIndex + length exitExceptionCode
-  let allCode = setupCode ++ enterCode ++ storeCode ++
-               [PushWithHandler exitExceptionStartIndex] ++
-               bodyCode ++
-               [PopExceptionHandler, Jump exitNormalStartIndex] ++
-               exitNormalCode ++
-               [Jump nextIndex] ++
-               exitExceptionCode
+  let allCode =
+        setupCode
+          ++ enterCode
+          ++ storeCode
+          ++ [PushWithHandler exitExceptionStartIndex]
+          ++ bodyCode
+          ++ [PopExceptionHandler, Jump exitNormalStartIndex]
+          ++ exitNormalCode
+          ++ [Jump nextIndex]
+          ++ exitExceptionCode
   pure (CompileExprResult allCode nextIndex)

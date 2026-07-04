@@ -1,12 +1,12 @@
 module PythonHS.VM.CompileClassStmt (compileClassStmt) where
 
 import PythonHS.AST.BinaryOperator (BinaryOperator (AddOperator, AndOperator, EqOperator, GtOperator, LtOperator, OrOperator))
-import PythonHS.AST.Expr (Expr (BinaryExpr, CallExpr, IdentifierExpr, IntegerExpr, KeywordArgExpr), Expr)
-import PythonHS.AST.Stmt (Stmt (AnnAssignStmt, FunctionDefDefaultsStmt, FunctionDefStmt), Stmt)
+import PythonHS.AST.Expr (Expr (BinaryExpr, CallExpr, IdentifierExpr, IntegerExpr, KeywordArgExpr))
+import PythonHS.AST.Stmt (Stmt (AnnAssignStmt, FunctionDefDefaultsStmt, FunctionDefStmt))
 import PythonHS.Evaluator.Value (Value (IntValue, StringValue))
 import PythonHS.Lexer.Position (Position (Position))
 import PythonHS.VM.CompileExprResult (CompileExprResult (..))
-import PythonHS.VM.Instruction (Instruction (ApplyBinary, BuildList, CallFunction, DefineClass, DefineFunction, LoadName, PushConst, ReturnTop, StoreName), Instruction)
+import PythonHS.VM.Instruction (Instruction (ApplyBinary, BuildList, CallFunction, DefineClass, DefineFunction, LoadName, PushConst, ReturnTop, StoreName))
 
 compileClassStmt ::
   ((Int -> Expr -> Either String CompileExprResult) -> [(String, Expr)] -> Either String ([(String, [Instruction])], Int)) ->

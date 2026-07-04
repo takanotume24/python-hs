@@ -2,16 +2,15 @@ module Test.CLI.CLISpec (spec) where
 
 import Control.Exception (bracket)
 import Data.List (isInfixOf, isPrefixOf)
-import qualified Paths_python_hs
+import Paths_python_hs qualified
+import PythonHS.CLI (replEvalLines, runFile)
 import System.Directory (createDirectory, createDirectoryIfMissing, doesFileExist)
 import System.Environment (getExecutablePath, lookupEnv, setEnv, unsetEnv)
 import System.Exit (ExitCode (ExitSuccess))
-import System.FilePath ((</>))
-import System.FilePath (takeDirectory)
-import System.IO (hPutStr, hClose)
+import System.FilePath (takeDirectory, (</>))
+import System.IO (hClose, hPutStr)
 import System.IO.Temp (withSystemTempDirectory, withSystemTempFile)
 import System.Process (proc, readCreateProcessWithExitCode)
-import PythonHS.CLI (runFile, replEvalLines)
 import Test.Hspec (Spec, describe, it, shouldBe, shouldSatisfy)
 
 spec :: Spec

@@ -1,7 +1,7 @@
 module PythonHS.VM.ResolveStarExportNames (resolveStarExportNames) where
 
-import qualified Data.Map.Strict as Map
 import Data.List (isPrefixOf)
+import Data.Map.Strict qualified as Map
 import PythonHS.AST.Expr (Expr (..))
 import PythonHS.AST.Stmt (Stmt (..))
 

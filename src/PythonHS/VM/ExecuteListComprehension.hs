@@ -1,15 +1,15 @@
 module PythonHS.VM.ExecuteListComprehension (executeListComprehension) where
 
-import qualified Data.Map.Strict as Map
-import qualified Data.Set as Set
+import Data.Map.Strict qualified as Map
+import Data.Set qualified as Set
 import PythonHS.Evaluator.ShowPos (showPos)
-import PythonHS.Evaluator.Value (Value (ListValue), Value)
+import PythonHS.Evaluator.Value (Value (ListValue))
+import PythonHS.Lexer.Position (Position)
 import PythonHS.VM.EnvState (EnvState (..))
 import PythonHS.VM.ExceptionState (ExceptionState (..))
 import PythonHS.VM.Instruction (Instruction)
 import PythonHS.VM.IsTruthy (isTruthy)
 import PythonHS.VM.LoopState (LoopState (..))
-import PythonHS.Lexer.Position (Position)
 import PythonHS.VM.ToForIterable (toForIterable)
 import PythonHS.VM.VMState (VMState (..))
 
@@ -39,20 +39,20 @@ executeListComprehension execute clauses valueCode pos globalsEnv localEnv funct
 
     emptyState code globals locals funcs outs =
       VMState
-        { vmCode = code
-        , vmIp = 0
-        , vmStack = []
-        , vmEnv =
+        { vmCode = code,
+          vmIp = 0,
+          vmStack = [],
+          vmEnv =
             EnvState
-              { envGlobals = globals
-              , envLocals = locals
-              , envFunctions = funcs
-              , envGlobalDecls = Set.empty
-              }
-        , vmLoop = LoopState {loopForStates = Map.empty, loopCounts = Map.empty}
-        , vmException = ExceptionState {exceptionHandlers = [], exceptionOutputs = []}
-        , vmIsTopLevel = False
-        , vmOutputs = outs
+              { envGlobals = globals,
+                envLocals = locals,
+                envFunctions = funcs,
+                envGlobalDecls = Set.empty
+              },
+          vmLoop = LoopState {loopForStates = Map.empty, loopCounts = Map.empty},
+          vmException = ExceptionState {exceptionHandlers = [], exceptionOutputs = []},
+          vmIsTopLevel = False,
+          vmOutputs = outs
         }
 
     extractReturnValue finalState =

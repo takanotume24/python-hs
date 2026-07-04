@@ -1,6 +1,6 @@
 module PythonHS.VM.CollectFunctionGlobalDecls (collectFunctionGlobalDecls) where
 
-import qualified Data.Set as Set
+import Data.Set qualified as Set
 import PythonHS.VM.Instruction (Instruction (DeclareGlobal))
 
 collectFunctionGlobalDecls :: [Instruction] -> Set.Set String

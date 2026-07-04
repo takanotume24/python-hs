@@ -1,12 +1,12 @@
 module Test.Runner.RunnerCaseCoverageReportSpec (spec) where
 
-import qualified Paths_python_hs
+import Paths_python_hs qualified
 import PythonHS.Runner.RunnerCaseCoverageReport (runnerCaseCoverageReport)
 import PythonHS.Runner.RunnerCaseCoverageReportConfig (RunnerCaseCoverageReportConfig (..))
 import System.Directory (createDirectoryIfMissing, doesFileExist)
 import System.Environment (getExecutablePath)
 import System.Exit (ExitCode (ExitFailure, ExitSuccess))
-import System.FilePath ((</>), takeDirectory)
+import System.FilePath (takeDirectory, (</>))
 import System.IO.Temp (withSystemTempDirectory)
 import System.Process (proc, readCreateProcessWithExitCode)
 import Test.Hspec (Spec, describe, it, shouldBe)
@@ -20,32 +20,35 @@ spec = describe "runnerCaseCoverageReport" $ do
       let vmPath = root ++ "/test/Test/VM/RunSourceVmSpec.hs"
       createDirectoryIfMissing True (root ++ "/test/Test/Runner")
       createDirectoryIfMissing True (root ++ "/test/Test/VM")
-      writeFile edgePath $ unlines
-        [ "runSource \"A\\n\" `shouldBe` Right [\"A\"]"
-        , "runSource \"B\\n\" `shouldBe` Right [\"B\"]"
-        , "runSource \"C\\n\" `shouldBe` Right [\"C\"]"
-        ]
-      writeFile parityPath $ unlines
-        [ "shouldMatchVm \"A\\n\""
-        , "shouldMatchVm \"C\\n\""
-        ]
-      writeFile vmPath $ unlines
-        [ "runSourceVm \"A\\n\" `shouldBe` Right [\"A\"]"
-        ]
+      writeFile edgePath $
+        unlines
+          [ "runSource \"A\\n\" `shouldBe` Right [\"A\"]",
+            "runSource \"B\\n\" `shouldBe` Right [\"B\"]",
+            "runSource \"C\\n\" `shouldBe` Right [\"C\"]"
+          ]
+      writeFile parityPath $
+        unlines
+          [ "shouldMatchVm \"A\\n\"",
+            "shouldMatchVm \"C\\n\""
+          ]
+      writeFile vmPath $
+        unlines
+          [ "runSourceVm \"A\\n\" `shouldBe` Right [\"A\"]"
+          ]
 
       report <- runnerCaseCoverageReport (RunnerCaseCoverageReportConfig edgePath parityPath vmPath)
 
       report
         `shouldBe` unlines
-          [ "=== MISSING IN PARITY ==="
-          , "B\\n"
-          , "=== COUNT PARITY ==="
-          , "1"
-          , "=== MISSING IN VM ==="
-          , "B\\n"
-          , "C\\n"
-          , "=== COUNT VM ==="
-          , "2"
+          [ "=== MISSING IN PARITY ===",
+            "B\\n",
+            "=== COUNT PARITY ===",
+            "1",
+            "=== MISSING IN VM ===",
+            "B\\n",
+            "C\\n",
+            "=== COUNT VM ===",
+            "2"
           ]
 
   it "check-runner-case-coverage exits failure when missing cases exist" $
@@ -55,16 +58,19 @@ spec = describe "runnerCaseCoverageReport" $ do
       let vmPath = root ++ "/test/Test/VM/RunSourceVmSpec.hs"
       createDirectoryIfMissing True (root ++ "/test/Test/Runner")
       createDirectoryIfMissing True (root ++ "/test/Test/VM")
-      writeFile edgePath $ unlines
-        [ "runSource \"A\\n\" `shouldBe` Right [\"A\"]"
-        , "runSource \"B\\n\" `shouldBe` Right [\"B\"]"
-        ]
-      writeFile parityPath $ unlines
-        [ "shouldMatchVm \"A\\n\""
-        ]
-      writeFile vmPath $ unlines
-        [ "runSourceVm \"A\\n\" `shouldBe` Right [\"A\"]"
-        ]
+      writeFile edgePath $
+        unlines
+          [ "runSource \"A\\n\" `shouldBe` Right [\"A\"]",
+            "runSource \"B\\n\" `shouldBe` Right [\"B\"]"
+          ]
+      writeFile parityPath $
+        unlines
+          [ "shouldMatchVm \"A\\n\""
+          ]
+      writeFile vmPath $
+        unlines
+          [ "runSourceVm \"A\\n\" `shouldBe` Right [\"A\"]"
+          ]
 
       exe <- checkRunnerCoverageExecutablePath
       (code, _out, _err) <- readCreateProcessWithExitCode (proc exe [edgePath, parityPath, vmPath]) ""
@@ -77,18 +83,21 @@ spec = describe "runnerCaseCoverageReport" $ do
       let vmPath = root ++ "/test/Test/VM/RunSourceVmSpec.hs"
       createDirectoryIfMissing True (root ++ "/test/Test/Runner")
       createDirectoryIfMissing True (root ++ "/test/Test/VM")
-      writeFile edgePath $ unlines
-        [ "runSource \"A\\n\" `shouldBe` Right [\"A\"]"
-        , "runSource \"B\\n\" `shouldBe` Right [\"B\"]"
-        ]
-      writeFile parityPath $ unlines
-        [ "shouldMatchVm \"A\\n\""
-        , "shouldMatchVm \"B\\n\""
-        ]
-      writeFile vmPath $ unlines
-        [ "runSourceVm \"A\\n\" `shouldBe` Right [\"A\"]"
-        , "runSourceVm \"B\\n\" `shouldBe` Right [\"B\"]"
-        ]
+      writeFile edgePath $
+        unlines
+          [ "runSource \"A\\n\" `shouldBe` Right [\"A\"]",
+            "runSource \"B\\n\" `shouldBe` Right [\"B\"]"
+          ]
+      writeFile parityPath $
+        unlines
+          [ "shouldMatchVm \"A\\n\"",
+            "shouldMatchVm \"B\\n\""
+          ]
+      writeFile vmPath $
+        unlines
+          [ "runSourceVm \"A\\n\" `shouldBe` Right [\"A\"]",
+            "runSourceVm \"B\\n\" `shouldBe` Right [\"B\"]"
+          ]
 
       exe <- checkRunnerCoverageExecutablePath
       (code, _out, _err) <- readCreateProcessWithExitCode (proc exe [edgePath, parityPath, vmPath]) ""

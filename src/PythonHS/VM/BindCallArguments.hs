@@ -1,8 +1,8 @@
 module PythonHS.VM.BindCallArguments (bindCallArguments) where
 
-import qualified Data.Map.Strict as Map
+import Data.Map.Strict qualified as Map
 import PythonHS.Evaluator.ShowPos (showPos)
-import PythonHS.Evaluator.Value (Value (DictValue, ListValue, StringValue), Value)
+import PythonHS.Evaluator.Value (Value (DictValue, ListValue, StringValue))
 import PythonHS.Lexer.Position (Position)
 
 bindCallArguments :: String -> Position -> [String] -> [Value] -> [(Maybe String, Position)] -> Either String (Map.Map String Value)
@@ -125,7 +125,6 @@ bindCallArguments fname callPos params argValues argKinds = do
         name : restNames ->
           if name `elem` plainParams
             then extraKeywordPairs restNames keywordVals
-            else
-              case Map.lookup name keywordVals of
-                Just value -> (name, value) : extraKeywordPairs restNames keywordVals
-                Nothing -> extraKeywordPairs restNames keywordVals
+            else case Map.lookup name keywordVals of
+              Just value -> (name, value) : extraKeywordPairs restNames keywordVals
+              Nothing -> extraKeywordPairs restNames keywordVals

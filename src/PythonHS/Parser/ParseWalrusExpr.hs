@@ -1,6 +1,6 @@
 module PythonHS.Parser.ParseWalrusExpr (parseWalrusExpr) where
 
-import PythonHS.AST.Expr (Expr (WalrusExpr), Expr)
+import PythonHS.AST.Expr (Expr (WalrusExpr))
 import PythonHS.Lexer.Token (Token (Token))
 import PythonHS.Lexer.TokenType (TokenType (ColonAssignToken, IdentifierToken))
 import PythonHS.Parser.ParseError (ParseError)

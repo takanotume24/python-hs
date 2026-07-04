@@ -5,83 +5,83 @@ import PythonHS.AST.Expr (Expr (BinaryExpr, CallExpr, DictExpr, FloatExpr, Ident
 import PythonHS.AST.Pattern (Pattern (AsPattern, CapturePattern, MappingPattern, OrPattern, SequencePattern, ValuePattern, WildcardPattern))
 import PythonHS.AST.Program (Program (Program))
 import PythonHS.AST.Stmt (Stmt (AddAssignStmt, AssignStmt, BreakStmt, ClassDefStmt, ContinueStmt, DecoratedStmt, DivAssignStmt, FloorDivAssignStmt, ForStmt, FromImportStmt, FunctionDefDefaultsStmt, FunctionDefStmt, GlobalStmt, IfStmt, ImportStmt, MatchStmt, ModAssignStmt, MulAssignStmt, PassStmt, PrintStmt, RaiseStmt, ReturnStmt, SubAssignStmt, TryExceptStmt, WhileStmt, WithStmt, YieldFromStmt, YieldStmt))
-import PythonHS.Lexer.Token (Token (Token))
 import PythonHS.Lexer.Position (Position (Position))
+import PythonHS.Lexer.ScanTokens (scanTokens)
+import PythonHS.Lexer.Token (Token (Token))
 import PythonHS.Lexer.TokenType
   ( TokenType
-      ( AssignToken,
+      ( AndToken,
+        AsToken,
+        AssignToken,
         AtToken,
-        PlusAssignToken,
-        MinusAssignToken,
-        StarAssignToken,
-        SlashAssignToken,
-        PercentAssignToken,
-        DoubleSlashAssignToken,
+        BreakToken,
+        CaseToken,
+        ClassToken,
+        ColonAssignToken,
         ColonToken,
         CommaToken,
-        DotToken,
-         DefToken,
-          ClassToken,
-          LambdaToken,
-          ColonAssignToken,
-        EOFToken,
-        ElseToken,
-        ElifToken,
-        AsToken,
-        TrueToken,
-        FalseToken,
-        FloatToken,
-        FromToken,
-        NoneToken,
-        ForToken,
-        ImportToken,
-        IdentifierToken,
-        InToken,
-        IntegerToken,
-        StringToken,
-        LParenToken,
-        NewlineToken,
-        PlusToken,
-        MinusToken,
-        StarToken,
-        SlashToken,
-        PercentToken,
-        DoubleSlashToken,
-        PrintToken,
-        RParenToken,
-         ReturnToken,
-          RaiseToken,
-          YieldToken,
-          BreakToken,
-         ContinueToken,
-         GlobalToken,
-        PassToken,
-        IndentToken,
+        ContinueToken,
         DedentToken,
-         EqToken,
-         GtToken,
-         AndToken,
-        OrToken,
-        NotToken,
-          IfToken,
-          MatchToken,
-          CaseToken,
-          TryToken,
-          ExceptToken,
-          FinallyToken,
-          PipeToken,
-          WhileToken,
-         LBracketToken,
-         RBracketToken,
+        DefToken,
+        DotToken,
+        DoubleSlashAssignToken,
+        DoubleSlashToken,
+        EOFToken,
+        ElifToken,
+        ElseToken,
+        EqToken,
+        ExceptToken,
+        FalseToken,
+        FinallyToken,
+        FloatToken,
+        ForToken,
+        FromToken,
+        GlobalToken,
+        GtToken,
+        IdentifierToken,
+        IfToken,
+        ImportToken,
+        InToken,
+        IndentToken,
+        IntegerToken,
         LBraceToken,
+        LBracketToken,
+        LParenToken,
+        LambdaToken,
+        MatchToken,
+        MinusAssignToken,
+        MinusToken,
+        NewlineToken,
+        NoneToken,
+        NotToken,
+        OrToken,
+        PassToken,
+        PercentAssignToken,
+        PercentToken,
+        PipeToken,
+        PlusAssignToken,
+        PlusToken,
+        PrintToken,
         RBraceToken,
-        WithToken
-      )
+        RBracketToken,
+        RParenToken,
+        RaiseToken,
+        ReturnToken,
+        SlashAssignToken,
+        SlashToken,
+        StarAssignToken,
+        StarToken,
+        StringToken,
+        TrueToken,
+        TryToken,
+        WhileToken,
+        WithToken,
+        YieldToken
+      ),
   )
 import PythonHS.Parser.ParseError (ParseError (ExpectedExpression))
-import PythonHS.Lexer.ScanTokens (scanTokens)
 import PythonHS.Parser.ParseProgram (parseProgram)
-import Test.Hspec (Spec, describe, it, shouldBe, expectationFailure)
+import Test.Hspec (Spec, describe, expectationFailure, it, shouldBe)
 
 spec :: Spec
 spec = describe "parseProgram" $ do
@@ -522,9 +522,9 @@ spec = describe "parseProgram" $ do
                     (Position 2 3)
                   ),
                   ( MappingPattern
-                       [(StringExpr "k" (Position 4 9), CapturePattern "v" (Position 4 14))]
-                       Nothing
-                       (Position 4 8),
+                      [(StringExpr "k" (Position 4 9), CapturePattern "v" (Position 4 14))]
+                      Nothing
+                      (Position 4 8),
                     Nothing,
                     [PrintStmt (IdentifierExpr "v" (Position 5 11)) (Position 5 5)],
                     (Position 4 3)
@@ -1886,11 +1886,12 @@ spec = describe "parseProgram" $ do
       `shouldBe` Right
         ( Program
             [ PrintStmt
-                (ListComprehensionClausesExpr
-                   (BinaryExpr AddOperator (IdentifierExpr "a" (Position 1 8)) (IdentifierExpr "b" (Position 1 12)) (Position 1 10))
-                   [ (["a", "b"], IdentifierExpr "pairs" (Position 1 26), [BinaryExpr GtOperator (IdentifierExpr "a" (Position 1 35)) (IntegerExpr 0 (Position 1 39)) (Position 1 37)])
-                   ]
-                   (Position 1 7))
+                ( ListComprehensionClausesExpr
+                    (BinaryExpr AddOperator (IdentifierExpr "a" (Position 1 8)) (IdentifierExpr "b" (Position 1 12)) (Position 1 10))
+                    [ (["a", "b"], IdentifierExpr "pairs" (Position 1 26), [BinaryExpr GtOperator (IdentifierExpr "a" (Position 1 35)) (IntegerExpr 0 (Position 1 39)) (Position 1 37)])
+                    ]
+                    (Position 1 7)
+                )
                 (Position 1 1)
             ]
         )
@@ -1917,10 +1918,11 @@ spec = describe "parseProgram" $ do
       `shouldBe` Right
         ( Program
             [ PrintStmt
-                (ListComprehensionClausesExpr
-                   (IdentifierExpr "x" (Position 1 8))
-                   [(["x"], IdentifierExpr "xs" (Position 1 19), [WalrusExpr "y" (IdentifierExpr "x" (Position 1 31)) (Position 1 26)])]
-                   (Position 1 7))
+                ( ListComprehensionClausesExpr
+                    (IdentifierExpr "x" (Position 1 8))
+                    [(["x"], IdentifierExpr "xs" (Position 1 19), [WalrusExpr "y" (IdentifierExpr "x" (Position 1 31)) (Position 1 26)])]
+                    (Position 1 7)
+                )
                 (Position 1 1)
             ]
         )

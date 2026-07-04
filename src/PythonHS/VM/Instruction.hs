@@ -6,17 +6,17 @@ import PythonHS.Evaluator.Value (Value)
 import PythonHS.Lexer.Position (Position)
 
 data Instruction
-  = PushConst { pushConstValue :: Value }
+  = PushConst {pushConstValue :: Value}
   | LoadName
       { loadNameName :: String,
         loadNamePos :: Position
       }
-  | StoreName { storeNameName :: String }
-  | BuildList { buildListCount :: Int }
-  | BuildTuple { buildTupleCount :: Int }
-  | BuildDict { buildDictCount :: Int }
-  | DeclareGlobal { declareGlobalName :: String }
-  | LoopGuard { loopGuardPos :: Position }
+  | StoreName {storeNameName :: String}
+  | BuildList {buildListCount :: Int}
+  | BuildTuple {buildTupleCount :: Int}
+  | BuildDict {buildDictCount :: Int}
+  | DeclareGlobal {declareGlobalName :: String}
+  | LoopGuard {loopGuardPos :: Position}
   | ForSetup
       { forSetupNextIndex :: Int,
         forSetupPos :: Position
@@ -26,15 +26,15 @@ data Instruction
         forNextLoopEndIndex :: Int,
         forNextPos :: Position
       }
-  | PushExceptionHandler { pushExceptionHandlerIp :: Int }
-  | PushFinallyHandler { pushFinallyHandlerIp :: Int }
-  | PushWithHandler { pushWithHandlerIp :: Int }
+  | PushExceptionHandler {pushExceptionHandlerIp :: Int}
+  | PushFinallyHandler {pushFinallyHandlerIp :: Int}
+  | PushWithHandler {pushWithHandlerIp :: Int}
   | PopExceptionHandler
   | LoadPendingException
-  | MatchExceptionType { matchExceptionTypeName :: Maybe String }
+  | MatchExceptionType {matchExceptionTypeName :: Maybe String}
   | DupTop
-  | ApplyUnaryMinus { applyUnaryMinusPos :: Position }
-  | ApplyNot { applyNotPos :: Position }
+  | ApplyUnaryMinus {applyUnaryMinusPos :: Position}
+  | ApplyNot {applyNotPos :: Position}
   | ApplyBinary
       { applyBinaryOp :: BinaryOperator,
         applyBinaryPos :: Position
@@ -43,8 +43,8 @@ data Instruction
       { matchPatternPattern :: Pattern,
         matchPatternPos :: Position
       }
-  | JumpIfFalse { jumpIfFalseTarget :: Int }
-  | Jump { jumpTarget :: Int }
+  | JumpIfFalse {jumpIfFalseTarget :: Int}
+  | Jump {jumpTarget :: Int}
   | DefineFunction
       { defineFunctionName :: String,
         defineFunctionParams :: [String],
@@ -80,7 +80,7 @@ data Instruction
       { unpackToNamesNames :: [String],
         unpackToNamesPos :: Position
       }
-  | RaiseTop { raiseTopPos :: Position }
+  | RaiseTop {raiseTopPos :: Position}
   | RaisePendingException
   | RaisePendingError
   | ReturnTop

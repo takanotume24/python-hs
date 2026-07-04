@@ -11,4 +11,4 @@ import PythonHS.Structure.PositionalArgViolation (PositionalArgViolation)
 detectPositionalArgs :: FilePath -> IO [PositionalArgViolation]
 detectPositionalArgs path = do
   src <- readFile path
-  detectPositionalArgsFromSource (DetectSourceConfig { sourceFilePath = path, sourceContent = src })
+  detectPositionalArgsFromSource (DetectSourceConfig {sourceFilePath = path, sourceContent = src})

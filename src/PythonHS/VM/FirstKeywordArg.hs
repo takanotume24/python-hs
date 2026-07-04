@@ -1,7 +1,7 @@
 module PythonHS.VM.FirstKeywordArg (firstKeywordArg) where
 
-import PythonHS.VM.Instruction (Instruction)
 import PythonHS.Lexer.Position (Position)
+import PythonHS.VM.Instruction (Instruction)
 
 firstKeywordArg :: [([Instruction], Maybe String, Position)] -> Maybe (String, Position)
 firstKeywordArg compiledArgs =

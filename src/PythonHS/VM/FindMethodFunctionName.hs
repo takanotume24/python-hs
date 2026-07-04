@@ -1,7 +1,7 @@
 module PythonHS.VM.FindMethodFunctionName (findMethodFunctionName) where
 
-import qualified Data.Map.Strict as Map
-import PythonHS.Evaluator.Value (Value (ClassValue), Value)
+import Data.Map.Strict qualified as Map
+import PythonHS.Evaluator.Value (Value (ClassValue))
 import PythonHS.VM.LookupName (lookupName)
 
 findMethodFunctionName :: Map.Map String Value -> Map.Map String Value -> String -> String -> Maybe String

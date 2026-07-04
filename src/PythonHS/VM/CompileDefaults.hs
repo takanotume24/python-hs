@@ -2,7 +2,7 @@ module PythonHS.VM.CompileDefaults (compileDefaults) where
 
 import PythonHS.AST.Expr (Expr)
 import PythonHS.VM.CompileExprResult (CompileExprResult (..))
-import PythonHS.VM.Instruction (Instruction (ReturnTop), Instruction)
+import PythonHS.VM.Instruction (Instruction (ReturnTop))
 
 compileDefaults :: (Int -> Expr -> Either String CompileExprResult) -> [(String, Expr)] -> Either String ([(String, [Instruction])], Int)
 compileDefaults compileExprAt defaults =

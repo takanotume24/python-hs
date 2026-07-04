@@ -1,8 +1,9 @@
-module PythonHS.Lexer.ParseExponent (parseExponent) where
+module PythonHS.Lexer.ParseExponent (parseExponent, ParseExponentResult (..)) where
 
-import Data.Char (isDigit)
+import PythonHS.Lexer.ParseExponentResult (ParseExponentResult (..))
+import PythonHS.Lexer.SpanDigits (spanDigits)
 
-parseExponent :: String -> (String, String)
+parseExponent :: String -> ParseExponentResult
 parseExponent input =
   case input of
     (e : restInput)
@@ -10,13 +11,13 @@ parseExponent input =
           case restInput of
             (signChar : afterSign)
               | signChar == '+' || signChar == '-' ->
-                  let (expDigits, remaining) = span isDigit afterSign
-                   in if null expDigits
-                        then ("", input)
-                        else (e : signChar : expDigits, remaining)
+                  let result = spanDigits afterSign
+                   in if null (parseExponentResultDigits result)
+                        then ParseExponentResult {parseExponentResultDigits = "", parseExponentResultRemaining = input}
+                        else ParseExponentResult {parseExponentResultDigits = e : signChar : parseExponentResultDigits result, parseExponentResultRemaining = parseExponentResultRemaining result}
             _ ->
-              let (expDigits, remaining) = span isDigit restInput
-               in if null expDigits
-                    then ("", input)
-                    else (e : expDigits, remaining)
-    _ -> ("", input)
+              let result = spanDigits restInput
+               in if null (parseExponentResultDigits result)
+                    then ParseExponentResult {parseExponentResultDigits = "", parseExponentResultRemaining = input}
+                    else ParseExponentResult {parseExponentResultDigits = e : parseExponentResultDigits result, parseExponentResultRemaining = parseExponentResultRemaining result}
+    _ -> ParseExponentResult {parseExponentResultDigits = "", parseExponentResultRemaining = input}

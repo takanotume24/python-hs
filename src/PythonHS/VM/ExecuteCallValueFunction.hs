@@ -1,9 +1,9 @@
 module PythonHS.VM.ExecuteCallValueFunction (executeCallValueFunction) where
 
-import qualified Data.Map.Strict as Map
-import qualified Data.Set as Set
+import Data.Map.Strict qualified as Map
+import Data.Set qualified as Set
 import PythonHS.Evaluator.ShowPos (showPos)
-import PythonHS.Evaluator.Value (Value (FunctionRefValue, IntValue), Value)
+import PythonHS.Evaluator.Value (Value (FunctionRefValue, IntValue))
 import PythonHS.Lexer.Position (Position)
 import PythonHS.VM.BindCallArguments (bindCallArguments)
 import PythonHS.VM.BindDefaults (bindDefaults)
@@ -45,20 +45,20 @@ executeCallValueFunction execute isTopLevel compiledArgs pos stack globalsEnv lo
               let functionGlobalDecls = collectFunctionGlobalDecls functionCode
                   callState =
                     VMState
-                      { vmCode = functionCode
-                      , vmIp = 0
-                      , vmStack = []
-                      , vmEnv =
+                      { vmCode = functionCode,
+                        vmIp = 0,
+                        vmStack = [],
+                        vmEnv =
                           EnvState
-                            { envGlobals = globalsAfterDefaults
-                            , envLocals = functionLocals
-                            , envFunctions = functionsAfterDefaults
-                            , envGlobalDecls = functionGlobalDecls
-                            }
-                      , vmLoop = LoopState {loopForStates = Map.empty, loopCounts = Map.empty}
-                      , vmException = ExceptionState {exceptionHandlers = [], exceptionOutputs = []}
-                      , vmIsTopLevel = False
-                      , vmOutputs = outputsAfterDefaults
+                            { envGlobals = globalsAfterDefaults,
+                              envLocals = functionLocals,
+                              envFunctions = functionsAfterDefaults,
+                              envGlobalDecls = functionGlobalDecls
+                            },
+                        vmLoop = LoopState {loopForStates = Map.empty, loopCounts = Map.empty},
+                        vmException = ExceptionState {exceptionHandlers = [], exceptionOutputs = []},
+                        vmIsTopLevel = False,
+                        vmOutputs = outputsAfterDefaults
                       }
               finalState <- execute callState
               let returnValue =

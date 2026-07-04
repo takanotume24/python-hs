@@ -1,12 +1,12 @@
 module PythonHS.Evaluator.EnterContextManager (enterContextManager) where
 
+import PythonHS.AST.ContextManager (ContextManager (..))
 import PythonHS.AST.Expr (Expr (CallExpr))
-import PythonHS.AST.ContextManager (ContextManager(..))
-import PythonHS.AST.WithEntry (WithEntry(..))
+import PythonHS.AST.WithEntry (WithEntry (..))
 import PythonHS.Evaluator.Env (Env)
-import PythonHS.Evaluator.FuncEnv (FuncEnv)
 import PythonHS.Evaluator.EvalExprResult (EvalExprResult)
-import PythonHS.VM.Instruction (Instruction(CallFunction))
+import PythonHS.Evaluator.FuncEnv (FuncEnv)
+import PythonHS.VM.Instruction (Instruction (CallFunction))
 
 enterContextManager ::
   (Env -> FuncEnv -> Expr -> Either String EvalExprResult) ->

@@ -1,5 +1,6 @@
 module Test.VM.RunSourceVmSpec (spec) where
 
+import Data.Either (isLeft)
 import PythonHS.RunSourceVm (runSourceVm)
 import PythonHS.RunSourceVmWithSearchPaths (runSourceVmWithSearchPaths)
 import PythonHS.RunSourceVmWithSearchPathsConfig (RunSourceVmWithSearchPathsConfig (..))
@@ -7,7 +8,6 @@ import System.Directory (createDirectory)
 import System.FilePath ((</>))
 import System.IO.Temp (withSystemTempDirectory)
 import Test.Hspec (Spec, describe, it, shouldBe, shouldSatisfy)
-import Data.Either (isLeft)
 
 spec :: Spec
 spec = describe "runSourceVm (vm mvp)" $ do

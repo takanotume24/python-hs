@@ -1,6 +1,6 @@
 module PythonHS.VM.LookupName (lookupName) where
 
-import qualified Data.Map.Strict as Map
+import Data.Map.Strict qualified as Map
 import PythonHS.Evaluator.Value (Value)
 
 lookupName :: String -> Map.Map String Value -> Map.Map String Value -> Maybe Value

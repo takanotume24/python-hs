@@ -1,9 +1,9 @@
 module PythonHS.VM.CompileDecoratorApplications (compileDecoratorApplications) where
 
-import PythonHS.AST.Expr (Expr (IdentifierExpr), Expr)
+import PythonHS.AST.Expr (Expr (IdentifierExpr))
 import PythonHS.VM.CompileExprResult (CompileExprResult (..))
 import PythonHS.VM.ExprPosition (exprPosition)
-import PythonHS.VM.Instruction (Instruction (CallFunction, CallValueFunction, LoadName, StoreName), Instruction)
+import PythonHS.VM.Instruction (Instruction (CallFunction, CallValueFunction, LoadName, StoreName))
 
 compileDecoratorApplications ::
   (Int -> Expr -> Either String CompileExprResult) ->

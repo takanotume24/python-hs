@@ -14,13 +14,17 @@ import Language.Haskell.Exts
     SrcSpanInfo (..),
     prettyPrint,
   )
+import PythonHS.Structure.DetectFromModuleConfig (DetectFromModuleConfig (..))
 import PythonHS.Structure.DetectModuleConfig (DetectModuleConfig (..))
+import PythonHS.Structure.ExtractConAppResult (ExtractConAppResult (..))
 import PythonHS.Structure.PositionalArgViolation (PositionalArgViolation (..))
 import PythonHS.Structure.ViolationCategory (ViolationCategory (..))
 
-detectFromModule :: [String] -> DetectModuleConfig -> [PositionalArgViolation]
-detectFromModule recordConNames config =
-  let m = moduleAst config
+detectFromModule :: DetectFromModuleConfig -> [PositionalArgViolation]
+detectFromModule fromConfig =
+  let recordConNames = detectFromModuleRecordConNames fromConfig
+      config = detectFromModuleModuleConfig fromConfig
+      m = moduleAst config
       path = moduleFilePath config
 
       goDecl (DataDecl _ _ _ _ qs _) = concatMap goQ qs
@@ -44,7 +48,8 @@ detectFromModule recordConNames config =
       goM (InfixMatch l p _ ps _ _)
         | length allPats >= 2 && isSrcSpanInfo l = [mkViolation path l FunDeclCategory (unwords (map prettyPrint (take 3 allPats)))]
         | otherwise = []
-        where allPats = p : ps
+        where
+          allPats = p : ps
 
       goTupleExp (Tuple l _ es)
         | length es >= 2 && isSrcSpanInfo l = [mkViolation path l TupleCategory ("(" ++ unwords (map prettyPrint (take 3 es)) ++ ")")]
@@ -58,18 +63,18 @@ detectFromModule recordConNames config =
 
       goPositionalRecordConApp e =
         case extractConApp e of
-          Just (conName, argCount, l)
-            | argCount >= 1
-            , prettyPrint conName `elem` recordConNames
-            , isSrcSpanInfo l ->
-                [ mkViolation path l PositionalRecordConCategory (prettyPrint conName ++ " ...")
+          Just result
+            | extractConAppResultCount result >= 1,
+              prettyPrint (extractConAppResultName result) `elem` recordConNames,
+              isSrcSpanInfo (extractConAppResultSpan result) ->
+                [ mkViolation path (extractConAppResultSpan result) PositionalRecordConCategory (prettyPrint (extractConAppResultName result) ++ " ...")
                 ]
           _ -> []
         where
-          extractConApp (Con l conName) = Just (conName, 0 :: Int, l)
+          extractConApp (Con l conName) = Just (ExtractConAppResult {extractConAppResultName = conName, extractConAppResultCount = 0, extractConAppResultSpan = l})
           extractConApp (App _ func _) =
             case extractConApp func of
-              Just (cn, n, l) -> Just (cn, n + 1, l)
+              Just result -> Just (ExtractConAppResult {extractConAppResultName = extractConAppResultName result, extractConAppResultCount = extractConAppResultCount result + 1, extractConAppResultSpan = extractConAppResultSpan result})
               Nothing -> Nothing
           extractConApp _ = Nothing
 
@@ -91,4 +96,3 @@ detectFromModule recordConNames config =
               ++ everything (++) (mkQ [] goTuplePat) m
               ++ everything (++) (mkQ [] goPositionalRecordConApp) m
         _ -> []
-

@@ -17,7 +17,7 @@ data Expr
       { stringExprValue :: String,
         stringExprPos :: Position
       }
-  | NoneExpr { noneExprPos :: Position }
+  | NoneExpr {noneExprPos :: Position}
   | ListExpr
       { listExprItems :: [Expr],
         listExprPos :: Position

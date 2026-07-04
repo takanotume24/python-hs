@@ -1,11 +1,11 @@
 module PythonHS.Parser.ParseClassStmt (parseClassStmt) where
 
-import PythonHS.AST.Stmt (Stmt (ClassDefStmt), Stmt)
-import PythonHS.Lexer.Position (Position (Position))
-import PythonHS.Lexer.Token (Token (Token))
+import PythonHS.AST.Stmt (Stmt (..))
+import PythonHS.Lexer.Position (Position (..))
+import PythonHS.Lexer.Token (Token (..))
 import PythonHS.Lexer.TokenType (TokenType (ColonToken, IdentifierToken, LParenToken, RParenToken))
 import PythonHS.Parser.ParseClassStmtConfig (ParseClassStmtConfig (..))
-import PythonHS.Parser.ParseError (ParseError (ExpectedExpression))
+import PythonHS.Parser.ParseError (ParseError (..))
 
 parseClassStmt :: ParseClassStmtConfig -> [Token] -> Either ParseError (Stmt, [Token])
 parseClassStmt config rest =
@@ -13,11 +13,11 @@ parseClassStmt config rest =
       posClass = parseClassStmtPos config
       className = parseClassStmtName config
    in case rest of
-        Token ColonToken _ _ : afterColon -> do
+        Token {tokenType = ColonToken} : afterColon -> do
           (bodySuite, finalRest) <- parseSuiteFn afterColon
-          Right (ClassDefStmt className Nothing bodySuite posClass, finalRest)
-        Token LParenToken _ _ : Token IdentifierToken baseName _ : Token RParenToken _ _ : Token ColonToken _ _ : afterColon -> do
+          Right (ClassDefStmt {classDefStmtName = className, classDefStmtBase = Nothing, classDefStmtBody = bodySuite, classDefStmtPos = posClass}, finalRest)
+        Token {tokenType = LParenToken} : Token {tokenType = IdentifierToken, lexeme = baseName} : Token {tokenType = RParenToken} : Token {tokenType = ColonToken} : afterColon -> do
           (bodySuite, finalRest) <- parseSuiteFn afterColon
-          Right (ClassDefStmt className (Just baseName) bodySuite posClass, finalRest)
-        Token _ _ pos' : _ -> Left (ExpectedExpression pos')
-        _ -> Left (ExpectedExpression (Position 0 0))
+          Right (ClassDefStmt {classDefStmtName = className, classDefStmtBase = Just baseName, classDefStmtBody = bodySuite, classDefStmtPos = posClass}, finalRest)
+        Token {position = pos'} : _ -> Left (ExpectedExpression {parseErrorPosition = pos'})
+        _ -> Left (ExpectedExpression {parseErrorPosition = Position {line = 0, column = 0}})

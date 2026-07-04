@@ -1,9 +1,9 @@
 module Test.Structure.CheckStructureSpec (spec) where
 
 import Data.List (isInfixOf)
+import PythonHS.Structure.CheckStructure (checkStructureViolations, checkStructureWarnings)
 import System.Directory (createDirectoryIfMissing)
 import System.IO.Temp (withSystemTempDirectory)
-import PythonHS.Structure.CheckStructure (checkStructureViolations, checkStructureWarnings)
 import Test.Hspec (Spec, describe, it, shouldBe, shouldSatisfy)
 
 spec :: Spec
@@ -131,4 +131,3 @@ spec = describe "checkStructureViolations" $ do
         (unlines (["module PythonHS.Evaluator.EvalStatements (evalStatements) where", "", "evalStatements :: Int", "evalStatements = 1"] ++ replicate 10 ""))
       warnings <- checkStructureWarnings root
       warnings `shouldBe` []
-

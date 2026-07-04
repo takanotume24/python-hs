@@ -1,10 +1,10 @@
 module PythonHS.Parser.ParseExceptSuites (parseExceptSuites) where
 
 import PythonHS.AST.Stmt (Stmt)
-import PythonHS.Lexer.Position (Position (Position))
+import PythonHS.Lexer.Position (Position (..))
 import PythonHS.Lexer.Token (Token (Token))
 import PythonHS.Lexer.TokenType (TokenType (AsToken, ColonToken, ExceptToken, IdentifierToken, NewlineToken))
-import PythonHS.Parser.ParseError (ParseError (ExpectedExpression))
+import PythonHS.Parser.ParseError (ParseError (..))
 import PythonHS.Parser.ParseExceptSuitesConfig (ParseExceptSuitesConfig (..))
 
 parseExceptSuites :: ParseExceptSuitesConfig -> [Token] -> Either ParseError ([(Maybe String, Maybe String, [Stmt], Position)], [Token])
@@ -18,8 +18,8 @@ parseExceptSuites config ts =
           case parseExceptSuites config afterCurrent of
             Right (otherSuites, finalRest) -> Right ((maybeTypeName, maybeAliasName, exceptSuite, exceptPos) : otherSuites, finalRest)
             Left _ -> Right ([(maybeTypeName, maybeAliasName, exceptSuite, exceptPos)], afterExceptSuite)
-        Token _ _ pos' : _ -> Left (ExpectedExpression pos')
-        _ -> Left (ExpectedExpression (Position 0 0))
+        Token _ _ pos' : _ -> Left (ExpectedExpression {parseErrorPosition = pos'})
+        _ -> Left (ExpectedExpression {parseErrorPosition = Position {line = 0, column = 0}})
   where
     parseExceptHeader tokens =
       case tokens of
@@ -28,8 +28,8 @@ parseExceptSuites config ts =
           Right (Just typeName, Just aliasName, afterColon)
         Token IdentifierToken typeName _ : Token ColonToken _ _ : afterColon ->
           Right (Just typeName, Nothing, afterColon)
-        Token _ _ pos' : _ -> Left (ExpectedExpression pos')
-        _ -> Left (ExpectedExpression (Position 0 0))
+        Token _ _ pos' : _ -> Left (ExpectedExpression {parseErrorPosition = pos'})
+        _ -> Left (ExpectedExpression {parseErrorPosition = Position {line = 0, column = 0}})
 
     dropLeadingNewlines (Token NewlineToken _ _ : rest) = dropLeadingNewlines rest
     dropLeadingNewlines rest = rest

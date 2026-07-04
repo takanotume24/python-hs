@@ -2,9 +2,9 @@ module Test.Structure.DetectPositionalArgsSpec (spec) where
 
 import Data.Aeson (decode)
 import Data.Aeson.Types (Object)
+import Data.ByteString.Lazy.Char8 qualified as BSL
 import Data.List (isInfixOf)
 import Data.Maybe (isJust)
-import qualified Data.ByteString.Lazy.Char8 as BSL
 import PythonHS.Structure.DetectPositionalArgs (detectPositionalArgsFromSource)
 import PythonHS.Structure.DetectSourceConfig (DetectSourceConfig (..))
 import PythonHS.Structure.FormatViolationsJson (formatViolationsJson)

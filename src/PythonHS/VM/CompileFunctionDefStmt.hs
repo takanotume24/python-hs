@@ -7,7 +7,7 @@ import PythonHS.Lexer.Position (Position)
 import PythonHS.VM.CompileDefaults (compileDefaults)
 import PythonHS.VM.CompileExprResult (CompileExprResult (..))
 import PythonHS.VM.HasYieldInStmts (hasYieldInStmts)
-import PythonHS.VM.Instruction (Instruction (LoadName, PushConst, ReturnTop, StoreName), Instruction)
+import PythonHS.VM.Instruction (Instruction (LoadName, PushConst, ReturnTop, StoreName))
 
 compileFunctionDefStmt ::
   (Int -> Bool -> Maybe (Int, Int) -> [Stmt] -> Either String CompileExprResult) ->

@@ -1,9 +1,8 @@
 module PythonHS.VM.BindPatternCaptures (bindPatternCaptures) where
 
-import qualified Data.Map.Strict as Map
-import qualified Data.Set as Set
+import Data.Map.Strict qualified as Map
+import Data.Set qualified as Set
 import PythonHS.Evaluator.Value (Value)
-
 import PythonHS.VM.VMScopeContext (VMScopeContext (vmScopeContextGlobalDecls, vmScopeContextIsTopLevel))
 
 bindPatternCaptures ::

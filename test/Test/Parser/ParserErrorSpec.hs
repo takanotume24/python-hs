@@ -6,19 +6,20 @@ import PythonHS.Lexer.Token (Token (Token))
 import PythonHS.Lexer.TokenType
   ( TokenType
       ( AssignToken,
-        EOFToken,
-        CommaToken,
         ColonToken,
+        CommaToken,
         DedentToken,
         DefToken,
+        EOFToken,
         ElifToken,
         ElseToken,
         ForToken,
         GlobalToken,
+        GtToken,
         IdentifierToken,
         IfToken,
-        IndentToken,
         InToken,
+        IndentToken,
         IntegerToken,
         LBraceToken,
         LBracketToken,
@@ -27,14 +28,13 @@ import PythonHS.Lexer.TokenType
         NewlineToken,
         PassToken,
         PrintToken,
-        GtToken,
-        SlashToken,
         RBraceToken,
-        StarToken,
         RBracketToken,
         RParenToken,
+        SlashToken,
+        StarToken,
         WhileToken
-      )
+      ),
   )
 import PythonHS.Parser.ParseError (ParseError (ExpectedAssignAfterIdentifier, ExpectedExpression, ExpectedNewlineAfterStatement))
 import PythonHS.Parser.ParseProgram (parseProgram)

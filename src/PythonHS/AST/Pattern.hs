@@ -8,7 +8,7 @@ data Pattern
       { valuePatternExpr :: Expr,
         valuePatternPos :: Position
       }
-  | WildcardPattern { wildcardPatternPos :: Position }
+  | WildcardPattern {wildcardPatternPos :: Position}
   | CapturePattern
       { capturePatternName :: String,
         capturePatternPos :: Position

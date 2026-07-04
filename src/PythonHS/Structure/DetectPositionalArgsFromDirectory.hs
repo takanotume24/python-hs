@@ -3,13 +3,14 @@ module PythonHS.Structure.DetectPositionalArgsFromDirectory (detectPositionalArg
 import Data.List (isInfixOf)
 import Language.Haskell.Exts
   ( ParseResult (..),
-    parseModuleWithMode,
     defaultParseMode,
     parseFilename,
+    parseModuleWithMode,
   )
 import PythonHS.Structure.CollectHsFiles (collectHsFiles)
 import PythonHS.Structure.CollectRecordConNames (collectRecordConNames)
 import PythonHS.Structure.DetectFromModule (detectFromModule)
+import PythonHS.Structure.DetectFromModuleConfig (DetectFromModuleConfig (..))
 import PythonHS.Structure.DetectModuleConfig (DetectModuleConfig (..))
 import PythonHS.Structure.DetectPositionalArgsFromDirectoryConfig (DetectPositionalArgsFromDirectoryConfig (..))
 import PythonHS.Structure.PositionalArgViolation (PositionalArgViolation)
@@ -25,14 +26,14 @@ detectPositionalArgsFromDirectory config = do
   where
     collectNamesFromFile path = do
       src <- readFile path
-      case parseModuleWithMode defaultParseMode { parseFilename = path } src of
+      case parseModuleWithMode defaultParseMode {parseFilename = path} src of
         ParseOk m -> pure (collectRecordConNames m)
         ParseFailed _ _ -> pure []
 
     goFile allRecordConNames path = do
       src <- readFile path
-      case parseModuleWithMode defaultParseMode { parseFilename = path } src of
-        ParseOk m -> pure (detectFromModule allRecordConNames (DetectModuleConfig path m))
+      case parseModuleWithMode defaultParseMode {parseFilename = path} src of
+        ParseOk m -> pure (detectFromModule (DetectFromModuleConfig {detectFromModuleRecordConNames = allRecordConNames, detectFromModuleModuleConfig = DetectModuleConfig {moduleFilePath = path, moduleAst = m}}))
         ParseFailed _ _ -> pure []
 
     matchesAnyExclude patterns path = any (\p -> p `isInfixOf` path) patterns

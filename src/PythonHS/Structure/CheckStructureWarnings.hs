@@ -3,9 +3,9 @@ module PythonHS.Structure.CheckStructureWarnings (checkStructureWarnings) where
 import Control.Monad (forM)
 import Data.List (sortOn)
 import Data.Ord (Down (Down))
+import PythonHS.Structure.ExemptFileInfo (ExemptFileInfo (..))
 import System.Directory (doesFileExist)
 import System.FilePath ((</>))
-import PythonHS.Structure.ExemptFileInfo (ExemptFileInfo (..))
 
 checkStructureWarnings :: FilePath -> IO [String]
 checkStructureWarnings root = do
@@ -16,7 +16,7 @@ checkStructureWarnings root = do
       then do
         content <- readFile fullPath
         let lineCount = length (lines content)
-        return [ExemptFileInfo { filePathExempt = relPath, lineCountExempt = lineCount }]
+        return [ExemptFileInfo {filePathExempt = relPath, lineCountExempt = lineCount}]
       else return []
   let sortedEntries = sortOn (Down . lineCountExempt) entries
   return (map formatWarning sortedEntries)

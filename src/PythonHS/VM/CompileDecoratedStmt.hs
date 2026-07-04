@@ -1,7 +1,7 @@
 module PythonHS.VM.CompileDecoratedStmt (compileDecoratedStmt) where
 
-import PythonHS.AST.Expr (Expr (CallExpr, IdentifierExpr, IntegerExpr, KeywordArgExpr), Expr)
-import PythonHS.AST.Stmt (Stmt (ClassDefStmt, FunctionDefDefaultsStmt, FunctionDefStmt), Stmt)
+import PythonHS.AST.Expr (Expr (CallExpr, IdentifierExpr, IntegerExpr, KeywordArgExpr))
+import PythonHS.AST.Stmt (Stmt (ClassDefStmt, FunctionDefDefaultsStmt, FunctionDefStmt))
 import PythonHS.Evaluator.ShowPos (showPos)
 import PythonHS.VM.CompileDecoratorApplications (compileDecoratorApplications)
 import PythonHS.VM.CompileExprResult (CompileExprResult (..))

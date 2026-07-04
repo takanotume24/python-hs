@@ -10,8 +10,8 @@ import Test.Hspec (Spec, describe, it, shouldBe)
 spec :: Spec
 spec = describe "scanTokens indentation and extras" $ do
   it "emits INDENT/DEDENT for leading spaces" $ do
-    scanTokens "if 1:\n  print 1\nprint 2\n" `shouldBe`
-      Right
+    scanTokens "if 1:\n  print 1\nprint 2\n"
+      `shouldBe` Right
         [ Token IfToken "if" (Position 1 1),
           Token IntegerToken "1" (Position 1 4),
           Token ColonToken ":" (Position 1 5),
@@ -28,8 +28,8 @@ spec = describe "scanTokens indentation and extras" $ do
         ]
 
   it "recognizes comparison operators" $ do
-    scanTokens "a == b != c < 3 <= 4 > 2 >= 1\n" `shouldBe`
-      Right
+    scanTokens "a == b != c < 3 <= 4 > 2 >= 1\n"
+      `shouldBe` Right
         [ Token IdentifierToken "a" (Position 1 1),
           Token EqToken "==" (Position 1 3),
           Token IdentifierToken "b" (Position 1 6),
@@ -48,8 +48,8 @@ spec = describe "scanTokens indentation and extras" $ do
         ]
 
   it "recognizes logical operators" $ do
-    scanTokens "x and y or not z\n" `shouldBe`
-      Right
+    scanTokens "x and y or not z\n"
+      `shouldBe` Right
         [ Token IdentifierToken "x" (Position 1 1),
           Token AndToken "and" (Position 1 3),
           Token IdentifierToken "y" (Position 1 7),
@@ -61,8 +61,8 @@ spec = describe "scanTokens indentation and extras" $ do
         ]
 
   it "tokenizes at symbol" $ do
-    scanTokens "x @ 1\n" `shouldBe`
-      Right
+    scanTokens "x @ 1\n"
+      `shouldBe` Right
         [ Token IdentifierToken "x" (Position 1 1),
           Token AtToken "@" (Position 1 3),
           Token IntegerToken "1" (Position 1 5),
@@ -71,8 +71,8 @@ spec = describe "scanTokens indentation and extras" $ do
         ]
 
   it "accepts tab-indented input as leading whitespace" $ do
-    scanTokens "\tprint 1\n" `shouldBe`
-      Right
+    scanTokens "\tprint 1\n"
+      `shouldBe` Right
         [ Token PrintToken "print" (Position 1 2),
           Token IntegerToken "1" (Position 1 8),
           Token NewlineToken "\\n" (Position 1 9),
@@ -80,8 +80,8 @@ spec = describe "scanTokens indentation and extras" $ do
         ]
 
   it "accepts tabs between tokens" $ do
-    scanTokens "x\t=\t1\n" `shouldBe`
-      Right
+    scanTokens "x\t=\t1\n"
+      `shouldBe` Right
         [ Token IdentifierToken "x" (Position 1 1),
           Token AssignToken "=" (Position 1 3),
           Token IntegerToken "1" (Position 1 5),
@@ -90,8 +90,8 @@ spec = describe "scanTokens indentation and extras" $ do
         ]
 
   it "accepts tab between keyword and identifier" $ do
-    scanTokens "print\tx\n" `shouldBe`
-      Right
+    scanTokens "print\tx\n"
+      `shouldBe` Right
         [ Token PrintToken "print" (Position 1 1),
           Token IdentifierToken "x" (Position 1 7),
           Token NewlineToken "\\n" (Position 1 8),
@@ -102,8 +102,8 @@ spec = describe "scanTokens indentation and extras" $ do
     scanTokens "if 1:\n  print 1\n print 2\n" `shouldBe` Left (UnexpectedCharacter ' ')
 
   it "recognizes double-quoted string literals" $ do
-    scanTokens "print \"hello\"\n" `shouldBe`
-      Right
+    scanTokens "print \"hello\"\n"
+      `shouldBe` Right
         [ Token PrintToken "print" (Position 1 1),
           Token StringToken "hello" (Position 1 7),
           Token NewlineToken "\\n" (Position 1 14),
@@ -111,8 +111,8 @@ spec = describe "scanTokens indentation and extras" $ do
         ]
 
   it "recognizes list literal brackets" $ do
-    scanTokens "print [1, 2]\n" `shouldBe`
-      Right
+    scanTokens "print [1, 2]\n"
+      `shouldBe` Right
         [ Token PrintToken "print" (Position 1 1),
           Token LBracketToken "[" (Position 1 7),
           Token IntegerToken "1" (Position 1 8),
@@ -124,8 +124,8 @@ spec = describe "scanTokens indentation and extras" $ do
         ]
 
   it "recognizes dictionary literal braces" $ do
-    scanTokens "print {1: 2}\n" `shouldBe`
-      Right
+    scanTokens "print {1: 2}\n"
+      `shouldBe` Right
         [ Token PrintToken "print" (Position 1 1),
           Token LBraceToken "{" (Position 1 7),
           Token IntegerToken "1" (Position 1 8),

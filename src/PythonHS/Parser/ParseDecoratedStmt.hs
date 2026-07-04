@@ -1,12 +1,11 @@
 module PythonHS.Parser.ParseDecoratedStmt (parseDecoratedStmt) where
 
-import PythonHS.AST.Expr (Expr)
-import PythonHS.AST.Stmt (Stmt (ClassDefStmt, DecoratedStmt, FunctionDefDefaultsStmt, FunctionDefStmt), Stmt)
-import PythonHS.Lexer.Position (Position (Position))
+import PythonHS.AST.Stmt (Stmt (..))
+import PythonHS.Lexer.Position (Position (..))
 import PythonHS.Lexer.Token (Token (Token), position)
 import PythonHS.Lexer.TokenType (TokenType (AtToken, NewlineToken))
 import PythonHS.Parser.ParseDecoratedStmtConfig (ParseDecoratedStmtConfig (..))
-import PythonHS.Parser.ParseError (ParseError (ExpectedExpression))
+import PythonHS.Parser.ParseError (ParseError (..))
 
 parseDecoratedStmt ::
   ParseDecoratedStmtConfig ->
@@ -19,19 +18,19 @@ parseDecoratedStmt config tokenStream = do
   (decorators, afterDecorators) <- parseDecoratorLines parseExprFn [] tokenStream
   (targetStmt, afterTarget) <- parseStatementFn afterDecorators
   case targetStmt of
-    FunctionDefStmt {} -> Right (DecoratedStmt decorators targetStmt atPos, afterTarget)
-    FunctionDefDefaultsStmt {} -> Right (DecoratedStmt decorators targetStmt atPos, afterTarget)
-    ClassDefStmt {} -> Right (DecoratedStmt decorators targetStmt atPos, afterTarget)
+    FunctionDefStmt {} -> Right (DecoratedStmt {decoratedStmtDecorators = decorators, decoratedStmtTarget = targetStmt, decoratedStmtPos = atPos}, afterTarget)
+    FunctionDefDefaultsStmt {} -> Right (DecoratedStmt {decoratedStmtDecorators = decorators, decoratedStmtTarget = targetStmt, decoratedStmtPos = atPos}, afterTarget)
+    ClassDefStmt {} -> Right (DecoratedStmt {decoratedStmtDecorators = decorators, decoratedStmtTarget = targetStmt, decoratedStmtPos = atPos}, afterTarget)
     _ ->
       case afterDecorators of
-        tok : _ -> Left (ExpectedExpression (position tok))
-        _ -> Left (ExpectedExpression (Position 0 0))
+        tok : _ -> Left (ExpectedExpression {parseErrorPosition = position tok})
+        _ -> Left (ExpectedExpression {parseErrorPosition = Position {line = 0, column = 0}})
   where
     parseDecoratorLines parseExprFn acc (Token AtToken _ _ : rest) = do
       (decoratorExpr, afterExpr) <- parseExprFn rest
       case afterExpr of
         Token NewlineToken _ _ : afterNewline ->
           parseDecoratorLines parseExprFn (acc ++ [decoratorExpr]) afterNewline
-        tok : _ -> Left (ExpectedExpression (position tok))
-        _ -> Left (ExpectedExpression (Position 0 0))
+        tok : _ -> Left (ExpectedExpression {parseErrorPosition = position tok})
+        _ -> Left (ExpectedExpression {parseErrorPosition = Position {line = 0, column = 0}})
     parseDecoratorLines _ acc remaining = Right (acc, remaining)

@@ -1,8 +1,9 @@
 module PythonHS.VM.CallStdlibBuiltin (callStdlibBuiltin) where
 
 import PythonHS.Evaluator.ShowPos (showPos)
-import PythonHS.Evaluator.Value (Value (IntValue, ModuleValue, StringValue), Value)
+import PythonHS.Evaluator.Value (Value (IntValue, ModuleValue, StringValue))
 import PythonHS.Lexer.Position (Position)
+
 callStdlibBuiltin :: String -> [Value] -> Position -> Maybe (Either String Value)
 callStdlibBuiltin name args pos =
   case name of
@@ -58,9 +59,9 @@ callStdlibBuiltin name args pos =
 
     evalGetattr values attrPos =
       case values of
-        [obj, StringValue attrName] -> 
+        [obj, StringValue attrName] ->
           case obj of
-            ModuleValue _ attrs -> 
+            ModuleValue _ attrs ->
               case lookup attrName attrs of
                 Just value -> Right value
                 Nothing -> Left ("Attribute error: module has no attribute '" ++ attrName ++ "' at " ++ showPos attrPos)

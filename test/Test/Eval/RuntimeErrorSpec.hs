@@ -1,6 +1,6 @@
 module Test.Eval.RuntimeErrorSpec (spec) where
 
-import PythonHS.AST.BinaryOperator (BinaryOperator (AddOperator, MultiplyOperator, DivideOperator, ModuloOperator, LtOperator))
+import PythonHS.AST.BinaryOperator (BinaryOperator (AddOperator, DivideOperator, LtOperator, ModuloOperator, MultiplyOperator))
 import PythonHS.AST.Expr (Expr (BinaryExpr, CallExpr, DictExpr, IdentifierExpr, IntegerExpr, KeywordArgExpr, ListExpr, NoneExpr, StringExpr, UnaryMinusExpr))
 import PythonHS.AST.Program (Program (Program))
 import PythonHS.AST.Stmt (Stmt (AddAssignStmt, AssignStmt, BreakStmt, ContinueStmt, DivAssignStmt, FloorDivAssignStmt, ForStmt, FunctionDefDefaultsStmt, FunctionDefStmt, IfStmt, ModAssignStmt, MulAssignStmt, PassStmt, PrintStmt, ReturnStmt, SubAssignStmt, WhileStmt))
@@ -20,7 +20,7 @@ spec = describe "runtime error reporting" $ do
               (Position 3 1)
           ]
       )
-        `shouldBe` Left "Name error: undefined identifier missing at 3:8"
+      `shouldBe` Left "Name error: undefined identifier missing at 3:8"
 
   it "reports position for undefined identifier in while condition" $ do
     evalProgram
@@ -201,9 +201,9 @@ spec = describe "runtime error reporting" $ do
                     KeywordArgExpr "a" (IdentifierExpr "missing" (Position 13 16)) (Position 13 14)
                   ]
                   (Position 13 7)
-               )
-               (Position 13 1)
-           ]
+              )
+              (Position 13 1)
+          ]
       )
       `shouldBe` Left "Name error: undefined identifier missing at 13:16"
 
@@ -455,7 +455,7 @@ spec = describe "runtime error reporting" $ do
           [ PrintStmt (BinaryExpr AddOperator (StringExpr "hello" (Position 12 8)) (IntegerExpr 1 (Position 12 18)) (Position 12 14)) (Position 12 1)
           ]
       )
-        `shouldBe` Left "Type error: + expects int+int or string+string at 12:14"
+      `shouldBe` Left "Type error: + expects int+int or string+string at 12:14"
 
     evalProgram
       ( Program
@@ -545,14 +545,14 @@ spec = describe "runtime error reporting" $ do
 
     evalProgram
       ( Program
-        [ PrintStmt
-          ( CallExpr
-            "len"
-            [KeywordArgExpr "x" (IdentifierExpr "missing" (Position 17 13)) (Position 17 11)]
-            (Position 17 7)
-          )
-          (Position 17 1)
-        ]
+          [ PrintStmt
+              ( CallExpr
+                  "len"
+                  [KeywordArgExpr "x" (IdentifierExpr "missing" (Position 17 13)) (Position 17 11)]
+                  (Position 17 7)
+              )
+              (Position 17 1)
+          ]
       )
       `shouldBe` Left "Argument error: keyword arguments are not supported for builtin len at 17:11"
 

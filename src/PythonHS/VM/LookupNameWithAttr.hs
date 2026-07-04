@@ -1,7 +1,7 @@
 module PythonHS.VM.LookupNameWithAttr (lookupNameWithAttr) where
 
-import qualified Data.Map.Strict as Map
-import PythonHS.Evaluator.Value (Value (ClassValue, FunctionRefValue, InstanceValue, ModuleValue), Value)
+import Data.Map.Strict qualified as Map
+import PythonHS.Evaluator.Value (Value (ClassValue, FunctionRefValue, InstanceValue, ModuleValue))
 import PythonHS.VM.FindMethodFunctionName (findMethodFunctionName)
 import PythonHS.VM.LookupName (lookupName)
 import PythonHS.VM.ModulePrefixFor (modulePrefixFor)

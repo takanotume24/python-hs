@@ -4,7 +4,7 @@ import PythonHS.VM.ExecuteOneInstruction (executeOneInstruction)
 import PythonHS.VM.HandleRuntimeError (handleRuntimeError)
 import PythonHS.VM.InitVMState (initVMState)
 import PythonHS.VM.Instruction (Instruction)
-import PythonHS.VM.VMState (VMState(..))
+import PythonHS.VM.VMState (VMState (..))
 
 runInstructions :: [Instruction] -> Either String [String]
 runInstructions instructions = do

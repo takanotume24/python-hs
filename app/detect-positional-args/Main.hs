@@ -34,5 +34,5 @@ main = do
     parseArgs [path] = Just ([], path, False)
     parseArgs ("--json" : rest) = fmap (\(e, p, _) -> (e, p, True)) (parseArgs rest)
     parseArgs ("--exclude" : _ : []) = Nothing
-    parseArgs ("--exclude" : pattern : rest) = fmap (\(e, p, j) -> (pattern : e, p, j)) (parseArgs rest)
+    parseArgs ("--exclude" : pat : rest) = fmap (\(e, p, j) -> (pat : e, p, j)) (parseArgs rest)
     parseArgs _ = Nothing

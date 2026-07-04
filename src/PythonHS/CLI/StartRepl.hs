@@ -1,22 +1,22 @@
 module PythonHS.CLI.StartRepl (startRepl) where
 
 import Data.Char (isSpace)
-import qualified Data.Map.Strict as Map
-import System.Console.Haskeline (defaultSettings, getInputLine, outputStrLn, runInputT)
+import Data.Map.Strict qualified as Map
 import PythonHS.CLI.ProcessSubmission (processSubmission)
 import PythonHS.CLI.ProcessVmSubmission (processVmSubmission)
 import PythonHS.CLI.ReplEnvState (ReplEnvState (..))
 import PythonHS.CLI.SubmissionResult (SubmissionResult (..))
 import PythonHS.CLI.VmSubmissionResult (VmSubmissionResult (..))
-import PythonHS.Runner.RunnerEngine (RunnerEngine (AstEngine, VmEngine))
 import PythonHS.Runner.ResolveRunnerEngine (resolveRunnerEngine)
+import PythonHS.Runner.RunnerEngine (RunnerEngine (AstEngine, VmEngine))
+import System.Console.Haskeline (defaultSettings, getInputLine, outputStrLn, runInputT)
 import System.Environment (lookupEnv)
 
 startRepl :: IO ()
 startRepl = do
   envEngine <- lookupEnv "PYTHON_HS_RUNNER_ENGINE"
   case resolveRunnerEngine envEngine of
-    AstEngine -> runInputT defaultSettings (loop (ReplEnvState { replEnvStateEnv = Map.empty, replEnvStateFuncEnv = Map.empty }) [])
+    AstEngine -> runInputT defaultSettings (loop (ReplEnvState {replEnvStateEnv = Map.empty, replEnvStateFuncEnv = Map.empty}) [])
     VmEngine -> runInputT defaultSettings (loopVm [] [] [])
   where
     trimRight = reverse . dropWhile isSpace . reverse
@@ -29,8 +29,8 @@ startRepl = do
           fenv = replEnvStateFuncEnv state
           src = unlines buf
        in case processSubmission env fenv src of
-          Left err -> outputStrLn ("Error: " ++ err) >> return state
-          Right result -> mapM_ outputStrLn (submissionOutputs result) >> return (ReplEnvState { replEnvStateEnv = submissionEnv result, replEnvStateFuncEnv = submissionFuncEnv result })
+            Left err -> outputStrLn ("Error: " ++ err) >> return state
+            Right result -> mapM_ outputStrLn (submissionOutputs result) >> return (ReplEnvState {replEnvStateEnv = submissionEnv result, replEnvStateFuncEnv = submissionFuncEnv result})
 
     loop state buf = do
       let env = replEnvStateEnv state
@@ -55,7 +55,7 @@ startRepl = do
                     then do
                       state' <- case processSubmission env fenv (line ++ "\n") of
                         Left err -> outputStrLn ("Error: " ++ err) >> return state
-                        Right result -> mapM_ outputStrLn (submissionOutputs result) >> return (ReplEnvState { replEnvStateEnv = submissionEnv result, replEnvStateFuncEnv = submissionFuncEnv result })
+                        Right result -> mapM_ outputStrLn (submissionOutputs result) >> return (ReplEnvState {replEnvStateEnv = submissionEnv result, replEnvStateFuncEnv = submissionFuncEnv result})
                       loop state' []
                     else
                       if not (null buf) && trimRight line == ""

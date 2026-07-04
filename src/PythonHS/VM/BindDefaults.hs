@@ -1,9 +1,9 @@
 module PythonHS.VM.BindDefaults (bindDefaults) where
 
-import qualified Data.Map.Strict as Map
-import qualified Data.Set as Set
+import Data.Map.Strict qualified as Map
+import Data.Set qualified as Set
 import PythonHS.Evaluator.ShowPos (showPos)
-import PythonHS.Evaluator.Value (Value (NoneValue), Value)
+import PythonHS.Evaluator.Value (Value (NoneValue))
 import PythonHS.Lexer.Position (Position)
 import PythonHS.VM.EnvState (EnvState (..))
 import PythonHS.VM.ExceptionState (ExceptionState (..))
@@ -39,20 +39,20 @@ bindDefaults execute fname pos params defaultCodes initialLocals globalsNow func
                 Just defaultCode -> do
                   let defaultState =
                         VMState
-                          { vmCode = defaultCode
-                          , vmIp = 0
-                          , vmStack = []
-                          , vmEnv =
+                          { vmCode = defaultCode,
+                            vmIp = 0,
+                            vmStack = [],
+                            vmEnv =
                               EnvState
-                                { envGlobals = currentGlobals
-                                , envLocals = currentLocals
-                                , envFunctions = currentFunctions
-                                , envGlobalDecls = Set.empty
-                                }
-                          , vmLoop = LoopState {loopForStates = Map.empty, loopCounts = Map.empty}
-                          , vmException = ExceptionState {exceptionHandlers = [], exceptionOutputs = []}
-                          , vmIsTopLevel = False
-                          , vmOutputs = currentOutputs
+                                { envGlobals = currentGlobals,
+                                  envLocals = currentLocals,
+                                  envFunctions = currentFunctions,
+                                  envGlobalDecls = Set.empty
+                                },
+                            vmLoop = LoopState {loopForStates = Map.empty, loopCounts = Map.empty},
+                            vmException = ExceptionState {exceptionHandlers = [], exceptionOutputs = []},
+                            vmIsTopLevel = False,
+                            vmOutputs = currentOutputs
                           }
                   finalState <- execute defaultState
                   let defaultValue =

@@ -3,14 +3,14 @@ module Test.Lexer.ScanTokensCoreSpec (spec) where
 import PythonHS.Lexer.Position (Position (Position))
 import PythonHS.Lexer.ScanTokens (scanTokens)
 import PythonHS.Lexer.Token (Token (Token))
-import PythonHS.Lexer.TokenType (TokenType (AsToken, AssignToken, AtToken, BreakToken, CaseToken, ClassToken, ColonAssignToken, ColonToken, ContinueToken, DedentToken, DotToken, DoubleSlashAssignToken, DoubleSlashToken, EOFToken, ElifToken, ExceptToken, FalseToken, FinallyToken, FloatToken, ForToken, FromToken, GlobalToken, IdentifierToken, IfToken, ImportToken, InToken, IndentToken, IntegerToken, LParenToken, LambdaToken, MatchToken, MinusAssignToken, NewlineToken, NoneToken, PassToken, PercentAssignToken, PercentToken, PipeToken, PlusAssignToken, PlusToken, PrintToken, RaiseToken, ReturnToken, RParenToken, SlashAssignToken, SlashToken, StarAssignToken, StarToken, StringToken, TrueToken, TryToken, YieldToken))
+import PythonHS.Lexer.TokenType (TokenType (AsToken, AssignToken, AtToken, BreakToken, CaseToken, ClassToken, ColonAssignToken, ColonToken, ContinueToken, DedentToken, DotToken, DoubleSlashAssignToken, DoubleSlashToken, EOFToken, ElifToken, ExceptToken, FalseToken, FinallyToken, FloatToken, ForToken, FromToken, GlobalToken, IdentifierToken, IfToken, ImportToken, InToken, IndentToken, IntegerToken, LParenToken, LambdaToken, MatchToken, MinusAssignToken, NewlineToken, NoneToken, PassToken, PercentAssignToken, PercentToken, PipeToken, PlusAssignToken, PlusToken, PrintToken, RParenToken, RaiseToken, ReturnToken, SlashAssignToken, SlashToken, StarAssignToken, StarToken, StringToken, TrueToken, TryToken, YieldToken))
 import Test.Hspec (Spec, describe, it, shouldBe)
 
 spec :: Spec
 spec = describe "scanTokens core tokens" $ do
   it "tokenizes assignment with newline" $ do
-    scanTokens "x = 12\n" `shouldBe`
-      Right
+    scanTokens "x = 12\n"
+      `shouldBe` Right
         [ Token IdentifierToken "x" (Position 1 1),
           Token AssignToken "=" (Position 1 3),
           Token IntegerToken "12" (Position 1 5),
@@ -19,8 +19,8 @@ spec = describe "scanTokens core tokens" $ do
         ]
 
   it "recognizes keywords and operators" $ do
-    scanTokens "if x + 1\nprint x\n" `shouldBe`
-      Right
+    scanTokens "if x + 1\nprint x\n"
+      `shouldBe` Right
         [ Token IfToken "if" (Position 1 1),
           Token IdentifierToken "x" (Position 1 4),
           Token PlusToken "+" (Position 1 6),
@@ -33,8 +33,8 @@ spec = describe "scanTokens core tokens" $ do
         ]
 
   it "recognizes at token for decorators" $ do
-    scanTokens "@deco\n" `shouldBe`
-      Right
+    scanTokens "@deco\n"
+      `shouldBe` Right
         [ Token AtToken "@" (Position 1 1),
           Token IdentifierToken "deco" (Position 1 2),
           Token NewlineToken "\\n" (Position 1 6),
@@ -42,8 +42,8 @@ spec = describe "scanTokens core tokens" $ do
         ]
 
   it "recognizes plus-assign operator" $ do
-    scanTokens "x += 1\n" `shouldBe`
-      Right
+    scanTokens "x += 1\n"
+      `shouldBe` Right
         [ Token IdentifierToken "x" (Position 1 1),
           Token PlusAssignToken "+=" (Position 1 3),
           Token IntegerToken "1" (Position 1 6),
@@ -52,8 +52,8 @@ spec = describe "scanTokens core tokens" $ do
         ]
 
   it "recognizes minus-assign operator" $ do
-    scanTokens "x -= 1\n" `shouldBe`
-      Right
+    scanTokens "x -= 1\n"
+      `shouldBe` Right
         [ Token IdentifierToken "x" (Position 1 1),
           Token MinusAssignToken "-=" (Position 1 3),
           Token IntegerToken "1" (Position 1 6),
@@ -62,8 +62,8 @@ spec = describe "scanTokens core tokens" $ do
         ]
 
   it "recognizes star-assign operator" $ do
-    scanTokens "x *= 3\n" `shouldBe`
-      Right
+    scanTokens "x *= 3\n"
+      `shouldBe` Right
         [ Token IdentifierToken "x" (Position 1 1),
           Token StarAssignToken "*=" (Position 1 3),
           Token IntegerToken "3" (Position 1 6),
@@ -72,8 +72,8 @@ spec = describe "scanTokens core tokens" $ do
         ]
 
   it "recognizes slash-assign operator" $ do
-    scanTokens "x /= 3\n" `shouldBe`
-      Right
+    scanTokens "x /= 3\n"
+      `shouldBe` Right
         [ Token IdentifierToken "x" (Position 1 1),
           Token SlashAssignToken "/=" (Position 1 3),
           Token IntegerToken "3" (Position 1 6),
@@ -82,8 +82,8 @@ spec = describe "scanTokens core tokens" $ do
         ]
 
   it "recognizes percent-assign operator" $ do
-    scanTokens "x %= 3\n" `shouldBe`
-      Right
+    scanTokens "x %= 3\n"
+      `shouldBe` Right
         [ Token IdentifierToken "x" (Position 1 1),
           Token PercentAssignToken "%=" (Position 1 3),
           Token IntegerToken "3" (Position 1 6),
@@ -92,8 +92,8 @@ spec = describe "scanTokens core tokens" $ do
         ]
 
   it "recognizes double-slash-assign operator" $ do
-    scanTokens "x //= 3\n" `shouldBe`
-      Right
+    scanTokens "x //= 3\n"
+      `shouldBe` Right
         [ Token IdentifierToken "x" (Position 1 1),
           Token DoubleSlashAssignToken "//=" (Position 1 3),
           Token IntegerToken "3" (Position 1 7),
@@ -102,8 +102,8 @@ spec = describe "scanTokens core tokens" $ do
         ]
 
   it "recognizes elif keyword" $ do
-    scanTokens "elif x\n" `shouldBe`
-      Right
+    scanTokens "elif x\n"
+      `shouldBe` Right
         [ Token ElifToken "elif" (Position 1 1),
           Token IdentifierToken "x" (Position 1 6),
           Token NewlineToken "\\n" (Position 1 7),
@@ -111,8 +111,8 @@ spec = describe "scanTokens core tokens" $ do
         ]
 
   it "recognizes True/False/None keywords" $ do
-    scanTokens "print True\nprint False\nprint None\n" `shouldBe`
-      Right
+    scanTokens "print True\nprint False\nprint None\n"
+      `shouldBe` Right
         [ Token PrintToken "print" (Position 1 1),
           Token TrueToken "True" (Position 1 7),
           Token NewlineToken "\\n" (Position 1 11),
@@ -126,8 +126,8 @@ spec = describe "scanTokens core tokens" $ do
         ]
 
   it "recognizes double-slash operator" $ do
-    scanTokens "print 7 // 2\n" `shouldBe`
-      Right
+    scanTokens "print 7 // 2\n"
+      `shouldBe` Right
         [ Token PrintToken "print" (Position 1 1),
           Token IntegerToken "7" (Position 1 7),
           Token DoubleSlashToken "//" (Position 1 9),
@@ -137,8 +137,8 @@ spec = describe "scanTokens core tokens" $ do
         ]
 
   it "recognizes multiplicative operators" $ do
-    scanTokens "print 6 * 2 / 3 // 2 % 2\n" `shouldBe`
-      Right
+    scanTokens "print 6 * 2 / 3 // 2 % 2\n"
+      `shouldBe` Right
         [ Token PrintToken "print" (Position 1 1),
           Token IntegerToken "6" (Position 1 7),
           Token StarToken "*" (Position 1 9),
@@ -154,8 +154,8 @@ spec = describe "scanTokens core tokens" $ do
         ]
 
   it "recognizes return keyword" $ do
-    scanTokens "return x\n" `shouldBe`
-      Right
+    scanTokens "return x\n"
+      `shouldBe` Right
         [ Token ReturnToken "return" (Position 1 1),
           Token IdentifierToken "x" (Position 1 8),
           Token NewlineToken "\\n" (Position 1 9),
@@ -163,8 +163,8 @@ spec = describe "scanTokens core tokens" $ do
         ]
 
   it "recognizes yield keyword" $ do
-    scanTokens "yield x\n" `shouldBe`
-      Right
+    scanTokens "yield x\n"
+      `shouldBe` Right
         [ Token YieldToken "yield" (Position 1 1),
           Token IdentifierToken "x" (Position 1 7),
           Token NewlineToken "\\n" (Position 1 8),
@@ -172,8 +172,8 @@ spec = describe "scanTokens core tokens" $ do
         ]
 
   it "recognizes for/in/break/continue keywords" $ do
-    scanTokens "for i in x\nbreak\ncontinue\n" `shouldBe`
-      Right
+    scanTokens "for i in x\nbreak\ncontinue\n"
+      `shouldBe` Right
         [ Token ForToken "for" (Position 1 1),
           Token IdentifierToken "i" (Position 1 5),
           Token InToken "in" (Position 1 7),
@@ -187,8 +187,8 @@ spec = describe "scanTokens core tokens" $ do
         ]
 
   it "recognizes global keyword" $ do
-    scanTokens "global x\n" `shouldBe`
-      Right
+    scanTokens "global x\n"
+      `shouldBe` Right
         [ Token GlobalToken "global" (Position 1 1),
           Token IdentifierToken "x" (Position 1 8),
           Token NewlineToken "\\n" (Position 1 9),
@@ -196,16 +196,16 @@ spec = describe "scanTokens core tokens" $ do
         ]
 
   it "recognizes pass keyword" $ do
-    scanTokens "pass\n" `shouldBe`
-      Right
+    scanTokens "pass\n"
+      `shouldBe` Right
         [ Token PassToken "pass" (Position 1 1),
           Token NewlineToken "\\n" (Position 1 5),
           Token EOFToken "" (Position 2 1)
         ]
 
   it "recognizes import keyword" $ do
-    scanTokens "import math\n" `shouldBe`
-      Right
+    scanTokens "import math\n"
+      `shouldBe` Right
         [ Token ImportToken "import" (Position 1 1),
           Token IdentifierToken "math" (Position 1 8),
           Token NewlineToken "\\n" (Position 1 12),
@@ -213,8 +213,8 @@ spec = describe "scanTokens core tokens" $ do
         ]
 
   it "recognizes class keyword" $ do
-    scanTokens "class A:\n" `shouldBe`
-      Right
+    scanTokens "class A:\n"
+      `shouldBe` Right
         [ Token ClassToken "class" (Position 1 1),
           Token IdentifierToken "A" (Position 1 7),
           Token ColonToken ":" (Position 1 8),
@@ -223,8 +223,8 @@ spec = describe "scanTokens core tokens" $ do
         ]
 
   it "recognizes lambda keyword" $ do
-    scanTokens "f = lambda x: x\n" `shouldBe`
-      Right
+    scanTokens "f = lambda x: x\n"
+      `shouldBe` Right
         [ Token IdentifierToken "f" (Position 1 1),
           Token AssignToken "=" (Position 1 3),
           Token LambdaToken "lambda" (Position 1 5),
@@ -236,8 +236,8 @@ spec = describe "scanTokens core tokens" $ do
         ]
 
   it "recognizes walrus operator token" $ do
-    scanTokens "print (y := 1)\n" `shouldBe`
-      Right
+    scanTokens "print (y := 1)\n"
+      `shouldBe` Right
         [ Token PrintToken "print" (Position 1 1),
           Token LParenToken "(" (Position 1 7),
           Token IdentifierToken "y" (Position 1 8),
@@ -249,8 +249,8 @@ spec = describe "scanTokens core tokens" $ do
         ]
 
   it "recognizes try/except/finally/raise keywords" $ do
-    scanTokens "try:\nexcept:\nfinally:\nraise \"x\"\n" `shouldBe`
-      Right
+    scanTokens "try:\nexcept:\nfinally:\nraise \"x\"\n"
+      `shouldBe` Right
         [ Token TryToken "try" (Position 1 1),
           Token ColonToken ":" (Position 1 4),
           Token NewlineToken "\\n" (Position 1 5),
@@ -267,8 +267,8 @@ spec = describe "scanTokens core tokens" $ do
         ]
 
   it "recognizes match/case and pattern tokens" $ do
-    scanTokens "match x:\n  case 1 | 2:\n    print 1\n" `shouldBe`
-      Right
+    scanTokens "match x:\n  case 1 | 2:\n    print 1\n"
+      `shouldBe` Right
         [ Token MatchToken "match" (Position 1 1),
           Token IdentifierToken "x" (Position 1 7),
           Token ColonToken ":" (Position 1 8),
@@ -290,8 +290,8 @@ spec = describe "scanTokens core tokens" $ do
         ]
 
   it "recognizes from/as keywords for import variants" $ do
-    scanTokens "from pkg.mod import sqrt as s\n" `shouldBe`
-      Right
+    scanTokens "from pkg.mod import sqrt as s\n"
+      `shouldBe` Right
         [ Token FromToken "from" (Position 1 1),
           Token IdentifierToken "pkg" (Position 1 6),
           Token DotToken "." (Position 1 9),
@@ -305,8 +305,8 @@ spec = describe "scanTokens core tokens" $ do
         ]
 
   it "recognizes dot token for method-call syntax" $ do
-    scanTokens "x.append(1)\n" `shouldBe`
-      Right
+    scanTokens "x.append(1)\n"
+      `shouldBe` Right
         [ Token IdentifierToken "x" (Position 1 1),
           Token DotToken "." (Position 1 2),
           Token IdentifierToken "append" (Position 1 3),
@@ -318,8 +318,8 @@ spec = describe "scanTokens core tokens" $ do
         ]
 
   it "does not lex integer method call as float literal" $ do
-    scanTokens "1.append(2)\n" `shouldBe`
-      Right
+    scanTokens "1.append(2)\n"
+      `shouldBe` Right
         [ Token IntegerToken "1" (Position 1 1),
           Token DotToken "." (Position 1 2),
           Token IdentifierToken "append" (Position 1 3),
@@ -331,8 +331,8 @@ spec = describe "scanTokens core tokens" $ do
         ]
 
   it "recognizes float literals including scientific notation" $ do
-    scanTokens "print 1.23\nprint 1.\nprint .5\nprint 1e3\nprint 1.2e-3\n" `shouldBe`
-      Right
+    scanTokens "print 1.23\nprint 1.\nprint .5\nprint 1e3\nprint 1.2e-3\n"
+      `shouldBe` Right
         [ Token PrintToken "print" (Position 1 1),
           Token FloatToken "1.23" (Position 1 7),
           Token NewlineToken "\\n" (Position 1 11),

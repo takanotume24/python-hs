@@ -1,9 +1,9 @@
 module PythonHS.VM.ExecuteCallFunction (executeCallFunction) where
 
-import qualified Data.Map.Strict as Map
-import qualified Data.Set as Set
+import Data.Map.Strict qualified as Map
+import Data.Set qualified as Set
 import PythonHS.Evaluator.ShowPos (showPos)
-import PythonHS.Evaluator.Value (Value (ClassValue, FunctionRefValue, InstanceValue, IntValue, ModuleValue), Value)
+import PythonHS.Evaluator.Value (Value (ClassValue, FunctionRefValue, InstanceValue, IntValue, ModuleValue))
 import PythonHS.Lexer.Position (Position)
 import PythonHS.VM.BindCallArguments (bindCallArguments)
 import PythonHS.VM.BindDefaults (bindDefaults)
@@ -13,12 +13,14 @@ import PythonHS.VM.EnvState (EnvState (..))
 import PythonHS.VM.EvaluateBuiltinArgs (evaluateBuiltinArgs)
 import PythonHS.VM.EvaluateUserArgs (evaluateUserArgs)
 import PythonHS.VM.ExceptionState (ExceptionState (..))
+import PythonHS.VM.ExecuteCallUserFunction (executeCallUserFunction)
 import PythonHS.VM.ExecuteCallValueFunction (executeCallValueFunction)
+import PythonHS.VM.ExecuteCreateInstance (executeCreateInstance)
 import PythonHS.VM.FindMethodFunctionName (findMethodFunctionName)
 import PythonHS.VM.FirstKeywordArg (firstKeywordArg)
 import PythonHS.VM.Instruction (Instruction)
-import PythonHS.VM.LoopState (LoopState (..))
 import PythonHS.VM.LookupName (lookupName)
+import PythonHS.VM.LoopState (LoopState (..))
 import PythonHS.VM.ModulePrefixFor (modulePrefixFor)
 import PythonHS.VM.VMState (VMState (..))
 
@@ -47,12 +49,23 @@ executeCallFunction execute isTopLevel fname compiledArgs pos stack globalsEnv l
           (functionLocals, globalsAfterDefaults, functionsAfterDefaults, outputsAfterDefaults) <-
             bindDefaults execute fname pos params defaultCodes initialLocals globalsAfterArgs functionsAfterArgs outputsAfterArgs
           let functionGlobalDecls = collectFunctionGlobalDecls functionCode
-              callState = VMState {vmCode = functionCode, vmIp = 0, vmStack = [],
-                vmEnv = EnvState {envGlobals = globalsAfterDefaults, envLocals = functionLocals,
-                  envFunctions = functionsAfterDefaults, envGlobalDecls = functionGlobalDecls},
-                vmLoop = LoopState {loopForStates = Map.empty, loopCounts = Map.empty},
-                vmException = ExceptionState {exceptionHandlers = [], exceptionOutputs = []},
-                vmIsTopLevel = False, vmOutputs = outputsAfterDefaults}
+              callState =
+                VMState
+                  { vmCode = functionCode,
+                    vmIp = 0,
+                    vmStack = [],
+                    vmEnv =
+                      EnvState
+                        { envGlobals = globalsAfterDefaults,
+                          envLocals = functionLocals,
+                          envFunctions = functionsAfterDefaults,
+                          envGlobalDecls = functionGlobalDecls
+                        },
+                    vmLoop = LoopState {loopForStates = Map.empty, loopCounts = Map.empty},
+                    vmException = ExceptionState {exceptionHandlers = [], exceptionOutputs = []},
+                    vmIsTopLevel = False,
+                    vmOutputs = outputsAfterDefaults
+                  }
           finalState <- execute callState
           let returnValue = case vmStack finalState of (value : _) -> value; [] -> IntValue 0
               newLocalEnv = if isTopLevel then envGlobals (vmEnv finalState) else localEnv
@@ -62,78 +75,27 @@ executeCallFunction execute isTopLevel fname compiledArgs pos stack globalsEnv l
             Just (_, argPos)
               | isBuiltinName fname ->
                   Left ("Argument error: keyword arguments are not supported for builtin " ++ fname ++ " at " ++ showPos argPos)
-            _ -> do
-              (args, globalsAfterArgs, functionsAfterArgs, outputsAfterArgs) <-
-                evaluateBuiltinArgs execute localEnv compiledArgs globalsEnv functions outputs []
-              case lookupName fname localEnv globalsEnv of
-                Just (ClassValue className _ _) ->
-                  createInstance className args globalsAfterArgs functionsAfterArgs outputsAfterArgs
-                _ ->
-                  case args of
-                    ClassValue className _ _ : methodArgs@(InstanceValue _ _ : _) ->
-                      case findMethodFunctionName globalsAfterArgs localEnv className fname of
-                        Just methodFunctionName ->
-                          callUserFunction methodFunctionName Nothing methodArgs globalsAfterArgs functionsAfterArgs outputsAfterArgs
-                        Nothing -> callBuiltinOrFail args globalsAfterArgs functionsAfterArgs outputsAfterArgs
-                    InstanceValue className _ : _ ->
-                      case findMethodFunctionName globalsAfterArgs localEnv className fname of
-                        Just methodFunctionName ->
-                          callUserFunction methodFunctionName Nothing args globalsAfterArgs functionsAfterArgs outputsAfterArgs
-                        Nothing -> callBuiltinOrFail args globalsAfterArgs functionsAfterArgs outputsAfterArgs
-                    _ -> callBuiltinOrFail args globalsAfterArgs functionsAfterArgs outputsAfterArgs
+            _ ->
+              case evaluateBuiltinArgs execute localEnv compiledArgs globalsEnv functions outputs [] of
+                Left err -> Left err
+                Right (args, globalsAfterArgs, functionsAfterArgs, outputsAfterArgs) ->
+                  case lookupName fname localEnv globalsEnv of
+                    Just (ClassValue className _ _) ->
+                      executeCreateInstance execute isTopLevel pos stack localEnv className args globalsAfterArgs functionsAfterArgs outputsAfterArgs
+                    _ ->
+                      case args of
+                        ClassValue className _ _ : methodArgs@(InstanceValue _ _ : _) ->
+                          case findMethodFunctionName globalsAfterArgs localEnv className fname of
+                            Just methodFunctionName ->
+                              executeCallUserFunction execute isTopLevel pos stack localEnv methodFunctionName Nothing methodArgs globalsAfterArgs functionsAfterArgs outputsAfterArgs
+                            Nothing -> callBuiltinOrFail args globalsAfterArgs functionsAfterArgs outputsAfterArgs
+                        InstanceValue className _ : _ ->
+                          case findMethodFunctionName globalsAfterArgs localEnv className fname of
+                            Just methodFunctionName ->
+                              executeCallUserFunction execute isTopLevel pos stack localEnv methodFunctionName Nothing args globalsAfterArgs functionsAfterArgs outputsAfterArgs
+                            Nothing -> callBuiltinOrFail args globalsAfterArgs functionsAfterArgs outputsAfterArgs
+                        _ -> callBuiltinOrFail args globalsAfterArgs functionsAfterArgs outputsAfterArgs
   where
-    callUserFunction targetName maybeCapturedBindings args globalsNow functionsNow outputsNow =
-      case Map.lookup targetName functionsNow of
-        Nothing -> Left ("Name error: undefined function " ++ targetName ++ " at " ++ showPos pos)
-        Just (params, defaultCodes, functionCode) -> do
-          let argKinds = map (\_ -> (Nothing, pos)) args
-          initialLocals <- bindCallArguments targetName pos params args argKinds
-          let capturedLocals =
-                case maybeCapturedBindings of
-                  Just bindings -> Map.fromList bindings
-                  Nothing -> Map.empty
-              mergedLocals = Map.union initialLocals capturedLocals
-          (functionLocals, globalsAfterDefaults, functionsAfterDefaults, outputsAfterDefaults) <-
-            bindDefaults execute targetName pos params defaultCodes mergedLocals globalsNow functionsNow outputsNow
-          let functionGlobalDecls = collectFunctionGlobalDecls functionCode
-              callState = VMState {vmCode = functionCode, vmIp = 0, vmStack = [],
-                vmEnv = EnvState {envGlobals = globalsAfterDefaults, envLocals = functionLocals,
-                  envFunctions = functionsAfterDefaults, envGlobalDecls = functionGlobalDecls},
-                vmLoop = LoopState {loopForStates = Map.empty, loopCounts = Map.empty},
-                vmException = ExceptionState {exceptionHandlers = [], exceptionOutputs = []},
-                vmIsTopLevel = False, vmOutputs = outputsAfterDefaults}
-          finalState <- execute callState
-          let returnValue = case vmStack finalState of (value : _) -> value; [] -> IntValue 0
-              newLocalEnv = if isTopLevel then envGlobals (vmEnv finalState) else localEnv
-          Right (returnValue : stack, envGlobals (vmEnv finalState), newLocalEnv, envFunctions (vmEnv finalState), vmOutputs finalState)
-
-    createInstance className args globalsNow functionsNow outputsNow =
-      let instanceValue = InstanceValue className []
-       in case findMethodFunctionName globalsNow localEnv className "__init__" of
-            Just initFunctionName ->
-              case Map.lookup initFunctionName functionsNow of
-                Nothing -> Left ("Name error: undefined function " ++ initFunctionName ++ " at " ++ showPos pos)
-                Just (initParams, initDefaults, initCode) -> do
-                  let initArgValues = instanceValue : args
-                      initArgKinds = map (\_ -> (Nothing, pos)) initArgValues
-                  initialLocals <- bindCallArguments initFunctionName pos initParams initArgValues initArgKinds
-                  (functionLocals, globalsAfterDefaults, functionsAfterDefaults, outputsAfterDefaults) <-
-                    bindDefaults execute initFunctionName pos initParams initDefaults initialLocals globalsNow functionsNow outputsNow
-                  let functionGlobalDecls = collectFunctionGlobalDecls initCode
-                      callState = VMState {vmCode = initCode, vmIp = 0, vmStack = [],
-                        vmEnv = EnvState {envGlobals = globalsAfterDefaults, envLocals = functionLocals,
-                          envFunctions = functionsAfterDefaults, envGlobalDecls = functionGlobalDecls},
-                        vmLoop = LoopState {loopForStates = Map.empty, loopCounts = Map.empty},
-                        vmException = ExceptionState {exceptionHandlers = [], exceptionOutputs = []},
-                        vmIsTopLevel = False, vmOutputs = outputsAfterDefaults}
-                  finalState <- execute callState
-                  let constructedInstance = case vmStack finalState of (instanceResult@(InstanceValue _ _) : _) -> instanceResult; _ -> instanceValue
-                      newLocalEnv = if isTopLevel then envGlobals (vmEnv finalState) else localEnv
-                  Right (constructedInstance : stack, envGlobals (vmEnv finalState), newLocalEnv, envFunctions (vmEnv finalState), vmOutputs finalState)
-            Nothing ->
-              let newLocalEnv = if isTopLevel then globalsNow else localEnv
-               in Right (instanceValue : stack, globalsNow, newLocalEnv, functionsNow, outputsNow)
-
     callBuiltinOrFail args globalsAfterArgs functionsAfterArgs outputsAfterArgs =
       case callModuleMemberFunction args globalsAfterArgs functionsAfterArgs outputsAfterArgs of
         Just result -> result
@@ -162,7 +124,7 @@ executeCallFunction execute isTopLevel fname compiledArgs pos stack globalsEnv l
         ModuleValue moduleName _ : restArgs ->
           let memberFunctionName = modulePrefixFor (splitByDot moduleName) ++ fname
            in case Map.lookup memberFunctionName functionsNow of
-                Just _ -> Just (callUserFunction memberFunctionName Nothing restArgs globalsNow functionsNow outputsNow)
+                Just _ -> Just (executeCallUserFunction execute isTopLevel pos stack localEnv memberFunctionName Nothing restArgs globalsNow functionsNow outputsNow)
                 Nothing -> Nothing
         _ -> Nothing
 

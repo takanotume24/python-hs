@@ -3,9 +3,9 @@ module PythonHS.Evaluator.EvalExprBinary (evalExprBinary) where
 import PythonHS.AST.BinaryOperator (BinaryOperator (..))
 import PythonHS.AST.Expr (Expr)
 import PythonHS.Evaluator.Env (Env)
+import PythonHS.Evaluator.EvalExprResult (EvalExprResult (..))
 import PythonHS.Evaluator.FuncEnv (FuncEnv)
 import PythonHS.Evaluator.ShowPos (showPos)
-import PythonHS.Evaluator.EvalExprResult (EvalExprResult (..))
 import PythonHS.Evaluator.Value (Value (..))
 import PythonHS.Lexer.Position (Position)
 
@@ -86,9 +86,9 @@ evalExprBinary evalExprFn env fenv op leftExpr rightExpr pos =
       if rightNumber == 0
         then Left $ "Value error: division by zero at " ++ showPos pos
         else
-           let quotient = leftNumber / rightNumber
-               floored = fromIntegral (floor quotient :: Int)
-            in case (leftVal, rightVal) of
+          let quotient = leftNumber / rightNumber
+              floored = fromIntegral (floor quotient :: Int)
+           in case (leftVal, rightVal) of
                 (IntValue {}, IntValue {}) -> Right (EvalExprResult (IntValue (floor quotient)) (leftOuts ++ rightOuts) envAfterRight)
                 _ -> Right (EvalExprResult (FloatValue floored) (leftOuts ++ rightOuts) envAfterRight)
 

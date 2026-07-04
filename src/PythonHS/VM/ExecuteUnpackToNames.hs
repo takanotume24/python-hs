@@ -1,6 +1,6 @@
 module PythonHS.VM.ExecuteUnpackToNames (executeUnpackToNames) where
 
-import qualified Data.Map.Strict as Map
+import Data.Map.Strict qualified as Map
 import PythonHS.Evaluator.ShowPos (showPos)
 import PythonHS.Evaluator.Value (Value)
 import PythonHS.Lexer.Position (Position)

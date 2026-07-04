@@ -1,27 +1,27 @@
 module PythonHS.Parser.ParseImportStmt (parseImportStmt) where
 
-import PythonHS.AST.Stmt (Stmt (FromImportStmt, ImportStmt))
-import PythonHS.Lexer.Position (Position (Position))
+import PythonHS.AST.Stmt (Stmt (..))
+import PythonHS.Lexer.Position (Position (..))
 import PythonHS.Lexer.Token (Token (Token), position)
 import PythonHS.Lexer.TokenType (TokenType (AsToken, CommaToken, DotToken, EOFToken, FromToken, IdentifierToken, ImportToken, LParenToken, NewlineToken, RParenToken, StarToken))
-import PythonHS.Parser.ParseError (ParseError (ExpectedExpression))
+import PythonHS.Parser.ParseError (ParseError (..))
 
 parseImportStmt :: [Token] -> Either ParseError (Stmt, [Token])
 parseImportStmt tokenStream =
   case tokenStream of
     Token ImportToken _ pos : rest -> do
       (entries, remaining) <- parseImportEntries rest
-      Right (ImportStmt entries pos, remaining)
+      Right (ImportStmt {importStmtItems = entries, importStmtPos = pos}, remaining)
     Token FromToken _ pos : rest -> do
       (relativeLevel, modulePath, afterModulePath) <- parseFromModuleSpec rest
       case afterModulePath of
         Token ImportToken _ _ : afterImport -> do
           (items, remaining) <- parseFromItems afterImport
-          Right (FromImportStmt relativeLevel modulePath items pos, remaining)
-        tok : _ -> Left (ExpectedExpression (position tok))
-        [] -> Left (ExpectedExpression (Position 0 0))
-    tok : _ -> Left (ExpectedExpression (position tok))
-    [] -> Left (ExpectedExpression (Position 0 0))
+          Right (FromImportStmt {fromImportStmtLevel = relativeLevel, fromImportStmtModule = modulePath, fromImportStmtItems = items, fromImportStmtPos = pos}, remaining)
+        tok : _ -> Left (ExpectedExpression {parseErrorPosition = position tok})
+        [] -> Left (ExpectedExpression {parseErrorPosition = Position {line = 0, column = 0}})
+    tok : _ -> Left (ExpectedExpression {parseErrorPosition = position tok})
+    [] -> Left (ExpectedExpression {parseErrorPosition = Position {line = 0, column = 0}})
   where
     parseImportEntries ts = do
       (modulePath, afterPath) <- parseModulePath ts
@@ -38,8 +38,8 @@ parseImportStmt tokenStream =
           (items, afterItems) <- parseFromItemsList rest
           case afterItems of
             Token RParenToken _ _ : remaining -> Right (items, remaining)
-            tok : _ -> Left (ExpectedExpression (position tok))
-            [] -> Left (ExpectedExpression (Position 0 0))
+            tok : _ -> Left (ExpectedExpression {parseErrorPosition = position tok})
+            [] -> Left (ExpectedExpression {parseErrorPosition = Position {line = 0, column = 0}})
         _ -> parseFromItemsList ts
 
     parseFromItemsList ts = do
@@ -75,8 +75,8 @@ parseImportStmt tokenStream =
             Token IdentifierToken _ _ : _ -> do
               (modulePath, remaining) <- parseModulePath afterDots
               Right (level, modulePath, remaining)
-            tok : _ -> Left (ExpectedExpression (position tok))
-            [] -> Left (ExpectedExpression (Position 0 0))
+            tok : _ -> Left (ExpectedExpression {parseErrorPosition = position tok})
+            [] -> Left (ExpectedExpression {parseErrorPosition = Position {line = 0, column = 0}})
         _ -> do
           (modulePath, remaining) <- parseModulePath ts
           Right (0, modulePath, remaining)
@@ -107,5 +107,5 @@ parseImportStmt tokenStream =
     parseIdentifier ts =
       case ts of
         Token IdentifierToken name _ : rest -> Right (name, rest)
-        tok : _ -> Left (ExpectedExpression (position tok))
-        [] -> Left (ExpectedExpression (Position 0 0))
+        tok : _ -> Left (ExpectedExpression {parseErrorPosition = position tok})
+        [] -> Left (ExpectedExpression {parseErrorPosition = Position {line = 0, column = 0}})

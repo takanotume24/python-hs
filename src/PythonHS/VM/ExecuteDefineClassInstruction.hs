@@ -1,7 +1,7 @@
 module PythonHS.VM.ExecuteDefineClassInstruction (executeDefineClassInstruction) where
 
-import qualified Data.Map.Strict as Map
-import qualified Data.Set as Set
+import Data.Map.Strict qualified as Map
+import Data.Set qualified as Set
 import PythonHS.Evaluator.Value (Value (ClassValue))
 import PythonHS.VM.EnvState (EnvState (..))
 import PythonHS.VM.Instruction (Instruction (..))

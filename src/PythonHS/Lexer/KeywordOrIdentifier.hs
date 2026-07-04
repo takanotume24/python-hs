@@ -5,14 +5,15 @@ import PythonHS.Lexer.TokenType
       ( AndToken,
         AsToken,
         BreakToken,
-        ContinueToken,
+        CaseToken,
         ClassToken,
+        ContinueToken,
         DefToken,
         ElifToken,
         ElseToken,
         ExceptToken,
-        FinallyToken,
         FalseToken,
+        FinallyToken,
         ForToken,
         FromToken,
         GlobalToken,
@@ -22,8 +23,6 @@ import PythonHS.Lexer.TokenType
         InToken,
         LambdaToken,
         MatchToken,
-        CaseToken,
-        YieldToken,
         NoneToken,
         NotToken,
         OrToken,
@@ -34,8 +33,9 @@ import PythonHS.Lexer.TokenType
         TrueToken,
         TryToken,
         WhileToken,
-        WithToken
-      )
+        WithToken,
+        YieldToken
+      ),
   )
 
 keywordOrIdentifier :: String -> TokenType

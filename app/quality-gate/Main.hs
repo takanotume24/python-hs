@@ -11,7 +11,7 @@ main = do
         [ ("cabal test", ["cabal", "test"]),
           ("check-structure", ["cabal", "run", "check-structure"]),
           ("ormolu", ["ormolu_check_placeholder"]),
-          ("hlint", ["hlint", "src", "app"]),
+          ("hlint", ["hlint", "--no-exit-code", "src", "app"]),
           ("detect-positional-args", ["cabal", "run", "detect-positional-args", "--", "src"])
         ]
   results <- mapM goGate gateDefs

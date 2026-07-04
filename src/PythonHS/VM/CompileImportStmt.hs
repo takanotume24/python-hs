@@ -24,22 +24,21 @@ compileImportStmt importBaseIndex stmt =
     compileSingleImport baseIndex modulePath maybeAlias pos =
       if null modulePath
         then Left ("Import error: unsupported module  at " ++ showPos pos)
-        else
-          case maybeAlias of
-            Just aliasName ->
-              let moduleName = joinModulePath modulePath
-                  importCode = [PushConst (ModuleValue moduleName []), StoreName aliasName]
-               in Right (CompileExprResult importCode (baseIndex + length importCode))
-            Nothing ->
-              case modulePath of
-                [singleName] ->
-                  let importCode = [PushConst (ModuleValue singleName []), StoreName singleName]
-                   in Right (CompileExprResult importCode (baseIndex + length importCode))
-                rootName : _ ->
-                  let rootValue = buildRootModuleValue modulePath
-                      importCode = [PushConst rootValue, StoreName rootName]
-                   in Right (CompileExprResult importCode (baseIndex + length importCode))
-                [] -> Left ("Import error: unsupported module  at " ++ showPos pos)
+        else case maybeAlias of
+          Just aliasName ->
+            let moduleName = joinModulePath modulePath
+                importCode = [PushConst (ModuleValue moduleName []), StoreName aliasName]
+             in Right (CompileExprResult importCode (baseIndex + length importCode))
+          Nothing ->
+            case modulePath of
+              [singleName] ->
+                let importCode = [PushConst (ModuleValue singleName []), StoreName singleName]
+                 in Right (CompileExprResult importCode (baseIndex + length importCode))
+              rootName : _ ->
+                let rootValue = buildRootModuleValue modulePath
+                    importCode = [PushConst rootValue, StoreName rootName]
+                 in Right (CompileExprResult importCode (baseIndex + length importCode))
+              [] -> Left ("Import error: unsupported module  at " ++ showPos pos)
 
     compileFromImport baseIndex relativeLevel modulePath importedNames pos
       | relativeLevel > 0 =

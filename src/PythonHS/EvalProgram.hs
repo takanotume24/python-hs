@@ -1,6 +1,6 @@
 module PythonHS.EvalProgram (evalProgram) where
 
-import qualified Data.Map.Strict as Map
+import Data.Map.Strict qualified as Map
 import PythonHS.AST.Program (Program (Program))
 import PythonHS.Evaluator.EvalStatements (evalStatements)
 import PythonHS.Evaluator.ShowPos (showPos)

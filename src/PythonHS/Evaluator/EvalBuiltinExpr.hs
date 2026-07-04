@@ -3,10 +3,10 @@ module PythonHS.Evaluator.EvalBuiltinExpr (evalBuiltinExpr) where
 import Data.List (sortOn)
 import PythonHS.AST.Expr (Expr)
 import PythonHS.Evaluator.Env (Env)
+import PythonHS.Evaluator.EvalExprResult (EvalExprResult (..))
 import PythonHS.Evaluator.FuncEnv (FuncEnv)
 import PythonHS.Evaluator.RangeValues (rangeValues)
 import PythonHS.Evaluator.ShowPos (showPos)
-import PythonHS.Evaluator.EvalExprResult (EvalExprResult (..))
 import PythonHS.Evaluator.Value (Value (..))
 import PythonHS.Lexer.Position (Position)
 

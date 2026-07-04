@@ -4,7 +4,7 @@ import PythonHS.AST.BinaryOperator (BinaryOperator (AndOperator, OrOperator))
 import PythonHS.AST.Expr (Expr)
 import PythonHS.Evaluator.Value (Value (IntValue))
 import PythonHS.VM.CompileExprResult (CompileExprResult (..))
-import PythonHS.VM.Instruction (Instruction (Jump, JumpIfFalse, PushConst), Instruction)
+import PythonHS.VM.Instruction (Instruction (Jump, JumpIfFalse, PushConst))
 
 compileLogicalExpr :: (Int -> Expr -> Either String CompileExprResult) -> BinaryOperator -> Int -> Expr -> Expr -> Either String CompileExprResult
 compileLogicalExpr compileExprAt op baseIndex left right =

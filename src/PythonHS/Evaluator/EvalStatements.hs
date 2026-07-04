@@ -1,10 +1,9 @@
 module PythonHS.Evaluator.EvalStatements (evalStatements) where
 
-import qualified Data.Map.Strict as Map
+import Data.Map.Strict qualified as Map
 import PythonHS.AST.Expr (Expr (..))
 import PythonHS.AST.Stmt (Stmt (..))
 import PythonHS.Evaluator.Env (Env)
-
 import PythonHS.Evaluator.EvalExpr (evalExpr)
 import PythonHS.Evaluator.EvalExprResult (EvalExprResult (..))
 import PythonHS.Evaluator.EvalForStmt (evalForStmt)
@@ -36,7 +35,6 @@ evalStatements env fenv outputs (stmt : rest) =
           (val, exprOuts, envAfterExpr) <- extractResult <$> evalExpr evalStatements env fenv expr
           evalStatements (Map.insert annAssignStmtName val envAfterExpr) fenv (outputs ++ exprOuts) rest
     DecoratedStmt {decoratedStmtPos} -> Left $ "Runtime error: decorator is only supported in vm engine at " ++ showPos decoratedStmtPos
-
     AddAssignStmt {addAssignStmtName, addAssignStmtValue, addAssignStmtPos} -> do
       current <- lookupName env addAssignStmtName addAssignStmtPos
       (rhs, exprOuts, envAfterExpr) <- extractResult <$> evalExpr evalStatements env fenv addAssignStmtValue
@@ -49,26 +47,22 @@ evalStatements env fenv outputs (stmt : rest) =
           (StringValue {stringValue = ls}, StringValue {stringValue = rs}) -> Right (StringValue (ls ++ rs))
           _ -> Left $ "Type error: + expects int+int or string+string at " ++ showPos addAssignStmtPos
       evalStatements (Map.insert addAssignStmtName newValue envAfterExpr) fenv (outputs ++ exprOuts) rest
-
     SubAssignStmt {subAssignStmtName, subAssignStmtValue, subAssignStmtPos} -> evalAssignNumeric subAssignStmtName subAssignStmtValue subAssignStmtPos "-=" (\li ri -> li - ri)
     MulAssignStmt {mulAssignStmtName, mulAssignStmtValue, mulAssignStmtPos} -> evalAssignNumeric mulAssignStmtName mulAssignStmtValue mulAssignStmtPos "*=" (\li ri -> li * ri)
     DivAssignStmt {divAssignStmtName, divAssignStmtValue, divAssignStmtPos} -> evalAssignDivide divAssignStmtName divAssignStmtValue divAssignStmtPos
     ModAssignStmt {modAssignStmtName, modAssignStmtValue, modAssignStmtPos} -> evalAssignModulo modAssignStmtName modAssignStmtValue modAssignStmtPos
     FloorDivAssignStmt {floorDivAssignStmtName, floorDivAssignStmtValue, floorDivAssignStmtPos} -> evalAssignFloorDivide floorDivAssignStmtName floorDivAssignStmtValue floorDivAssignStmtPos
-
     PrintStmt {printStmtValue} ->
       case printStmtValue of
         StringExpr {stringExprValue = s} -> evalStatements env fenv (outputs ++ [s]) rest
         _ -> do
           (val, exprOuts, envAfterExpr) <- extractResult <$> evalExpr evalStatements env fenv printStmtValue
           evalStatements envAfterExpr fenv (outputs ++ exprOuts ++ [valueToOutput val]) rest
-
     ReturnStmt {returnStmtValue, returnStmtPos} -> do
       (val, exprOuts, envAfterExpr) <- extractResult <$> evalExpr evalStatements env fenv returnStmtValue
       Right (envAfterExpr, fenv, outputs ++ exprOuts, Just (val, returnStmtPos))
     YieldStmt {yieldStmtPos} -> Left $ "Runtime error: yield is only supported in vm engine at " ++ showPos yieldStmtPos
     YieldFromStmt {yieldFromStmtPos} -> Left $ "Runtime error: yield from is only supported in vm engine at " ++ showPos yieldFromStmtPos
-
     BreakStmt {breakStmtPos} -> Right (env, fenv, outputs, Just (BreakValue, breakStmtPos))
     ContinueStmt {continueStmtPos} -> Right (env, fenv, outputs, Just (ContinueValue, continueStmtPos))
     GlobalStmt {} -> evalStatements env fenv outputs rest
@@ -82,7 +76,6 @@ evalStatements env fenv outputs (stmt : rest) =
     PassStmt {} -> evalStatements env fenv outputs rest
     WithStmt {withStmtContextManager, withStmtVarName, withStmtBody, withStmtPos} ->
       evalWithStmt (EvalWithStmtConfig evalStatements (evalExpr evalStatements)) env fenv outputs withStmtContextManager withStmtVarName withStmtBody withStmtPos rest
-
     IfStmt {ifStmtCond, ifStmtThen, ifStmtElse} -> do
       (condVal, condOuts, envAfterCond) <- extractResult <$> evalExpr evalStatements env fenv ifStmtCond
       condNum <- expectTruthy "if condition" (exprPos ifStmtCond) condVal
@@ -99,18 +92,13 @@ evalStatements env fenv outputs (stmt : rest) =
               Just _ -> Right (envElse, fenvElse, outputs ++ condOuts ++ outputsElse, ret)
               Nothing -> evalStatements envElse fenvElse (outputs ++ condOuts ++ outputsElse) rest
           Nothing -> evalStatements envAfterCond fenv (outputs ++ condOuts) rest
-
     WhileStmt {whileStmtCond, whileStmtBody, whileStmtPos} ->
       evalWhileStmt (EvalWhileStmtConfig evalStatements (evalExpr evalStatements)) env fenv outputs whileStmtCond whileStmtBody whileStmtPos rest
-
     ForStmt {forStmtVar, forStmtIter, forStmtBody, forStmtPos} ->
       evalForStmt (EvalForStmtConfig evalStatements (evalExpr evalStatements)) env fenv outputs forStmtVar forStmtIter forStmtBody forStmtPos rest
-
     ClassDefStmt {classDefStmtPos} -> Left $ "Runtime error: class is only supported in vm engine at " ++ showPos classDefStmtPos
-
     FunctionDefStmt {functionDefStmtName, functionDefStmtParams, functionDefStmtBody} ->
       evalStatements env (Map.insert functionDefStmtName (functionDefStmtParams, [], functionDefStmtBody) fenv) outputs rest
-
     FunctionDefDefaultsStmt {functionDefDefaultsStmtName, functionDefDefaultsStmtParams, functionDefDefaultsStmtDefaults, functionDefDefaultsStmtBody} ->
       evalStatements env (Map.insert functionDefDefaultsStmtName (functionDefDefaultsStmtParams, functionDefDefaultsStmtDefaults, functionDefDefaultsStmtBody) fenv) outputs rest
   where

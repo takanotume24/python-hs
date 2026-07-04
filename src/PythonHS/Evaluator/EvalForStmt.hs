@@ -1,14 +1,14 @@
 module PythonHS.Evaluator.EvalForStmt (evalForStmt) where
 
-import qualified Data.Map.Strict as Map
+import Data.Map.Strict qualified as Map
 import PythonHS.AST.Expr (Expr (..))
 import PythonHS.AST.Stmt (Stmt)
 import PythonHS.Evaluator.Env (Env)
+import PythonHS.Evaluator.EvalExprResult (EvalExprResult (..))
 import PythonHS.Evaluator.EvalForStmtConfig (EvalForStmtConfig (..))
 import PythonHS.Evaluator.FuncEnv (FuncEnv)
 import PythonHS.Evaluator.MaxLoopIterations (maxLoopIterations)
 import PythonHS.Evaluator.ShowPos (showPos)
-import PythonHS.Evaluator.EvalExprResult (EvalExprResult (..))
 import PythonHS.Evaluator.Value (Value (..))
 import PythonHS.Lexer.Position (Position)
 import PythonHS.Parser.ExprPos (exprPos)

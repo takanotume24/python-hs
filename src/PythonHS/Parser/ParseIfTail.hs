@@ -1,10 +1,10 @@
 module PythonHS.Parser.ParseIfTail (parseIfTail) where
 
-import PythonHS.AST.Stmt (Stmt (IfStmt))
-import PythonHS.Lexer.Position (Position (Position))
+import PythonHS.AST.Stmt (Stmt (..))
+import PythonHS.Lexer.Position (Position (..))
 import PythonHS.Lexer.Token (Token (Token))
 import PythonHS.Lexer.TokenType (TokenType (ColonToken, ElifToken, ElseToken, NewlineToken))
-import PythonHS.Parser.ParseError (ParseError (ExpectedExpression))
+import PythonHS.Parser.ParseError (ParseError (..))
 import PythonHS.Parser.ParseExpr (parseExpr)
 import PythonHS.Parser.ParseIfTailConfig (ParseIfTailConfig (..))
 
@@ -21,9 +21,9 @@ parseIfTail config ts =
             Token ColonToken _ _ : afterElifColon -> do
               (elifThenSuite, afterElifThen) <- parseSuiteFn afterElifColon
               (elifElseBranch, finalRest) <- parseIfTail config afterElifThen
-              Right (Just [IfStmt elifCond elifThenSuite elifElseBranch elifPos], finalRest)
-            Token _ _ pos : _ -> Left (ExpectedExpression pos)
-            _ -> Left (ExpectedExpression (Position 0 0))
+              Right (Just [IfStmt {ifStmtCond = elifCond, ifStmtThen = elifThenSuite, ifStmtElse = elifElseBranch, ifStmtPos = elifPos}], finalRest)
+            Token _ _ pos : _ -> Left (ExpectedExpression {parseErrorPosition = pos})
+            _ -> Left (ExpectedExpression {parseErrorPosition = Position {line = 0, column = 0}})
         Token NewlineToken _ _ : _ ->
           case dropLeadingNewlines ts of
             Token ElseToken _ _ : Token ColonToken _ _ : afterElse -> do
@@ -35,9 +35,9 @@ parseIfTail config ts =
                 Token ColonToken _ _ : afterElifColon -> do
                   (elifThenSuite, afterElifThen) <- parseSuiteFn afterElifColon
                   (elifElseBranch, finalRest) <- parseIfTail config afterElifThen
-                  Right (Just [IfStmt elifCond elifThenSuite elifElseBranch elifPos], finalRest)
-                Token _ _ pos : _ -> Left (ExpectedExpression pos)
-                _ -> Left (ExpectedExpression (Position 0 0))
+                  Right (Just [IfStmt {ifStmtCond = elifCond, ifStmtThen = elifThenSuite, ifStmtElse = elifElseBranch, ifStmtPos = elifPos}], finalRest)
+                Token _ _ pos : _ -> Left (ExpectedExpression {parseErrorPosition = pos})
+                _ -> Left (ExpectedExpression {parseErrorPosition = Position {line = 0, column = 0}})
             _ -> Right (Nothing, ts)
         _ -> Right (Nothing, ts)
   where

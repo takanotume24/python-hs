@@ -4,7 +4,7 @@ import PythonHS.AST.BinaryOperator (BinaryOperator)
 import PythonHS.AST.Expr (Expr)
 import PythonHS.Lexer.Position (Position)
 import PythonHS.VM.CompileExprResult (CompileExprResult (..))
-import PythonHS.VM.Instruction (Instruction (ApplyBinary, LoadName, StoreName), Instruction)
+import PythonHS.VM.Instruction (Instruction (ApplyBinary, LoadName, StoreName))
 
 compileCompoundAssign :: (Int -> Expr -> Either String CompileExprResult) -> Int -> String -> Expr -> Position -> BinaryOperator -> Either String CompileExprResult
 compileCompoundAssign compileExprAt baseIndex name expr pos op = do
