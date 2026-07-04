@@ -1,9 +1,9 @@
 module PythonHS.Parser.ParseStatement (parseStatement) where
 
-import PythonHS.AST.Expr (Expr (NoneExpr))
-import PythonHS.AST.Stmt (Stmt (AddAssignStmt, AssignStmt, BreakStmt, ContinueStmt, DivAssignStmt, FloorDivAssignStmt, ForStmt, FunctionDefDefaultsStmt, FunctionDefStmt, GlobalStmt, IfStmt, ModAssignStmt, MulAssignStmt, PassStmt, PrintStmt, RaiseStmt, ReturnStmt, SubAssignStmt, TryExceptStmt, WhileStmt))
-import PythonHS.Lexer.Position (Position (Position))
-import PythonHS.Lexer.Token (Token (Token), position)
+import PythonHS.AST.Expr (Expr (..))
+import PythonHS.AST.Stmt (Stmt (..))
+import PythonHS.Lexer.Position (Position (..))
+import PythonHS.Lexer.Token (Token (..))
 import PythonHS.Lexer.TokenType
   ( TokenType
       ( AssignToken,
@@ -73,121 +73,121 @@ parseStatement :: [Token] -> Either ParseError (Stmt, [Token])
 parseStatement tokenStream =
   let parseSuiteWithStatements = parseSuite parseStatement
    in case tokenStream of
-        Token AtToken _ pos : _ ->
+        Token {tokenType = AtToken, position = pos} : _ ->
           parseDecoratedStmt (ParseDecoratedStmtConfig {parseDecoratedStmtExpr = parseExpr, parseDecoratedStmtStatement = parseStatement, parseDecoratedStmtPos = pos}) tokenStream
-        Token PrintToken _ pos : rest -> do
+        Token {tokenType = PrintToken, position = pos} : rest -> do
           (valueExpr, remaining) <- parseExpr rest
-          Right (PrintStmt valueExpr pos, remaining)
-        Token ReturnToken _ pos : rest@(Token NewlineToken _ _ : _) ->
-          Right (ReturnStmt (NoneExpr pos) pos, rest)
-        Token ReturnToken _ pos : rest -> do
+          Right (PrintStmt {printStmtValue = valueExpr, printStmtPos = pos}, remaining)
+        Token {tokenType = ReturnToken, position = pos} : rest@(Token {tokenType = NewlineToken} : _) ->
+          Right (ReturnStmt {returnStmtValue = NoneExpr {noneExprPos = pos}, returnStmtPos = pos}, rest)
+        Token {tokenType = ReturnToken, position = pos} : rest -> do
           (valueExpr, remaining) <- parseExpr rest
-          Right (ReturnStmt valueExpr pos, remaining)
-        Token YieldToken _ pos : rest ->
+          Right (ReturnStmt {returnStmtValue = valueExpr, returnStmtPos = pos}, remaining)
+        Token {tokenType = YieldToken, position = pos} : rest ->
           parseYieldStmt (ParseYieldStmtConfig {parseYieldStmtExpr = parseExpr, parseYieldStmtPos = pos}) rest
-        Token RaiseToken _ pos : rest -> do
+        Token {tokenType = RaiseToken, position = pos} : rest -> do
           (valueExpr, remaining) <- parseExpr rest
-          Right (RaiseStmt valueExpr pos, remaining)
-        Token BreakToken _ pos : rest -> Right (BreakStmt pos, rest)
-        Token ContinueToken _ pos : rest -> Right (ContinueStmt pos, rest)
-        Token PassToken _ pos : rest -> Right (PassStmt pos, rest)
-        Token GlobalToken _ pos : Token IdentifierToken name _ : rest ->
-          Right (GlobalStmt name pos, rest)
-        Token ImportToken _ _ : _ -> parseImportStmt tokenStream
-        Token FromToken _ _ : _ -> parseImportStmt tokenStream
-        Token IdentifierToken obj pos : Token DotToken _ _ : Token IdentifierToken attr _ : Token AssignToken _ _ : rest -> do
+          Right (RaiseStmt {raiseStmtExpr = valueExpr, raiseStmtPos = pos}, remaining)
+        Token {tokenType = BreakToken, position = pos} : rest -> Right (BreakStmt {breakStmtPos = pos}, rest)
+        Token {tokenType = ContinueToken, position = pos} : rest -> Right (ContinueStmt {continueStmtPos = pos}, rest)
+        Token {tokenType = PassToken, position = pos} : rest -> Right (PassStmt {passStmtPos = pos}, rest)
+        Token {tokenType = GlobalToken, position = pos} : Token {tokenType = IdentifierToken, lexeme = name} : rest ->
+          Right (GlobalStmt {globalStmtName = name, globalStmtPos = pos}, rest)
+        Token {tokenType = ImportToken} : _ -> parseImportStmt tokenStream
+        Token {tokenType = FromToken} : _ -> parseImportStmt tokenStream
+        Token {tokenType = IdentifierToken, lexeme = obj, position = pos} : Token {tokenType = DotToken} : Token {tokenType = IdentifierToken, lexeme = attr} : Token {tokenType = AssignToken} : rest -> do
           (valueExpr, remaining) <- parseExpr rest
-          Right (AssignStmt (obj ++ "." ++ attr) valueExpr pos, remaining)
-        Token IdentifierToken firstName pos : Token CommaToken _ _ : rest ->
+          Right (AssignStmt {assignStmtName = obj ++ "." ++ attr, assignStmtValue = valueExpr, assignStmtPos = pos}, remaining)
+        Token {tokenType = IdentifierToken, lexeme = firstName, position = pos} : Token {tokenType = CommaToken} : rest ->
           parseUnpackAssign (ParseUnpackAssignConfig {parseUnpackAssignFirstName = firstName, parseUnpackAssignPos = pos}) rest
-        Token IdentifierToken name pos : Token ColonToken _ _ : rest ->
+        Token {tokenType = IdentifierToken, lexeme = name, position = pos} : Token {tokenType = ColonToken} : rest ->
           parseAnnAssignStmt (ParseAnnAssignStmtConfig {parseAnnAssignStmtExpr = parseExpr, parseAnnAssignStmtName = name, parseAnnAssignStmtPos = pos}) rest
-        Token IdentifierToken name pos : Token AssignToken _ _ : rest -> do
+        Token {tokenType = IdentifierToken, lexeme = name, position = pos} : Token {tokenType = AssignToken} : rest -> do
           (valueExpr, remaining) <- parseExpr rest
-          Right (AssignStmt name valueExpr pos, remaining)
-        Token IdentifierToken name pos : Token PlusAssignToken _ _ : rest -> do
+          Right (AssignStmt {assignStmtName = name, assignStmtValue = valueExpr, assignStmtPos = pos}, remaining)
+        Token {tokenType = IdentifierToken, lexeme = name, position = pos} : Token {tokenType = PlusAssignToken} : rest -> do
           (valueExpr, remaining) <- parseExpr rest
-          Right (AddAssignStmt name valueExpr pos, remaining)
-        Token IdentifierToken name pos : Token MinusAssignToken _ _ : rest -> do
+          Right (AddAssignStmt {addAssignStmtName = name, addAssignStmtValue = valueExpr, addAssignStmtPos = pos}, remaining)
+        Token {tokenType = IdentifierToken, lexeme = name, position = pos} : Token {tokenType = MinusAssignToken} : rest -> do
           (valueExpr, remaining) <- parseExpr rest
-          Right (SubAssignStmt name valueExpr pos, remaining)
-        Token IdentifierToken name pos : Token StarAssignToken _ _ : rest -> do
+          Right (SubAssignStmt {subAssignStmtName = name, subAssignStmtValue = valueExpr, subAssignStmtPos = pos}, remaining)
+        Token {tokenType = IdentifierToken, lexeme = name, position = pos} : Token {tokenType = StarAssignToken} : rest -> do
           (valueExpr, remaining) <- parseExpr rest
-          Right (MulAssignStmt name valueExpr pos, remaining)
-        Token IdentifierToken name pos : Token SlashAssignToken _ _ : rest -> do
+          Right (MulAssignStmt {mulAssignStmtName = name, mulAssignStmtValue = valueExpr, mulAssignStmtPos = pos}, remaining)
+        Token {tokenType = IdentifierToken, lexeme = name, position = pos} : Token {tokenType = SlashAssignToken} : rest -> do
           (valueExpr, remaining) <- parseExpr rest
-          Right (DivAssignStmt name valueExpr pos, remaining)
-        Token IdentifierToken name pos : Token PercentAssignToken _ _ : rest -> do
+          Right (DivAssignStmt {divAssignStmtName = name, divAssignStmtValue = valueExpr, divAssignStmtPos = pos}, remaining)
+        Token {tokenType = IdentifierToken, lexeme = name, position = pos} : Token {tokenType = PercentAssignToken} : rest -> do
           (valueExpr, remaining) <- parseExpr rest
-          Right (ModAssignStmt name valueExpr pos, remaining)
-        Token IdentifierToken name pos : Token DoubleSlashAssignToken _ _ : rest -> do
+          Right (ModAssignStmt {modAssignStmtName = name, modAssignStmtValue = valueExpr, modAssignStmtPos = pos}, remaining)
+        Token {tokenType = IdentifierToken, lexeme = name, position = pos} : Token {tokenType = DoubleSlashAssignToken} : rest -> do
           (valueExpr, remaining) <- parseExpr rest
-          Right (FloorDivAssignStmt name valueExpr pos, remaining)
-        Token IfToken _ pos : rest -> do
+          Right (FloorDivAssignStmt {floorDivAssignStmtName = name, floorDivAssignStmtValue = valueExpr, floorDivAssignStmtPos = pos}, remaining)
+        Token {tokenType = IfToken, position = pos} : rest -> do
           (cond, afterCond) <- parseExpr rest
           case afterCond of
-            Token ColonToken _ _ : afterColon -> do
+            Token {tokenType = ColonToken} : afterColon -> do
               (thenSuite, afterThen) <- parseSuiteWithStatements afterColon
               (elseBranch, finalRest) <- parseIfTail (ParseIfTailConfig {parseIfTailSuite = parseSuiteWithStatements}) afterThen
-              Right (IfStmt cond thenSuite elseBranch pos, finalRest)
-            Token _ _ pos' : _ -> Left (ExpectedExpression {parseErrorPosition = pos'})
-            _ -> Left (ExpectedExpression {parseErrorPosition = Position 0 0})
-        Token TryToken _ pos : rest ->
+              Right (IfStmt {ifStmtCond = cond, ifStmtThen = thenSuite, ifStmtElse = elseBranch, ifStmtPos = pos}, finalRest)
+            Token {position = pos'} : _ -> Left (ExpectedExpression {parseErrorPosition = pos'})
+            _ -> Left (ExpectedExpression {parseErrorPosition = Position {line = 0, column = 0}})
+        Token {tokenType = TryToken, position = pos} : rest ->
           case rest of
-            Token ColonToken _ _ : afterColon -> do
+            Token {tokenType = ColonToken} : afterColon -> do
               (trySuite, afterTrySuite) <- parseSuiteWithStatements afterColon
               case parseExceptSuites (ParseExceptSuitesConfig {parseExceptSuitesSuite = parseSuiteWithStatements}) (dropLeadingNewlines afterTrySuite) of
                 Right (exceptSuites, afterExceptSuites) ->
                   case dropLeadingNewlines afterExceptSuites of
-                    Token FinallyToken _ _ : Token ColonToken _ _ : afterFinallyColon -> do
+                    Token {tokenType = FinallyToken} : Token {tokenType = ColonToken} : afterFinallyColon -> do
                       (finallySuite, finalRest) <- parseSuiteWithStatements afterFinallyColon
-                      Right (TryExceptStmt trySuite exceptSuites (Just finallySuite) pos, finalRest)
-                    _ -> Right (TryExceptStmt trySuite exceptSuites Nothing pos, afterExceptSuites)
+                      Right (TryExceptStmt {tryExceptStmtTryBody = trySuite, tryExceptStmtExceptSuites = exceptSuites, tryExceptStmtFinallyBody = Just finallySuite, tryExceptStmtPos = pos}, finalRest)
+                    _ -> Right (TryExceptStmt {tryExceptStmtTryBody = trySuite, tryExceptStmtExceptSuites = exceptSuites, tryExceptStmtFinallyBody = Nothing, tryExceptStmtPos = pos}, afterExceptSuites)
                 Left err -> Left err
-            Token _ _ pos' : _ -> Left (ExpectedExpression {parseErrorPosition = pos'})
-            _ -> Left (ExpectedExpression {parseErrorPosition = Position 0 0})
-        Token MatchToken _ pos : rest ->
+            Token {position = pos'} : _ -> Left (ExpectedExpression {parseErrorPosition = pos'})
+            _ -> Left (ExpectedExpression {parseErrorPosition = Position {line = 0, column = 0}})
+        Token {tokenType = MatchToken, position = pos} : rest ->
           parseMatchStmt (ParseMatchStmtConfig {parseMatchStmtExpr = parseExpr, parseMatchStmtSuite = parseSuiteWithStatements}) pos rest
-        Token WhileToken _ pos : rest -> do
+        Token {tokenType = WhileToken, position = pos} : rest -> do
           (cond, afterCond) <- parseExpr rest
           case afterCond of
-            Token ColonToken _ _ : afterColon -> do
+            Token {tokenType = ColonToken} : afterColon -> do
               (bodySuite, finalRest) <- parseSuiteWithStatements afterColon
-              Right (WhileStmt cond bodySuite pos, finalRest)
-            Token _ _ pos' : _ -> Left (ExpectedExpression {parseErrorPosition = pos'})
-            _ -> Left (ExpectedExpression {parseErrorPosition = Position 0 0})
-        Token ForToken _ pos : Token IdentifierToken name _ : Token InToken _ _ : rest -> do
+              Right (WhileStmt {whileStmtCond = cond, whileStmtBody = bodySuite, whileStmtPos = pos}, finalRest)
+            Token {position = pos'} : _ -> Left (ExpectedExpression {parseErrorPosition = pos'})
+            _ -> Left (ExpectedExpression {parseErrorPosition = Position {line = 0, column = 0}})
+        Token {tokenType = ForToken, position = pos} : Token {tokenType = IdentifierToken, lexeme = name} : Token {tokenType = InToken} : rest -> do
           (iterExpr, afterIter) <- parseExpr rest
           case afterIter of
-            Token ColonToken _ _ : afterColon -> do
+            Token {tokenType = ColonToken} : afterColon -> do
               (bodySuite, finalRest) <- parseSuiteWithStatements afterColon
-              Right (ForStmt name iterExpr bodySuite pos, finalRest)
-            Token _ _ pos' : _ -> Left (ExpectedExpression {parseErrorPosition = pos'})
-            _ -> Left (ExpectedExpression {parseErrorPosition = Position 0 0})
-        Token DefToken _ posDef : Token IdentifierToken name _ : Token LParenToken _ _ : rest -> do
+              Right (ForStmt {forStmtVar = name, forStmtIter = iterExpr, forStmtBody = bodySuite, forStmtPos = pos}, finalRest)
+            Token {position = pos'} : _ -> Left (ExpectedExpression {parseErrorPosition = pos'})
+            _ -> Left (ExpectedExpression {parseErrorPosition = Position {line = 0, column = 0}})
+        Token {tokenType = DefToken, position = posDef} : Token {tokenType = IdentifierToken, lexeme = name} : Token {tokenType = LParenToken} : rest -> do
           (params, defaults, afterParams) <- parseParameters parseExpr rest
           case afterParams of
-            Token MinusToken _ _ : Token GtToken _ _ : afterArrow -> do
+            Token {tokenType = MinusToken} : Token {tokenType = GtToken} : afterArrow -> do
               (_, afterAnnotation) <- parseExpr afterArrow
               case afterAnnotation of
-                Token ColonToken _ _ : afterColon -> do
+                Token {tokenType = ColonToken} : afterColon -> do
                   (bodySuite, finalRest) <- parseSuiteWithStatements afterColon
                   if null defaults
-                    then Right (FunctionDefStmt name params bodySuite posDef, finalRest)
-                    else Right (FunctionDefDefaultsStmt name params defaults bodySuite posDef, finalRest)
-                Token _ _ pos' : _ -> Left (ExpectedExpression {parseErrorPosition = pos'})
-                _ -> Left (ExpectedExpression {parseErrorPosition = Position 0 0})
-            Token ColonToken _ _ : afterColon -> do
+                    then Right (FunctionDefStmt {functionDefStmtName = name, functionDefStmtParams = params, functionDefStmtBody = bodySuite, functionDefStmtPos = posDef}, finalRest)
+                    else Right (FunctionDefDefaultsStmt {functionDefDefaultsStmtName = name, functionDefDefaultsStmtParams = params, functionDefDefaultsStmtDefaults = defaults, functionDefDefaultsStmtBody = bodySuite, functionDefDefaultsStmtPos = posDef}, finalRest)
+                Token {position = pos'} : _ -> Left (ExpectedExpression {parseErrorPosition = pos'})
+                _ -> Left (ExpectedExpression {parseErrorPosition = Position {line = 0, column = 0}})
+            Token {tokenType = ColonToken} : afterColon -> do
               (bodySuite, finalRest) <- parseSuiteWithStatements afterColon
               if null defaults
-                then Right (FunctionDefStmt name params bodySuite posDef, finalRest)
-                else Right (FunctionDefDefaultsStmt name params defaults bodySuite posDef, finalRest)
-            Token _ _ pos' : _ -> Left (ExpectedExpression {parseErrorPosition = pos'})
-            _ -> Left (ExpectedExpression {parseErrorPosition = Position 0 0})
-        Token WithToken _ pos : rest ->
+                then Right (FunctionDefStmt {functionDefStmtName = name, functionDefStmtParams = params, functionDefStmtBody = bodySuite, functionDefStmtPos = posDef}, finalRest)
+                else Right (FunctionDefDefaultsStmt {functionDefDefaultsStmtName = name, functionDefDefaultsStmtParams = params, functionDefDefaultsStmtDefaults = defaults, functionDefDefaultsStmtBody = bodySuite, functionDefDefaultsStmtPos = posDef}, finalRest)
+            Token {position = pos'} : _ -> Left (ExpectedExpression {parseErrorPosition = pos'})
+            _ -> Left (ExpectedExpression {parseErrorPosition = Position {line = 0, column = 0}})
+        Token {tokenType = WithToken, position = pos} : rest ->
           parseWithStmt (ParseWithStmtConfig {parseWithStmtStatement = parseStatement, parseWithStmtPos = pos}) rest
-        Token ClassToken _ posClass : Token IdentifierToken name _ : rest ->
+        Token {tokenType = ClassToken, position = posClass} : Token {tokenType = IdentifierToken, lexeme = name} : rest ->
           parseClassStmt (ParseClassStmtConfig {parseClassStmtSuite = parseSuiteWithStatements, parseClassStmtPos = posClass, parseClassStmtName = name}) rest
-        Token IdentifierToken _ pos : _ -> Left (ExpectedAssignAfterIdentifier {parseErrorPosition = pos})
+        Token {tokenType = IdentifierToken, position = pos} : _ -> Left (ExpectedAssignAfterIdentifier {parseErrorPosition = pos})
         tok : _ -> Left (ExpectedExpression {parseErrorPosition = position tok})
-        [] -> Left (ExpectedExpression {parseErrorPosition = Position 0 0})
+        [] -> Left (ExpectedExpression {parseErrorPosition = Position {line = 0, column = 0}})
