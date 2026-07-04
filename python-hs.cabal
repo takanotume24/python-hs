@@ -310,3 +310,12 @@ executable detect-positional-args
     , python-hs
   default-language:    GHC2024
   ghc-options:         -Wall
+
+executable quality-gate
+  hs-source-dirs:      app/quality-gate
+  main-is:             Main.hs
+  build-depends:
+      base >=4.14 && <5
+    , process
+  default-language:    GHC2024
+  ghc-options:         -Wall
