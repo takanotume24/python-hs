@@ -9,7 +9,7 @@
 3. テストがグリーンのままリファクタリングを行う。
 4. 小さなステップで繰り返す。
 5. マイルストーンの開始、スコープ変更、または完了があったら必ず `plans.md` を更新する。
-6. コミットする前に必ず `cabal test` を実行し、すべてのテストが通っていることを確認する。
+6. コミットする前に必ず `cabal run quality-gate` を実行し、すべての品質ゲートが通過していることを確認する。
 7. ビルド／テストでコンパイラ警告（`warning`）が出た場合は必ず修正し、警告が 0 の状態でコミットする。
 
 注意: このファイルには「方針・手順・指示」のみを記載し、実装計画は必ず `plans.md` に記載すること。
@@ -19,7 +19,7 @@
 - コミットメッセージは変更の「理由（Why）」と「内容（What）」を簡潔に含める。日本語での記述を基本とする。
 - コミットメッセージの形式: 1行目に要約（50文字以内）、空行、3行目以降に詳細な説明を記述。箇条書きは `- ` で始める。
 - `DO NOT run git commit, git push, git reset, git rebase and/or do any other git mutations unless explicitly asked to do so.`（明示的に求められた場合のみ実行し、それ以外は実行しない。）
-- コミット前は必ず `cabal test` と `cabal run check-structure` を実行し、品質ゲートを通過していることを確認する。
+- コミット前は必ず `cabal run quality-gate` を実行し、すべての必須品質ゲート（cabal test / check-structure / ormolu / hlint）が通過していることを確認する。
 - コミット後は `git log --oneline -3` で直近のログを確認し、意図したコミットになっていることを検証する。
 
 ## ファイル粒度ルール
@@ -48,8 +48,11 @@
 - 実装例: `check-structure`（構造チェック）、`detect-positional-args`（位置引数検出）、`check-runner-case-coverage`（テストケース網羅性チェック）。
 
 ## 品質ゲート
-- `cabal test` が成功すること。
-- `cabal run check-structure` が成功すること。
+- `cabal run quality-gate` が成功すること。以下を個別に実行する必要はない。
+  - `cabal test`
+  - `cabal run check-structure`
+  - `ormolu --mode check $(git ls-files '*.hs')`
+  - `hlint src app`
 - `cabal run detect-positional-args -- src` を実行し、新規追加の positional argument の有無を確認すること（0件であれば `ExitSuccess`、1件以上であれば `ExitFailure 1` と JSON 出力で詳細を確認する）。
 - コンパイルに警告がないこと（警告が出たら修正してからコミットすること）
 

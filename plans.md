@@ -428,8 +428,7 @@
 
 
 ## 品質ゲート
-- 必須: `cabal test`
-- 必須: `cabal run check-structure`
+- 必須: `cabal run quality-gate`（cabal test / check-structure / ormolu / hlint を一括実行）
 - 必須: コンパイラ警告 0
 
 ---

@@ -37,7 +37,7 @@ main = do
           return (name, False)
 
     goCmd ("ormolu_check_placeholder" : _) = do
-      (code, out, _) <- readProcessWithExitCode "git" ["ls-files", "*.hs"] ""
+      (_, out, _) <- readProcessWithExitCode "git" ["ls-files", "*.hs"] ""
       let files = filter (not . null) (lines out)
       if null files
         then return (ExitSuccess, "", "")
