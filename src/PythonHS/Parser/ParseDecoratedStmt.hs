@@ -9,12 +9,12 @@ import PythonHS.Parser.ParseError (ParseError (..))
 
 parseDecoratedStmt ::
   ParseDecoratedStmtConfig ->
-  [Token] ->
   Either ParseError (Stmt, [Token])
-parseDecoratedStmt config tokenStream = do
+parseDecoratedStmt config = do
   let parseExprFn = parseDecoratedStmtExpr config
       parseStatementFn = parseDecoratedStmtStatement config
       atPos = parseDecoratedStmtPos config
+      tokenStream = parseDecoratedStmtTokenStream config
   (decorators, afterDecorators) <- parseDecoratorLines parseExprFn [] tokenStream
   (targetStmt, afterTarget) <- parseStatementFn afterDecorators
   case targetStmt of

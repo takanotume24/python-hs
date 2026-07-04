@@ -8,9 +8,10 @@ import PythonHS.Lexer.TokenType (TokenType (AsToken, ColonToken, CommaToken, Fal
 import PythonHS.Parser.ParseError (ParseError (..))
 import PythonHS.Parser.ParsePatternConfig (ParsePatternConfig (..))
 
-parsePattern :: ParsePatternConfig -> [Token] -> Either ParseError (Pattern, [Token])
-parsePattern config tokens = do
+parsePattern :: ParsePatternConfig -> Either ParseError (Pattern, [Token])
+parsePattern config = do
   let parseExpr = parsePatternExpr config
+      tokens = parsePatternTokenStream config
   (firstPattern, afterFirst) <- parseSinglePattern parseExpr tokens
   (orPattern, afterOr) <- parseOrTail parseExpr firstPattern afterFirst
   parseAsTail orPattern afterOr

@@ -8,5 +8,6 @@ import PythonHS.Parser.ParseError (ParseError)
 data ParseSubscriptExprConfig = ParseSubscriptExprConfig
   { parseSubscriptExprFn :: [Token] -> Either ParseError (Expr, [Token]),
     parseSubscriptExprReceiver :: Expr,
-    parseSubscriptExprPos :: Position
+    parseSubscriptExprPos :: Position,
+    parseSubscriptExprTokenStream :: [Token]
   }

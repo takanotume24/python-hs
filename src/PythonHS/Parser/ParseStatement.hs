@@ -62,6 +62,7 @@ import PythonHS.Parser.ParseMatchStmt (parseMatchStmt)
 import PythonHS.Parser.ParseMatchStmtConfig (ParseMatchStmtConfig (..))
 import PythonHS.Parser.ParseParameters (parseParameters)
 import PythonHS.Parser.ParseSuite (parseSuite)
+import PythonHS.Parser.ParseSuiteConfig (ParseSuiteConfig (..))
 import PythonHS.Parser.ParseUnpackAssign (parseUnpackAssign)
 import PythonHS.Parser.ParseUnpackAssignConfig (ParseUnpackAssignConfig (..))
 import PythonHS.Parser.ParseWithStmt (parseWithStmt)
@@ -71,10 +72,10 @@ import PythonHS.Parser.ParseYieldStmtConfig (ParseYieldStmtConfig (..))
 
 parseStatement :: [Token] -> Either ParseError (Stmt, [Token])
 parseStatement tokenStream =
-  let parseSuiteWithStatements = parseSuite parseStatement
+  let parseSuiteWithStatements tokens = parseSuite (ParseSuiteConfig {parseSuiteStatement = parseStatement, parseSuiteTokenStream = tokens})
    in case tokenStream of
         Token {tokenType = AtToken, position = pos} : _ ->
-          parseDecoratedStmt (ParseDecoratedStmtConfig {parseDecoratedStmtExpr = parseExpr, parseDecoratedStmtStatement = parseStatement, parseDecoratedStmtPos = pos}) tokenStream
+          parseDecoratedStmt (ParseDecoratedStmtConfig {parseDecoratedStmtExpr = parseExpr, parseDecoratedStmtStatement = parseStatement, parseDecoratedStmtPos = pos, parseDecoratedStmtTokenStream = tokenStream})
         Token {tokenType = PrintToken, position = pos} : rest -> do
           (valueExpr, remaining) <- parseExpr rest
           Right (PrintStmt {printStmtValue = valueExpr, printStmtPos = pos}, remaining)
@@ -99,9 +100,9 @@ parseStatement tokenStream =
           (valueExpr, remaining) <- parseExpr rest
           Right (AssignStmt {assignStmtName = obj ++ "." ++ attr, assignStmtValue = valueExpr, assignStmtPos = pos}, remaining)
         Token {tokenType = IdentifierToken, lexeme = firstName, position = pos} : Token {tokenType = CommaToken} : rest ->
-          parseUnpackAssign (ParseUnpackAssignConfig {parseUnpackAssignFirstName = firstName, parseUnpackAssignPos = pos}) rest
+          parseUnpackAssign (ParseUnpackAssignConfig {parseUnpackAssignFirstName = firstName, parseUnpackAssignPos = pos, parseUnpackAssignTokenStream = rest})
         Token {tokenType = IdentifierToken, lexeme = name, position = pos} : Token {tokenType = ColonToken} : rest ->
-          parseAnnAssignStmt (ParseAnnAssignStmtConfig {parseAnnAssignStmtExpr = parseExpr, parseAnnAssignStmtName = name, parseAnnAssignStmtPos = pos}) rest
+          parseAnnAssignStmt (ParseAnnAssignStmtConfig {parseAnnAssignStmtExpr = parseExpr, parseAnnAssignStmtName = name, parseAnnAssignStmtPos = pos, parseAnnAssignStmtTokenStream = rest})
         Token {tokenType = IdentifierToken, lexeme = name, position = pos} : Token {tokenType = AssignToken} : rest -> do
           (valueExpr, remaining) <- parseExpr rest
           Right (AssignStmt {assignStmtName = name, assignStmtValue = valueExpr, assignStmtPos = pos}, remaining)
@@ -128,7 +129,7 @@ parseStatement tokenStream =
           case afterCond of
             Token {tokenType = ColonToken} : afterColon -> do
               (thenSuite, afterThen) <- parseSuiteWithStatements afterColon
-              (elseBranch, finalRest) <- parseIfTail (ParseIfTailConfig {parseIfTailSuite = parseSuiteWithStatements}) afterThen
+              (elseBranch, finalRest) <- parseIfTail (ParseIfTailConfig {parseIfTailSuite = parseSuiteWithStatements, parseIfTailTokenStream = afterThen})
               Right (IfStmt {ifStmtCond = cond, ifStmtThen = thenSuite, ifStmtElse = elseBranch, ifStmtPos = pos}, finalRest)
             Token {position = pos'} : _ -> Left (ExpectedExpression {parseErrorPosition = pos'})
             _ -> Left (ExpectedExpression {parseErrorPosition = Position {line = 0, column = 0}})
@@ -136,7 +137,8 @@ parseStatement tokenStream =
           case rest of
             Token {tokenType = ColonToken} : afterColon -> do
               (trySuite, afterTrySuite) <- parseSuiteWithStatements afterColon
-              case parseExceptSuites (ParseExceptSuitesConfig {parseExceptSuitesSuite = parseSuiteWithStatements}) (dropLeadingNewlines afterTrySuite) of
+              let exceptResult = parseExceptSuites (ParseExceptSuitesConfig {parseExceptSuitesSuite = parseSuiteWithStatements, parseExceptSuitesTokenStream = dropLeadingNewlines afterTrySuite})
+              case exceptResult of
                 Right (exceptSuites, afterExceptSuites) ->
                   case dropLeadingNewlines afterExceptSuites of
                     Token {tokenType = FinallyToken} : Token {tokenType = ColonToken} : afterFinallyColon -> do
@@ -147,7 +149,7 @@ parseStatement tokenStream =
             Token {position = pos'} : _ -> Left (ExpectedExpression {parseErrorPosition = pos'})
             _ -> Left (ExpectedExpression {parseErrorPosition = Position {line = 0, column = 0}})
         Token {tokenType = MatchToken, position = pos} : rest ->
-          parseMatchStmt (ParseMatchStmtConfig {parseMatchStmtExpr = parseExpr, parseMatchStmtSuite = parseSuiteWithStatements}) pos rest
+          parseMatchStmt (ParseMatchStmtConfig {parseMatchStmtExpr = parseExpr, parseMatchStmtSuite = parseSuiteWithStatements, parseMatchStmtPos = pos, parseMatchStmtTokenStream = rest})
         Token {tokenType = WhileToken, position = pos} : rest -> do
           (cond, afterCond) <- parseExpr rest
           case afterCond of
@@ -185,9 +187,9 @@ parseStatement tokenStream =
             Token {position = pos'} : _ -> Left (ExpectedExpression {parseErrorPosition = pos'})
             _ -> Left (ExpectedExpression {parseErrorPosition = Position {line = 0, column = 0}})
         Token {tokenType = WithToken, position = pos} : rest ->
-          parseWithStmt (ParseWithStmtConfig {parseWithStmtStatement = parseStatement, parseWithStmtPos = pos}) rest
+          parseWithStmt (ParseWithStmtConfig {parseWithStmtStatement = parseStatement, parseWithStmtPos = pos, parseWithStmtTokenStream = rest})
         Token {tokenType = ClassToken, position = posClass} : Token {tokenType = IdentifierToken, lexeme = name} : rest ->
-          parseClassStmt (ParseClassStmtConfig {parseClassStmtSuite = parseSuiteWithStatements, parseClassStmtPos = posClass, parseClassStmtName = name}) rest
+          parseClassStmt (ParseClassStmtConfig {parseClassStmtSuite = parseSuiteWithStatements, parseClassStmtPos = posClass, parseClassStmtName = name, parseClassStmtTokenStream = rest})
         Token {tokenType = IdentifierToken, position = pos} : _ -> Left (ExpectedAssignAfterIdentifier {parseErrorPosition = pos})
         tok : _ -> Left (ExpectedExpression {parseErrorPosition = position tok})
         [] -> Left (ExpectedExpression {parseErrorPosition = Position {line = 0, column = 0}})

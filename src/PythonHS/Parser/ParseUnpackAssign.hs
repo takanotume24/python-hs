@@ -14,10 +14,11 @@ import PythonHS.Parser.ParseUnpackAssignConfig (ParseUnpackAssignConfig (..))
 import PythonHS.Parser.ParseUnpackNames (parseUnpackNames)
 import PythonHS.Parser.ParseUnpackNamesConfig (ParseUnpackNamesConfig (..))
 
-parseUnpackAssign :: ParseUnpackAssignConfig -> [Token] -> Either ParseError (Stmt, [Token])
-parseUnpackAssign config rest = do
+parseUnpackAssign :: ParseUnpackAssignConfig -> Either ParseError (Stmt, [Token])
+parseUnpackAssign config = do
   let firstName = parseUnpackAssignFirstName config
       pos = parseUnpackAssignPos config
+      rest = parseUnpackAssignTokenStream config
   (names, afterNames) <- parseUnpackNames (ParseUnpackNamesConfig {unpackNamesAcc = [firstName], unpackNamesTokens = rest})
   case afterNames of
     Token {tokenType = AssignToken} : afterAssign -> do

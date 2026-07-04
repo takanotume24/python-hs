@@ -10,10 +10,10 @@ import PythonHS.Parser.ParseError (ParseError)
 
 parseCallArgument ::
   ParseCallArgumentConfig ->
-  [Token] ->
   Either ParseError (Expr, Bool, Position, [Token])
-parseCallArgument config tokenStream =
+parseCallArgument config =
   let parseExpr = parseCallArgumentExpr config
+      tokenStream = parseCallArgumentTokenStream config
    in case tokenStream of
         Token IdentifierToken name namePos : Token AssignToken _ assignPos : rest -> do
           (valueExpr, afterValue) <- parseExpr rest

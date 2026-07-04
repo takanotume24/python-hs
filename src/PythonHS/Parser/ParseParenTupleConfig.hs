@@ -7,5 +7,6 @@ import PythonHS.Parser.ParseError (ParseError)
 
 data ParseParenTupleConfig = ParseParenTupleConfig
   { parseParenTupleExpr :: [Token] -> Either ParseError (Expr, [Token]),
-    parseParenTuplePos :: Position
+    parseParenTuplePos :: Position,
+    parseParenTupleTokenStream :: [Token]
   }

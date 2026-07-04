@@ -5,5 +5,6 @@ import PythonHS.Lexer.Token (Token)
 import PythonHS.Parser.ParseError (ParseError)
 
 data ParseCallArgumentConfig = ParseCallArgumentConfig
-  { parseCallArgumentExpr :: [Token] -> Either ParseError (Expr, [Token])
+  { parseCallArgumentExpr :: [Token] -> Either ParseError (Expr, [Token]),
+    parseCallArgumentTokenStream :: [Token]
   }

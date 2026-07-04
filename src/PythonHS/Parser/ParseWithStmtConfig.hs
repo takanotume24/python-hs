@@ -8,5 +8,6 @@ import PythonHS.Parser.ParseError (ParseError)
 -- | Configuration for parsing a with statement.
 data ParseWithStmtConfig = ParseWithStmtConfig
   { parseWithStmtStatement :: [Token] -> Either ParseError (Stmt, [Token]),
-    parseWithStmtPos :: Position
+    parseWithStmtPos :: Position,
+    parseWithStmtTokenStream :: [Token]
   }

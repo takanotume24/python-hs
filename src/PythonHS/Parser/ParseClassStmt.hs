@@ -7,11 +7,12 @@ import PythonHS.Lexer.TokenType (TokenType (ColonToken, IdentifierToken, LParenT
 import PythonHS.Parser.ParseClassStmtConfig (ParseClassStmtConfig (..))
 import PythonHS.Parser.ParseError (ParseError (..))
 
-parseClassStmt :: ParseClassStmtConfig -> [Token] -> Either ParseError (Stmt, [Token])
-parseClassStmt config rest =
+parseClassStmt :: ParseClassStmtConfig -> Either ParseError (Stmt, [Token])
+parseClassStmt config =
   let parseSuiteFn = parseClassStmtSuite config
       posClass = parseClassStmtPos config
       className = parseClassStmtName config
+      rest = parseClassStmtTokenStream config
    in case rest of
         Token {tokenType = ColonToken} : afterColon -> do
           (bodySuite, finalRest) <- parseSuiteFn afterColon

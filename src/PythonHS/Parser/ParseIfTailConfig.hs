@@ -5,5 +5,6 @@ import PythonHS.Lexer.Token (Token)
 import PythonHS.Parser.ParseError (ParseError)
 
 data ParseIfTailConfig = ParseIfTailConfig
-  { parseIfTailSuite :: [Token] -> Either ParseError ([Stmt], [Token])
+  { parseIfTailSuite :: [Token] -> Either ParseError ([Stmt], [Token]),
+    parseIfTailTokenStream :: [Token]
   }

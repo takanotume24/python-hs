@@ -9,12 +9,12 @@ import PythonHS.Parser.ParseSubscriptExprConfig (ParseSubscriptExprConfig (..))
 
 parseSubscriptExpr ::
   ParseSubscriptExprConfig ->
-  [Token] ->
   Either ParseError (Expr, [Token])
-parseSubscriptExpr config ts =
+parseSubscriptExpr config =
   let parseExpr = parseSubscriptExprFn config
       receiverExpr = parseSubscriptExprReceiver config
       subscriptPos = parseSubscriptExprPos config
+      ts = parseSubscriptExprTokenStream config
    in case ts of
         Token ColonToken _ _ : rest -> parseSlice Nothing rest
         Token RBracketToken _ _ : _ -> Left (ExpectedExpression {parseErrorPosition = subscriptPos})

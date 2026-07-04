@@ -119,7 +119,7 @@ parseExpr tokens = parseLambdaExpr (ParseLambdaExprConfig {lambdaExprFallback = 
     parseAtom (Token LBracketToken _ pos : rest) = parseListElements pos rest
     parseAtom (Token LBraceToken _ pos : rest) = parseDictEntries pos rest
     parseAtom (Token LParenToken _ parenPos : rest) =
-      parseParenTuple (ParseParenTupleConfig {parseParenTupleExpr = parseExpr, parseParenTuplePos = parenPos}) rest
+      parseParenTuple (ParseParenTupleConfig {parseParenTupleExpr = parseExpr, parseParenTuplePos = parenPos, parseParenTupleTokenStream = rest})
     parseAtom (Token IdentifierToken value pos : rest) = Right (IdentifierExpr {identifierExprName = value, identifierExprPos = pos}, rest)
     parseAtom (tok : _) = Left (ExpectedExpression {parseErrorPosition = position tok})
     parseAtom _ = Left (ExpectedExpression {parseErrorPosition = Position {line = 0, column = 0}})
@@ -134,7 +134,7 @@ parseExpr tokens = parseLambdaExpr (ParseLambdaExprConfig {lambdaExprFallback = 
       (args, afterArgs) <- parseArguments rest
       parsePostfix (CallExpr {callExprName = methodName, callExprArgs = receiverExpr : args, callExprPos = methodPos}) afterArgs
     parsePostfix receiverExpr (Token LBracketToken _ pos : rest) = do
-      (subscriptExpr, afterSubscript) <- parseSubscriptExpr (ParseSubscriptExprConfig {parseSubscriptExprFn = parseExpr, parseSubscriptExprReceiver = receiverExpr, parseSubscriptExprPos = pos}) rest
+      (subscriptExpr, afterSubscript) <- parseSubscriptExpr (ParseSubscriptExprConfig {parseSubscriptExprFn = parseExpr, parseSubscriptExprReceiver = receiverExpr, parseSubscriptExprPos = pos, parseSubscriptExprTokenStream = rest})
       parsePostfix subscriptExpr afterSubscript
     parsePostfix (IdentifierExpr receiverName receiverPos) (Token DotToken _ _ : Token IdentifierToken attrName _ : rest) =
       parsePostfix (IdentifierExpr {identifierExprName = receiverName ++ "." ++ attrName, identifierExprPos = receiverPos}) rest
@@ -146,7 +146,7 @@ parseExpr tokens = parseLambdaExpr (ParseLambdaExprConfig {lambdaExprFallback = 
       (firstExpr, afterFirst) <- parseExpr ts
       case afterFirst of
         forTokens@(Token ForToken _ _ : _) ->
-          parseComprehensionTail (ParseComprehensionTailConfig {parseComprehensionTailExpr = parseExpr, parseComprehensionTailValueExpr = firstExpr, parseComprehensionTailListPos = listPos}) [] forTokens
+          parseComprehensionTail (ParseComprehensionTailConfig {parseComprehensionTailExpr = parseExpr, parseComprehensionTailValueExpr = firstExpr, parseComprehensionTailListPos = listPos, parseComprehensionTailClauses = [], parseComprehensionTailTokenStream = forTokens})
         _ -> parseListTail listPos [firstExpr] afterFirst
 
     parseListTail listPos exprs (Token CommaToken _ _ : rest) = do
@@ -187,7 +187,7 @@ parseExpr tokens = parseLambdaExpr (ParseLambdaExprConfig {lambdaExprFallback = 
     parseArguments (Token RParenToken _ _ : rest) = Right ([], rest)
     parseArguments ts = parseArgumentsTail False [] ts
     parseArgumentsTail seenKeywordArg accArgs tokenStream = do
-      (argExpr, isKeywordArg, mismatchPos, afterArg) <- parseCallArgument (ParseCallArgumentConfig {parseCallArgumentExpr = parseExpr}) tokenStream
+      (argExpr, isKeywordArg, mismatchPos, afterArg) <- parseCallArgument (ParseCallArgumentConfig {parseCallArgumentExpr = parseExpr, parseCallArgumentTokenStream = tokenStream})
       if seenKeywordArg && not isKeywordArg
         then Left (ExpectedExpression {parseErrorPosition = mismatchPos})
         else case afterArg of

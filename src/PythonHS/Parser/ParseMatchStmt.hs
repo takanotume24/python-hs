@@ -11,12 +11,12 @@ import PythonHS.Parser.ParsePatternConfig (ParsePatternConfig (..))
 
 parseMatchStmt ::
   ParseMatchStmtConfig ->
-  Position ->
-  [Token] ->
   Either ParseError (Stmt, [Token])
-parseMatchStmt config pos rest = do
+parseMatchStmt config = do
   let parseExprFn = parseMatchStmtExpr config
       parseSuiteFn = parseMatchStmtSuite config
+      pos = parseMatchStmtPos config
+      rest = parseMatchStmtTokenStream config
   (subjectExpr, afterSubject) <- parseExprFn rest
   case afterSubject of
     Token ColonToken _ _ : Token NewlineToken _ _ : Token IndentToken _ _ : afterIndent -> do
@@ -44,7 +44,7 @@ parseMatchStmt config pos rest = do
           parseCaseTail parseExprFn parseSuiteFn (nextCase : acc) afterNext
 
     parseCaseClause parseExprFn parseSuiteFn (Token CaseToken _ casePos : ts) = do
-      (patternExpr, afterPattern) <- parsePattern (ParsePatternConfig {parsePatternExpr = parseExprFn}) ts
+      (patternExpr, afterPattern) <- parsePattern (ParsePatternConfig {parsePatternExpr = parseExprFn, parsePatternTokenStream = ts})
       (guardExpr, afterGuard) <-
         case afterPattern of
           Token IfToken _ _ : afterIf -> do

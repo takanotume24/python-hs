@@ -9,5 +9,6 @@ import PythonHS.Parser.ParseError (ParseError)
 data ParseClassStmtConfig = ParseClassStmtConfig
   { parseClassStmtSuite :: [Token] -> Either ParseError ([Stmt], [Token]),
     parseClassStmtPos :: Position,
-    parseClassStmtName :: String
+    parseClassStmtName :: String,
+    parseClassStmtTokenStream :: [Token]
   }

@@ -5,5 +5,6 @@ import PythonHS.Lexer.Token (Token)
 import PythonHS.Parser.ParseError (ParseError)
 
 data ParsePatternConfig = ParsePatternConfig
-  { parsePatternExpr :: [Token] -> Either ParseError (Expr, [Token])
+  { parsePatternExpr :: [Token] -> Either ParseError (Expr, [Token]),
+    parsePatternTokenStream :: [Token]
   }

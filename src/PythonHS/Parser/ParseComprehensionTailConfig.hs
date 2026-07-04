@@ -8,5 +8,7 @@ import PythonHS.Parser.ParseError (ParseError)
 data ParseComprehensionTailConfig = ParseComprehensionTailConfig
   { parseComprehensionTailExpr :: [Token] -> Either ParseError (Expr, [Token]),
     parseComprehensionTailValueExpr :: Expr,
-    parseComprehensionTailListPos :: Position
+    parseComprehensionTailListPos :: Position,
+    parseComprehensionTailClauses :: [([String], Expr, [Expr])],
+    parseComprehensionTailTokenStream :: [Token]
   }

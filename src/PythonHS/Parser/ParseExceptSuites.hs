@@ -7,15 +7,16 @@ import PythonHS.Lexer.TokenType (TokenType (AsToken, ColonToken, ExceptToken, Id
 import PythonHS.Parser.ParseError (ParseError (..))
 import PythonHS.Parser.ParseExceptSuitesConfig (ParseExceptSuitesConfig (..))
 
-parseExceptSuites :: ParseExceptSuitesConfig -> [Token] -> Either ParseError ([(Maybe String, Maybe String, [Stmt], Position)], [Token])
-parseExceptSuites config ts =
+parseExceptSuites :: ParseExceptSuitesConfig -> Either ParseError ([(Maybe String, Maybe String, [Stmt], Position)], [Token])
+parseExceptSuites config =
   let parseSuite = parseExceptSuitesSuite config
+      ts = parseExceptSuitesTokenStream config
    in case ts of
         Token ExceptToken _ exceptPos : restAfterExcept -> do
           (maybeTypeName, maybeAliasName, afterExceptHeader) <- parseExceptHeader restAfterExcept
           (exceptSuite, afterExceptSuite) <- parseSuite afterExceptHeader
           let afterCurrent = dropLeadingNewlines afterExceptSuite
-          case parseExceptSuites config afterCurrent of
+          case parseExceptSuites (config {parseExceptSuitesTokenStream = afterCurrent}) of
             Right (otherSuites, finalRest) -> Right ((maybeTypeName, maybeAliasName, exceptSuite, exceptPos) : otherSuites, finalRest)
             Left _ -> Right ([(maybeTypeName, maybeAliasName, exceptSuite, exceptPos)], afterExceptSuite)
         Token _ _ pos' : _ -> Left (ExpectedExpression {parseErrorPosition = pos'})

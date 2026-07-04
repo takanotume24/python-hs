@@ -8,9 +8,10 @@ import PythonHS.Parser.ParseError (ParseError (..))
 import PythonHS.Parser.ParseExpr (parseExpr)
 import PythonHS.Parser.ParseIfTailConfig (ParseIfTailConfig (..))
 
-parseIfTail :: ParseIfTailConfig -> [Token] -> Either ParseError (Maybe [Stmt], [Token])
-parseIfTail config ts =
+parseIfTail :: ParseIfTailConfig -> Either ParseError (Maybe [Stmt], [Token])
+parseIfTail config =
   let parseSuiteFn = parseIfTailSuite config
+      ts = parseIfTailTokenStream config
    in case ts of
         Token ElseToken _ _ : Token ColonToken _ _ : afterElse -> do
           (elseSuite, finalRest) <- parseSuiteFn afterElse
@@ -20,7 +21,7 @@ parseIfTail config ts =
           case afterElifCond of
             Token ColonToken _ _ : afterElifColon -> do
               (elifThenSuite, afterElifThen) <- parseSuiteFn afterElifColon
-              (elifElseBranch, finalRest) <- parseIfTail config afterElifThen
+              (elifElseBranch, finalRest) <- parseIfTail (config {parseIfTailTokenStream = afterElifThen})
               Right (Just [IfStmt {ifStmtCond = elifCond, ifStmtThen = elifThenSuite, ifStmtElse = elifElseBranch, ifStmtPos = elifPos}], finalRest)
             Token _ _ pos : _ -> Left (ExpectedExpression {parseErrorPosition = pos})
             _ -> Left (ExpectedExpression {parseErrorPosition = Position {line = 0, column = 0}})
@@ -34,7 +35,7 @@ parseIfTail config ts =
               case afterElifCond of
                 Token ColonToken _ _ : afterElifColon -> do
                   (elifThenSuite, afterElifThen) <- parseSuiteFn afterElifColon
-                  (elifElseBranch, finalRest) <- parseIfTail config afterElifThen
+                  (elifElseBranch, finalRest) <- parseIfTail (config {parseIfTailTokenStream = afterElifThen})
                   Right (Just [IfStmt {ifStmtCond = elifCond, ifStmtThen = elifThenSuite, ifStmtElse = elifElseBranch, ifStmtPos = elifPos}], finalRest)
                 Token _ _ pos : _ -> Left (ExpectedExpression {parseErrorPosition = pos})
                 _ -> Left (ExpectedExpression {parseErrorPosition = Position {line = 0, column = 0}})

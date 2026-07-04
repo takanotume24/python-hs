@@ -8,5 +8,6 @@ import PythonHS.Parser.ParseError (ParseError)
 data ParseAnnAssignStmtConfig = ParseAnnAssignStmtConfig
   { parseAnnAssignStmtExpr :: [Token] -> Either ParseError (Expr, [Token]),
     parseAnnAssignStmtName :: String,
-    parseAnnAssignStmtPos :: Position
+    parseAnnAssignStmtPos :: Position,
+    parseAnnAssignStmtTokenStream :: [Token]
   }

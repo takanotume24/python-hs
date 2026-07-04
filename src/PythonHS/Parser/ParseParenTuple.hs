@@ -9,11 +9,11 @@ import PythonHS.Parser.ParseParenTupleConfig (ParseParenTupleConfig (..))
 
 parseParenTuple ::
   ParseParenTupleConfig ->
-  [Token] ->
   Either ParseError (Expr, [Token])
-parseParenTuple config rest =
+parseParenTuple config =
   let parseExpr = parseParenTupleExpr config
       parenPos = parseParenTuplePos config
+      rest = parseParenTupleTokenStream config
    in case rest of
         Token RParenToken _ _ : rest' -> Right (TupleExpr {tupleExprItems = [], tupleExprPos = parenPos}, rest')
         _ -> do

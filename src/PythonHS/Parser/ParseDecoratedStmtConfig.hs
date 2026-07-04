@@ -10,5 +10,6 @@ import PythonHS.Parser.ParseError (ParseError)
 data ParseDecoratedStmtConfig = ParseDecoratedStmtConfig
   { parseDecoratedStmtExpr :: [Token] -> Either ParseError (Expr, [Token]),
     parseDecoratedStmtStatement :: [Token] -> Either ParseError (Stmt, [Token]),
-    parseDecoratedStmtPos :: Position
+    parseDecoratedStmtPos :: Position,
+    parseDecoratedStmtTokenStream :: [Token]
   }

@@ -8,12 +8,12 @@ import PythonHS.Parser.ParseError (ParseError)
 
 parseAnnAssignStmt ::
   ParseAnnAssignStmtConfig ->
-  [Token] ->
   Either ParseError (Stmt, [Token])
-parseAnnAssignStmt config rest = do
+parseAnnAssignStmt config = do
   let parseExpr = parseAnnAssignStmtExpr config
       name = parseAnnAssignStmtName config
       pos = parseAnnAssignStmtPos config
+      rest = parseAnnAssignStmtTokenStream config
   (annotationExpr, afterAnnotation) <- parseExpr rest
   case afterAnnotation of
     Token AssignToken _ _ : afterAssign -> do

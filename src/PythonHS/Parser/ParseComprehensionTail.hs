@@ -9,24 +9,24 @@ import PythonHS.Parser.ParseError (ParseError (..))
 
 parseComprehensionTail ::
   ParseComprehensionTailConfig ->
-  [([String], Expr, [Expr])] ->
-  [Token] ->
   Either ParseError (Expr, [Token])
-parseComprehensionTail config clauses tokens =
+parseComprehensionTail config =
   let parseExpr = parseComprehensionTailExpr config
       valueExpr = parseComprehensionTailValueExpr config
       listPos = parseComprehensionTailListPos config
+      clauses = parseComprehensionTailClauses config
+      tokens = parseComprehensionTailTokenStream config
    in case tokens of
         Token IfToken _ _ : rest -> do
           (condExpr, afterCond) <- parseExpr rest
           case reverse clauses of
             [] -> Left (ExpectedExpression {parseErrorPosition = Position {line = 0, column = 0}})
             (targets, iterExpr, conds) : prevRev ->
-              parseComprehensionTail config (reverse prevRev ++ [(targets, iterExpr, conds ++ [condExpr])]) afterCond
+              parseComprehensionTail (config {parseComprehensionTailClauses = reverse prevRev ++ [(targets, iterExpr, conds ++ [condExpr])], parseComprehensionTailTokenStream = afterCond})
         Token ForToken _ _ : rest -> do
           (loopTargets, afterIn) <- parseComprehensionTargets rest
           (iterExpr, afterIter) <- parseExpr afterIn
-          parseComprehensionTail config (clauses ++ [(loopTargets, iterExpr, [])]) afterIter
+          parseComprehensionTail (config {parseComprehensionTailClauses = clauses ++ [(loopTargets, iterExpr, [])], parseComprehensionTailTokenStream = afterIter})
         Token RBracketToken _ _ : rest ->
           case clauses of
             [([loopVar], iterExpr, [])] -> Right (ListComprehensionExpr {listComprehensionExprValue = valueExpr, listComprehensionExprLoopName = loopVar, listComprehensionExprIter = iterExpr, listComprehensionExprPos = listPos}, rest)

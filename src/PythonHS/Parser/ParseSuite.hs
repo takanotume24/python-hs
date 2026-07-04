@@ -5,21 +5,23 @@ import PythonHS.Lexer.Position (Position (..))
 import PythonHS.Lexer.Token (Token (..))
 import PythonHS.Lexer.TokenType (TokenType (DedentToken, IndentToken, NewlineToken))
 import PythonHS.Parser.ParseError (ParseError (..))
+import PythonHS.Parser.ParseSuiteConfig (ParseSuiteConfig (..))
 
 parseSuite ::
-  ([Token] -> Either ParseError (Stmt, [Token])) ->
-  [Token] ->
+  ParseSuiteConfig ->
   Either ParseError ([Stmt], [Token])
-parseSuite parseStatement ts =
-  case ts of
-    Token {tokenType = NewlineToken} : Token {tokenType = IndentToken} : rest -> parseIndentedSuite rest
-    Token {tokenType = NewlineToken} : rest -> do
-      (stmt, remaining) <- parseStatement rest
-      Right ([stmt], remaining)
-    _ -> do
-      (stmt, remaining) <- parseStatement ts
-      Right ([stmt], remaining)
+parseSuite config =
+  let ts = parseSuiteTokenStream config
+   in case ts of
+        Token {tokenType = NewlineToken} : Token {tokenType = IndentToken} : rest -> parseIndentedSuite rest
+        Token {tokenType = NewlineToken} : rest -> do
+          (stmt, remaining) <- parseStatement rest
+          Right ([stmt], remaining)
+        _ -> do
+          (stmt, remaining) <- parseStatement ts
+          Right ([stmt], remaining)
   where
+    parseStatement = parseSuiteStatement config
     parseIndentedSuite (Token {tokenType = DedentToken, position = dedentPos} : rest) =
       Right ([], Token {tokenType = NewlineToken, lexeme = "\\n", position = dedentPos} : rest)
     parseIndentedSuite input = do

@@ -108,6 +108,7 @@ library
       , PythonHS.Parser.ParseIfTail
       , PythonHS.Parser.ParseIfTailConfig
       , PythonHS.Parser.ParseSuite
+      , PythonHS.Parser.ParseSuiteConfig
       , PythonHS.Parser.ParseYieldStmt
       , PythonHS.Parser.ParseYieldStmtConfig
     , PythonHS.Parser.ParseImportStmt
