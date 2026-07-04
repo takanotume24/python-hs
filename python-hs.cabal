@@ -171,6 +171,7 @@ library
     , PythonHS.VM.TransformImportAliases
     , PythonHS.VM.CollectFunctionGlobalDecls
     , PythonHS.VM.EvaluateBuiltinArgs
+    , PythonHS.VM.ExecuteArithmeticInstruction
     , PythonHS.VM.ExecuteCallFunction
     , PythonHS.VM.ExecuteCallValueFunction
     , PythonHS.VM.ExecuteForNext
@@ -206,6 +207,7 @@ library
     , PythonHS.VM.CompileWithStmt
     , PythonHS.VM.CompileProgram
     , PythonHS.VM.RunInstructions
+    , PythonHS.VM.VMScopeContext
     , PythonHS.VM.VMState
   build-depends:
       base >=4.14 && <5

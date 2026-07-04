@@ -4,16 +4,19 @@ import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import PythonHS.Evaluator.Value (Value)
 
+import PythonHS.VM.VMScopeContext (VMScopeContext (vmScopeContextGlobalDecls, vmScopeContextIsTopLevel))
+
 bindPatternCaptures ::
-  Bool ->
-  Set.Set String ->
+  VMScopeContext ->
   [(String, Value)] ->
   Map.Map String Value ->
   Map.Map String Value ->
   (Map.Map String Value, Map.Map String Value)
-bindPatternCaptures isTopLevel globalDecls captures globalsEnv localEnv =
+bindPatternCaptures scopeCtx captures globalsEnv localEnv =
   apply captures globalsEnv localEnv
   where
+    isTopLevel = vmScopeContextIsTopLevel scopeCtx
+    globalDecls = vmScopeContextGlobalDecls scopeCtx
     apply [] globals locals = (globals, locals)
     apply ((name, value) : rest) globals locals =
       if isTopLevel || Set.member name globalDecls
