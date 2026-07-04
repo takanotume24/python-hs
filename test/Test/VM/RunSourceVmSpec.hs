@@ -2,6 +2,7 @@ module Test.VM.RunSourceVmSpec (spec) where
 
 import PythonHS.RunSourceVm (runSourceVm)
 import PythonHS.RunSourceVmWithSearchPaths (runSourceVmWithSearchPaths)
+import PythonHS.RunSourceVmWithSearchPathsConfig (RunSourceVmWithSearchPathsConfig (..))
 import System.Directory (createDirectory)
 import System.FilePath ((</>))
 import System.IO.Temp (withSystemTempDirectory)
@@ -70,7 +71,7 @@ spec = describe "runSourceVm (vm mvp)" $ do
       createDirectory packageDir
       writeFile initPath "pass\n"
       writeFile subPath "def inc(x):\n  return x + 1\n"
-      result <- runSourceVmWithSearchPaths [dir] "import pkg.sub\nprint sub.inc(4)\n"
+      result <- runSourceVmWithSearchPaths (RunSourceVmWithSearchPathsConfig [dir] "import pkg.sub\nprint sub.inc(4)\n")
       result `shouldBe` Left "Name error: undefined identifier sub at 2:7"
 
   it "handles arbitrary-size integer arithmetic" $ do

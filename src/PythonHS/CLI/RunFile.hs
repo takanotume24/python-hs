@@ -3,6 +3,7 @@ module PythonHS.CLI.RunFile (runFile) where
 import Control.Exception (IOException, try)
 import PythonHS.RunSource (runSource)
 import PythonHS.RunSourceVmWithSearchPaths (runSourceVmWithSearchPaths)
+import PythonHS.RunSourceVmWithSearchPathsConfig (RunSourceVmWithSearchPathsConfig (..))
 import PythonHS.Runner.ResolveRunnerEngine (resolveRunnerEngine)
 import PythonHS.Runner.RunnerEngine (RunnerEngine (AstEngine, VmEngine))
 import System.Environment (lookupEnv)
@@ -17,4 +18,4 @@ runFile path = do
     Right contents ->
       case resolveRunnerEngine envEngine of
         AstEngine -> pure (runSource contents)
-        VmEngine -> runSourceVmWithSearchPaths [takeDirectory path] contents
+        VmEngine -> runSourceVmWithSearchPaths (RunSourceVmWithSearchPathsConfig [takeDirectory path] contents)

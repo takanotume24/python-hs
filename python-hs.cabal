@@ -28,6 +28,7 @@ library
     , PythonHS.RunSource
     , PythonHS.RunSourceVm
     , PythonHS.RunSourceVmWithSearchPaths
+    , PythonHS.RunSourceVmWithSearchPathsConfig
     , PythonHS.Runner
     , PythonHS.Runner.RunnerCaseCoverageHasMissing
     , PythonHS.Runner.RunnerCaseCoverageReport
@@ -135,6 +136,7 @@ library
     , PythonHS.Runner.RunnerEngine
     , PythonHS.Runner.ResolveRunnerEngine
     , PythonHS.Runner.RunSourceWithEngine
+    , PythonHS.Runner.RunSourceWithEngineConfig
     , PythonHS.VM.CallBuiltin
     , PythonHS.VM.BindDefaults
     , PythonHS.VM.CallCollectionBuiltin

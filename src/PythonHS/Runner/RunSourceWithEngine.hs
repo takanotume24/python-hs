@@ -3,9 +3,10 @@ module PythonHS.Runner.RunSourceWithEngine (runSourceWithEngine) where
 import PythonHS.RunSource (runSource)
 import PythonHS.RunSourceVm (runSourceVm)
 import PythonHS.Runner.RunnerEngine (RunnerEngine (AstEngine, VmEngine))
+import PythonHS.Runner.RunSourceWithEngineConfig (RunSourceWithEngineConfig (..))
 
-runSourceWithEngine :: RunnerEngine -> String -> Either String [String]
-runSourceWithEngine engine source =
-  case engine of
-    AstEngine -> runSource source
-    VmEngine -> runSourceVm source
+runSourceWithEngine :: RunSourceWithEngineConfig -> Either String [String]
+runSourceWithEngine config =
+  case runSourceWithEngineEngine config of
+    AstEngine -> runSource (runSourceWithEngineSource config)
+    VmEngine -> runSourceVm (runSourceWithEngineSource config)
