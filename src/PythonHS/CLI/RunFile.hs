@@ -18,4 +18,4 @@ runFile path = do
     Right contents ->
       case resolveRunnerEngine envEngine of
         AstEngine -> pure (runSource contents)
-        VmEngine -> runSourceVmWithSearchPaths (RunSourceVmWithSearchPathsConfig [takeDirectory path] contents)
+        VmEngine -> runSourceVmWithSearchPaths (RunSourceVmWithSearchPathsConfig {runSourceVmWithSearchPathsSearchPaths = [takeDirectory path], runSourceVmWithSearchPathsSource = contents})

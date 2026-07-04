@@ -1,6 +1,6 @@
 module PythonHS.Parser.ParseWalrusExpr (parseWalrusExpr) where
 
-import PythonHS.AST.Expr (Expr (WalrusExpr))
+import PythonHS.AST.Expr (Expr (..))
 import PythonHS.Lexer.Token (Token (Token))
 import PythonHS.Lexer.TokenType (TokenType (ColonAssignToken, IdentifierToken))
 import PythonHS.Parser.ParseError (ParseError)
@@ -12,5 +12,5 @@ parseWalrusExpr config =
    in case walrusExprTokens config of
         Token IdentifierToken name pos : Token ColonAssignToken _ _ : rest -> do
           (valueExpr, afterValue) <- parseFallback rest
-          Right (WalrusExpr name valueExpr pos, afterValue)
+          Right (WalrusExpr {walrusExprName = name, walrusExprValue = valueExpr, walrusExprPos = pos}, afterValue)
         tokens -> parseFallback tokens

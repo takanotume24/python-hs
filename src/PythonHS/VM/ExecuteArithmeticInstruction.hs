@@ -1,7 +1,7 @@
 module PythonHS.VM.ExecuteArithmeticInstruction (executeArithmeticInstruction) where
 
 import PythonHS.Evaluator.ShowPos (showPos)
-import PythonHS.Evaluator.Value (Value (FloatValue, IntValue))
+import PythonHS.Evaluator.Value (Value (..))
 import PythonHS.VM.EvalBinaryOp (evalBinaryOp)
 import PythonHS.VM.Instruction (Instruction (..))
 import PythonHS.VM.IsTruthy (isTruthy)
@@ -21,12 +21,12 @@ executeArithmeticInstruction execute state instruction =
       case vmStack state of
         value : rest ->
           case value of
-            IntValue n -> Just (execute state {vmIp = vmIp state + 1, vmStack = IntValue (negate n) : rest})
-            FloatValue n -> Just (execute state {vmIp = vmIp state + 1, vmStack = FloatValue (negate n) : rest})
+            IntValue {intValue = n} -> Just (execute state {vmIp = vmIp state + 1, vmStack = IntValue {intValue = negate n} : rest})
+            FloatValue {floatValue = n} -> Just (execute state {vmIp = vmIp state + 1, vmStack = FloatValue {floatValue = negate n} : rest})
             _ -> Just (Left ("Type error: unary - expects int at " ++ showPos pos))
         _ -> Just (Left "VM runtime error: unary - requires one value on stack")
     ApplyNot _ ->
       case vmStack state of
-        value : rest -> Just (execute state {vmIp = vmIp state + 1, vmStack = IntValue (if isTruthy value then 0 else 1) : rest})
+        value : rest -> Just (execute state {vmIp = vmIp state + 1, vmStack = IntValue {intValue = if isTruthy value then 0 else 1} : rest})
         _ -> Just (Left "VM runtime error: not requires one value on stack")
     _ -> Nothing

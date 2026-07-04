@@ -1,6 +1,6 @@
 module PythonHS.Parser.ParseCallArgument (parseCallArgument) where
 
-import PythonHS.AST.Expr (Expr (KeywordArgExpr, KwStarArgExpr, StarArgExpr))
+import PythonHS.AST.Expr (Expr (..))
 import PythonHS.Lexer.Position (Position)
 import PythonHS.Lexer.Token (Token (Token))
 import PythonHS.Lexer.TokenType (TokenType (AssignToken, IdentifierToken, StarToken))
@@ -17,13 +17,13 @@ parseCallArgument config tokenStream =
    in case tokenStream of
         Token IdentifierToken name namePos : Token AssignToken _ assignPos : rest -> do
           (valueExpr, afterValue) <- parseExpr rest
-          Right (KeywordArgExpr name valueExpr namePos, True, assignPos, afterValue)
+          Right (KeywordArgExpr {keywordArgExprName = name, keywordArgExprValue = valueExpr, keywordArgExprPos = namePos}, True, assignPos, afterValue)
         Token StarToken _ starPos : Token StarToken _ _ : rest -> do
           (valueExpr, afterValue) <- parseExpr rest
-          Right (KwStarArgExpr valueExpr starPos, True, starPos, afterValue)
+          Right (KwStarArgExpr {kwStarArgExprValue = valueExpr, kwStarArgExprPos = starPos}, True, starPos, afterValue)
         Token StarToken _ starPos : rest -> do
           (valueExpr, afterValue) <- parseExpr rest
-          Right (StarArgExpr valueExpr starPos, False, starPos, afterValue)
+          Right (StarArgExpr {starArgExprValue = valueExpr, starArgExprPos = starPos}, False, starPos, afterValue)
         _ -> do
           (argExpr, afterArg) <- parseExpr tokenStream
           Right (argExpr, False, exprPos argExpr, afterArg)

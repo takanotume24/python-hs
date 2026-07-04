@@ -26,5 +26,5 @@ getitemValue pos seqValue indexValue =
 
     getAtString s idx =
       case normalizeIndex (length s) idx of
-        Just i -> Right (StringValue [s !! i])
+        Just i -> Right (StringValue {stringValue = [s !! i]})
         Nothing -> Left ("Value error: string index out of range at " ++ showPos pos)

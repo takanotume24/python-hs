@@ -1,7 +1,7 @@
 module PythonHS.VM.CallStdlibBuiltin (callStdlibBuiltin) where
 
 import PythonHS.Evaluator.ShowPos (showPos)
-import PythonHS.Evaluator.Value (Value (IntValue, ModuleValue, StringValue))
+import PythonHS.Evaluator.Value (Value (..))
 import PythonHS.Lexer.Position (Position)
 
 callStdlibBuiltin :: String -> [Value] -> Position -> Maybe (Either String Value)
@@ -16,37 +16,37 @@ callStdlibBuiltin name args pos =
   where
     evalJsonDumps values =
       case values of
-        [ModuleValue moduleName _, IntValue n]
-          | moduleName == "json" -> Right (StringValue (show n))
-        [ModuleValue moduleName _, StringValue s]
-          | moduleName == "json" -> Right (StringValue ("\"" ++ escapeJsonString s ++ "\""))
-        [ModuleValue _ _, _] -> Left ("Type error: dumps expects int or string at " ++ showPos pos)
+        [ModuleValue {moduleValueName = moduleName}, IntValue {intValue = n}]
+          | moduleName == "json" -> Right (StringValue {stringValue = show n})
+        [ModuleValue {moduleValueName = moduleName}, StringValue {stringValue = s}]
+          | moduleName == "json" -> Right (StringValue {stringValue = "\"" ++ escapeJsonString s ++ "\""})
+        [ModuleValue {}, _] -> Left ("Type error: dumps expects int or string at " ++ showPos pos)
         [_, _] -> Left ("Type error: dumps expects json module receiver at " ++ showPos pos)
         _ -> Left ("Argument count mismatch when calling dumps at " ++ showPos pos)
 
     evalJsonLoads values =
       case values of
-        [ModuleValue moduleName _, StringValue s]
+        [ModuleValue {moduleValueName = moduleName}, StringValue {stringValue = s}]
           | moduleName == "json" ->
               case reads s of
-                [(n, "")] -> Right (IntValue n)
+                [(n, "")] -> Right (IntValue {intValue = n})
                 _ -> Left ("Value error: loads expects integer JSON literal at " ++ showPos pos)
-        [ModuleValue _ _, _] -> Left ("Type error: loads expects string at " ++ showPos pos)
+        [ModuleValue {}, _] -> Left ("Type error: loads expects string at " ++ showPos pos)
         [_, _] -> Left ("Type error: loads expects json module receiver at " ++ showPos pos)
         _ -> Left ("Argument count mismatch when calling loads at " ++ showPos pos)
 
     evalPathlibPath values =
       case values of
-        [ModuleValue moduleName _, StringValue s]
-          | moduleName == "pathlib" -> Right (StringValue s)
-        [ModuleValue _ _, _] -> Left ("Type error: Path expects string at " ++ showPos pos)
+        [ModuleValue {moduleValueName = moduleName}, StringValue {stringValue = s}]
+          | moduleName == "pathlib" -> Right (StringValue {stringValue = s})
+        [ModuleValue {}, _] -> Left ("Type error: Path expects string at " ++ showPos pos)
         [_, _] -> Left ("Type error: Path expects pathlib module receiver at " ++ showPos pos)
         _ -> Left ("Argument count mismatch when calling Path at " ++ showPos pos)
 
     evalOsGetcwd values =
       case values of
-        [ModuleValue moduleName _]
-          | moduleName == "os" -> Right (StringValue ".")
+        [ModuleValue {moduleValueName = moduleName}]
+          | moduleName == "os" -> Right (StringValue {stringValue = "."})
         [_] -> Left ("Type error: getcwd expects os module receiver at " ++ showPos pos)
         _ -> Left ("Argument count mismatch when calling getcwd at " ++ showPos pos)
 
@@ -59,9 +59,9 @@ callStdlibBuiltin name args pos =
 
     evalGetattr values attrPos =
       case values of
-        [obj, StringValue attrName] ->
+        [obj, StringValue {stringValue = attrName}] ->
           case obj of
-            ModuleValue _ attrs ->
+            ModuleValue {moduleValueAttrs = attrs} ->
               case lookup attrName attrs of
                 Just value -> Right value
                 Nothing -> Left ("Attribute error: module has no attribute '" ++ attrName ++ "' at " ++ showPos attrPos)

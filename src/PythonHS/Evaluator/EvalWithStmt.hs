@@ -26,7 +26,7 @@ evalWithStmt config env fenv outputs contextManager maybeVarName body withPos re
   let evalStatementsFn = evalWithStmtEvalStatements config
       evalExprFn = evalWithStmtEvalExpr config
   -- Create context manager record
-  let ctxManager = ContextManager contextManager maybeVarName withPos
+  let ctxManager = ContextManager {contextManagerExpr = contextManager, contextManagerVarName = maybeVarName, contextManagerPos = withPos}
 
   -- Evaluate the context manager expression
   cmResult <- evalExprFn env fenv (contextManagerExpr ctxManager)

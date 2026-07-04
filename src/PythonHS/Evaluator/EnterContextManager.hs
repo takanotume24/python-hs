@@ -1,12 +1,12 @@
 module PythonHS.Evaluator.EnterContextManager (enterContextManager) where
 
 import PythonHS.AST.ContextManager (ContextManager (..))
-import PythonHS.AST.Expr (Expr (CallExpr))
+import PythonHS.AST.Expr (Expr (..))
 import PythonHS.AST.WithEntry (WithEntry (..))
 import PythonHS.Evaluator.Env (Env)
 import PythonHS.Evaluator.EvalExprResult (EvalExprResult)
 import PythonHS.Evaluator.FuncEnv (FuncEnv)
-import PythonHS.VM.Instruction (Instruction (CallFunction))
+import PythonHS.VM.Instruction (Instruction (..))
 
 enterContextManager ::
   (Env -> FuncEnv -> Expr -> Either String EvalExprResult) ->
@@ -15,7 +15,7 @@ enterContextManager ::
   ContextManager ->
   Either String EvalExprResult
 enterContextManager evalExprFn env fenv contextManager = do
-  let entryCall = CallExpr "__enter__" [contextManagerExpr contextManager] (contextManagerPos contextManager)
-  let entryInstruction = CallFunction "__enter__" [] (contextManagerPos contextManager)
-  let withEntry = WithEntry entryCall entryInstruction (contextManagerPos contextManager)
+  let entryCall = CallExpr {callExprName = "__enter__", callExprArgs = [contextManagerExpr contextManager], callExprPos = contextManagerPos contextManager}
+  let entryInstruction = CallFunction {callFunctionName = "__enter__", callFunctionArgs = [], callFunctionPos = contextManagerPos contextManager}
+  let withEntry = WithEntry {entryCallExpr = entryCall, entryCallInstruction = entryInstruction, entryPos = contextManagerPos contextManager}
   evalExprFn env fenv (entryCallExpr withEntry)

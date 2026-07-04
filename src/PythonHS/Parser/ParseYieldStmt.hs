@@ -1,8 +1,6 @@
 module PythonHS.Parser.ParseYieldStmt (parseYieldStmt) where
 
-import PythonHS.AST.Expr (Expr)
-import PythonHS.AST.Stmt (Stmt (YieldFromStmt, YieldStmt))
-import PythonHS.Lexer.Position (Position)
+import PythonHS.AST.Stmt (Stmt (..))
 import PythonHS.Lexer.Token (Token (Token))
 import PythonHS.Lexer.TokenType (TokenType (FromToken))
 import PythonHS.Parser.ParseError (ParseError)
@@ -15,7 +13,7 @@ parseYieldStmt config tokenStream =
    in case tokenStream of
         Token FromToken _ _ : rest -> do
           (valueExpr, remaining) <- parseExprFn rest
-          Right (YieldFromStmt valueExpr pos, remaining)
+          Right (YieldFromStmt {yieldFromStmtValue = valueExpr, yieldFromStmtPos = pos}, remaining)
         _ -> do
           (valueExpr, remaining) <- parseExprFn tokenStream
-          Right (YieldStmt valueExpr pos, remaining)
+          Right (YieldStmt {yieldStmtValue = valueExpr, yieldStmtPos = pos}, remaining)

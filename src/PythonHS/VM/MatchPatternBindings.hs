@@ -33,7 +33,7 @@ matchPatternBindings patternValue subjectValue =
                 Nothing -> Just bindings
                 Just restName ->
                   let restEntries = filter (\(k, _) -> notElem k matchedKeys) entries
-                   in Just (bindings ++ [(restName, DictValue restEntries)])
+                   in Just (bindings ++ [(restName, DictValue {dictValuePairs = restEntries})])
             Nothing -> Nothing
         _ -> Nothing
   where
@@ -49,7 +49,7 @@ matchPatternBindings patternValue subjectValue =
                 else Nothing
             Just restName ->
               let restValues = drop (length items) values
-               in Just (prefixBindings ++ [(restName, ListValue restValues)])
+               in Just (prefixBindings ++ [(restName, ListValue {listValueItems = restValues})])
     firstMatch [] = Nothing
     firstMatch (current : rest) =
       case matchPatternBindings current subjectValue of
@@ -74,9 +74,9 @@ matchPatternBindings patternValue subjectValue =
       | key == k = Just v
       | otherwise = lookupKey key rest
 
-    exprToValue IntegerExpr {integerExprValue = n} = Just (IntValue n)
-    exprToValue FloatExpr {floatExprValue = n} = Just (FloatValue n)
-    exprToValue StringExpr {stringExprValue = s} = Just (StringValue s)
+    exprToValue IntegerExpr {integerExprValue = n} = Just (IntValue {intValue = n})
+    exprToValue FloatExpr {floatExprValue = n} = Just (FloatValue {floatValue = n})
+    exprToValue StringExpr {stringExprValue = s} = Just (StringValue {stringValue = s})
     exprToValue NoneExpr {} = Just NoneValue
     exprToValue ListExpr {listExprItems = exprs} = fmap ListValue (mapExprs exprs)
     exprToValue TupleExpr {tupleExprItems = exprs} = fmap TupleValue (mapExprs exprs)
