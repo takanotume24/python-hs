@@ -6,10 +6,11 @@ import PythonHS.Lexer.TokenType (TokenType (FromToken))
 import PythonHS.Parser.ParseError (ParseError)
 import PythonHS.Parser.ParseYieldStmtConfig (ParseYieldStmtConfig (..))
 
-parseYieldStmt :: ParseYieldStmtConfig -> [Token] -> Either ParseError (Stmt, [Token])
-parseYieldStmt config tokenStream =
+parseYieldStmt :: ParseYieldStmtConfig -> Either ParseError (Stmt, [Token])
+parseYieldStmt config =
   let parseExprFn = parseYieldStmtExpr config
       pos = parseYieldStmtPos config
+      tokenStream = parseYieldStmtTokenStream config
    in case tokenStream of
         Token FromToken _ _ : rest -> do
           (valueExpr, remaining) <- parseExprFn rest

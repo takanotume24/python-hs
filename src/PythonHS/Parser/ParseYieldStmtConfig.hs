@@ -8,5 +8,6 @@ import PythonHS.Parser.ParseError (ParseError)
 -- | Configuration for parsing a yield statement.
 data ParseYieldStmtConfig = ParseYieldStmtConfig
   { parseYieldStmtExpr :: [Token] -> Either ParseError (Expr, [Token]),
-    parseYieldStmtPos :: Position
+    parseYieldStmtPos :: Position,
+    parseYieldStmtTokenStream :: [Token]
   }

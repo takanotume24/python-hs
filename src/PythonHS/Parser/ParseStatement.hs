@@ -84,7 +84,7 @@ parseStatement tokenStream =
           (valueExpr, remaining) <- parseExpr rest
           Right (ReturnStmt {returnStmtValue = valueExpr, returnStmtPos = pos}, remaining)
         Token {tokenType = YieldToken, position = pos} : rest ->
-          parseYieldStmt (ParseYieldStmtConfig {parseYieldStmtExpr = parseExpr, parseYieldStmtPos = pos}) rest
+          parseYieldStmt (ParseYieldStmtConfig {parseYieldStmtExpr = parseExpr, parseYieldStmtPos = pos, parseYieldStmtTokenStream = rest})
         Token {tokenType = RaiseToken, position = pos} : rest -> do
           (valueExpr, remaining) <- parseExpr rest
           Right (RaiseStmt {raiseStmtExpr = valueExpr, raiseStmtPos = pos}, remaining)
