@@ -6,6 +6,7 @@ import Language.Haskell.Exts
     defaultParseMode,
     parseFilename,
   )
+import PythonHS.Structure.CollectRecordConNames (collectRecordConNames)
 import PythonHS.Structure.DetectFromModule (detectFromModule)
 import PythonHS.Structure.DetectModuleConfig (DetectModuleConfig (..))
 import PythonHS.Structure.DetectSourceConfig (DetectSourceConfig (..))
@@ -17,5 +18,6 @@ detectPositionalArgsFromSource config =
       src = sourceContent config
    in case parseModuleWithMode defaultParseMode { parseFilename = path } src of
         ParseOk m ->
-          return (detectFromModule (DetectModuleConfig { moduleFilePath = path, moduleAst = m }))
+          let recordConNames = collectRecordConNames m
+           in return (detectFromModule recordConNames (DetectModuleConfig { moduleFilePath = path, moduleAst = m }))
         ParseFailed _ _ -> return []

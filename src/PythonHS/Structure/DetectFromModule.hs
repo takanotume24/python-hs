@@ -1,6 +1,7 @@
 module PythonHS.Structure.DetectFromModule (detectFromModule) where
 
 import Data.Generics (everything, mkQ)
+import Data.List (nub)
 import Language.Haskell.Exts
   ( ConDecl (..),
     Decl (..),
@@ -17,10 +18,11 @@ import PythonHS.Structure.DetectModuleConfig (DetectModuleConfig (..))
 import PythonHS.Structure.PositionalArgViolation (PositionalArgViolation (..))
 import PythonHS.Structure.ViolationCategory (ViolationCategory (..))
 
-detectFromModule :: DetectModuleConfig -> [PositionalArgViolation]
-detectFromModule config =
+detectFromModule :: [String] -> DetectModuleConfig -> [PositionalArgViolation]
+detectFromModule recordConNames config =
   let m = moduleAst config
       path = moduleFilePath config
+
       goDecl (DataDecl _ _ _ _ qs _) = concatMap goQ qs
       goDecl (FunBind _ ms) = concatMap goM ms
       goDecl _ = []
@@ -54,6 +56,23 @@ detectFromModule config =
         | otherwise = []
       goTuplePat _ = []
 
+      goPositionalRecordConApp e =
+        case extractConApp e of
+          Just (conName, argCount, l)
+            | argCount >= 1
+            , prettyPrint conName `elem` recordConNames
+            , isSrcSpanInfo l ->
+                [ mkViolation path l PositionalRecordConCategory (prettyPrint conName ++ " ...")
+                ]
+          _ -> []
+        where
+          extractConApp (Con l conName) = Just (conName, 0 :: Int, l)
+          extractConApp (App _ func _) =
+            case extractConApp func of
+              Just (cn, n, l) -> Just (cn, n + 1, l)
+              Nothing -> Nothing
+          extractConApp _ = Nothing
+
       isSrcSpanInfo (SrcSpanInfo (SrcSpan _ line _ _ _) _) = line > 0
 
       mkViolation p (SrcSpanInfo (SrcSpan _ line col _ _) _) cat snip =
@@ -66,7 +85,10 @@ detectFromModule config =
           }
    in case m of
         Module _ _ _ _ decls ->
-          concatMap goDecl decls
-            ++ everything (++) (mkQ [] goTupleExp) m
-            ++ everything (++) (mkQ [] goTuplePat) m
+          nub $
+            concatMap goDecl decls
+              ++ everything (++) (mkQ [] goTupleExp) m
+              ++ everything (++) (mkQ [] goTuplePat) m
+              ++ everything (++) (mkQ [] goPositionalRecordConApp) m
         _ -> []
+

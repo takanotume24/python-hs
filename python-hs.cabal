@@ -114,6 +114,7 @@ library
     , PythonHS.Parser.ParseUnpackAssignConfig
     , PythonHS.Parser.ParseUnpackNames
     , PythonHS.Structure.CheckStructureWarnings
+    , PythonHS.Structure.CollectRecordConNames
     , PythonHS.Structure.DetectFromModule
     , PythonHS.Evaluator.BindContextResult
     , PythonHS.Evaluator.EnterContextManager

@@ -27,8 +27,8 @@ replEvalLines inputs = do
     submitBuffer env fenv buf outsAcc =
       let src = unlines buf
        in case processSubmission env fenv src of
-            Left err -> ReplEvalState env fenv (outsAcc ++ ["Error: " ++ err])
-            Right result -> ReplEvalState (submissionEnv result) (submissionFuncEnv result) (outsAcc ++ submissionOutputs result)
+            Left err -> ReplEvalState { replEnv = env, replFunctionEnv = fenv, replOutputs = outsAcc ++ ["Error: " ++ err] }
+            Right result -> ReplEvalState { replEnv = submissionEnv result, replFunctionEnv = submissionFuncEnv result, replOutputs = outsAcc ++ submissionOutputs result }
 
     go [] _ _ [] outsAcc = return outsAcc
     go [] env fenv buf outsAcc =
@@ -50,8 +50,8 @@ replEvalLines inputs = do
 
     submitVmBuffer acceptedLines acceptedOutputs buf outsAcc =
       case processVmSubmission acceptedLines acceptedOutputs buf of
-        Left err -> VmReplState acceptedLines acceptedOutputs (outsAcc ++ ["Error: " ++ err])
-        Right result -> VmReplState (vmResultLines result) (vmResultOutputs result) (outsAcc ++ vmResultDeltaOutputs result)
+        Left err -> VmReplState { vmLines = acceptedLines, vmOutputs = acceptedOutputs, vmAcc = outsAcc ++ ["Error: " ++ err] }
+        Right result -> VmReplState { vmLines = vmResultLines result, vmOutputs = vmResultOutputs result, vmAcc = outsAcc ++ vmResultDeltaOutputs result }
 
     goVm [] _ _ [] outsAcc = return outsAcc
     goVm [] acceptedLines acceptedOutputs buf outsAcc =

@@ -20,3 +20,4 @@ formatViolationsPlain violations = unlines (map formatOne violations)
     categoryName DataConCategory = "data_constructor"
     categoryName FunDeclCategory = "function_declaration"
     categoryName TupleCategory = "tuple"
+    categoryName PositionalRecordConCategory = "positional_record_con"
