@@ -1,12 +1,12 @@
 module PythonHS.VM.CompileClassStmt (compileClassStmt) where
 
 import PythonHS.AST.BinaryOperator (BinaryOperator (AddOperator, AndOperator, EqOperator, GtOperator, LtOperator, OrOperator))
-import PythonHS.AST.Expr (Expr (BinaryExpr, CallExpr, IdentifierExpr, IntegerExpr, KeywordArgExpr))
-import PythonHS.AST.Stmt (Stmt (AnnAssignStmt, FunctionDefDefaultsStmt, FunctionDefStmt))
-import PythonHS.Evaluator.Value (Value (IntValue, StringValue))
-import PythonHS.Lexer.Position (Position (Position))
+import PythonHS.AST.Expr (Expr (..))
+import PythonHS.AST.Stmt (Stmt (..))
+import PythonHS.Evaluator.Value (Value (..))
+import PythonHS.Lexer.Position (Position (..))
 import PythonHS.VM.CompileExprResult (CompileExprResult (..))
-import PythonHS.VM.Instruction (Instruction (ApplyBinary, BuildList, CallFunction, DefineClass, DefineFunction, LoadName, PushConst, ReturnTop, StoreName))
+import PythonHS.VM.Instruction (Instruction (..))
 
 compileClassStmt ::
   ((Int -> Expr -> Either String CompileExprResult) -> [(String, Expr)] -> Either String ([(String, [Instruction])], Int)) ->
@@ -28,29 +28,29 @@ compileClassStmt compileDefaults compileStatements compileExprAt baseIndex class
         bodyResult <- compileStatements 0 True Nothing methodBody
         let functionCode =
               if methodName == "__init__"
-                then compileExprResultCode bodyResult ++ [LoadName "self" methodPos, ReturnTop]
-                else compileExprResultCode bodyResult ++ [PushConst (IntValue 0), ReturnTop]
-        let methodInstr = DefineFunction mangledName params defaultCodes functionCode
-        Right (CompileExprResult [methodInstr] (idx + 1), (methodName, mangledName))
-      compileMethodsAt idx [] = Right (CompileExprResult [] idx, [])
+                then compileExprResultCode bodyResult ++ [LoadName {loadNameName = "self", loadNamePos = methodPos}, ReturnTop]
+                else compileExprResultCode bodyResult ++ [PushConst {pushConstValue = IntValue {intValue = 0}}, ReturnTop]
+        let methodInstr = DefineFunction {defineFunctionName = mangledName, defineFunctionParams = params, defineFunctionDefaultCodes = defaultCodes, defineFunctionCode = functionCode}
+        Right (CompileExprResult {compileExprResultCode = [methodInstr], compileExprResultEndIndex = idx + 1}, (methodName, mangledName))
+      compileMethodsAt idx [] = Right (CompileExprResult {compileExprResultCode = [], compileExprResultEndIndex = idx}, [])
       compileMethodsAt idx (method : restMethods) = do
         (methodResult, methodPair) <- compileMethodAt idx method
         (restResult, restPairs) <- compileMethodsAt (compileExprResultEndIndex methodResult) restMethods
-        pure (CompileExprResult (compileExprResultCode methodResult ++ compileExprResultCode restResult) (compileExprResultEndIndex restResult), methodPair : restPairs)
+        pure (CompileExprResult {compileExprResultCode = compileExprResultCode methodResult ++ compileExprResultCode restResult, compileExprResultEndIndex = compileExprResultEndIndex restResult}, methodPair : restPairs)
    in do
         (methodsResult, methodPairs) <- compileMethodsAt baseIndex methods
         (dataclassCode, dataclassPairs, dataclassCount) <- compileDataclassMethods fields methodNames maybeDataclass
-        let classCode = compileExprResultCode methodsResult ++ dataclassCode ++ [DefineClass className maybeBase (methodPairs ++ dataclassPairs)]
-        pure (CompileExprResult classCode (compileExprResultEndIndex methodsResult + dataclassCount + 1))
+        let classCode = compileExprResultCode methodsResult ++ dataclassCode ++ [DefineClass {defineClassName = className, defineClassBase = maybeBase, defineClassMethods = methodPairs ++ dataclassPairs}]
+        pure (CompileExprResult {compileExprResultCode = classCode, compileExprResultEndIndex = compileExprResultEndIndex methodsResult + dataclassCount + 1})
   where
     collectMethods items =
       case items of
         [] -> []
         item : restItems ->
           case item of
-            FunctionDefStmt methodName params methodBody methodPos ->
+            FunctionDefStmt {functionDefStmtName = methodName, functionDefStmtParams = params, functionDefStmtBody = methodBody, functionDefStmtPos = methodPos} ->
               (methodName, params, [], methodBody, methodPos) : collectMethods restItems
-            FunctionDefDefaultsStmt methodName params defaults methodBody methodPos ->
+            FunctionDefDefaultsStmt {functionDefDefaultsStmtName = methodName, functionDefDefaultsStmtParams = params, functionDefDefaultsStmtDefaults = defaults, functionDefDefaultsStmtBody = methodBody, functionDefDefaultsStmtPos = methodPos} ->
               (methodName, params, defaults, methodBody, methodPos) : collectMethods restItems
             _ -> collectMethods restItems
 
@@ -59,7 +59,7 @@ compileClassStmt compileDefaults compileStatements compileExprAt baseIndex class
         [] -> []
         item : restItems ->
           case item of
-            AnnAssignStmt fieldName _ maybeDefault pos -> (fieldName, maybeDefault, pos) : collectFields restItems
+            AnnAssignStmt {annAssignStmtName = fieldName, annAssignStmtValue = maybeDefault, annAssignStmtPos = pos} -> (fieldName, maybeDefault, pos) : collectFields restItems
             _ -> collectFields restItems
 
     compileDataclassMethods _ _ Nothing = Right ([], [], 0)
@@ -81,7 +81,7 @@ compileClassStmt compileDefaults compileStatements compileExprAt baseIndex class
                 includeIfMissing "__gt__" methodNames (maybe [] (\m -> [m]) gtMethod)
               ]
           pairs = map (\(name, _, _, _) -> (name, className ++ "." ++ name)) generated
-          code = map (\(name, params, defaults, bodyCode) -> DefineFunction (className ++ "." ++ name) params defaults bodyCode) generated
+          code = map (\(name, params, defaults, bodyCode) -> DefineFunction {defineFunctionName = className ++ "." ++ name, defineFunctionParams = params, defineFunctionDefaultCodes = defaults, defineFunctionCode = bodyCode}) generated
       Right (code, pairs, length code)
       where
         includeIfMissing name names values =
@@ -98,28 +98,28 @@ compileClassStmt compileDefaults compileStatements compileExprAt baseIndex class
             (fieldName, maybeDefault, _) : rest ->
               case maybeDefault of
                 Nothing -> compileDefaultsForFields rest acc
-                Just (CallExpr "field" [KeywordArgExpr "default_factory" (IdentifierExpr "list" _) _] _) ->
-                  compileDefaultsForFields rest ((fieldName, [BuildList 0, ReturnTop]) : acc)
+                Just (CallExpr {callExprName = "field", callExprArgs = [KeywordArgExpr {keywordArgExprName = "default_factory", keywordArgExprValue = IdentifierExpr {identifierExprName = "list"}}]}) ->
+                  compileDefaultsForFields rest ((fieldName, [BuildList {buildListCount = 0}, ReturnTop]) : acc)
                 Just defaultExpr -> do
                   defaultCode <- fmap compileExprResultCode (compileExprAt 0 defaultExpr)
                   compileDefaultsForFields rest ((fieldName, defaultCode ++ [ReturnTop]) : acc)
 
     buildInitMethod pos fieldNames initDefaults isFrozen =
       let initBody =
-            concatMap (\fieldName -> [LoadName fieldName pos, StoreName ("self." ++ fieldName)]) fieldNames
+            concatMap (\fieldName -> [LoadName {loadNameName = fieldName, loadNamePos = pos}, StoreName {storeNameName = "self." ++ fieldName}]) fieldNames
               ++ frozenMarker isFrozen
-              ++ [LoadName "self" pos, ReturnTop]
+              ++ [LoadName {loadNameName = "self", loadNamePos = pos}, ReturnTop]
        in ("__init__", "self" : fieldNames, initDefaults, initBody)
       where
         frozenMarker frozen =
           if frozen
-            then [PushConst (IntValue 1), StoreName "self.__python_hs_frozen__"]
+            then [PushConst {pushConstValue = IntValue {intValue = 1}}, StoreName {storeNameName = "self.__python_hs_frozen__"}]
             else []
 
     buildReprMethod pos fieldNames =
-      let start = [PushConst (StringValue (className ++ "("))]
+      let start = [PushConst {pushConstValue = StringValue {stringValue = className ++ "("}}]
           fieldParts = buildFieldParts fieldNames True
-          endPart = [PushConst (StringValue ")"), ApplyBinary AddOperator pos, ReturnTop]
+          endPart = [PushConst {pushConstValue = StringValue {stringValue = ")"}}, ApplyBinary {applyBinaryOp = AddOperator, applyBinaryPos = pos}, ReturnTop]
        in ("__repr__", ["self"], [], start ++ fieldParts ++ endPart)
       where
         buildFieldParts names isFirst =
@@ -130,8 +130,8 @@ compileClassStmt compileDefaults compileStatements compileExprAt baseIndex class
                     if isFirst
                       then fieldName ++ "="
                       else ", " ++ fieldName ++ "="
-                  reprCall = CallFunction "__python_hs_repl_repr__" [([LoadName ("self." ++ fieldName) pos], Nothing, pos)] pos
-               in [PushConst (StringValue prefix), ApplyBinary AddOperator pos, reprCall, ApplyBinary AddOperator pos]
+                  reprCall = CallFunction {callFunctionName = "__python_hs_repl_repr__", callFunctionArgs = [([LoadName {loadNameName = "self." ++ fieldName, loadNamePos = pos}], Nothing, pos)], callFunctionPos = pos}
+               in [PushConst {pushConstValue = StringValue {stringValue = prefix}}, ApplyBinary {applyBinaryOp = AddOperator, applyBinaryPos = pos}, reprCall, ApplyBinary {applyBinaryOp = AddOperator, applyBinaryPos = pos}]
                     ++ buildFieldParts rest False
 
     buildEqMethod pos fieldNames = do
@@ -150,30 +150,30 @@ compileClassStmt compileDefaults compileStatements compileExprAt baseIndex class
 
     buildEqExpr pos fieldNames =
       case fieldNames of
-        [] -> Right (IntegerExpr 1 pos)
+        [] -> Right (IntegerExpr {integerExprValue = 1, integerExprPos = pos})
         _ ->
-          let comparisons = map (\fieldName -> BinaryExpr EqOperator (IdentifierExpr ("self." ++ fieldName) pos) (IdentifierExpr ("other." ++ fieldName) pos) pos) fieldNames
+          let comparisons = map (\fieldName -> BinaryExpr {binaryExprOp = EqOperator, binaryExprLeft = IdentifierExpr {identifierExprName = "self." ++ fieldName, identifierExprPos = pos}, binaryExprRight = IdentifierExpr {identifierExprName = "other." ++ fieldName, identifierExprPos = pos}, binaryExprPos = pos}) fieldNames
            in Right (foldAnd pos comparisons)
 
     buildOrderExpr op pos fieldNames =
       case fieldNames of
-        [] -> Right (IntegerExpr 0 pos)
+        [] -> Right (IntegerExpr {integerExprValue = 0, integerExprPos = pos})
         [fieldName] ->
-          Right (BinaryExpr op (IdentifierExpr ("self." ++ fieldName) pos) (IdentifierExpr ("other." ++ fieldName) pos) pos)
+          Right (BinaryExpr {binaryExprOp = op, binaryExprLeft = IdentifierExpr {identifierExprName = "self." ++ fieldName, identifierExprPos = pos}, binaryExprRight = IdentifierExpr {identifierExprName = "other." ++ fieldName, identifierExprPos = pos}, binaryExprPos = pos})
         fieldName : rest ->
-          let leftExpr = BinaryExpr op (IdentifierExpr ("self." ++ fieldName) pos) (IdentifierExpr ("other." ++ fieldName) pos) pos
-              eqExpr = BinaryExpr EqOperator (IdentifierExpr ("self." ++ fieldName) pos) (IdentifierExpr ("other." ++ fieldName) pos) pos
+          let leftExpr = BinaryExpr {binaryExprOp = op, binaryExprLeft = IdentifierExpr {identifierExprName = "self." ++ fieldName, identifierExprPos = pos}, binaryExprRight = IdentifierExpr {identifierExprName = "other." ++ fieldName, identifierExprPos = pos}, binaryExprPos = pos}
+              eqExpr = BinaryExpr {binaryExprOp = EqOperator, binaryExprLeft = IdentifierExpr {identifierExprName = "self." ++ fieldName, identifierExprPos = pos}, binaryExprRight = IdentifierExpr {identifierExprName = "other." ++ fieldName, identifierExprPos = pos}, binaryExprPos = pos}
            in do
                 restExpr <- buildOrderExpr op pos rest
-                Right (BinaryExpr OrOperator leftExpr (BinaryExpr AndOperator eqExpr restExpr pos) pos)
+                Right (BinaryExpr {binaryExprOp = OrOperator, binaryExprLeft = leftExpr, binaryExprRight = BinaryExpr {binaryExprOp = AndOperator, binaryExprLeft = eqExpr, binaryExprRight = restExpr, binaryExprPos = pos}, binaryExprPos = pos})
 
     foldAnd pos exprs =
       case exprs of
-        [] -> IntegerExpr 1 pos
+        [] -> IntegerExpr {integerExprValue = 1, integerExprPos = pos}
         [single] -> single
-        firstExpr : restExprs -> BinaryExpr AndOperator firstExpr (foldAnd pos restExprs) pos
+        firstExpr : restExprs -> BinaryExpr {binaryExprOp = AndOperator, binaryExprLeft = firstExpr, binaryExprRight = foldAnd pos restExprs, binaryExprPos = pos}
 
     fieldPos fields =
       case fields of
         (_, _, pos) : _ -> pos
-        [] -> Position 0 0
+        [] -> Position {line = 0, column = 0}

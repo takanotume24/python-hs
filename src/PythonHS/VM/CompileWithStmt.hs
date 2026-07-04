@@ -1,13 +1,13 @@
 module PythonHS.VM.CompileWithStmt (compileWithStmt) where
 
-import PythonHS.AST.Expr (Expr (CallExpr, NoneExpr, StringExpr))
+import PythonHS.AST.Expr (Expr (..))
 import PythonHS.AST.Stmt (Stmt)
 import PythonHS.AST.WithContext (ContextManager (..), WithEntry (..), WithExit (..))
 import PythonHS.Evaluator.Value (Value (NoneValue))
 import PythonHS.Lexer.Position (Position)
 import PythonHS.VM.CompileExprAt (compileExprAt)
 import PythonHS.VM.CompileExprResult (CompileExprResult (..))
-import PythonHS.VM.Instruction (Instruction (CallFunction, CheckWithResult, Jump, LoadName, LoadPendingException, PopExceptionHandler, PushConst, PushWithHandler, StoreName))
+import PythonHS.VM.Instruction (Instruction (..))
 
 compileWithStmt ::
   Int ->
@@ -20,18 +20,18 @@ compileWithStmt ::
   (Int -> Bool -> Maybe (Int, Int) -> [Stmt] -> Either String CompileExprResult) ->
   Either String CompileExprResult
 compileWithStmt baseIndex inFunction maybeLoop cmExpr maybeVarName body withPos compileStatementsFn = do
-  let ctxManager = ContextManager cmExpr maybeVarName withPos
+  let ctxManager = ContextManager {contextManagerExpr = cmExpr, contextManagerVarName = maybeVarName, contextManagerPos = withPos}
   contextManagerResult <- compileExprAt baseIndex (contextManagerExpr ctxManager)
   let contextManagerCode = compileExprResultCode contextManagerResult
   let contextManagerVar = "__context_manager_" ++ show baseIndex ++ "__"
-  let setupCode = contextManagerCode ++ [StoreName contextManagerVar]
+  let setupCode = contextManagerCode ++ [StoreName {storeNameName = contextManagerVar}]
 
-  let entryInstruction = CallFunction "__enter__" [([LoadName contextManagerVar (contextManagerPos ctxManager)], Nothing, contextManagerPos ctxManager)] (contextManagerPos ctxManager)
-  let withEntry = WithEntry (CallExpr "__enter__" [contextManagerExpr ctxManager] (contextManagerPos ctxManager)) entryInstruction (contextManagerPos ctxManager)
-  let enterCode = [LoadName contextManagerVar (contextManagerPos ctxManager), entryCallInstruction withEntry]
+  let entryInstruction = CallFunction {callFunctionName = "__enter__", callFunctionArgs = [([LoadName {loadNameName = contextManagerVar, loadNamePos = contextManagerPos ctxManager}], Nothing, contextManagerPos ctxManager)], callFunctionPos = contextManagerPos ctxManager}
+  let withEntry = WithEntry {entryCallExpr = CallExpr {callExprName = "__enter__", callExprArgs = [contextManagerExpr ctxManager], callExprPos = contextManagerPos ctxManager}, entryCallInstruction = entryInstruction, entryPos = contextManagerPos ctxManager}
+  let enterCode = [LoadName {loadNameName = contextManagerVar, loadNamePos = contextManagerPos ctxManager}, entryCallInstruction withEntry]
 
   let storeCode = case contextManagerVarName ctxManager of
-        Just varName -> [StoreName varName]
+        Just varName -> [StoreName {storeNameName = varName}]
         Nothing -> []
   let setupEndIndex = baseIndex + length setupCode + length enterCode + length storeCode
   let bodyStartIndex = setupEndIndex + 1
@@ -39,34 +39,38 @@ compileWithStmt baseIndex inFunction maybeLoop cmExpr maybeVarName body withPos 
   let bodyCode = compileExprResultCode bodyResult
   let bodyEndIndex = compileExprResultEndIndex bodyResult
   let exitNormalStartIndex = bodyEndIndex + 2
-  let nonePos = ([PushConst NoneValue], Nothing, contextManagerPos ctxManager)
+  let nonePos = ([PushConst {pushConstValue = NoneValue}], Nothing, contextManagerPos ctxManager)
 
   let exitNormalInstruction =
         CallFunction
-          "__exit__"
-          [ ([LoadName contextManagerVar (contextManagerPos ctxManager)], Nothing, contextManagerPos ctxManager),
-            nonePos,
-            nonePos,
-            nonePos
-          ]
-          (contextManagerPos ctxManager)
-  let exitNormal = WithExit (CallExpr "__exit__" [contextManagerExpr ctxManager, NoneExpr (contextManagerPos ctxManager), NoneExpr (contextManagerPos ctxManager), NoneExpr (contextManagerPos ctxManager)] (contextManagerPos ctxManager)) exitNormalInstruction (contextManagerPos ctxManager) False
-  let exitNormalCode = [LoadName contextManagerVar (contextManagerPos ctxManager), exitCallInstruction exitNormal]
+          { callFunctionName = "__exit__",
+            callFunctionArgs =
+              [ ([LoadName {loadNameName = contextManagerVar, loadNamePos = contextManagerPos ctxManager}], Nothing, contextManagerPos ctxManager),
+                nonePos,
+                nonePos,
+                nonePos
+              ],
+            callFunctionPos = contextManagerPos ctxManager
+          }
+  let exitNormal = WithExit {exitCallExpr = CallExpr {callExprName = "__exit__", callExprArgs = [contextManagerExpr ctxManager, NoneExpr {noneExprPos = contextManagerPos ctxManager}, NoneExpr {noneExprPos = contextManagerPos ctxManager}, NoneExpr {noneExprPos = contextManagerPos ctxManager}], callExprPos = contextManagerPos ctxManager}, exitCallInstruction = exitNormalInstruction, exitPos = contextManagerPos ctxManager, exitIsException = False}
+  let exitNormalCode = [LoadName {loadNameName = contextManagerVar, loadNamePos = contextManagerPos ctxManager}, exitCallInstruction exitNormal]
 
   let exitExceptionStartIndex = exitNormalStartIndex + length exitNormalCode + 1
 
   let exitExceptionInstruction =
         CallFunction
-          "__exit__"
-          [ ([LoadName contextManagerVar (contextManagerPos ctxManager)], Nothing, contextManagerPos ctxManager),
-            ([LoadPendingException], Nothing, contextManagerPos ctxManager),
-            ([LoadPendingException], Nothing, contextManagerPos ctxManager),
-            nonePos
-          ]
-          (contextManagerPos ctxManager)
-  let exitException = WithExit (CallExpr "__exit__" [contextManagerExpr ctxManager, StringExpr "Exception" (contextManagerPos ctxManager), StringExpr "error" (contextManagerPos ctxManager), NoneExpr (contextManagerPos ctxManager)] (contextManagerPos ctxManager)) exitExceptionInstruction (contextManagerPos ctxManager) True
+          { callFunctionName = "__exit__",
+            callFunctionArgs =
+              [ ([LoadName {loadNameName = contextManagerVar, loadNamePos = contextManagerPos ctxManager}], Nothing, contextManagerPos ctxManager),
+                ([LoadPendingException], Nothing, contextManagerPos ctxManager),
+                ([LoadPendingException], Nothing, contextManagerPos ctxManager),
+                nonePos
+              ],
+            callFunctionPos = contextManagerPos ctxManager
+          }
+  let exitException = WithExit {exitCallExpr = CallExpr {callExprName = "__exit__", callExprArgs = [contextManagerExpr ctxManager, StringExpr {stringExprValue = "Exception", stringExprPos = contextManagerPos ctxManager}, StringExpr {stringExprValue = "error", stringExprPos = contextManagerPos ctxManager}, NoneExpr {noneExprPos = contextManagerPos ctxManager}], callExprPos = contextManagerPos ctxManager}, exitCallInstruction = exitExceptionInstruction, exitPos = contextManagerPos ctxManager, exitIsException = True}
   let exitExceptionCode =
-        [ LoadName contextManagerVar (contextManagerPos ctxManager),
+        [ LoadName {loadNameName = contextManagerVar, loadNamePos = contextManagerPos ctxManager},
           exitCallInstruction exitException,
           CheckWithResult
         ]
@@ -75,10 +79,10 @@ compileWithStmt baseIndex inFunction maybeLoop cmExpr maybeVarName body withPos 
         setupCode
           ++ enterCode
           ++ storeCode
-          ++ [PushWithHandler exitExceptionStartIndex]
+          ++ [PushWithHandler {pushWithHandlerIp = exitExceptionStartIndex}]
           ++ bodyCode
-          ++ [PopExceptionHandler, Jump exitNormalStartIndex]
+          ++ [PopExceptionHandler, Jump {jumpTarget = exitNormalStartIndex}]
           ++ exitNormalCode
-          ++ [Jump nextIndex]
+          ++ [Jump {jumpTarget = nextIndex}]
           ++ exitExceptionCode
-  pure (CompileExprResult allCode nextIndex)
+  pure (CompileExprResult {compileExprResultCode = allCode, compileExprResultEndIndex = nextIndex})

@@ -2,9 +2,9 @@ module PythonHS.VM.CompileLogicalExpr (compileLogicalExpr) where
 
 import PythonHS.AST.BinaryOperator (BinaryOperator (AndOperator, OrOperator))
 import PythonHS.AST.Expr (Expr)
-import PythonHS.Evaluator.Value (Value (IntValue))
+import PythonHS.Evaluator.Value (Value (..))
 import PythonHS.VM.CompileExprResult (CompileExprResult (..))
-import PythonHS.VM.Instruction (Instruction (Jump, JumpIfFalse, PushConst))
+import PythonHS.VM.Instruction (Instruction (..))
 
 compileLogicalExpr :: (Int -> Expr -> Either String CompileExprResult) -> BinaryOperator -> Int -> Expr -> Expr -> Either String CompileExprResult
 compileLogicalExpr compileExprAt op baseIndex left right =
@@ -21,10 +21,10 @@ compileLogicalExpr compileExprAt op baseIndex left right =
       let endIndex = falsePushIndex + 1
       let code =
             compileExprResultCode leftResult
-              ++ [JumpIfFalse falsePushIndex]
+              ++ [JumpIfFalse {jumpIfFalseTarget = falsePushIndex}]
               ++ compileExprResultCode rightResult
-              ++ [JumpIfFalse falsePushIndex, PushConst (IntValue 1), Jump endIndex, PushConst (IntValue 0)]
-      pure (CompileExprResult code endIndex)
+              ++ [JumpIfFalse {jumpIfFalseTarget = falsePushIndex}, PushConst {pushConstValue = IntValue {intValue = 1}}, Jump {jumpTarget = endIndex}, PushConst {pushConstValue = IntValue {intValue = 0}}]
+      pure (CompileExprResult {compileExprResultCode = code, compileExprResultEndIndex = endIndex})
     OrOperator -> do
       leftResult <- compileExprAt baseIndex left
       let jumpEvalRightIndex = compileExprResultEndIndex leftResult
@@ -39,8 +39,8 @@ compileLogicalExpr compileExprAt op baseIndex left right =
       let endIndex = falsePushIndex + 1
       let code =
             compileExprResultCode leftResult
-              ++ [JumpIfFalse rightStartIndex, PushConst (IntValue 1), Jump endIndex]
+              ++ [JumpIfFalse {jumpIfFalseTarget = rightStartIndex}, PushConst {pushConstValue = IntValue {intValue = 1}}, Jump {jumpTarget = endIndex}]
               ++ compileExprResultCode rightResult
-              ++ [JumpIfFalse falsePushIndex, PushConst (IntValue 1), Jump endIndex, PushConst (IntValue 0)]
-      pure (CompileExprResult code endIndex)
+              ++ [JumpIfFalse {jumpIfFalseTarget = falsePushIndex}, PushConst {pushConstValue = IntValue {intValue = 1}}, Jump {jumpTarget = endIndex}, PushConst {pushConstValue = IntValue {intValue = 0}}]
+      pure (CompileExprResult {compileExprResultCode = code, compileExprResultEndIndex = endIndex})
     _ -> error "compileLogicalExpr only supports AndOperator/OrOperator"

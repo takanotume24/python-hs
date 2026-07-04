@@ -1,11 +1,10 @@
 module PythonHS.VM.CompileDecoratedStmt (compileDecoratedStmt) where
 
-import PythonHS.AST.Expr (Expr (CallExpr, IdentifierExpr, IntegerExpr, KeywordArgExpr))
-import PythonHS.AST.Stmt (Stmt (ClassDefStmt, FunctionDefDefaultsStmt, FunctionDefStmt))
+import PythonHS.AST.Expr (Expr (..))
+import PythonHS.AST.Stmt (Stmt (..))
 import PythonHS.Evaluator.ShowPos (showPos)
 import PythonHS.VM.CompileDecoratorApplications (compileDecoratorApplications)
 import PythonHS.VM.CompileExprResult (CompileExprResult (..))
-import PythonHS.VM.Instruction (Instruction)
 import PythonHS.VM.StmtPosition (stmtPosition)
 
 compileDecoratedStmt ::
@@ -22,7 +21,7 @@ compileDecoratedStmt compileStmt compileDataclassClass compileExprAt baseIndex i
   case parseDataclassConfig decorators of
     Right (Just dataclassConfig) ->
       case targetStmt of
-        ClassDefStmt className maybeBase body _ ->
+        ClassDefStmt {classDefStmtName = className, classDefStmtBase = maybeBase, classDefStmtBody = body} ->
           compileDataclassClass baseIndex className maybeBase body (Just dataclassConfig)
         _ -> compileDefault
     Right Nothing -> compileDefault
@@ -32,19 +31,19 @@ compileDecoratedStmt compileStmt compileDataclassClass compileExprAt baseIndex i
       targetResult <- compileStmt baseIndex inFunction maybeLoop targetStmt
       targetName <- decoratedTargetName targetStmt
       decoratorResult <- compileDecoratorApplications compileExprAt (compileExprResultEndIndex targetResult) targetName decorators
-      pure (CompileExprResult (compileExprResultCode targetResult ++ compileExprResultCode decoratorResult) (compileExprResultEndIndex decoratorResult))
+      pure (CompileExprResult {compileExprResultCode = compileExprResultCode targetResult ++ compileExprResultCode decoratorResult, compileExprResultEndIndex = compileExprResultEndIndex decoratorResult})
 
     decoratedTargetName stmt =
       case stmt of
-        FunctionDefStmt name _ _ _ -> Right name
-        FunctionDefDefaultsStmt name _ _ _ _ -> Right name
-        ClassDefStmt name _ _ _ -> Right name
+        FunctionDefStmt {functionDefStmtName = name} -> Right name
+        FunctionDefDefaultsStmt {functionDefDefaultsStmtName = name} -> Right name
+        ClassDefStmt {classDefStmtName = name} -> Right name
         _ -> Left ("VM compile error: unsupported decorator target at " ++ showPos (stmtPosition stmt))
 
     parseDataclassConfig exprs =
       case exprs of
-        [IdentifierExpr "dataclass" _] -> Right (Just (False, False))
-        [CallExpr "dataclass" args _] -> parseDataclassArgs args
+        [IdentifierExpr {identifierExprName = "dataclass"}] -> Right (Just (False, False))
+        [CallExpr {callExprName = "dataclass", callExprArgs = args}] -> parseDataclassArgs args
         _ -> Right Nothing
 
     parseDataclassArgs args = parseArgs args (False, False)
@@ -52,10 +51,10 @@ compileDecoratedStmt compileStmt compileDataclassClass compileExprAt baseIndex i
     parseArgs args (frozenNow, orderNow) =
       case args of
         [] -> Right (Just (frozenNow, orderNow))
-        KeywordArgExpr "frozen" (IntegerExpr n _) _ : rest ->
+        KeywordArgExpr {keywordArgExprName = "frozen", keywordArgExprValue = IntegerExpr {integerExprValue = n}} : rest ->
           parseArgs rest (n /= 0, orderNow)
-        KeywordArgExpr "order" (IntegerExpr n _) _ : rest ->
+        KeywordArgExpr {keywordArgExprName = "order", keywordArgExprValue = IntegerExpr {integerExprValue = n}} : rest ->
           parseArgs rest (frozenNow, n /= 0)
-        KeywordArgExpr name _ _ : _ ->
+        KeywordArgExpr {keywordArgExprName = name} : _ ->
           Left ("VM compile error: unsupported dataclass option " ++ name ++ " at " ++ showPos (stmtPosition targetStmt))
         _ -> Left ("VM compile error: unsupported dataclass decorator arguments at " ++ showPos (stmtPosition targetStmt))

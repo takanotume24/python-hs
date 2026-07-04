@@ -4,10 +4,10 @@ import PythonHS.AST.BinaryOperator (BinaryOperator)
 import PythonHS.AST.Expr (Expr)
 import PythonHS.Lexer.Position (Position)
 import PythonHS.VM.CompileExprResult (CompileExprResult (..))
-import PythonHS.VM.Instruction (Instruction (ApplyBinary, LoadName, StoreName))
+import PythonHS.VM.Instruction (Instruction (..))
 
 compileCompoundAssign :: (Int -> Expr -> Either String CompileExprResult) -> Int -> String -> Expr -> Position -> BinaryOperator -> Either String CompileExprResult
 compileCompoundAssign compileExprAt baseIndex name expr pos op = do
   exprResult <- compileExprAt (baseIndex + 1) expr
-  let code = [LoadName name pos] ++ compileExprResultCode exprResult ++ [ApplyBinary op pos, StoreName name]
-  pure (CompileExprResult code (compileExprResultEndIndex exprResult + 2))
+  let code = [LoadName {loadNameName = name, loadNamePos = pos}] ++ compileExprResultCode exprResult ++ [ApplyBinary {applyBinaryOp = op, applyBinaryPos = pos}, StoreName {storeNameName = name}]
+  pure (CompileExprResult {compileExprResultCode = code, compileExprResultEndIndex = compileExprResultEndIndex exprResult + 2})
