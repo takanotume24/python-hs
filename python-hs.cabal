@@ -71,6 +71,8 @@ library
     , PythonHS.Lexer.KeywordOrIdentifier
     , PythonHS.Lexer.ParseExponent
     , PythonHS.Lexer.ScanTokenStep
+    , PythonHS.Lexer.ScanTokenStepConfig
+    , PythonHS.Lexer.ScanTokenStepResult
       , PythonHS.Parser.ParseExpr
     , PythonHS.Parser.ParseAnnAssignStmt
     , PythonHS.Parser.ParseAnnAssignStmtConfig

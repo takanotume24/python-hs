@@ -2,8 +2,10 @@ module PythonHS.Lexer.ScanTokens (scanTokens) where
 
 import Data.Char (isSpace)
 import PythonHS.Lexer.LexerError (LexerError (UnexpectedCharacter))
-import PythonHS.Lexer.Position (Position (Position))
+import PythonHS.Lexer.Position (Position (Position), column)
 import PythonHS.Lexer.ScanTokenStep (scanTokenStep)
+import PythonHS.Lexer.ScanTokenStepConfig (ScanTokenStepConfig (ScanTokenStepConfig))
+import PythonHS.Lexer.ScanTokenStepResult (ScanTokenStepResult (..))
 import PythonHS.Lexer.Token (Token (Token))
 import PythonHS.Lexer.TokenType
   ( TokenType
@@ -48,7 +50,10 @@ scanTokens input = go input 1 1 True [0] []
         (c : rest)
           | isSpace c -> go rest ln (col + 1) False indentStack acc
           | otherwise -> do
-              (tok, restAfterToken, nextCol) <- scanTokenStep src ln col
+              result <- scanTokenStep (ScanTokenStepConfig src (Position ln col))
+              let tok = scanTokenStepResultToken result
+                  restAfterToken = scanTokenStepResultRemaining result
+                  nextCol = column (scanTokenStepResultNextPosition result)
               go restAfterToken ln nextCol False indentStack (tok : acc)
 
     adjustIndent :: Int -> [Int] -> Int -> Either LexerError ([Int], [Token])
