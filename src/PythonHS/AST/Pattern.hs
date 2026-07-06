@@ -1,6 +1,7 @@
 module PythonHS.AST.Pattern (Pattern (..)) where
 
 import PythonHS.AST.Expr (Expr)
+import PythonHS.AST.MappingPatternEntry (MappingPatternEntry)
 import PythonHS.Lexer.Position (Position)
 
 data Pattern
@@ -28,7 +29,7 @@ data Pattern
         sequencePatternPos :: Position
       }
   | MappingPattern
-      { mappingPatternPairs :: [(Expr, Pattern)],
+      { mappingPatternPairs :: [MappingPatternEntry Expr Pattern],
         mappingPatternRest :: Maybe String,
         mappingPatternPos :: Position
       }

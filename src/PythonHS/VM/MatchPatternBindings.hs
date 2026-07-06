@@ -1,6 +1,8 @@
 module PythonHS.VM.MatchPatternBindings (matchPatternBindings) where
 
+import PythonHS.AST.DictEntry (DictEntry (..))
 import PythonHS.AST.Expr (Expr (..))
+import PythonHS.AST.MappingPatternEntry (MappingPatternEntry (..))
 import PythonHS.AST.Pattern (Pattern (..))
 import PythonHS.Evaluator.Value (Value (..))
 import PythonHS.VM.MatchPatternBindingsConfig (MatchPatternBindingsConfig (..))
@@ -65,7 +67,7 @@ matchPatternBindings config = case patternValue of
     matchSequence _ _ _ = Nothing
 
     matchMappingPairs [] _ acc matchedKeys = Just (acc, matchedKeys)
-    matchMappingPairs ((keyExpr, valuePattern) : restPairs) entries acc matchedKeys = do
+    matchMappingPairs (MappingPatternEntry {mappingPatternEntryKey = keyExpr, mappingPatternEntryValue = valuePattern} : restPairs) entries acc matchedKeys = do
       keyValue <- exprToValue keyExpr
       subjectValueAtKey <- lookupKey keyValue entries
       newBindings <- matchPatternBindings MatchPatternBindingsConfig {matchPatternBindingsPattern = valuePattern, matchPatternBindingsSubject = subjectValueAtKey}
@@ -92,7 +94,7 @@ matchPatternBindings config = case patternValue of
       Just (firstValue : restValues)
 
     mapPairs [] = Just []
-    mapPairs ((keyExpr, valueExpr) : rest) = do
+    mapPairs (DictEntry {dictEntryKey = keyExpr, dictEntryValue = valueExpr} : rest) = do
       keyValue <- exprToValue keyExpr
       valueValue <- exprToValue valueExpr
       restPairs <- mapPairs rest

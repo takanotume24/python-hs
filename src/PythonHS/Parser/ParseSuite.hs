@@ -5,34 +5,43 @@ import PythonHS.Lexer.Position (Position (..))
 import PythonHS.Lexer.Token (Token (..))
 import PythonHS.Lexer.TokenType (TokenType (DedentToken, IndentToken, NewlineToken))
 import PythonHS.Parser.ParseError (ParseError (..))
+import PythonHS.Parser.ParseResult (ParseResult (..))
 import PythonHS.Parser.ParseSuiteConfig (ParseSuiteConfig (..))
 
 parseSuite ::
   ParseSuiteConfig ->
-  Either ParseError ([Stmt], [Token])
+  Either ParseError (ParseResult [Stmt])
 parseSuite config =
   let ts = parseSuiteTokenStream config
    in case ts of
         Token {tokenType = NewlineToken} : Token {tokenType = IndentToken} : rest -> parseIndentedSuite rest
         Token {tokenType = NewlineToken} : rest -> do
-          (stmt, remaining) <- parseStatement rest
-          Right ([stmt], remaining)
+          stmtResult <- parseStatement rest
+          let stmt = parseResultValue stmtResult
+              remaining = parseResultRemaining stmtResult
+          Right (ParseResult {parseResultValue = [stmt], parseResultRemaining = remaining})
         _ -> do
-          (stmt, remaining) <- parseStatement ts
-          Right ([stmt], remaining)
+          stmtResult <- parseStatement ts
+          let stmt = parseResultValue stmtResult
+              remaining = parseResultRemaining stmtResult
+          Right (ParseResult {parseResultValue = [stmt], parseResultRemaining = remaining})
   where
     parseStatement = parseSuiteStatement config
     parseIndentedSuite (Token {tokenType = DedentToken, position = dedentPos} : rest) =
-      Right ([], Token {tokenType = NewlineToken, lexeme = "\\n", position = dedentPos} : rest)
+      Right (ParseResult {parseResultValue = [], parseResultRemaining = Token {tokenType = NewlineToken, lexeme = "\\n", position = dedentPos} : rest})
     parseIndentedSuite input = do
-      (statement, restAfterStatement) <- parseStatement input
+      statementResult <- parseStatement input
+      let statement = parseResultValue statementResult
+          restAfterStatement = parseResultRemaining statementResult
       restAfterNewline <- consumeNewline restAfterStatement
       case restAfterNewline of
         Token {tokenType = DedentToken, position = dedentPos} : rest ->
-          Right ([statement], Token {tokenType = NewlineToken, lexeme = "\\n", position = dedentPos} : rest)
+          Right (ParseResult {parseResultValue = [statement], parseResultRemaining = Token {tokenType = NewlineToken, lexeme = "\\n", position = dedentPos} : rest})
         _ -> do
-          (otherStatements, finalRest) <- parseIndentedSuite restAfterNewline
-          Right (statement : otherStatements, finalRest)
+          otherResult <- parseIndentedSuite restAfterNewline
+          let otherStatements = parseResultValue otherResult
+              finalRest = parseResultRemaining otherResult
+          Right (ParseResult {parseResultValue = statement : otherStatements, parseResultRemaining = finalRest})
 
     consumeNewline (Token {tokenType = NewlineToken} : rest) = Right rest
     consumeNewline rest@((Token {tokenType = DedentToken}) : _) = Right rest

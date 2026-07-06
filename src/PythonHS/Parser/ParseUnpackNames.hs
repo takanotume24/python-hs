@@ -9,16 +9,18 @@ import PythonHS.Lexer.TokenType
       ),
   )
 import PythonHS.Parser.ParseError (ParseError (..))
+import PythonHS.Parser.ParseResult (ParseResult (..))
 import PythonHS.Parser.ParseUnpackNamesConfig (ParseUnpackNamesConfig (..))
 
-parseUnpackNames :: ParseUnpackNamesConfig -> Either ParseError ([String], [Token])
+parseUnpackNames :: ParseUnpackNamesConfig -> Either ParseError (ParseResult [String])
 parseUnpackNames config =
-  case (unpackNamesAcc config, unpackNamesTokens config) of
-    (acc, Token {tokenType = IdentifierToken, lexeme = name} : Token {tokenType = CommaToken} : rest) ->
-      parseUnpackNames (ParseUnpackNamesConfig {unpackNamesAcc = acc ++ [name], unpackNamesTokens = rest})
-    (acc, Token {tokenType = IdentifierToken, lexeme = name} : rest) ->
-      Right (acc ++ [name], rest)
-    (_, Token {position = pos'} : _) ->
-      Left (ExpectedExpression {parseErrorPosition = pos'})
-    _ ->
-      Left (ExpectedExpression {parseErrorPosition = Position {line = 0, column = 0}})
+  let acc = unpackNamesAcc config
+   in case unpackNamesTokens config of
+        Token {tokenType = IdentifierToken, lexeme = name} : Token {tokenType = CommaToken} : rest ->
+          parseUnpackNames (ParseUnpackNamesConfig {unpackNamesAcc = acc ++ [name], unpackNamesTokens = rest})
+        Token {tokenType = IdentifierToken, lexeme = name} : rest ->
+          Right (ParseResult {parseResultValue = acc ++ [name], parseResultRemaining = rest})
+        Token {position = pos'} : _ ->
+          Left (ExpectedExpression {parseErrorPosition = pos'})
+        _ ->
+          Left (ExpectedExpression {parseErrorPosition = Position {line = 0, column = 0}})

@@ -1,6 +1,11 @@
 module PythonHS.AST.Stmt (Stmt (..)) where
 
+import PythonHS.AST.ExceptSuite (ExceptSuite)
 import PythonHS.AST.Expr (Expr)
+import PythonHS.AST.FromImportEntry (FromImportEntry)
+import PythonHS.AST.FunctionDefault (FunctionDefault)
+import PythonHS.AST.ImportEntry (ImportEntry)
+import PythonHS.AST.MatchCase (MatchCase)
 import PythonHS.AST.Pattern (Pattern)
 import PythonHS.Lexer.Position (Position)
 
@@ -81,24 +86,24 @@ data Stmt
         globalStmtPos :: Position
       }
   | ImportStmt
-      { importStmtItems :: [([String], Maybe String)],
+      { importStmtItems :: [ImportEntry],
         importStmtPos :: Position
       }
   | FromImportStmt
       { fromImportStmtLevel :: Int,
         fromImportStmtModule :: [String],
-        fromImportStmtItems :: [(String, Maybe String)],
+        fromImportStmtItems :: [FromImportEntry],
         fromImportStmtPos :: Position
       }
   | TryExceptStmt
       { tryExceptStmtTryBody :: [Stmt],
-        tryExceptStmtExceptSuites :: [(Maybe String, Maybe String, [Stmt], Position)],
+        tryExceptStmtExceptSuites :: [ExceptSuite Stmt],
         tryExceptStmtFinallyBody :: Maybe [Stmt],
         tryExceptStmtPos :: Position
       }
   | MatchStmt
       { matchStmtSubject :: Expr,
-        matchStmtCases :: [(Pattern, Maybe Expr, [Stmt], Position)],
+        matchStmtCases :: [MatchCase Expr Pattern Stmt],
         matchStmtPos :: Position
       }
   | RaiseStmt
@@ -138,7 +143,7 @@ data Stmt
   | FunctionDefDefaultsStmt
       { functionDefDefaultsStmtName :: String,
         functionDefDefaultsStmtParams :: [String],
-        functionDefDefaultsStmtDefaults :: [(String, Expr)],
+        functionDefDefaultsStmtDefaults :: [FunctionDefault Expr],
         functionDefDefaultsStmtBody :: [Stmt],
         functionDefDefaultsStmtPos :: Position
       }

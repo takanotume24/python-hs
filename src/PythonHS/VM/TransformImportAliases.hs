@@ -1,7 +1,10 @@
 module PythonHS.VM.TransformImportAliases (transformImportAliases) where
 
 import Data.Map.Strict qualified as Map
+import PythonHS.AST.DictEntry (DictEntry (..))
 import PythonHS.AST.Expr (Expr (..))
+import PythonHS.AST.FunctionDefault (FunctionDefault (..))
+import PythonHS.AST.ListComprehensionClause (ListComprehensionClause (..))
 import PythonHS.AST.Stmt (Stmt (..))
 
 transformImportAliases :: Bool -> Map.Map String String -> Map.Map String String -> Map.Map String String -> Stmt -> Stmt
@@ -51,7 +54,7 @@ transformImportAliases renameDefNames moduleAlias callAlias identAlias stmt =
     FunctionDefStmt {functionDefStmtName = name, functionDefStmtParams = params, functionDefStmtBody = body, functionDefStmtPos = pos} ->
       FunctionDefStmt (renameName renameDefNames callAlias name) params (fmap (transformImportAliases renameDefNames moduleAlias callAlias identAlias) body) pos
     FunctionDefDefaultsStmt {functionDefDefaultsStmtName = name, functionDefDefaultsStmtParams = params, functionDefDefaultsStmtDefaults = defaults, functionDefDefaultsStmtBody = body, functionDefDefaultsStmtPos = pos} ->
-      let renamedDefaults = fmap (\(paramName, defaultExpr) -> (paramName, transformExpr moduleAlias callAlias identAlias defaultExpr)) defaults
+      let renamedDefaults = fmap (\FunctionDefault {functionDefaultParam = paramName, functionDefaultExpr = defaultExpr} -> FunctionDefault {functionDefaultParam = paramName, functionDefaultExpr = transformExpr moduleAlias callAlias identAlias defaultExpr}) defaults
        in FunctionDefDefaultsStmt (renameName renameDefNames callAlias name) params renamedDefaults (fmap (transformImportAliases renameDefNames moduleAlias callAlias identAlias) body) pos
     _ -> stmt
   where
@@ -74,16 +77,16 @@ transformImportAliases renameDefNames moduleAlias callAlias identAlias stmt =
         ListComprehensionClausesExpr {listComprehensionClausesExprValue = valueExpr, listComprehensionClausesExprClauses = clauses, listComprehensionClausesExprPos = pos} ->
           ListComprehensionClausesExpr
             (transformExpr moduleAliases callAliases identAliases valueExpr)
-            (fmap (\(names, iterExpr, conds) -> (names, transformExpr moduleAliases callAliases identAliases iterExpr, fmap (transformExpr moduleAliases callAliases identAliases) conds)) clauses)
+            (fmap (\ListComprehensionClause {listComprehensionClauseTargets = names, listComprehensionClauseIter = iterExpr, listComprehensionClauseConds = conds} -> ListComprehensionClause {listComprehensionClauseTargets = names, listComprehensionClauseIter = transformExpr moduleAliases callAliases identAliases iterExpr, listComprehensionClauseConds = fmap (transformExpr moduleAliases callAliases identAliases) conds}) clauses)
             pos
-        DictExpr {dictExprEntries = entries, dictExprPos = pos} -> DictExpr (fmap (\(k, v) -> (transformExpr moduleAliases callAliases identAliases k, transformExpr moduleAliases callAliases identAliases v)) entries) pos
+        DictExpr {dictExprEntries = entries, dictExprPos = pos} -> DictExpr (fmap (\DictEntry {dictEntryKey = k, dictEntryValue = v} -> DictEntry {dictEntryKey = transformExpr moduleAliases callAliases identAliases k, dictEntryValue = transformExpr moduleAliases callAliases identAliases v}) entries) pos
         KeywordArgExpr {keywordArgExprName = name, keywordArgExprValue = value, keywordArgExprPos = pos} -> KeywordArgExpr name (transformExpr moduleAliases callAliases identAliases value) pos
         StarArgExpr {starArgExprValue = value, starArgExprPos = pos} -> StarArgExpr (transformExpr moduleAliases callAliases identAliases value) pos
         KwStarArgExpr {kwStarArgExprValue = value, kwStarArgExprPos = pos} -> KwStarArgExpr (transformExpr moduleAliases callAliases identAliases value) pos
         WalrusExpr {walrusExprName = name, walrusExprValue = value, walrusExprPos = pos} -> WalrusExpr name (transformExpr moduleAliases callAliases identAliases value) pos
         LambdaExpr {lambdaExprParams = params, lambdaExprValue = valueExpr, lambdaExprPos = pos} -> LambdaExpr params (transformExpr moduleAliases callAliases identAliases valueExpr) pos
         LambdaDefaultsExpr {lambdaDefaultsExprParams = params, lambdaDefaultsExprDefaults = defaults, lambdaDefaultsExprValue = valueExpr, lambdaDefaultsExprPos = pos} ->
-          LambdaDefaultsExpr params (fmap (\(paramName, defaultExpr) -> (paramName, transformExpr moduleAliases callAliases identAliases defaultExpr)) defaults) (transformExpr moduleAliases callAliases identAliases valueExpr) pos
+          LambdaDefaultsExpr params (fmap (\FunctionDefault {functionDefaultParam = paramName, functionDefaultExpr = defaultExpr} -> FunctionDefault {functionDefaultParam = paramName, functionDefaultExpr = transformExpr moduleAliases callAliases identAliases defaultExpr}) defaults) (transformExpr moduleAliases callAliases identAliases valueExpr) pos
         UnaryMinusExpr {unaryMinusExprValue = value, unaryMinusExprPos = pos} -> UnaryMinusExpr (transformExpr moduleAliases callAliases identAliases value) pos
         NotExpr {notExprValue = value, notExprPos = pos} -> NotExpr (transformExpr moduleAliases callAliases identAliases value) pos
         BinaryExpr {binaryExprOp = op, binaryExprLeft = left, binaryExprRight = right, binaryExprPos = pos} ->

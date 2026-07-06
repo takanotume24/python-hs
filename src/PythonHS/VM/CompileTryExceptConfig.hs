@@ -1,5 +1,6 @@
 module PythonHS.VM.CompileTryExceptConfig (CompileTryExceptConfig (..)) where
 
+import PythonHS.AST.ExceptSuite (ExceptSuite)
 import PythonHS.AST.Stmt (Stmt)
 import PythonHS.Lexer.Position (Position)
 import PythonHS.VM.CompileExprResult (CompileExprResult)
@@ -10,6 +11,6 @@ data CompileTryExceptConfig = CompileTryExceptConfig
     compileTryExceptInFunction :: Bool,
     compileTryExceptMaybeLoop :: Maybe (Int, Int),
     compileTryExceptTryStmts :: [Stmt],
-    compileTryExceptExceptClauses :: [(Maybe String, Maybe String, [Stmt], Position)],
+    compileTryExceptExceptClauses :: [ExceptSuite Stmt],
     compileTryExceptMaybeFinally :: Maybe [Stmt]
   }

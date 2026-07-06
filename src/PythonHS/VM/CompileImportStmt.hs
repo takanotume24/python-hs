@@ -1,5 +1,7 @@
 module PythonHS.VM.CompileImportStmt (compileImportStmt) where
 
+import PythonHS.AST.FromImportEntry (FromImportEntry (..))
+import PythonHS.AST.ImportEntry (ImportEntry (..))
 import PythonHS.AST.Stmt (Stmt (..))
 import PythonHS.Evaluator.ShowPos (showPos)
 import PythonHS.Evaluator.Value (Value (..))
@@ -20,7 +22,7 @@ compileImportStmt config = case stmt of
     compileImportModules currentBaseIndex modules pos =
       case modules of
         [] -> Right (CompileExprResult {compileExprResultCode = [], compileExprResultEndIndex = currentBaseIndex})
-        (modulePath, maybeAlias) : rest -> do
+        ImportEntry {importEntryPath = modulePath, importEntryAlias = maybeAlias} : rest -> do
           firstResult <- compileSingleImport currentBaseIndex modulePath maybeAlias pos
           restResult <- compileImportModules (compileExprResultEndIndex firstResult) rest pos
           pure
@@ -72,7 +74,7 @@ compileImportStmt config = case stmt of
     compileFromMathItems currentBaseIndex moduleAlias importedNames pos =
       case importedNames of
         [] -> Right (CompileExprResult {compileExprResultCode = [], compileExprResultEndIndex = currentBaseIndex})
-        (name, maybeAlias) : rest -> do
+        FromImportEntry {fromImportEntryName = name, fromImportEntryAlias = maybeAlias} : rest -> do
           firstResult <- compileFromMathItem currentBaseIndex moduleAlias name maybeAlias pos
           restResult <- compileFromMathItems (compileExprResultEndIndex firstResult) moduleAlias rest pos
           pure
@@ -121,7 +123,7 @@ compileImportStmt config = case stmt of
     compileFromDataclassesItems currentBaseIndex importedNames pos =
       case importedNames of
         [] -> Right (CompileExprResult {compileExprResultCode = [], compileExprResultEndIndex = currentBaseIndex})
-        (name, maybeAlias) : rest ->
+        FromImportEntry {fromImportEntryName = name, fromImportEntryAlias = maybeAlias} : rest ->
           if name == "dataclass" || name == "field"
             then do
               let targetName =

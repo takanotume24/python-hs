@@ -1,6 +1,7 @@
 module PythonHS.VM.CompileMatchConfig (CompileMatchConfig (..)) where
 
 import PythonHS.AST.Expr (Expr)
+import PythonHS.AST.MatchCase (MatchCase)
 import PythonHS.AST.Pattern (Pattern)
 import PythonHS.AST.Stmt (Stmt)
 import PythonHS.Lexer.Position (Position)
@@ -13,5 +14,5 @@ data CompileMatchConfig = CompileMatchConfig
     compileMatchInFunction :: Bool,
     compileMatchMaybeLoop :: Maybe (Int, Int),
     compileMatchSubjectExpr :: Expr,
-    compileMatchCases :: [(Pattern, Maybe Expr, [Stmt], Position)]
+    compileMatchCases :: [MatchCase Expr Pattern Stmt]
   }

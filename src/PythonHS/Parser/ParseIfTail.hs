@@ -7,40 +7,57 @@ import PythonHS.Lexer.TokenType (TokenType (ColonToken, ElifToken, ElseToken, Ne
 import PythonHS.Parser.ParseError (ParseError (..))
 import PythonHS.Parser.ParseExpr (parseExpr)
 import PythonHS.Parser.ParseIfTailConfig (ParseIfTailConfig (..))
+import PythonHS.Parser.ParseResult (ParseResult (..))
 
-parseIfTail :: ParseIfTailConfig -> Either ParseError (Maybe [Stmt], [Token])
+parseIfTail :: ParseIfTailConfig -> Either ParseError (ParseResult (Maybe [Stmt]))
 parseIfTail config =
   let parseSuiteFn = parseIfTailSuite config
       ts = parseIfTailTokenStream config
    in case ts of
         Token ElseToken _ _ : Token ColonToken _ _ : afterElse -> do
-          (elseSuite, finalRest) <- parseSuiteFn afterElse
-          Right (Just elseSuite, finalRest)
+          elseResult <- parseSuiteFn afterElse
+          let elseSuite = parseResultValue elseResult
+              finalRest = parseResultRemaining elseResult
+          Right (ParseResult {parseResultValue = Just elseSuite, parseResultRemaining = finalRest})
         Token ElifToken _ elifPos : afterElif -> do
-          (elifCond, afterElifCond) <- parseExpr afterElif
+          condResult <- parseExpr afterElif
+          let elifCond = parseResultValue condResult
+              afterElifCond = parseResultRemaining condResult
           case afterElifCond of
             Token ColonToken _ _ : afterElifColon -> do
-              (elifThenSuite, afterElifThen) <- parseSuiteFn afterElifColon
-              (elifElseBranch, finalRest) <- parseIfTail (config {parseIfTailTokenStream = afterElifThen})
-              Right (Just [IfStmt {ifStmtCond = elifCond, ifStmtThen = elifThenSuite, ifStmtElse = elifElseBranch, ifStmtPos = elifPos}], finalRest)
+              thenResult <- parseSuiteFn afterElifColon
+              let elifThenSuite = parseResultValue thenResult
+                  afterElifThen = parseResultRemaining thenResult
+              elseResult <- parseIfTail (config {parseIfTailTokenStream = afterElifThen})
+              let elifElseBranch = parseResultValue elseResult
+                  finalRest = parseResultRemaining elseResult
+              Right (ParseResult {parseResultValue = Just [IfStmt {ifStmtCond = elifCond, ifStmtThen = elifThenSuite, ifStmtElse = elifElseBranch, ifStmtPos = elifPos}], parseResultRemaining = finalRest})
             Token _ _ pos : _ -> Left (ExpectedExpression {parseErrorPosition = pos})
             _ -> Left (ExpectedExpression {parseErrorPosition = Position {line = 0, column = 0}})
         Token NewlineToken _ _ : _ ->
           case dropLeadingNewlines ts of
             Token ElseToken _ _ : Token ColonToken _ _ : afterElse -> do
-              (elseSuite, finalRest) <- parseSuiteFn afterElse
-              Right (Just elseSuite, finalRest)
+              elseResult <- parseSuiteFn afterElse
+              let elseSuite = parseResultValue elseResult
+                  finalRest = parseResultRemaining elseResult
+              Right (ParseResult {parseResultValue = Just elseSuite, parseResultRemaining = finalRest})
             Token ElifToken _ elifPos : afterElif -> do
-              (elifCond, afterElifCond) <- parseExpr afterElif
+              condResult <- parseExpr afterElif
+              let elifCond = parseResultValue condResult
+                  afterElifCond = parseResultRemaining condResult
               case afterElifCond of
                 Token ColonToken _ _ : afterElifColon -> do
-                  (elifThenSuite, afterElifThen) <- parseSuiteFn afterElifColon
-                  (elifElseBranch, finalRest) <- parseIfTail (config {parseIfTailTokenStream = afterElifThen})
-                  Right (Just [IfStmt {ifStmtCond = elifCond, ifStmtThen = elifThenSuite, ifStmtElse = elifElseBranch, ifStmtPos = elifPos}], finalRest)
+                  thenResult <- parseSuiteFn afterElifColon
+                  let elifThenSuite = parseResultValue thenResult
+                      afterElifThen = parseResultRemaining thenResult
+                  elseResult <- parseIfTail (config {parseIfTailTokenStream = afterElifThen})
+                  let elifElseBranch = parseResultValue elseResult
+                      finalRest = parseResultRemaining elseResult
+                  Right (ParseResult {parseResultValue = Just [IfStmt {ifStmtCond = elifCond, ifStmtThen = elifThenSuite, ifStmtElse = elifElseBranch, ifStmtPos = elifPos}], parseResultRemaining = finalRest})
                 Token _ _ pos : _ -> Left (ExpectedExpression {parseErrorPosition = pos})
                 _ -> Left (ExpectedExpression {parseErrorPosition = Position {line = 0, column = 0}})
-            _ -> Right (Nothing, ts)
-        _ -> Right (Nothing, ts)
+            _ -> Right (ParseResult {parseResultValue = Nothing, parseResultRemaining = ts})
+        _ -> Right (ParseResult {parseResultValue = Nothing, parseResultRemaining = ts})
   where
     dropLeadingNewlines (Token NewlineToken _ _ : rest) = dropLeadingNewlines rest
     dropLeadingNewlines rest = rest

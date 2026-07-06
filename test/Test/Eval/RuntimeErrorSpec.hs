@@ -1,7 +1,9 @@
 module Test.Eval.RuntimeErrorSpec (spec) where
 
 import PythonHS.AST.BinaryOperator (BinaryOperator (AddOperator, DivideOperator, LtOperator, ModuloOperator, MultiplyOperator))
+import PythonHS.AST.DictEntry (DictEntry (..))
 import PythonHS.AST.Expr (Expr (BinaryExpr, CallExpr, DictExpr, IdentifierExpr, IntegerExpr, KeywordArgExpr, ListExpr, NoneExpr, StringExpr, UnaryMinusExpr))
+import PythonHS.AST.FunctionDefault (FunctionDefault (..))
 import PythonHS.AST.Program (Program (Program))
 import PythonHS.AST.Stmt (Stmt (AddAssignStmt, AssignStmt, BreakStmt, ContinueStmt, DivAssignStmt, FloorDivAssignStmt, ForStmt, FunctionDefDefaultsStmt, FunctionDefStmt, IfStmt, ModAssignStmt, MulAssignStmt, PassStmt, PrintStmt, ReturnStmt, SubAssignStmt, WhileStmt))
 import PythonHS.Evaluator (evalProgram)
@@ -333,7 +335,7 @@ spec = describe "runtime error reporting" $ do
           [ FunctionDefDefaultsStmt
               "f"
               ["a", "b", "c"]
-              [("c", CallExpr "len" [KeywordArgExpr "x" (ListExpr [IntegerExpr 1 (Position 18 24)] (Position 18 23)) (Position 18 21)] (Position 18 16))]
+              [FunctionDefault {functionDefaultParam = "c", functionDefaultExpr = CallExpr "len" [KeywordArgExpr "x" (ListExpr [IntegerExpr 1 (Position 18 24)] (Position 18 23)) (Position 18 21)] (Position 18 16)}]
               [ReturnStmt (IdentifierExpr "a" (Position 19 10)) (Position 19 3)]
               (Position 18 1),
             PrintStmt
@@ -355,7 +357,7 @@ spec = describe "runtime error reporting" $ do
           [ FunctionDefDefaultsStmt
               "f"
               ["a", "b", "c"]
-              [("c", CallExpr "len" [KeywordArgExpr "x" (ListExpr [IntegerExpr 1 (Position 22 24)] (Position 22 23)) (Position 22 21)] (Position 22 16))]
+              [FunctionDefault {functionDefaultParam = "c", functionDefaultExpr = CallExpr "len" [KeywordArgExpr "x" (ListExpr [IntegerExpr 1 (Position 22 24)] (Position 22 23)) (Position 22 21)] (Position 22 16)}]
               [ReturnStmt (IdentifierExpr "a" (Position 23 10)) (Position 23 3)]
               (Position 22 1),
             PrintStmt
@@ -377,7 +379,7 @@ spec = describe "runtime error reporting" $ do
           [ FunctionDefDefaultsStmt
               "f"
               ["a", "b", "c"]
-              [("c", CallExpr "len" [KeywordArgExpr "x" (ListExpr [IntegerExpr 1 (Position 26 24)] (Position 26 23)) (Position 26 21)] (Position 26 16))]
+              [FunctionDefault {functionDefaultParam = "c", functionDefaultExpr = CallExpr "len" [KeywordArgExpr "x" (ListExpr [IntegerExpr 1 (Position 26 24)] (Position 26 23)) (Position 26 21)] (Position 26 16)}]
               [ReturnStmt (IdentifierExpr "a" (Position 27 10)) (Position 27 3)]
               (Position 26 1),
             PrintStmt
@@ -593,7 +595,7 @@ spec = describe "runtime error reporting" $ do
           [ FunctionDefDefaultsStmt
               "f"
               ["a", "b"]
-              [("b", BinaryExpr DivideOperator (IntegerExpr 1 (Position 18 14)) (IntegerExpr 0 (Position 18 18)) (Position 18 16))]
+              [FunctionDefault {functionDefaultParam = "b", functionDefaultExpr = BinaryExpr DivideOperator (IntegerExpr 1 (Position 18 14)) (IntegerExpr 0 (Position 18 18)) (Position 18 16)}]
               [ReturnStmt (BinaryExpr AddOperator (IdentifierExpr "a" (Position 19 10)) (IdentifierExpr "b" (Position 19 14)) (Position 19 12)) (Position 19 3)]
               (Position 18 1),
             PrintStmt (CallExpr "f" [IntegerExpr 1 (Position 20 9)] (Position 20 7)) (Position 20 1)
@@ -607,7 +609,7 @@ spec = describe "runtime error reporting" $ do
           [ FunctionDefDefaultsStmt
               "f"
               ["a", "b"]
-              [("b", IdentifierExpr "missing" (Position 22 14))]
+              [FunctionDefault {functionDefaultParam = "b", functionDefaultExpr = IdentifierExpr "missing" (Position 22 14)}]
               [ReturnStmt (BinaryExpr AddOperator (IdentifierExpr "a" (Position 23 10)) (IdentifierExpr "b" (Position 23 14)) (Position 23 12)) (Position 23 3)]
               (Position 22 1),
             PrintStmt (CallExpr "f" [IntegerExpr 1 (Position 24 9)] (Position 24 7)) (Position 24 1)
@@ -621,7 +623,7 @@ spec = describe "runtime error reporting" $ do
           [ FunctionDefDefaultsStmt
               "f"
               ["a", "b"]
-              [("b", CallExpr "len" [IntegerExpr 1 (Position 26 18)] (Position 26 14))]
+              [FunctionDefault {functionDefaultParam = "b", functionDefaultExpr = CallExpr "len" [IntegerExpr 1 (Position 26 18)] (Position 26 14)}]
               [ReturnStmt (BinaryExpr AddOperator (IdentifierExpr "a" (Position 27 10)) (IdentifierExpr "b" (Position 27 14)) (Position 27 12)) (Position 27 3)]
               (Position 26 1),
             PrintStmt (CallExpr "f" [IntegerExpr 1 (Position 28 9)] (Position 28 7)) (Position 28 1)
@@ -635,8 +637,8 @@ spec = describe "runtime error reporting" $ do
           [ FunctionDefDefaultsStmt
               "f"
               ["a", "b", "c"]
-              [ ("b", IntegerExpr 2 (Position 30 14)),
-                ("c", IdentifierExpr "d" (Position 30 21))
+              [ FunctionDefault {functionDefaultParam = "b", functionDefaultExpr = IntegerExpr 2 (Position 30 14)},
+                FunctionDefault {functionDefaultParam = "c", functionDefaultExpr = IdentifierExpr "d" (Position 30 21)}
               ]
               [ ReturnStmt
                   ( BinaryExpr
@@ -659,8 +661,8 @@ spec = describe "runtime error reporting" $ do
           [ FunctionDefDefaultsStmt
               "f"
               ["a", "b", "c"]
-              [ ("b", IdentifierExpr "c" (Position 34 14)),
-                ("c", IntegerExpr 2 (Position 34 21))
+              [ FunctionDefault {functionDefaultParam = "b", functionDefaultExpr = IdentifierExpr "c" (Position 34 14)},
+                FunctionDefault {functionDefaultParam = "c", functionDefaultExpr = IntegerExpr 2 (Position 34 21)}
               ]
               [ ReturnStmt
                   ( BinaryExpr
@@ -683,8 +685,8 @@ spec = describe "runtime error reporting" $ do
           [ FunctionDefDefaultsStmt
               "f"
               ["a", "b", "c"]
-              [ ("b", IntegerExpr 2 (Position 38 14)),
-                ("c", BinaryExpr AddOperator (IdentifierExpr "b" (Position 38 21)) (IdentifierExpr "d" (Position 38 25)) (Position 38 23))
+              [ FunctionDefault {functionDefaultParam = "b", functionDefaultExpr = IntegerExpr 2 (Position 38 14)},
+                FunctionDefault {functionDefaultParam = "c", functionDefaultExpr = BinaryExpr AddOperator (IdentifierExpr "b" (Position 38 21)) (IdentifierExpr "d" (Position 38 25)) (Position 38 23)}
               ]
               [ ReturnStmt
                   ( BinaryExpr
@@ -707,7 +709,7 @@ spec = describe "runtime error reporting" $ do
           [ FunctionDefDefaultsStmt
               "f"
               ["a", "b"]
-              [("b", CallExpr "len" [IdentifierExpr "a" (Position 42 18)] (Position 42 14))]
+              [FunctionDefault {functionDefaultParam = "b", functionDefaultExpr = CallExpr "len" [IdentifierExpr "a" (Position 42 18)] (Position 42 14)}]
               [ReturnStmt (BinaryExpr AddOperator (IdentifierExpr "a" (Position 43 10)) (IdentifierExpr "b" (Position 43 14)) (Position 43 12)) (Position 43 3)]
               (Position 42 1),
             PrintStmt (CallExpr "f" [IntegerExpr 1 (Position 44 9)] (Position 44 7)) (Position 44 1)
@@ -721,7 +723,7 @@ spec = describe "runtime error reporting" $ do
           [ FunctionDefDefaultsStmt
               "f"
               ["a", "b"]
-              [("b", BinaryExpr DivideOperator (IntegerExpr 1 (Position 46 14)) (IntegerExpr 0 (Position 46 18)) (Position 46 16))]
+              [FunctionDefault {functionDefaultParam = "b", functionDefaultExpr = BinaryExpr DivideOperator (IntegerExpr 1 (Position 46 14)) (IntegerExpr 0 (Position 46 18)) (Position 46 16)}]
               [ReturnStmt (BinaryExpr AddOperator (IdentifierExpr "a" (Position 47 10)) (IdentifierExpr "b" (Position 47 14)) (Position 47 12)) (Position 47 3)]
               (Position 46 1),
             PrintStmt
@@ -737,7 +739,7 @@ spec = describe "runtime error reporting" $ do
           [ FunctionDefDefaultsStmt
               "f"
               ["a", "b"]
-              [("b", BinaryExpr DivideOperator (IntegerExpr 1 (Position 50 14)) (IntegerExpr 0 (Position 50 18)) (Position 50 16))]
+              [FunctionDefault {functionDefaultParam = "b", functionDefaultExpr = BinaryExpr DivideOperator (IntegerExpr 1 (Position 50 14)) (IntegerExpr 0 (Position 50 18)) (Position 50 16)}]
               [ReturnStmt (BinaryExpr AddOperator (IdentifierExpr "a" (Position 51 10)) (IdentifierExpr "b" (Position 51 14)) (Position 51 12)) (Position 51 3)]
               (Position 50 1),
             PrintStmt
@@ -753,7 +755,7 @@ spec = describe "runtime error reporting" $ do
           [ FunctionDefDefaultsStmt
               "f"
               ["a", "b"]
-              [("b", CallExpr "len" [KeywordArgExpr "x" (ListExpr [IntegerExpr 1 (Position 54 22)] (Position 54 21)) (Position 54 20)] (Position 54 14))]
+              [FunctionDefault {functionDefaultParam = "b", functionDefaultExpr = CallExpr "len" [KeywordArgExpr "x" (ListExpr [IntegerExpr 1 (Position 54 22)] (Position 54 21)) (Position 54 20)] (Position 54 14)}]
               [ReturnStmt (BinaryExpr AddOperator (IdentifierExpr "a" (Position 55 10)) (IdentifierExpr "b" (Position 55 14)) (Position 55 12)) (Position 55 3)]
               (Position 54 1),
             PrintStmt
@@ -769,7 +771,7 @@ spec = describe "runtime error reporting" $ do
           [ FunctionDefDefaultsStmt
               "f"
               ["a", "b"]
-              [("b", CallExpr "len" [KeywordArgExpr "x" (ListExpr [IntegerExpr 1 (Position 58 22)] (Position 58 21)) (Position 58 20)] (Position 58 14))]
+              [FunctionDefault {functionDefaultParam = "b", functionDefaultExpr = CallExpr "len" [KeywordArgExpr "x" (ListExpr [IntegerExpr 1 (Position 58 22)] (Position 58 21)) (Position 58 20)] (Position 58 14)}]
               [ReturnStmt (BinaryExpr AddOperator (IdentifierExpr "a" (Position 59 10)) (IdentifierExpr "b" (Position 59 14)) (Position 59 12)) (Position 59 3)]
               (Position 58 1),
             PrintStmt
@@ -785,7 +787,7 @@ spec = describe "runtime error reporting" $ do
           [ FunctionDefDefaultsStmt
               "f"
               ["a", "b", "c"]
-              [("c", CallExpr "len" [KeywordArgExpr "x" (ListExpr [IntegerExpr 1 (Position 62 24)] (Position 62 23)) (Position 62 21)] (Position 62 16))]
+              [FunctionDefault {functionDefaultParam = "c", functionDefaultExpr = CallExpr "len" [KeywordArgExpr "x" (ListExpr [IntegerExpr 1 (Position 62 24)] (Position 62 23)) (Position 62 21)] (Position 62 16)}]
               [ReturnStmt (IdentifierExpr "a" (Position 63 10)) (Position 63 3)]
               (Position 62 1),
             PrintStmt
@@ -801,7 +803,7 @@ spec = describe "runtime error reporting" $ do
           [ FunctionDefDefaultsStmt
               "f"
               ["a", "b", "c"]
-              [("c", CallExpr "len" [KeywordArgExpr "x" (ListExpr [IntegerExpr 1 (Position 66 24)] (Position 66 23)) (Position 66 21)] (Position 66 16))]
+              [FunctionDefault {functionDefaultParam = "c", functionDefaultExpr = CallExpr "len" [KeywordArgExpr "x" (ListExpr [IntegerExpr 1 (Position 66 24)] (Position 66 23)) (Position 66 21)] (Position 66 16)}]
               [ReturnStmt (IdentifierExpr "a" (Position 67 10)) (Position 67 3)]
               (Position 66 1),
             PrintStmt
@@ -885,7 +887,7 @@ spec = describe "runtime error reporting" $ do
           [ FunctionDefDefaultsStmt
               "f"
               ["a", "b"]
-              [("b", CallExpr "len" [ListExpr [IdentifierExpr "a" (Position 46 19), IdentifierExpr "missing" (Position 46 22)] (Position 46 18)] (Position 46 14))]
+              [FunctionDefault {functionDefaultParam = "b", functionDefaultExpr = CallExpr "len" [ListExpr [IdentifierExpr "a" (Position 46 19), IdentifierExpr "missing" (Position 46 22)] (Position 46 18)] (Position 46 14)}]
               [ReturnStmt (BinaryExpr AddOperator (IdentifierExpr "a" (Position 47 10)) (IdentifierExpr "b" (Position 47 14)) (Position 47 12)) (Position 47 3)]
               (Position 46 1),
             PrintStmt (CallExpr "f" [IntegerExpr 1 (Position 48 9)] (Position 48 7)) (Position 48 1)
@@ -959,7 +961,7 @@ spec = describe "runtime error reporting" $ do
 
     evalProgram
       ( Program
-          [ PrintStmt (CallExpr "get" [DictExpr [(IntegerExpr 1 (Position 24 13), IntegerExpr 2 (Position 24 16))] (Position 24 12), IntegerExpr 3 (Position 24 20)] (Position 24 7)) (Position 24 1)
+          [ PrintStmt (CallExpr "get" [DictExpr [DictEntry {dictEntryKey = IntegerExpr 1 (Position 24 13), dictEntryValue = IntegerExpr 2 (Position 24 16)}] (Position 24 12), IntegerExpr 3 (Position 24 20)] (Position 24 7)) (Position 24 1)
           ]
       )
       `shouldBe` Left "Key not found in get at 24:7"
@@ -1116,7 +1118,7 @@ spec = describe "runtime error reporting" $ do
 
     evalProgram
       ( Program
-          [ PrintStmt (CallExpr "pop" [DictExpr [(IntegerExpr 1 (Position 27 11), IntegerExpr 2 (Position 27 14))] (Position 27 10), IntegerExpr 9 (Position 27 18)] (Position 27 7)) (Position 27 1)
+          [ PrintStmt (CallExpr "pop" [DictExpr [DictEntry {dictEntryKey = IntegerExpr 1 (Position 27 11), dictEntryValue = IntegerExpr 2 (Position 27 14)}] (Position 27 10), IntegerExpr 9 (Position 27 18)] (Position 27 7)) (Position 27 1)
           ]
       )
       `shouldBe` Left "Key not found in pop at 27:7"

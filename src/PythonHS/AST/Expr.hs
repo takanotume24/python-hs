@@ -1,6 +1,9 @@
 module PythonHS.AST.Expr (Expr (..)) where
 
 import PythonHS.AST.BinaryOperator (BinaryOperator)
+import PythonHS.AST.DictEntry (DictEntry)
+import PythonHS.AST.FunctionDefault (FunctionDefault)
+import PythonHS.AST.ListComprehensionClause (ListComprehensionClause)
 import PythonHS.Lexer.Position (Position)
 
 -- Expressions in the language with source position attached to each node
@@ -34,11 +37,11 @@ data Expr
       }
   | ListComprehensionClausesExpr
       { listComprehensionClausesExprValue :: Expr,
-        listComprehensionClausesExprClauses :: [([String], Expr, [Expr])],
+        listComprehensionClausesExprClauses :: [ListComprehensionClause Expr],
         listComprehensionClausesExprPos :: Position
       }
   | DictExpr
-      { dictExprEntries :: [(Expr, Expr)],
+      { dictExprEntries :: [DictEntry Expr],
         dictExprPos :: Position
       }
   | IdentifierExpr
@@ -70,7 +73,7 @@ data Expr
       }
   | LambdaDefaultsExpr
       { lambdaDefaultsExprParams :: [String],
-        lambdaDefaultsExprDefaults :: [(String, Expr)],
+        lambdaDefaultsExprDefaults :: [FunctionDefault Expr],
         lambdaDefaultsExprValue :: Expr,
         lambdaDefaultsExprPos :: Position
       }

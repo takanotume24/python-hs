@@ -1,5 +1,6 @@
 module PythonHS.VM.HasYieldInStmts (hasYieldInStmts) where
 
+import PythonHS.AST.ExceptSuite (ExceptSuite (..))
 import PythonHS.AST.Stmt (Stmt (ClassDefStmt, DecoratedStmt, ForStmt, FunctionDefDefaultsStmt, FunctionDefStmt, IfStmt, TryExceptStmt, WhileStmt, YieldFromStmt, YieldStmt))
 
 hasYieldInStmts :: [Stmt] -> Bool
@@ -16,7 +17,7 @@ hasYieldInStmts stmts =
         ForStmt _ _ body _ -> hasYieldInStmts body || hasYieldInStmts rest
         TryExceptStmt tryStmts exceptSuites maybeFinally _ ->
           hasYieldInStmts tryStmts
-            || any (\(_, _, suiteStmts, _) -> hasYieldInStmts suiteStmts) exceptSuites
+            || any (\ExceptSuite {exceptSuiteBody = suiteStmts} -> hasYieldInStmts suiteStmts) exceptSuites
             || maybe False hasYieldInStmts maybeFinally
             || hasYieldInStmts rest
         DecoratedStmt _ innerStmt _ -> hasYieldInStmts [innerStmt] || hasYieldInStmts rest

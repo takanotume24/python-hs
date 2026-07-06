@@ -6,24 +6,34 @@ import PythonHS.Lexer.Token (Token (Token))
 import PythonHS.Lexer.TokenType (TokenType (AssignToken, IdentifierToken, StarToken))
 import PythonHS.Parser.ExprPos (exprPos)
 import PythonHS.Parser.ParseCallArgumentConfig (ParseCallArgumentConfig (..))
+import PythonHS.Parser.ParseCallArgumentResult (ParseCallArgumentResult (..))
 import PythonHS.Parser.ParseError (ParseError)
+import PythonHS.Parser.ParseResult (ParseResult (..))
 
 parseCallArgument ::
   ParseCallArgumentConfig ->
-  Either ParseError (Expr, Bool, Position, [Token])
+  Either ParseError (ParseResult ParseCallArgumentResult)
 parseCallArgument config =
   let parseExpr = parseCallArgumentExpr config
       tokenStream = parseCallArgumentTokenStream config
    in case tokenStream of
         Token IdentifierToken name namePos : Token AssignToken _ assignPos : rest -> do
-          (valueExpr, afterValue) <- parseExpr rest
-          Right (KeywordArgExpr {keywordArgExprName = name, keywordArgExprValue = valueExpr, keywordArgExprPos = namePos}, True, assignPos, afterValue)
+          result <- parseExpr rest
+          let valueExpr = parseResultValue result
+              afterValue = parseResultRemaining result
+          Right (ParseResult {parseResultValue = ParseCallArgumentResult {parseCallArgumentResultExpr = KeywordArgExpr {keywordArgExprName = name, keywordArgExprValue = valueExpr, keywordArgExprPos = namePos}, parseCallArgumentResultIsKeyword = True, parseCallArgumentResultPos = assignPos}, parseResultRemaining = afterValue})
         Token StarToken _ starPos : Token StarToken _ _ : rest -> do
-          (valueExpr, afterValue) <- parseExpr rest
-          Right (KwStarArgExpr {kwStarArgExprValue = valueExpr, kwStarArgExprPos = starPos}, True, starPos, afterValue)
+          result <- parseExpr rest
+          let valueExpr = parseResultValue result
+              afterValue = parseResultRemaining result
+          Right (ParseResult {parseResultValue = ParseCallArgumentResult {parseCallArgumentResultExpr = KwStarArgExpr {kwStarArgExprValue = valueExpr, kwStarArgExprPos = starPos}, parseCallArgumentResultIsKeyword = True, parseCallArgumentResultPos = starPos}, parseResultRemaining = afterValue})
         Token StarToken _ starPos : rest -> do
-          (valueExpr, afterValue) <- parseExpr rest
-          Right (StarArgExpr {starArgExprValue = valueExpr, starArgExprPos = starPos}, False, starPos, afterValue)
+          result <- parseExpr rest
+          let valueExpr = parseResultValue result
+              afterValue = parseResultRemaining result
+          Right (ParseResult {parseResultValue = ParseCallArgumentResult {parseCallArgumentResultExpr = StarArgExpr {starArgExprValue = valueExpr, starArgExprPos = starPos}, parseCallArgumentResultIsKeyword = False, parseCallArgumentResultPos = starPos}, parseResultRemaining = afterValue})
         _ -> do
-          (argExpr, afterArg) <- parseExpr tokenStream
-          Right (argExpr, False, exprPos argExpr, afterArg)
+          result <- parseExpr tokenStream
+          let argExpr = parseResultValue result
+              afterArg = parseResultRemaining result
+          Right (ParseResult {parseResultValue = ParseCallArgumentResult {parseCallArgumentResultExpr = argExpr, parseCallArgumentResultIsKeyword = False, parseCallArgumentResultPos = exprPos argExpr}, parseResultRemaining = afterArg})

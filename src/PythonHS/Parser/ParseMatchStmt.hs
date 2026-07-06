@@ -1,5 +1,6 @@
 module PythonHS.Parser.ParseMatchStmt (parseMatchStmt) where
 
+import PythonHS.AST.MatchCase (MatchCase (..))
 import PythonHS.AST.Stmt (Stmt (..))
 import PythonHS.Lexer.Position (Position (Position))
 import PythonHS.Lexer.Token (Token (..))
@@ -8,20 +9,25 @@ import PythonHS.Parser.ParseError (ParseError (..))
 import PythonHS.Parser.ParseMatchStmtConfig (ParseMatchStmtConfig (..))
 import PythonHS.Parser.ParsePattern (parsePattern)
 import PythonHS.Parser.ParsePatternConfig (ParsePatternConfig (..))
+import PythonHS.Parser.ParseResult (ParseResult (..))
 
 parseMatchStmt ::
   ParseMatchStmtConfig ->
-  Either ParseError (Stmt, [Token])
+  Either ParseError (ParseResult Stmt)
 parseMatchStmt config = do
   let parseExprFn = parseMatchStmtExpr config
       parseSuiteFn = parseMatchStmtSuite config
       pos = parseMatchStmtPos config
       rest = parseMatchStmtTokenStream config
-  (subjectExpr, afterSubject) <- parseExprFn rest
+  subjectResult <- parseExprFn rest
+  let subjectExpr = parseResultValue subjectResult
+      afterSubject = parseResultRemaining subjectResult
   case afterSubject of
     Token ColonToken _ _ : Token NewlineToken _ _ : Token IndentToken _ _ : afterIndent -> do
-      (cases, afterCases) <- parseCaseClauses parseExprFn parseSuiteFn afterIndent
-      Right (MatchStmt {matchStmtSubject = subjectExpr, matchStmtCases = cases, matchStmtPos = pos}, afterCases)
+      casesResult <- parseCaseClauses parseExprFn parseSuiteFn afterIndent
+      let cases = parseResultValue casesResult
+          afterCases = parseResultRemaining casesResult
+      Right (ParseResult {parseResultValue = MatchStmt {matchStmtSubject = subjectExpr, matchStmtCases = cases, matchStmtPos = pos}, parseResultRemaining = afterCases})
     Token ColonToken _ _ : _ -> Left (ExpectedExpression {parseErrorPosition = pos})
     tok : _ -> Left (ExpectedExpression {parseErrorPosition = position tok})
     _ -> Left (ExpectedExpression {parseErrorPosition = Position 0 0})
@@ -29,32 +35,44 @@ parseMatchStmt config = do
     parseCaseClauses _ _ (Token DedentToken _ dedentPos : _) =
       Left (ExpectedExpression {parseErrorPosition = dedentPos})
     parseCaseClauses parseExprFn parseSuiteFn ts = do
-      (firstCase, afterFirst) <- parseCaseClause parseExprFn parseSuiteFn ts
+      firstResult <- parseCaseClause parseExprFn parseSuiteFn ts
+      let firstCase = parseResultValue firstResult
+          afterFirst = parseResultRemaining firstResult
       parseCaseTail parseExprFn parseSuiteFn [firstCase] afterFirst
 
     parseCaseTail _ _ acc (Token DedentToken _ dedentPos : restTokens) =
-      Right (reverse acc, Token {tokenType = NewlineToken, lexeme = "\\n", position = dedentPos} : restTokens)
+      Right (ParseResult {parseResultValue = reverse acc, parseResultRemaining = Token {tokenType = NewlineToken, lexeme = "\\n", position = dedentPos} : restTokens})
     parseCaseTail parseExprFn parseSuiteFn acc ts = do
       restAfterNewline <- consumeNewline ts
       case restAfterNewline of
         Token DedentToken _ dedentPos : restTokens ->
-          Right (reverse acc, Token {tokenType = NewlineToken, lexeme = "\\n", position = dedentPos} : restTokens)
+          Right (ParseResult {parseResultValue = reverse acc, parseResultRemaining = Token {tokenType = NewlineToken, lexeme = "\\n", position = dedentPos} : restTokens})
         _ -> do
-          (nextCase, afterNext) <- parseCaseClause parseExprFn parseSuiteFn restAfterNewline
+          nextResult <- parseCaseClause parseExprFn parseSuiteFn restAfterNewline
+          let nextCase = parseResultValue nextResult
+              afterNext = parseResultRemaining nextResult
           parseCaseTail parseExprFn parseSuiteFn (nextCase : acc) afterNext
 
     parseCaseClause parseExprFn parseSuiteFn (Token CaseToken _ casePos : ts) = do
-      (patternExpr, afterPattern) <- parsePattern (ParsePatternConfig {parsePatternExpr = parseExprFn, parsePatternTokenStream = ts})
-      (guardExpr, afterGuard) <-
+      patternResult <- parsePattern (ParsePatternConfig {parsePatternExpr = parseExprFn, parsePatternTokenStream = ts})
+      let patternExpr = parseResultValue patternResult
+          afterPattern = parseResultRemaining patternResult
+      guardResult <-
         case afterPattern of
           Token IfToken _ _ : afterIf -> do
-            (guardValue, guardRest) <- parseExprFn afterIf
-            Right (Just guardValue, guardRest)
-          _ -> Right (Nothing, afterPattern)
+            guardValueResult <- parseExprFn afterIf
+            let guardValue = parseResultValue guardValueResult
+                guardRest = parseResultRemaining guardValueResult
+            Right (ParseResult {parseResultValue = Just guardValue, parseResultRemaining = guardRest})
+          _ -> Right (ParseResult {parseResultValue = Nothing, parseResultRemaining = afterPattern})
+      let guardExpr = parseResultValue guardResult
+          afterGuard = parseResultRemaining guardResult
       case afterGuard of
         Token ColonToken _ _ : afterColon -> do
-          (suite, finalRest) <- parseSuiteFn afterColon
-          Right ((patternExpr, guardExpr, suite, casePos), finalRest)
+          suiteResult <- parseSuiteFn afterColon
+          let suite = parseResultValue suiteResult
+              finalRest = parseResultRemaining suiteResult
+          Right (ParseResult {parseResultValue = MatchCase {matchCasePattern = patternExpr, matchCaseGuard = guardExpr, matchCaseBody = suite, matchCasePos = casePos}, parseResultRemaining = finalRest})
         tok : _ -> Left (ExpectedExpression {parseErrorPosition = position tok})
         _ -> Left (ExpectedExpression {parseErrorPosition = Position 0 0})
     parseCaseClause _ _ (tok : _) = Left (ExpectedExpression {parseErrorPosition = position tok})

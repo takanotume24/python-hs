@@ -1,6 +1,7 @@
 module PythonHS.VM.CompileMatch (compileMatch) where
 
 import PythonHS.AST.Expr (Expr)
+import PythonHS.AST.MatchCase (MatchCase (..))
 import PythonHS.AST.Pattern (Pattern)
 import PythonHS.AST.Stmt (Stmt)
 import PythonHS.Lexer.Position (Position)
@@ -25,7 +26,7 @@ compileMatch config = do
     maybeLoop = compileMatchMaybeLoop config
 
     compileCases nextIndex _ [] = Right ([], nextIndex)
-    compileCases nextIndex subjectName' ((pat, maybeGuard, bodyStmts, patPos) : restCases) = do
+    compileCases nextIndex subjectName' (MatchCase {matchCasePattern = pat, matchCaseGuard = maybeGuard, matchCaseBody = bodyStmts, matchCasePos = patPos} : restCases) = do
       let loadAndMatch = [LoadName {loadNameName = subjectName', loadNamePos = patPos}, MatchPattern {matchPatternPattern = pat, matchPatternPos = patPos}]
       let jumpAfterMatchIndex = nextIndex + 2
       guardResult <-

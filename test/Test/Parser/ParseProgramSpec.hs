@@ -1,7 +1,15 @@
 module Test.Parser.ParseProgramSpec (spec) where
 
 import PythonHS.AST.BinaryOperator (BinaryOperator (..))
+import PythonHS.AST.DictEntry (DictEntry (..))
+import PythonHS.AST.ExceptSuite (ExceptSuite (..))
 import PythonHS.AST.Expr (Expr (BinaryExpr, CallExpr, DictExpr, FloatExpr, IdentifierExpr, IntegerExpr, KeywordArgExpr, KwStarArgExpr, LambdaExpr, ListComprehensionClausesExpr, ListComprehensionExpr, ListExpr, NoneExpr, NotExpr, StarArgExpr, StringExpr, UnaryMinusExpr, WalrusExpr))
+import PythonHS.AST.FromImportEntry (FromImportEntry (..))
+import PythonHS.AST.FunctionDefault (FunctionDefault (..))
+import PythonHS.AST.ImportEntry (ImportEntry (..))
+import PythonHS.AST.ListComprehensionClause (ListComprehensionClause (..))
+import PythonHS.AST.MappingPatternEntry (MappingPatternEntry (..))
+import PythonHS.AST.MatchCase (MatchCase (..))
 import PythonHS.AST.Pattern (Pattern (AsPattern, CapturePattern, MappingPattern, OrPattern, SequencePattern, ValuePattern, WildcardPattern))
 import PythonHS.AST.Program (Program (Program))
 import PythonHS.AST.Stmt (Stmt (AddAssignStmt, AssignStmt, BreakStmt, ClassDefStmt, ContinueStmt, DecoratedStmt, DivAssignStmt, FloorDivAssignStmt, ForStmt, FromImportStmt, FunctionDefDefaultsStmt, FunctionDefStmt, GlobalStmt, IfStmt, ImportStmt, MatchStmt, ModAssignStmt, MulAssignStmt, PassStmt, PrintStmt, RaiseStmt, ReturnStmt, SubAssignStmt, TryExceptStmt, WhileStmt, WithStmt, YieldFromStmt, YieldStmt))
@@ -200,7 +208,7 @@ spec = describe "parseProgram" $ do
       ]
       `shouldBe` Right
         ( Program
-            [ ImportStmt [(["math"], Nothing)] (Position 1 1)
+            [ ImportStmt [ImportEntry {importEntryPath = ["math"], importEntryAlias = Nothing}] (Position 1 1)
             ]
         )
 
@@ -217,7 +225,7 @@ spec = describe "parseProgram" $ do
       ]
       `shouldBe` Right
         ( Program
-            [ ImportStmt [(["pkg", "mod"], Just "m")] (Position 1 1)
+            [ ImportStmt [ImportEntry {importEntryPath = ["pkg", "mod"], importEntryAlias = Just "m"}] (Position 1 1)
             ]
         )
 
@@ -236,7 +244,7 @@ spec = describe "parseProgram" $ do
       ]
       `shouldBe` Right
         ( Program
-            [ FromImportStmt 0 ["pkg", "mod"] [("sqrt", Just "s")] (Position 1 1)
+            [ FromImportStmt 0 ["pkg", "mod"] [FromImportEntry {fromImportEntryName = "sqrt", fromImportEntryAlias = Just "s"}] (Position 1 1)
             ]
         )
 
@@ -253,7 +261,7 @@ spec = describe "parseProgram" $ do
       ]
       `shouldBe` Right
         ( Program
-            [ FromImportStmt 2 ["pkg"] [("x", Nothing)] (Position 1 1)
+            [ FromImportStmt 2 ["pkg"] [FromImportEntry {fromImportEntryName = "x", fromImportEntryAlias = Nothing}] (Position 1 1)
             ]
         )
 
@@ -268,7 +276,7 @@ spec = describe "parseProgram" $ do
       ]
       `shouldBe` Right
         ( Program
-            [ FromImportStmt 1 [] [("x", Nothing)] (Position 1 1)
+            [ FromImportStmt 1 [] [FromImportEntry {fromImportEntryName = "x", fromImportEntryAlias = Nothing}] (Position 1 1)
             ]
         )
 
@@ -283,7 +291,7 @@ spec = describe "parseProgram" $ do
       ]
       `shouldBe` Right
         ( Program
-            [ FromImportStmt 0 ["pkg"] [("*", Nothing)] (Position 1 1)
+            [ FromImportStmt 0 ["pkg"] [FromImportEntry {fromImportEntryName = "*", fromImportEntryAlias = Nothing}] (Position 1 1)
             ]
         )
 
@@ -305,7 +313,7 @@ spec = describe "parseProgram" $ do
       ]
       `shouldBe` Right
         ( Program
-            [ FromImportStmt 0 ["pkg"] [("a", Nothing), ("b", Just "c")] (Position 1 1)
+            [ FromImportStmt 0 ["pkg"] [FromImportEntry {fromImportEntryName = "a", fromImportEntryAlias = Nothing}, FromImportEntry {fromImportEntryName = "b", fromImportEntryAlias = Just "c"}] (Position 1 1)
             ]
         )
 
@@ -346,7 +354,7 @@ spec = describe "parseProgram" $ do
         ( Program
             [ TryExceptStmt
                 [RaiseStmt (StringExpr "x" (Position 2 9)) (Position 2 3)]
-                [(Nothing, Nothing, [PrintStmt (IntegerExpr 1 (Position 4 9)) (Position 4 3)], Position 3 1)]
+                [ExceptSuite {exceptSuiteType = Nothing, exceptSuiteAlias = Nothing, exceptSuiteBody = [PrintStmt (IntegerExpr 1 (Position 4 9)) (Position 4 3)], exceptSuitePos = Position 3 1}]
                 Nothing
                 (Position 1 1)
             ]
@@ -384,7 +392,7 @@ spec = describe "parseProgram" $ do
         ( Program
             [ TryExceptStmt
                 [PrintStmt (IntegerExpr 1 (Position 2 9)) (Position 2 3)]
-                [(Nothing, Nothing, [PrintStmt (IntegerExpr 2 (Position 4 9)) (Position 4 3)], Position 3 1)]
+                [ExceptSuite {exceptSuiteType = Nothing, exceptSuiteAlias = Nothing, exceptSuiteBody = [PrintStmt (IntegerExpr 2 (Position 4 9)) (Position 4 3)], exceptSuitePos = Position 3 1}]
                 (Just [PrintStmt (IntegerExpr 3 (Position 6 9)) (Position 6 3)])
                 (Position 1 1)
             ]
@@ -422,8 +430,8 @@ spec = describe "parseProgram" $ do
         ( Program
             [ TryExceptStmt
                 [RaiseStmt (StringExpr "x" (Position 2 9)) (Position 2 3)]
-                [ (Nothing, Nothing, [PrintStmt (IntegerExpr 1 (Position 4 9)) (Position 4 3)], Position 3 1),
-                  (Nothing, Nothing, [PrintStmt (IntegerExpr 2 (Position 6 9)) (Position 6 3)], Position 5 1)
+                [ ExceptSuite {exceptSuiteType = Nothing, exceptSuiteAlias = Nothing, exceptSuiteBody = [PrintStmt (IntegerExpr 1 (Position 4 9)) (Position 4 3)], exceptSuitePos = Position 3 1},
+                  ExceptSuite {exceptSuiteType = Nothing, exceptSuiteAlias = Nothing, exceptSuiteBody = [PrintStmt (IntegerExpr 2 (Position 6 9)) (Position 6 3)], exceptSuitePos = Position 5 1}
                 ]
                 Nothing
                 (Position 1 1)
@@ -457,7 +465,7 @@ spec = describe "parseProgram" $ do
         ( Program
             [ TryExceptStmt
                 [RaiseStmt (StringExpr "x" (Position 2 9)) (Position 2 3)]
-                [(Just "RuntimeError", Just "e", [PrintStmt (IdentifierExpr "e" (Position 4 9)) (Position 4 3)], Position 3 1)]
+                [ExceptSuite {exceptSuiteType = Just "RuntimeError", exceptSuiteAlias = Just "e", exceptSuiteBody = [PrintStmt (IdentifierExpr "e" (Position 4 9)) (Position 4 3)], exceptSuitePos = Position 3 1}]
                 Nothing
                 (Position 1 1)
             ]
@@ -512,28 +520,33 @@ spec = describe "parseProgram" $ do
         ( Program
             [ MatchStmt
                 (IdentifierExpr "x" (Position 1 7))
-                [ ( OrPattern
-                      [ ValuePattern (IntegerExpr 1 (Position 2 8)) (Position 2 8),
-                        ValuePattern (IntegerExpr 2 (Position 2 12)) (Position 2 12)
-                      ]
-                      (Position 2 10),
-                    Just (IdentifierExpr "ok" (Position 2 17)),
-                    [PrintStmt (IntegerExpr 10 (Position 3 11)) (Position 3 5)],
-                    (Position 2 3)
-                  ),
-                  ( MappingPattern
-                      [(StringExpr "k" (Position 4 9), CapturePattern "v" (Position 4 14))]
-                      Nothing
-                      (Position 4 8),
-                    Nothing,
-                    [PrintStmt (IdentifierExpr "v" (Position 5 11)) (Position 5 5)],
-                    (Position 4 3)
-                  ),
-                  ( WildcardPattern (Position 6 8),
-                    Nothing,
-                    [PrintStmt (IntegerExpr 0 (Position 7 11)) (Position 7 5)],
-                    (Position 6 3)
-                  )
+                [ MatchCase
+                    { matchCasePattern =
+                        OrPattern
+                          [ ValuePattern (IntegerExpr 1 (Position 2 8)) (Position 2 8),
+                            ValuePattern (IntegerExpr 2 (Position 2 12)) (Position 2 12)
+                          ]
+                          (Position 2 10),
+                      matchCaseGuard = Just (IdentifierExpr "ok" (Position 2 17)),
+                      matchCaseBody = [PrintStmt (IntegerExpr 10 (Position 3 11)) (Position 3 5)],
+                      matchCasePos = Position 2 3
+                    },
+                  MatchCase
+                    { matchCasePattern =
+                        MappingPattern
+                          [MappingPatternEntry {mappingPatternEntryKey = StringExpr "k" (Position 4 9), mappingPatternEntryValue = CapturePattern "v" (Position 4 14)}]
+                          Nothing
+                          (Position 4 8),
+                      matchCaseGuard = Nothing,
+                      matchCaseBody = [PrintStmt (IdentifierExpr "v" (Position 5 11)) (Position 5 5)],
+                      matchCasePos = Position 4 3
+                    },
+                  MatchCase
+                    { matchCasePattern = WildcardPattern (Position 6 8),
+                      matchCaseGuard = Nothing,
+                      matchCaseBody = [PrintStmt (IntegerExpr 0 (Position 7 11)) (Position 7 5)],
+                      matchCasePos = Position 6 3
+                    }
                 ]
                 (Position 1 1)
             ]
@@ -570,14 +583,16 @@ spec = describe "parseProgram" $ do
         ( Program
             [ MatchStmt
                 (IdentifierExpr "x" (Position 1 7))
-                [ ( MappingPattern
-                      [(StringExpr "k" (Position 2 9), CapturePattern "v" (Position 2 14))]
-                      (Just "rest")
-                      (Position 2 8),
-                    Nothing,
-                    [PrintStmt (IdentifierExpr "rest" (Position 3 11)) (Position 3 5)],
-                    (Position 2 3)
-                  )
+                [ MatchCase
+                    { matchCasePattern =
+                        MappingPattern
+                          [MappingPatternEntry {mappingPatternEntryKey = StringExpr "k" (Position 2 9), mappingPatternEntryValue = CapturePattern "v" (Position 2 14)}]
+                          (Just "rest")
+                          (Position 2 8),
+                      matchCaseGuard = Nothing,
+                      matchCaseBody = [PrintStmt (IdentifierExpr "rest" (Position 3 11)) (Position 3 5)],
+                      matchCasePos = Position 2 3
+                    }
                 ]
                 (Position 1 1)
             ]
@@ -612,11 +627,12 @@ spec = describe "parseProgram" $ do
         ( Program
             [ MatchStmt
                 (IdentifierExpr "x" (Position 1 7))
-                [ ( AsPattern (SequencePattern [CapturePattern "a" (Position 2 9), CapturePattern "b" (Position 2 12)] Nothing (Position 2 8)) "pair" (Position 2 15),
-                    Nothing,
-                    [PrintStmt (IdentifierExpr "pair" (Position 3 11)) (Position 3 5)],
-                    Position 2 3
-                  )
+                [ MatchCase
+                    { matchCasePattern = AsPattern (SequencePattern [CapturePattern "a" (Position 2 9), CapturePattern "b" (Position 2 12)] Nothing (Position 2 8)) "pair" (Position 2 15),
+                      matchCaseGuard = Nothing,
+                      matchCaseBody = [PrintStmt (IdentifierExpr "pair" (Position 3 11)) (Position 3 5)],
+                      matchCasePos = Position 2 3
+                    }
                 ]
                 (Position 1 1)
             ]
@@ -1272,7 +1288,7 @@ spec = describe "parseProgram" $ do
             [ FunctionDefDefaultsStmt
                 "add"
                 ["a", "b"]
-                [("b", IntegerExpr 2 (Position 1 16))]
+                [FunctionDefault {functionDefaultParam = "b", functionDefaultExpr = IntegerExpr 2 (Position 1 16)}]
                 [PrintStmt (IdentifierExpr "a" (Position 1 26)) (Position 1 20)]
                 (Position 1 1)
             ]
@@ -1301,7 +1317,7 @@ spec = describe "parseProgram" $ do
             [ FunctionDefDefaultsStmt
                 "add"
                 ["a", "b"]
-                [("b", IntegerExpr 2 (Position 1 16))]
+                [FunctionDefault {functionDefaultParam = "b", functionDefaultExpr = IntegerExpr 2 (Position 1 16)}]
                 [PrintStmt (IdentifierExpr "a" (Position 1 27)) (Position 1 21)]
                 (Position 1 1)
             ]
@@ -1888,7 +1904,7 @@ spec = describe "parseProgram" $ do
             [ PrintStmt
                 ( ListComprehensionClausesExpr
                     (BinaryExpr AddOperator (IdentifierExpr "a" (Position 1 8)) (IdentifierExpr "b" (Position 1 12)) (Position 1 10))
-                    [ (["a", "b"], IdentifierExpr "pairs" (Position 1 26), [BinaryExpr GtOperator (IdentifierExpr "a" (Position 1 35)) (IntegerExpr 0 (Position 1 39)) (Position 1 37)])
+                    [ ListComprehensionClause {listComprehensionClauseTargets = ["a", "b"], listComprehensionClauseIter = IdentifierExpr "pairs" (Position 1 26), listComprehensionClauseConds = [BinaryExpr GtOperator (IdentifierExpr "a" (Position 1 35)) (IntegerExpr 0 (Position 1 39)) (Position 1 37)]}
                     ]
                     (Position 1 7)
                 )
@@ -1920,7 +1936,7 @@ spec = describe "parseProgram" $ do
             [ PrintStmt
                 ( ListComprehensionClausesExpr
                     (IdentifierExpr "x" (Position 1 8))
-                    [(["x"], IdentifierExpr "xs" (Position 1 19), [WalrusExpr "y" (IdentifierExpr "x" (Position 1 31)) (Position 1 26)])]
+                    [ListComprehensionClause {listComprehensionClauseTargets = ["x"], listComprehensionClauseIter = IdentifierExpr "xs" (Position 1 19), listComprehensionClauseConds = [WalrusExpr "y" (IdentifierExpr "x" (Position 1 31)) (Position 1 26)]}]
                     (Position 1 7)
                 )
                 (Position 1 1)
@@ -1959,7 +1975,7 @@ spec = describe "parseProgram" $ do
       `shouldBe` Right
         ( Program
             [ PrintStmt
-                (DictExpr [(IntegerExpr 1 (Position 1 8), IntegerExpr 2 (Position 1 11)), (IntegerExpr 3 (Position 1 14), IntegerExpr 4 (Position 1 17))] (Position 1 7))
+                (DictExpr [DictEntry {dictEntryKey = IntegerExpr 1 (Position 1 8), dictEntryValue = IntegerExpr 2 (Position 1 11)}, DictEntry {dictEntryKey = IntegerExpr 3 (Position 1 14), dictEntryValue = IntegerExpr 4 (Position 1 17)}] (Position 1 7))
                 (Position 1 1)
             ]
         )
@@ -1979,7 +1995,7 @@ spec = describe "parseProgram" $ do
       `shouldBe` Right
         ( Program
             [ PrintStmt
-                (DictExpr [(IntegerExpr 1 (Position 1 8), IntegerExpr 2 (Position 1 11))] (Position 1 7))
+                (DictExpr [DictEntry {dictEntryKey = IntegerExpr 1 (Position 1 8), dictEntryValue = IntegerExpr 2 (Position 1 11)}] (Position 1 7))
                 (Position 1 1)
             ]
         )

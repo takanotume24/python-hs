@@ -1,5 +1,6 @@
 module PythonHS.VM.CompileTryExcept (compileTryExcept) where
 
+import PythonHS.AST.ExceptSuite (ExceptSuite (..))
 import PythonHS.AST.Stmt (Stmt)
 import PythonHS.Lexer.Position (Position)
 import PythonHS.VM.CompileExprResult (CompileExprResult (..))
@@ -53,7 +54,7 @@ compileTryExcept config =
     compileExceptClauses currentIndex clauses =
       case clauses of
         [] -> Right (CompileExprResult {compileExprResultCode = [], compileExprResultEndIndex = currentIndex})
-        (maybeTypeName, maybeAliasName, exceptStmts, _) : restClauses -> do
+        ExceptSuite {exceptSuiteType = maybeTypeName, exceptSuiteAlias = maybeAliasName, exceptSuiteBody = exceptStmts} : restClauses -> do
           let aliasCode =
                 case maybeAliasName of
                   Nothing -> []

@@ -2,6 +2,7 @@ module Test.Eval.FunctionEvalSpec (spec) where
 
 import PythonHS.AST.BinaryOperator (BinaryOperator (AddOperator, EqOperator))
 import PythonHS.AST.Expr (Expr (BinaryExpr, CallExpr, IdentifierExpr, IntegerExpr, KeywordArgExpr, ListExpr))
+import PythonHS.AST.FunctionDefault (FunctionDefault (..))
 import PythonHS.AST.Program (Program (Program))
 import PythonHS.AST.Stmt (Stmt (AssignStmt, FunctionDefDefaultsStmt, FunctionDefStmt, GlobalStmt, IfStmt, PrintStmt, ReturnStmt))
 import PythonHS.Evaluator (evalProgram)
@@ -212,8 +213,8 @@ spec = describe "function runtime" $ do
             FunctionDefDefaultsStmt
               "add"
               ["a", "b", "c"]
-              [ ("b", CallExpr "probe" [IntegerExpr 2 (Position 44 21)] (Position 44 15)),
-                ("c", CallExpr "probe" [IntegerExpr 3 (Position 44 33)] (Position 44 27))
+              [ FunctionDefault {functionDefaultParam = "b", functionDefaultExpr = CallExpr "probe" [IntegerExpr 2 (Position 44 21)] (Position 44 15)},
+                FunctionDefault {functionDefaultParam = "c", functionDefaultExpr = CallExpr "probe" [IntegerExpr 3 (Position 44 33)] (Position 44 27)}
               ]
               [ ReturnStmt
                   ( BinaryExpr
@@ -251,7 +252,7 @@ spec = describe "function runtime" $ do
             FunctionDefDefaultsStmt
               "add"
               ["a", "b"]
-              [("b", CallExpr "probe" [IdentifierExpr "a" (Position 49 22)] (Position 49 16))]
+              [FunctionDefault {functionDefaultParam = "b", functionDefaultExpr = CallExpr "probe" [IdentifierExpr "a" (Position 49 22)] (Position 49 16)}]
               [ReturnStmt (BinaryExpr AddOperator (IdentifierExpr "a" (Position 50 10)) (IdentifierExpr "b" (Position 50 14)) (Position 50 12)) (Position 50 3)]
               (Position 49 1),
             PrintStmt
@@ -274,8 +275,8 @@ spec = describe "function runtime" $ do
             FunctionDefDefaultsStmt
               "add"
               ["a", "b", "c"]
-              [ ("b", CallExpr "probe" [IdentifierExpr "a" (Position 55 22)] (Position 55 16)),
-                ("c", CallExpr "probe" [IntegerExpr 30 (Position 55 34)] (Position 55 28))
+              [ FunctionDefault {functionDefaultParam = "b", functionDefaultExpr = CallExpr "probe" [IdentifierExpr "a" (Position 55 22)] (Position 55 16)},
+                FunctionDefault {functionDefaultParam = "c", functionDefaultExpr = CallExpr "probe" [IntegerExpr 30 (Position 55 34)] (Position 55 28)}
               ]
               [ ReturnStmt
                   ( BinaryExpr
@@ -307,7 +308,7 @@ spec = describe "function runtime" $ do
             FunctionDefDefaultsStmt
               "add"
               ["a", "b"]
-              [("b", IdentifierExpr "x" (Position 49 14))]
+              [FunctionDefault {functionDefaultParam = "b", functionDefaultExpr = IdentifierExpr "x" (Position 49 14)}]
               [ ReturnStmt (BinaryExpr AddOperator (IdentifierExpr "a" (Position 50 10)) (IdentifierExpr "b" (Position 50 14)) (Position 50 12)) (Position 50 3)
               ]
               (Position 49 1),
@@ -323,8 +324,8 @@ spec = describe "function runtime" $ do
           [ FunctionDefDefaultsStmt
               "add"
               ["a", "b", "c"]
-              [ ("b", IntegerExpr 2 (Position 53 14)),
-                ("c", IdentifierExpr "b" (Position 53 21))
+              [ FunctionDefault {functionDefaultParam = "b", functionDefaultExpr = IntegerExpr 2 (Position 53 14)},
+                FunctionDefault {functionDefaultParam = "c", functionDefaultExpr = IdentifierExpr "b" (Position 53 21)}
               ]
               [ ReturnStmt
                   ( BinaryExpr
@@ -347,8 +348,8 @@ spec = describe "function runtime" $ do
           [ FunctionDefDefaultsStmt
               "add"
               ["a", "b", "c"]
-              [ ("b", IntegerExpr 2 (Position 57 14)),
-                ("c", IdentifierExpr "a" (Position 57 21))
+              [ FunctionDefault {functionDefaultParam = "b", functionDefaultExpr = IntegerExpr 2 (Position 57 14)},
+                FunctionDefault {functionDefaultParam = "c", functionDefaultExpr = IdentifierExpr "a" (Position 57 21)}
               ]
               [ ReturnStmt
                   ( BinaryExpr
@@ -371,7 +372,7 @@ spec = describe "function runtime" $ do
           [ FunctionDefDefaultsStmt
               "add"
               ["a", "b"]
-              [("b", IdentifierExpr "a" (Position 60 14))]
+              [FunctionDefault {functionDefaultParam = "b", functionDefaultExpr = IdentifierExpr "a" (Position 60 14)}]
               [ReturnStmt (BinaryExpr AddOperator (IdentifierExpr "a" (Position 61 10)) (IdentifierExpr "b" (Position 61 14)) (Position 61 12)) (Position 61 3)]
               (Position 60 1),
             PrintStmt
@@ -387,8 +388,8 @@ spec = describe "function runtime" $ do
           [ FunctionDefDefaultsStmt
               "add"
               ["a", "b", "c"]
-              [ ("b", IntegerExpr 2 (Position 61 14)),
-                ("c", BinaryExpr AddOperator (IdentifierExpr "b" (Position 61 21)) (IdentifierExpr "a" (Position 61 25)) (Position 61 23))
+              [ FunctionDefault {functionDefaultParam = "b", functionDefaultExpr = IntegerExpr 2 (Position 61 14)},
+                FunctionDefault {functionDefaultParam = "c", functionDefaultExpr = BinaryExpr AddOperator (IdentifierExpr "b" (Position 61 21)) (IdentifierExpr "a" (Position 61 25)) (Position 61 23)}
               ]
               [ ReturnStmt
                   ( BinaryExpr
@@ -411,8 +412,8 @@ spec = describe "function runtime" $ do
           [ FunctionDefDefaultsStmt
               "add"
               ["a", "b", "c"]
-              [ ("b", IntegerExpr 2 (Position 65 14)),
-                ("c", CallExpr "len" [ListExpr [IdentifierExpr "a" (Position 65 26), IdentifierExpr "b" (Position 65 29)] (Position 65 25)] (Position 65 21))
+              [ FunctionDefault {functionDefaultParam = "b", functionDefaultExpr = IntegerExpr 2 (Position 65 14)},
+                FunctionDefault {functionDefaultParam = "c", functionDefaultExpr = CallExpr "len" [ListExpr [IdentifierExpr "a" (Position 65 26), IdentifierExpr "b" (Position 65 29)] (Position 65 25)] (Position 65 21)}
               ]
               [ ReturnStmt
                   ( BinaryExpr
@@ -442,8 +443,8 @@ spec = describe "function runtime" $ do
             FunctionDefDefaultsStmt
               "add"
               ["a", "b", "c"]
-              [ ("b", IntegerExpr 2 (Position 71 14)),
-                ("c", CallExpr "probe" [CallExpr "len" [ListExpr [IdentifierExpr "a" (Position 71 32), IdentifierExpr "b" (Position 71 35)] (Position 71 31)] (Position 71 27)] (Position 71 21))
+              [ FunctionDefault {functionDefaultParam = "b", functionDefaultExpr = IntegerExpr 2 (Position 71 14)},
+                FunctionDefault {functionDefaultParam = "c", functionDefaultExpr = CallExpr "probe" [CallExpr "len" [ListExpr [IdentifierExpr "a" (Position 71 32), IdentifierExpr "b" (Position 71 35)] (Position 71 31)] (Position 71 27)] (Position 71 21)}
               ]
               [ ReturnStmt
                   ( BinaryExpr
@@ -473,8 +474,8 @@ spec = describe "function runtime" $ do
             FunctionDefDefaultsStmt
               "add"
               ["a", "b", "c"]
-              [ ("b", IntegerExpr 2 (Position 77 14)),
-                ("c", CallExpr "probe" [CallExpr "len" [ListExpr [IdentifierExpr "a" (Position 77 32), IdentifierExpr "b" (Position 77 35)] (Position 77 31)] (Position 77 27)] (Position 77 21))
+              [ FunctionDefault {functionDefaultParam = "b", functionDefaultExpr = IntegerExpr 2 (Position 77 14)},
+                FunctionDefault {functionDefaultParam = "c", functionDefaultExpr = CallExpr "probe" [CallExpr "len" [ListExpr [IdentifierExpr "a" (Position 77 32), IdentifierExpr "b" (Position 77 35)] (Position 77 31)] (Position 77 27)] (Position 77 21)}
               ]
               [ ReturnStmt
                   ( BinaryExpr
@@ -512,7 +513,7 @@ spec = describe "function runtime" $ do
             FunctionDefDefaultsStmt
               "add"
               ["a", "b"]
-              [("b", CallExpr "probe" [IntegerExpr 2 (Position 56 21)] (Position 56 15))]
+              [FunctionDefault {functionDefaultParam = "b", functionDefaultExpr = CallExpr "probe" [IntegerExpr 2 (Position 56 21)] (Position 56 15)}]
               [ReturnStmt (BinaryExpr AddOperator (IdentifierExpr "a" (Position 57 10)) (IdentifierExpr "b" (Position 57 14)) (Position 57 12)) (Position 57 3)]
               (Position 56 1),
             PrintStmt (CallExpr "add" [IntegerExpr 1 (Position 58 11), KeywordArgExpr "b" (IntegerExpr 3 (Position 58 16)) (Position 58 14)] (Position 58 7)) (Position 58 1)
@@ -533,7 +534,7 @@ spec = describe "function runtime" $ do
             FunctionDefDefaultsStmt
               "add"
               ["a", "b"]
-              [("b", CallExpr "probe" [IntegerExpr 2 (Position 62 21)] (Position 62 15))]
+              [FunctionDefault {functionDefaultParam = "b", functionDefaultExpr = CallExpr "probe" [IntegerExpr 2 (Position 62 21)] (Position 62 15)}]
               [ReturnStmt (BinaryExpr AddOperator (IdentifierExpr "a" (Position 63 10)) (IdentifierExpr "b" (Position 63 14)) (Position 63 12)) (Position 63 3)]
               (Position 62 1),
             PrintStmt (CallExpr "add" [IntegerExpr 1 (Position 64 11)] (Position 64 7)) (Position 64 1)
@@ -554,8 +555,8 @@ spec = describe "function runtime" $ do
             FunctionDefDefaultsStmt
               "add"
               ["a", "b", "c"]
-              [ ("b", CallExpr "probe" [IntegerExpr 2 (Position 68 21)] (Position 68 15)),
-                ("c", CallExpr "probe" [IntegerExpr 3 (Position 68 33)] (Position 68 27))
+              [ FunctionDefault {functionDefaultParam = "b", functionDefaultExpr = CallExpr "probe" [IntegerExpr 2 (Position 68 21)] (Position 68 15)},
+                FunctionDefault {functionDefaultParam = "c", functionDefaultExpr = CallExpr "probe" [IntegerExpr 3 (Position 68 33)] (Position 68 27)}
               ]
               [ ReturnStmt
                   ( BinaryExpr
@@ -585,9 +586,9 @@ spec = describe "function runtime" $ do
             FunctionDefDefaultsStmt
               "add"
               ["a", "b", "c", "d"]
-              [ ("b", CallExpr "probe" [IntegerExpr 2 (Position 74 21)] (Position 74 15)),
-                ("c", CallExpr "probe" [IntegerExpr 30 (Position 74 34)] (Position 74 28)),
-                ("d", CallExpr "probe" [IntegerExpr 4 (Position 74 47)] (Position 74 41))
+              [ FunctionDefault {functionDefaultParam = "b", functionDefaultExpr = CallExpr "probe" [IntegerExpr 2 (Position 74 21)] (Position 74 15)},
+                FunctionDefault {functionDefaultParam = "c", functionDefaultExpr = CallExpr "probe" [IntegerExpr 30 (Position 74 34)] (Position 74 28)},
+                FunctionDefault {functionDefaultParam = "d", functionDefaultExpr = CallExpr "probe" [IntegerExpr 4 (Position 74 47)] (Position 74 41)}
               ]
               [ ReturnStmt
                   ( BinaryExpr

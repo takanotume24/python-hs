@@ -1,6 +1,7 @@
 module PythonHS.Evaluator.EvalExpr (evalExpr) where
 
 import Data.Map.Strict qualified as Map
+import PythonHS.AST.DictEntry (DictEntry (..))
 import PythonHS.AST.Expr (Expr (..))
 import PythonHS.AST.Stmt (Stmt)
 import PythonHS.Evaluator.Env (Env)
@@ -83,7 +84,7 @@ evalExpr evalStatementsFn env fenv expr =
           Right (vals ++ [value], outs ++ exprOuts, envNext)
 
     evalDictEntries currentEnv _ [] = Right ([], [], currentEnv)
-    evalDictEntries currentEnv currentFenv ((keyExpr, valueExpr) : restEntries) = do
+    evalDictEntries currentEnv currentFenv (DictEntry {dictEntryKey = keyExpr, dictEntryValue = valueExpr} : restEntries) = do
       EvalExprResult keyVal keyOuts envAfterKey <- evalExpr evalStatementsFn currentEnv currentFenv keyExpr
       EvalExprResult valueVal valueOuts envAfterValue <- evalExpr evalStatementsFn envAfterKey currentFenv valueExpr
       (restVals, restOuts, envAfterRest) <- evalDictEntries envAfterValue currentFenv restEntries

@@ -7,6 +7,7 @@ import PythonHS.Lexer.ScanTokens (scanTokens)
 import PythonHS.Lexer.Token (Token (Token))
 import PythonHS.Lexer.TokenType (TokenType (EOFToken, NewlineToken))
 import PythonHS.Parser.ParseExpr (parseExpr)
+import PythonHS.Parser.ParseResult (ParseResult (..))
 import PythonHS.RunSourceVm (runSourceVm)
 
 processVmSubmission :: ProcessVmSubmissionConfig -> Either String VmSubmissionResult
@@ -42,7 +43,7 @@ processVmSubmission config =
         Left _ -> False
         Right tokens ->
           case parseExpr tokens of
-            Right (_, remaining) -> onlyLineEnd remaining
+            Right ParseResult {parseResultRemaining = remaining} -> onlyLineEnd remaining
             Left _ -> False
 
     onlyLineEnd [Token NewlineToken _ _, Token EOFToken _ _] = True

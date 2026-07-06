@@ -1,6 +1,7 @@
 module Test.Eval.EvalSpec (spec) where
 
 import PythonHS.AST.BinaryOperator (BinaryOperator (..))
+import PythonHS.AST.DictEntry (DictEntry (..))
 import PythonHS.AST.Expr (Expr (BinaryExpr, CallExpr, DictExpr, FloatExpr, IdentifierExpr, IntegerExpr, ListExpr, NoneExpr, NotExpr, StringExpr, UnaryMinusExpr))
 import PythonHS.AST.Program (Program (Program))
 import PythonHS.AST.Stmt (Stmt (AssignStmt, BreakStmt, ContinueStmt, ForStmt, FunctionDefStmt, GlobalStmt, IfStmt, PassStmt, PrintStmt, ReturnStmt, WhileStmt))
@@ -89,7 +90,7 @@ spec = describe "evalProgram" $ do
     evalProgram (Program [PrintStmt (CallExpr "bool" [ListExpr [] (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["0"]
     evalProgram (Program [PrintStmt (CallExpr "bool" [ListExpr [IntegerExpr 1 (Position 0 0)] (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["1"]
     evalProgram (Program [PrintStmt (CallExpr "bool" [DictExpr [] (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["0"]
-    evalProgram (Program [PrintStmt (CallExpr "bool" [DictExpr [(IntegerExpr 1 (Position 0 0), IntegerExpr 2 (Position 0 0))] (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["1"]
+    evalProgram (Program [PrintStmt (CallExpr "bool" [DictExpr [DictEntry {dictEntryKey = IntegerExpr 1 (Position 0 0), dictEntryValue = IntegerExpr 2 (Position 0 0)}] (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["1"]
 
   it "evaluates append builtin for list" $ do
     evalProgram (Program [PrintStmt (CallExpr "append" [ListExpr [IntegerExpr 1 (Position 0 0), IntegerExpr 2 (Position 0 0)] (Position 0 0), IntegerExpr 3 (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["[1, 2, 3]"]
@@ -135,12 +136,12 @@ spec = describe "evalProgram" $ do
     evalProgram (Program [PrintStmt (CallExpr "pop" [ListExpr [IntegerExpr 1 (Position 0 0), IntegerExpr 2 (Position 0 0)] (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["2"]
 
   it "evaluates pop builtin for dictionary with optional default" $ do
-    evalProgram (Program [PrintStmt (CallExpr "pop" [DictExpr [(IntegerExpr 1 (Position 0 0), IntegerExpr 2 (Position 0 0)), (IntegerExpr 3 (Position 0 0), IntegerExpr 4 (Position 0 0))] (Position 0 0), IntegerExpr 3 (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["4"]
-    evalProgram (Program [PrintStmt (CallExpr "pop" [DictExpr [(IntegerExpr 1 (Position 0 0), IntegerExpr 2 (Position 0 0))] (Position 0 0), IntegerExpr 9 (Position 0 0), IntegerExpr 99 (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["99"]
+    evalProgram (Program [PrintStmt (CallExpr "pop" [DictExpr [DictEntry {dictEntryKey = IntegerExpr 1 (Position 0 0), dictEntryValue = IntegerExpr 2 (Position 0 0)}, DictEntry {dictEntryKey = IntegerExpr 3 (Position 0 0), dictEntryValue = IntegerExpr 4 (Position 0 0)}] (Position 0 0), IntegerExpr 3 (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["4"]
+    evalProgram (Program [PrintStmt (CallExpr "pop" [DictExpr [DictEntry {dictEntryKey = IntegerExpr 1 (Position 0 0), dictEntryValue = IntegerExpr 2 (Position 0 0)}] (Position 0 0), IntegerExpr 9 (Position 0 0), IntegerExpr 99 (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["99"]
 
   it "evaluates clear builtin for list and dictionary" $ do
     evalProgram (Program [PrintStmt (CallExpr "clear" [ListExpr [IntegerExpr 1 (Position 0 0), IntegerExpr 2 (Position 0 0)] (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["[]"]
-    evalProgram (Program [PrintStmt (CallExpr "clear" [DictExpr [(IntegerExpr 1 (Position 0 0), IntegerExpr 2 (Position 0 0))] (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["{}"]
+    evalProgram (Program [PrintStmt (CallExpr "clear" [DictExpr [DictEntry {dictEntryKey = IntegerExpr 1 (Position 0 0), dictEntryValue = IntegerExpr 2 (Position 0 0)}] (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["{}"]
 
   it "reports clear builtin type and argument errors" $ do
     evalProgram (Program [PrintStmt (CallExpr "clear" [IntegerExpr 1 (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Left "Type error: clear expects list or dict at 0:0"
@@ -150,7 +151,7 @@ spec = describe "evalProgram" $ do
     evalProgram
       ( Program
           [ PrintStmt
-              (CallExpr "keys" [DictExpr [(IntegerExpr 1 (Position 0 0), IntegerExpr 2 (Position 0 0)), (IntegerExpr 3 (Position 0 0), IntegerExpr 4 (Position 0 0))] (Position 0 0)] (Position 0 0))
+              (CallExpr "keys" [DictExpr [DictEntry {dictEntryKey = IntegerExpr 1 (Position 0 0), dictEntryValue = IntegerExpr 2 (Position 0 0)}, DictEntry {dictEntryKey = IntegerExpr 3 (Position 0 0), dictEntryValue = IntegerExpr 4 (Position 0 0)}] (Position 0 0)] (Position 0 0))
               (Position 0 0)
           ]
       )
@@ -160,7 +161,7 @@ spec = describe "evalProgram" $ do
     evalProgram
       ( Program
           [ PrintStmt
-              (CallExpr "get" [DictExpr [(IntegerExpr 1 (Position 0 0), IntegerExpr 2 (Position 0 0)), (IntegerExpr 3 (Position 0 0), IntegerExpr 4 (Position 0 0))] (Position 0 0), IntegerExpr 3 (Position 0 0)] (Position 0 0))
+              (CallExpr "get" [DictExpr [DictEntry {dictEntryKey = IntegerExpr 1 (Position 0 0), dictEntryValue = IntegerExpr 2 (Position 0 0)}, DictEntry {dictEntryKey = IntegerExpr 3 (Position 0 0), dictEntryValue = IntegerExpr 4 (Position 0 0)}] (Position 0 0), IntegerExpr 3 (Position 0 0)] (Position 0 0))
               (Position 0 0)
           ]
       )
@@ -170,25 +171,25 @@ spec = describe "evalProgram" $ do
     evalProgram
       ( Program
           [ PrintStmt
-              (CallExpr "get" [DictExpr [(IntegerExpr 1 (Position 0 0), IntegerExpr 2 (Position 0 0))] (Position 0 0), IntegerExpr 9 (Position 0 0), IntegerExpr 99 (Position 0 0)] (Position 0 0))
+              (CallExpr "get" [DictExpr [DictEntry {dictEntryKey = IntegerExpr 1 (Position 0 0), dictEntryValue = IntegerExpr 2 (Position 0 0)}] (Position 0 0), IntegerExpr 9 (Position 0 0), IntegerExpr 99 (Position 0 0)] (Position 0 0))
               (Position 0 0),
             PrintStmt
-              (CallExpr "get" [DictExpr [(IntegerExpr 1 (Position 0 0), IntegerExpr 2 (Position 0 0))] (Position 0 0), IntegerExpr 1 (Position 0 0), IntegerExpr 99 (Position 0 0)] (Position 0 0))
+              (CallExpr "get" [DictExpr [DictEntry {dictEntryKey = IntegerExpr 1 (Position 0 0), dictEntryValue = IntegerExpr 2 (Position 0 0)}] (Position 0 0), IntegerExpr 1 (Position 0 0), IntegerExpr 99 (Position 0 0)] (Position 0 0))
               (Position 0 0)
           ]
       )
       `shouldBe` Right ["99", "2"]
 
   it "evaluates update builtin for dictionary" $ do
-    evalProgram (Program [PrintStmt (CallExpr "update" [DictExpr [(IntegerExpr 1 (Position 0 0), IntegerExpr 2 (Position 0 0))] (Position 0 0), IntegerExpr 1 (Position 0 0), IntegerExpr 9 (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["{1: 9}"]
-    evalProgram (Program [PrintStmt (CallExpr "update" [DictExpr [(IntegerExpr 1 (Position 0 0), IntegerExpr 2 (Position 0 0))] (Position 0 0), IntegerExpr 3 (Position 0 0), IntegerExpr 4 (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["{1: 2, 3: 4}"]
+    evalProgram (Program [PrintStmt (CallExpr "update" [DictExpr [DictEntry {dictEntryKey = IntegerExpr 1 (Position 0 0), dictEntryValue = IntegerExpr 2 (Position 0 0)}] (Position 0 0), IntegerExpr 1 (Position 0 0), IntegerExpr 9 (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["{1: 9}"]
+    evalProgram (Program [PrintStmt (CallExpr "update" [DictExpr [DictEntry {dictEntryKey = IntegerExpr 1 (Position 0 0), dictEntryValue = IntegerExpr 2 (Position 0 0)}] (Position 0 0), IntegerExpr 3 (Position 0 0), IntegerExpr 4 (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["{1: 2, 3: 4}"]
 
   it "evaluates setdefault builtin for dictionary" $ do
-    evalProgram (Program [PrintStmt (CallExpr "setdefault" [DictExpr [(IntegerExpr 1 (Position 0 0), IntegerExpr 2 (Position 0 0))] (Position 0 0), IntegerExpr 1 (Position 0 0), IntegerExpr 9 (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["{1: 2}"]
-    evalProgram (Program [PrintStmt (CallExpr "setdefault" [DictExpr [(IntegerExpr 1 (Position 0 0), IntegerExpr 2 (Position 0 0))] (Position 0 0), IntegerExpr 3 (Position 0 0), IntegerExpr 4 (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["{1: 2, 3: 4}"]
+    evalProgram (Program [PrintStmt (CallExpr "setdefault" [DictExpr [DictEntry {dictEntryKey = IntegerExpr 1 (Position 0 0), dictEntryValue = IntegerExpr 2 (Position 0 0)}] (Position 0 0), IntegerExpr 1 (Position 0 0), IntegerExpr 9 (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["{1: 2}"]
+    evalProgram (Program [PrintStmt (CallExpr "setdefault" [DictExpr [DictEntry {dictEntryKey = IntegerExpr 1 (Position 0 0), dictEntryValue = IntegerExpr 2 (Position 0 0)}] (Position 0 0), IntegerExpr 3 (Position 0 0), IntegerExpr 4 (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["{1: 2, 3: 4}"]
 
   it "evaluates setdefault builtin with omitted default as None" $ do
-    evalProgram (Program [PrintStmt (CallExpr "setdefault" [DictExpr [(IntegerExpr 1 (Position 0 0), IntegerExpr 2 (Position 0 0))] (Position 0 0), IntegerExpr 3 (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["{1: 2, 3: None}"]
+    evalProgram (Program [PrintStmt (CallExpr "setdefault" [DictExpr [DictEntry {dictEntryKey = IntegerExpr 1 (Position 0 0), dictEntryValue = IntegerExpr 2 (Position 0 0)}] (Position 0 0), IntegerExpr 3 (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["{1: 2, 3: None}"]
 
   it "reports setdefault builtin type and argument errors" $ do
     evalProgram (Program [PrintStmt (CallExpr "setdefault" [IntegerExpr 1 (Position 0 0), IntegerExpr 2 (Position 0 0), IntegerExpr 3 (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Left "Type error: setdefault expects dict as first argument at 0:0"
@@ -202,10 +203,10 @@ spec = describe "evalProgram" $ do
     evalProgram
       ( Program
           [ PrintStmt
-              (CallExpr "values" [DictExpr [(IntegerExpr 1 (Position 0 0), IntegerExpr 2 (Position 0 0)), (IntegerExpr 3 (Position 0 0), IntegerExpr 4 (Position 0 0))] (Position 0 0)] (Position 0 0))
+              (CallExpr "values" [DictExpr [DictEntry {dictEntryKey = IntegerExpr 1 (Position 0 0), dictEntryValue = IntegerExpr 2 (Position 0 0)}, DictEntry {dictEntryKey = IntegerExpr 3 (Position 0 0), dictEntryValue = IntegerExpr 4 (Position 0 0)}] (Position 0 0)] (Position 0 0))
               (Position 0 0),
             PrintStmt
-              (CallExpr "items" [DictExpr [(IntegerExpr 1 (Position 0 0), IntegerExpr 2 (Position 0 0)), (IntegerExpr 3 (Position 0 0), IntegerExpr 4 (Position 0 0))] (Position 0 0)] (Position 0 0))
+              (CallExpr "items" [DictExpr [DictEntry {dictEntryKey = IntegerExpr 1 (Position 0 0), dictEntryValue = IntegerExpr 2 (Position 0 0)}, DictEntry {dictEntryKey = IntegerExpr 3 (Position 0 0), dictEntryValue = IntegerExpr 4 (Position 0 0)}] (Position 0 0)] (Position 0 0))
               (Position 0 0)
           ]
       )
@@ -215,13 +216,13 @@ spec = describe "evalProgram" $ do
     evalProgram
       ( Program
           [ PrintStmt
-              (CallExpr "keys" [DictExpr [(IntegerExpr 3 (Position 0 0), IntegerExpr 30 (Position 0 0)), (IntegerExpr 1 (Position 0 0), IntegerExpr 10 (Position 0 0))] (Position 0 0)] (Position 0 0))
+              (CallExpr "keys" [DictExpr [DictEntry {dictEntryKey = IntegerExpr 3 (Position 0 0), dictEntryValue = IntegerExpr 30 (Position 0 0)}, DictEntry {dictEntryKey = IntegerExpr 1 (Position 0 0), dictEntryValue = IntegerExpr 10 (Position 0 0)}] (Position 0 0)] (Position 0 0))
               (Position 0 0),
             PrintStmt
-              (CallExpr "values" [DictExpr [(IntegerExpr 3 (Position 0 0), IntegerExpr 30 (Position 0 0)), (IntegerExpr 1 (Position 0 0), IntegerExpr 10 (Position 0 0))] (Position 0 0)] (Position 0 0))
+              (CallExpr "values" [DictExpr [DictEntry {dictEntryKey = IntegerExpr 3 (Position 0 0), dictEntryValue = IntegerExpr 30 (Position 0 0)}, DictEntry {dictEntryKey = IntegerExpr 1 (Position 0 0), dictEntryValue = IntegerExpr 10 (Position 0 0)}] (Position 0 0)] (Position 0 0))
               (Position 0 0),
             PrintStmt
-              (CallExpr "items" [DictExpr [(IntegerExpr 3 (Position 0 0), IntegerExpr 30 (Position 0 0)), (IntegerExpr 1 (Position 0 0), IntegerExpr 10 (Position 0 0))] (Position 0 0)] (Position 0 0))
+              (CallExpr "items" [DictExpr [DictEntry {dictEntryKey = IntegerExpr 3 (Position 0 0), dictEntryValue = IntegerExpr 30 (Position 0 0)}, DictEntry {dictEntryKey = IntegerExpr 1 (Position 0 0), dictEntryValue = IntegerExpr 10 (Position 0 0)}] (Position 0 0)] (Position 0 0))
               (Position 0 0)
           ]
       )
@@ -324,7 +325,7 @@ spec = describe "evalProgram" $ do
     evalProgram (Program [PrintStmt (ListExpr [IntegerExpr 1 (Position 0 0), IntegerExpr 2 (Position 0 0)] (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["[1, 2]"]
 
   it "prints dictionary literal" $ do
-    evalProgram (Program [PrintStmt (DictExpr [(IntegerExpr 1 (Position 0 0), IntegerExpr 2 (Position 0 0)), (IntegerExpr 3 (Position 0 0), IntegerExpr 4 (Position 0 0))] (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["{1: 2, 3: 4}"]
+    evalProgram (Program [PrintStmt (DictExpr [DictEntry {dictEntryKey = IntegerExpr 1 (Position 0 0), dictEntryValue = IntegerExpr 2 (Position 0 0)}, DictEntry {dictEntryKey = IntegerExpr 3 (Position 0 0), dictEntryValue = IntegerExpr 4 (Position 0 0)}] (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["{1: 2, 3: 4}"]
 
   it "collects multiple prints" $ do
     evalProgram (Program [PrintStmt (IntegerExpr 1 (Position 0 0)) (Position 0 0), PrintStmt (IntegerExpr 2 (Position 0 0)) (Position 0 0)]) `shouldBe` Right ["1", "2"]
@@ -517,7 +518,7 @@ spec = describe "evalProgram" $ do
       ( Program
           [ ForStmt
               "k"
-              (DictExpr [(IntegerExpr 3 (Position 0 0), IntegerExpr 30 (Position 0 0)), (IntegerExpr 1 (Position 0 0), IntegerExpr 10 (Position 0 0))] (Position 0 0))
+              (DictExpr [DictEntry {dictEntryKey = IntegerExpr 3 (Position 0 0), dictEntryValue = IntegerExpr 30 (Position 0 0)}, DictEntry {dictEntryKey = IntegerExpr 1 (Position 0 0), dictEntryValue = IntegerExpr 10 (Position 0 0)}] (Position 0 0))
               [PrintStmt (IdentifierExpr "k" (Position 0 0)) (Position 0 0)]
               (Position 0 0)
           ]

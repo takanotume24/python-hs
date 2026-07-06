@@ -2,6 +2,8 @@ module PythonHS.VM.ResolveLocalImports (resolveLocalImports) where
 
 import Data.Map.Strict qualified as Map
 import Data.Set qualified as Set
+import PythonHS.AST.FromImportEntry (FromImportEntry (..))
+import PythonHS.AST.ImportEntry (ImportEntry (..))
 import PythonHS.AST.Program (Program (Program))
 import PythonHS.AST.Stmt
   ( Stmt
@@ -52,7 +54,7 @@ resolveLocalImports searchPaths (Program rootStmts) = do
               case targetModulePath of
                 Left err -> pure (Left err)
                 Right resolvedModulePath ->
-                  if importedNames == [("*", Nothing)]
+                  if importedNames == [FromImportEntry {fromImportEntryName = "*", fromImportEntryAlias = Nothing}]
                     then do
                       starResult <- resolveStarImport cache visiting included resolvedModulePath callAlias identAlias
                       case starResult of
@@ -95,14 +97,14 @@ resolveLocalImports searchPaths (Program rootStmts) = do
     resolveImportEntries cache visiting included moduleAlias modules =
       case modules of
         [] -> pure (Right ([], cache, included, moduleAlias, []))
-        (modulePath, maybeAlias) : rest ->
+        ImportEntry {importEntryPath = modulePath, importEntryAlias = maybeAlias} : rest ->
           case modulePath of
             [] -> pure (Left "Import error: module not found ")
             rootModule : _ ->
               if isBuiltinImportModule modulePath
                 then do
                   restResult <- resolveImportEntries cache visiting included moduleAlias rest
-                  pure (fmap (\(prefixed, nextCache, nextIncluded, nextModuleAlias, keptEntries) -> (prefixed, nextCache, nextIncluded, nextModuleAlias, (modulePath, maybeAlias) : keptEntries)) restResult)
+                  pure (fmap (\(prefixed, nextCache, nextIncluded, nextModuleAlias, keptEntries) -> (prefixed, nextCache, nextIncluded, nextModuleAlias, ImportEntry {importEntryPath = modulePath, importEntryAlias = maybeAlias} : keptEntries)) restResult)
                 else do
                   loadResult <- loadModule cache visiting included modulePath
                   case loadResult of
@@ -117,7 +119,7 @@ resolveLocalImports searchPaths (Program rootStmts) = do
                       case restResult of
                         Left err -> pure (Left err)
                         Right (restPrefixed, cacheAfterRest, includedAfterRest, moduleAliasAfterRest, keptEntries) ->
-                          pure (Right (moduleStmts ++ restPrefixed, cacheAfterRest, includedAfterRest, moduleAliasAfterRest, (modulePath, maybeAlias) : keptEntries))
+                          pure (Right (moduleStmts ++ restPrefixed, cacheAfterRest, includedAfterRest, moduleAliasAfterRest, ImportEntry {importEntryPath = modulePath, importEntryAlias = maybeAlias} : keptEntries))
 
     loadModule cache visiting included modulePath = do
       let moduleKey = moduleKeyFor modulePath
@@ -161,7 +163,7 @@ resolveLocalImports searchPaths (Program rootStmts) = do
     resolveFromImports cache visiting included modulePath moduleAlias callAlias identAlias collected importedNames exportMap =
       case importedNames of
         [] -> pure (Right (reverse collected, cache, included, moduleAlias, callAlias, identAlias))
-        (memberName, maybeAlias) : rest ->
+        FromImportEntry {fromImportEntryName = memberName, fromImportEntryAlias = maybeAlias} : rest ->
           case Map.lookup memberName exportMap of
             Just mappedName ->
               let aliasName = maybe memberName id maybeAlias

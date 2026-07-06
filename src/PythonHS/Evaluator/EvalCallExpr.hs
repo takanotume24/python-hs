@@ -3,6 +3,7 @@ module PythonHS.Evaluator.EvalCallExpr (evalCallExpr) where
 import Data.List (nub)
 import Data.Map.Strict qualified as Map
 import PythonHS.AST.Expr (Expr (..))
+import PythonHS.AST.FunctionDefault (FunctionDefault (..))
 import PythonHS.AST.Stmt (Stmt (..))
 import PythonHS.Evaluator.Env (Env)
 import PythonHS.Evaluator.EvalBuiltinExpr (evalBuiltinExpr)
@@ -137,7 +138,7 @@ evalCallExpr evalStatementsFn evalExprFn env fenv fname args pos =
     fillMissingDefaults currentEnv currentFenv params defaults boundVals =
       fill currentEnv params boundVals
       where
-        defaultsMap = Map.fromList defaults
+        defaultsMap = Map.fromList (map (\FunctionDefault {functionDefaultParam = p, functionDefaultExpr = e} -> (p, e)) defaults)
 
         fill envNow [] acc = Right (acc, [], envNow)
         fill envNow (paramName : remaining) acc =

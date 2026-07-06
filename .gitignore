@@ -59,3 +59,4 @@ local.env
 # Project-specific / leftovers
 diff.txt
 diagnostics/
+.bak

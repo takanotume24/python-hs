@@ -16,6 +16,7 @@ import PythonHS.Lexer.Token (Token (Token))
 import PythonHS.Lexer.TokenType (TokenType (EOFToken, NewlineToken))
 import PythonHS.Parser.ParseExpr (parseExpr)
 import PythonHS.Parser.ParseProgram (parseProgram)
+import PythonHS.Parser.ParseResult (ParseResult (..))
 
 processSubmission :: ProcessSubmissionConfig -> Either String SubmissionResult
 processSubmission config =
@@ -53,7 +54,7 @@ processSubmission config =
   where
     parseReplExpr tokens =
       case parseExpr tokens of
-        Right (expr, remaining) | onlyLineEnd remaining -> Just expr
+        Right ParseResult {parseResultValue = expr, parseResultRemaining = remaining} | onlyLineEnd remaining -> Just expr
         _ -> Nothing
 
     onlyLineEnd [Token NewlineToken _ _, Token EOFToken _ _] = True
