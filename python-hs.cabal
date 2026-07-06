@@ -93,6 +93,8 @@ library
     , PythonHS.Lexer.ScanTokenStepResult
     , PythonHS.Lexer.SpanDigits
       , PythonHS.Parser.ParseExpr
+    , PythonHS.Parser.ParsePrimary
+    , PythonHS.Parser.ParsePrimaryConfig
     , PythonHS.Parser.ParseAnnAssignStmt
     , PythonHS.Parser.ParseAnnAssignStmtConfig
     , PythonHS.Parser.ParseCallArgument
@@ -111,6 +113,8 @@ library
     , PythonHS.Parser.ExprPos
     , PythonHS.Parser.NormalizeFloatLiteral
     , PythonHS.Parser.ParseStatement
+    , PythonHS.Parser.ParseCompoundStmt
+    , PythonHS.Parser.ParseCompoundStmtConfig
     , PythonHS.Parser.ParseClassStmt
     , PythonHS.Parser.ParseClassStmtConfig
     , PythonHS.Parser.ParseParameters
@@ -129,6 +133,21 @@ library
       , PythonHS.Parser.ParseYieldStmt
       , PythonHS.Parser.ParseYieldStmtConfig
     , PythonHS.Parser.ParseImportStmt
+    , PythonHS.Parser.ParseAlias
+    , PythonHS.Parser.ParseFromImport
+    , PythonHS.Parser.ParseFromImportResult
+    , PythonHS.Parser.ParseFromItem
+    , PythonHS.Parser.ParseFromItems
+    , PythonHS.Parser.ParseFromItemsList
+    , PythonHS.Parser.ParseFromItemsTail
+    , PythonHS.Parser.ParseFromItemsTailConfig
+    , PythonHS.Parser.ParseIdentifier
+    , PythonHS.Parser.ParseImportEntries
+    , PythonHS.Parser.ParseLeadingDots
+    , PythonHS.Parser.ParseLeadingDotsConfig
+    , PythonHS.Parser.ParseModulePath
+    , PythonHS.Parser.ParseModuleTail
+    , PythonHS.Parser.ParseModuleTailConfig
     , PythonHS.Parser.ParseWithStmt
     , PythonHS.Parser.ParseWithStmtConfig
     , PythonHS.Parser.DropLeadingNewlines
