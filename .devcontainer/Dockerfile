@@ -10,10 +10,9 @@ ARG GHC_VERSION=latest
 ARG CABAL_VERSION=latest
 ARG HLS_VERSION=latest
 
-ENV GHCUP_INSTALL_BASE_PREFIX=/usr/local
 ENV BOOTSTRAP_HASKELL_NONINTERACTIVE=1
 ENV BOOTSTRAP_HASKELL_ADJUST_BASHRC=0
-ENV PATH=/usr/local/.ghcup/bin:/home/vscode/.cabal/bin:${PATH}
+ENV PATH=/home/vscode/.cabal/bin:/home/vscode/.ghcup/bin:${PATH}
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
@@ -30,6 +29,9 @@ RUN apt-get update \
     zlib1g-dev \
     && rm -rf /var/lib/apt/lists/*
 
+USER vscode
+WORKDIR /home/vscode
+
 RUN curl --proto '=https' --tlsv1.2 -fsSL https://get-ghcup.haskell.org | sh \
     && ghcup install ghc ${GHC_VERSION} \
     && ghcup set ghc ${GHC_VERSION} \
@@ -39,7 +41,9 @@ RUN curl --proto '=https' --tlsv1.2 -fsSL https://get-ghcup.haskell.org | sh \
     && ghcup set hls ${HLS_VERSION} \
     && ghcup gc --cache
 
-RUN mkdir -p /home/vscode/.cabal /home/vscode/.ghcup \
-    && chown -R vscode:vscode /home/vscode/.cabal /home/vscode/.ghcup /usr/local/.ghcup
+# Install Haskell formatting and linting tools required by the quality gate.
+RUN cabal update \
+    && cabal install ormolu hlint --overwrite-policy=always \
+    && cabal clean
 
-USER vscode
+RUN curl -fsSL https://opencode.ai/install | bash

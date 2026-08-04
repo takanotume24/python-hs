@@ -6,9 +6,7 @@
 		"dockerfile": "Dockerfile",
 		"context": ".."
 	},
-	"features": {
-		"ghcr.io/devcontainers/features/copilot-cli:1": {}
-	},
+	"features": {},
 	"postCreateCommand": "cabal update",
 	"postStartCommand": "bash .devcontainer/post-start.sh",
 	"remoteUser": "vscode",
@@ -18,7 +16,10 @@
 				"haskell.haskell",
 			]
 		}
-	}
+	},
+	"mounts": [
+		"source=${localEnv:HOME}/.config/opencode/opencode.jsonc,target=/home/vscode/.config/opencode/opencode.jsonc,type=bind",
+	]
 	// Features to add to the dev container. More info: https://containers.dev/features.
 	// "features": {},
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
