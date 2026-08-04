@@ -10,6 +10,7 @@ import PythonHS.VM.CompileComprehensionClauses (compileComprehensionClauses)
 import PythonHS.VM.CompileComprehensionClausesConfig (CompileComprehensionClausesConfig (..))
 import PythonHS.VM.CompileDefaults (compileDefaults)
 import PythonHS.VM.CompileDefaultsConfig (CompileDefaultsConfig (..))
+import PythonHS.VM.CompileDefaultsResult (CompileDefaultsResult (..))
 import PythonHS.VM.CompileDictEntriesAt (compileDictEntriesAt)
 import PythonHS.VM.CompileDictEntriesAtConfig (CompileDictEntriesAtConfig (..))
 import PythonHS.VM.CompileExprAtConfig (CompileExprAtConfig (..))
@@ -18,6 +19,8 @@ import PythonHS.VM.CompileExprItemsAtConfig (CompileExprItemsAtConfig (..))
 import PythonHS.VM.CompileExprResult (CompileExprResult (..))
 import PythonHS.VM.CompileLogicalExpr (compileLogicalExpr)
 import PythonHS.VM.CompileLogicalExprConfig (CompileLogicalExprConfig (..))
+import PythonHS.VM.CompiledCallArg (CompiledCallArg (..))
+import PythonHS.VM.CompiledComprehensionClause (CompiledComprehensionClause (..))
 import PythonHS.VM.ExprPosition (exprPosition)
 import PythonHS.VM.Instruction (Instruction (..))
 
@@ -40,16 +43,16 @@ compileExprAt config =
         ListComprehensionExpr {listComprehensionExprValue = valueExpr, listComprehensionExprLoopName = loopName, listComprehensionExprIter = iterExpr, listComprehensionExprPos = pos} -> do
           iterResult <- compileExprAt' 0 iterExpr
           valueResult <- compileExprAt' 0 valueExpr
-          let clauses = [([loopName], compileExprResultCode iterResult ++ [ReturnTop], [])]
+          let clauses = [CompiledComprehensionClause {compiledComprehensionClauseTargets = [loopName], compiledComprehensionClauseIterCode = compileExprResultCode iterResult ++ [ReturnTop], compiledComprehensionClauseConds = []}]
           pure (CompileExprResult {compileExprResultCode = [BuildListComprehension {buildListComprehensionClauses = clauses, buildListComprehensionValueCode = compileExprResultCode valueResult ++ [ReturnTop], buildListComprehensionPos = pos}], compileExprResultEndIndex = baseIndex + 1})
         ListComprehensionClausesExpr {listComprehensionClausesExprValue = valueExpr, listComprehensionClausesExprClauses = clausesExpr, listComprehensionClausesExprPos = pos} -> do
           clauses <- compileComprehensionClauses CompileComprehensionClausesConfig {compileComprehensionClausesCompileExpr = compileExprAt', compileComprehensionClausesClauses = clausesExpr}
           valueResult <- compileExprAt' 0 valueExpr
           pure (CompileExprResult {compileExprResultCode = [BuildListComprehension {buildListComprehensionClauses = clauses, buildListComprehensionValueCode = compileExprResultCode valueResult ++ [ReturnTop], buildListComprehensionPos = pos}], compileExprResultEndIndex = baseIndex + 1})
         DictExpr {dictExprEntries = entries} -> do
-          let compileForDict b e = fmap (\r -> (compileExprResultCode r, compileExprResultEndIndex r)) (compileExprAt' b e)
-          (entryCode, entryEnd) <- compileDictEntriesAt CompileDictEntriesAtConfig {compileDictEntriesAtCompileExpr = compileForDict, compileDictEntriesAtBaseIndex = baseIndex, compileDictEntriesAtEntries = entries}
-          pure (CompileExprResult {compileExprResultCode = entryCode ++ [BuildDict {buildDictCount = length entries}], compileExprResultEndIndex = entryEnd + 1})
+          let compileForDict b e = compileExprAt' b e
+          entriesResult <- compileDictEntriesAt CompileDictEntriesAtConfig {compileDictEntriesAtCompileExpr = compileForDict, compileDictEntriesAtBaseIndex = baseIndex, compileDictEntriesAtEntries = entries}
+          pure (CompileExprResult {compileExprResultCode = compileExprResultCode entriesResult ++ [BuildDict {buildDictCount = length entries}], compileExprResultEndIndex = compileExprResultEndIndex entriesResult + 1})
         IdentifierExpr {identifierExprName = name, identifierExprPos = pos} -> Right (CompileExprResult {compileExprResultCode = [LoadName {loadNameName = name, loadNamePos = pos}], compileExprResultEndIndex = baseIndex + 1})
         UnaryMinusExpr {unaryMinusExprValue = unaryExpr, unaryMinusExprPos = pos} -> do
           unaryResult <- compileExprAt' baseIndex unaryExpr
@@ -65,10 +68,10 @@ compileExprAt config =
           let lambdaName = "__lambda_" ++ showPos pos
           pure (CompileExprResult {compileExprResultCode = [CreateLambda {createLambdaName = lambdaName, createLambdaParams = params, createLambdaDefaultCodes = [], createLambdaCode = compileExprResultCode bodyResult ++ [ReturnTop]}], compileExprResultEndIndex = baseIndex + 1})
         LambdaDefaultsExpr {lambdaDefaultsExprParams = params, lambdaDefaultsExprDefaults = defaults, lambdaDefaultsExprValue = bodyExpr, lambdaDefaultsExprPos = pos} -> do
-          (defaultCodes, _) <- compileDefaults CompileDefaultsConfig {compileDefaultsCompileExpr = compileExprAt', compileDefaultsDefaults = defaults}
+          defaultsResult <- compileDefaults CompileDefaultsConfig {compileDefaultsCompileExpr = compileExprAt', compileDefaultsDefaults = defaults}
           bodyResult <- compileExprAt' 0 bodyExpr
           let lambdaName = "__lambda_" ++ showPos pos
-          pure (CompileExprResult {compileExprResultCode = [CreateLambda {createLambdaName = lambdaName, createLambdaParams = params, createLambdaDefaultCodes = defaultCodes, createLambdaCode = compileExprResultCode bodyResult ++ [ReturnTop]}], compileExprResultEndIndex = baseIndex + 1})
+          pure (CompileExprResult {compileExprResultCode = [CreateLambda {createLambdaName = lambdaName, createLambdaParams = params, createLambdaDefaultCodes = compileDefaultsResultDefaults defaultsResult, createLambdaCode = compileExprResultCode bodyResult ++ [ReturnTop]}], compileExprResultEndIndex = baseIndex + 1})
         BinaryExpr {binaryExprOp = AndOperator, binaryExprLeft = left, binaryExprRight = right} -> compileLogicalExpr CompileLogicalExprConfig {compileLogicalExprCompileExpr = compileExprAt', compileLogicalExprOp = AndOperator, compileLogicalExprBaseIndex = baseIndex, compileLogicalExprLeft = left, compileLogicalExprRight = right}
         BinaryExpr {binaryExprOp = OrOperator, binaryExprLeft = left, binaryExprRight = right} -> compileLogicalExpr CompileLogicalExprConfig {compileLogicalExprCompileExpr = compileExprAt', compileLogicalExprOp = OrOperator, compileLogicalExprBaseIndex = baseIndex, compileLogicalExprLeft = left, compileLogicalExprRight = right}
         BinaryExpr {binaryExprOp = op, binaryExprLeft = left, binaryExprRight = right, binaryExprPos = pos} -> do
@@ -76,18 +79,18 @@ compileExprAt config =
           rightResult <- compileExprAt' (compileExprResultEndIndex leftResult) right
           pure (CompileExprResult {compileExprResultCode = compileExprResultCode leftResult ++ compileExprResultCode rightResult ++ [ApplyBinary {applyBinaryOp = op, applyBinaryPos = pos}], compileExprResultEndIndex = compileExprResultEndIndex rightResult + 1})
         CallExpr {callExprName = fname, callExprArgs = args, callExprPos = pos} -> do
-          let compileForCall b e = fmap (\r -> (compileExprResultCode r, compileExprResultEndIndex r)) (compileExprAt' b e)
+          let compileForCall b e = compileExprAt' b e
           compiledArgs <- compileCallArgsAt CompileCallArgsAtConfig {compileCallArgsAtCompileExpr = compileForCall, compileCallArgsAtArgs = args}
           pure (CompileExprResult {compileExprResultCode = [CallFunction {callFunctionName = fname, callFunctionArgs = compiledArgs, callFunctionPos = pos}], compileExprResultEndIndex = baseIndex + 1})
         CallValueExpr {callValueExprCallee = callee, callValueExprArgs = args, callValueExprPos = pos} -> do
           calleeResult <- compileExprAt' baseIndex callee
-          let compileForCall b e = fmap (\r -> (compileExprResultCode r, compileExprResultEndIndex r)) (compileExprAt' b e)
+          let compileForCall b e = compileExprAt' b e
           compiledArgs <- compileCallArgsAt CompileCallArgsAtConfig {compileCallArgsAtCompileExpr = compileForCall, compileCallArgsAtArgs = args}
           pure (CompileExprResult {compileExprResultCode = compileExprResultCode calleeResult ++ [CallValueFunction {callValueFunctionArgs = compiledArgs, callValueFunctionPos = pos}], compileExprResultEndIndex = compileExprResultEndIndex calleeResult + 1})
         IndexExpr {indexExprBase = containerExpr, indexExprIndex = indexExpr, indexExprPos = pos} -> do
           containerResult <- compileExprAt' 0 containerExpr
           indexResult <- compileExprAt' 0 indexExpr
-          let callArgs = [(compileExprResultCode containerResult, Nothing, pos), (compileExprResultCode indexResult, Nothing, pos)]
+          let callArgs = [CompiledCallArg {compiledCallArgCode = compileExprResultCode containerResult, compiledCallArgKeyword = Nothing, compiledCallArgPos = pos}, CompiledCallArg {compiledCallArgCode = compileExprResultCode indexResult, compiledCallArgKeyword = Nothing, compiledCallArgPos = pos}]
           pure (CompileExprResult {compileExprResultCode = [CallFunction {callFunctionName = "__python_hs_getitem__", callFunctionArgs = callArgs, callFunctionPos = pos}], compileExprResultEndIndex = baseIndex + 1})
         SliceExpr {sliceExprBase = containerExpr, sliceExprStart = maybeStart, sliceExprEnd = maybeEnd, sliceExprPos = pos} -> do
           containerResult <- compileExprAt' 0 containerExpr
@@ -98,6 +101,6 @@ compileExprAt config =
           endResult <- case maybeEnd of
             Just endExpr -> compileExprAt' 0 endExpr
             Nothing -> Right (CompileExprResult {compileExprResultCode = defaultNone, compileExprResultEndIndex = 1})
-          let callArgs = [(compileExprResultCode containerResult, Nothing, pos), (compileExprResultCode startResult, Nothing, pos), (compileExprResultCode endResult, Nothing, pos)]
+          let callArgs = [CompiledCallArg {compiledCallArgCode = compileExprResultCode containerResult, compiledCallArgKeyword = Nothing, compiledCallArgPos = pos}, CompiledCallArg {compiledCallArgCode = compileExprResultCode startResult, compiledCallArgKeyword = Nothing, compiledCallArgPos = pos}, CompiledCallArg {compiledCallArgCode = compileExprResultCode endResult, compiledCallArgKeyword = Nothing, compiledCallArgPos = pos}]
           pure (CompileExprResult {compileExprResultCode = [CallFunction {callFunctionName = "__python_hs_slice__", callFunctionArgs = callArgs, callFunctionPos = pos}], compileExprResultEndIndex = baseIndex + 1})
         _ -> Left ("VM compile error: unsupported expression at " ++ showPos (exprPosition expr))

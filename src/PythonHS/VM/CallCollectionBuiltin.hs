@@ -1,6 +1,9 @@
 module PythonHS.VM.CallCollectionBuiltin (callCollectionBuiltin) where
 
 import Data.List (sortOn)
+import PythonHS.Evaluator.DictPair (DictPair (..))
+import PythonHS.Evaluator.NumberSortPair (NumberSortPair (..))
+import PythonHS.Evaluator.PairToList (pairToList)
 import PythonHS.Evaluator.ShowPos (showPos)
 import PythonHS.Evaluator.Value (Value (..))
 import PythonHS.Evaluator.ValueToReplOutput (valueToReplOutput)
@@ -45,14 +48,16 @@ callCollectionBuiltin config =
         "extend" -> Just $ case args of
           [ListValue {listValueItems = vals}, ListValue {listValueItems = otherVals}] -> Right (ListValue {listValueItems = vals ++ otherVals})
           [ListValue {listValueItems = vals}, IntValue {intValue = n}] -> Right (ListValue {listValueItems = vals ++ [IntValue {intValue = i} | i <- [0 .. n - 1]]})
-          [ListValue {listValueItems = vals}, DictValue {dictValuePairs = pairs}] -> Right (ListValue {listValueItems = vals ++ map fst pairs})
+          [ListValue {listValueItems = vals}, DictValue {dictValuePairs = pairs}] -> Right (ListValue {listValueItems = vals ++ map dictPairKey pairs})
           [ListValue {listValueItems = _}, _] -> Left ("Type error: extend expects iterable as second argument at " ++ showPos pos)
           [_, _] -> Left ("Type error: extend expects list as first argument at " ++ showPos pos)
           _ -> Left ("Argument count mismatch when calling extend at " ++ showPos pos)
         "sort" -> Just $ case args of
           [ListValue {listValueItems = vals}] ->
             case numberPairs vals of
-              Just pairs -> Right (ListValue {listValueItems = map snd (sortOn fst pairs)})
+              Just pairs ->
+                let sortedVals = map numberSortPairValue (sortOn numberSortPairSortKey pairs)
+                 in Right (ListValue {listValueItems = sortedVals})
               Nothing -> Left ("Type error: sort expects list of number at " ++ showPos pos)
           [_] -> Left ("Type error: sort expects list as first argument at " ++ showPos pos)
           _ -> Left ("Argument count mismatch when calling sort at " ++ showPos pos)
@@ -95,7 +100,7 @@ callCollectionBuiltin config =
           [_] -> Left ("Type error: clear expects list or dict at " ++ showPos pos)
           _ -> Left ("Argument count mismatch when calling clear at " ++ showPos pos)
         "keys" -> Just $ case args of
-          [DictValue {dictValuePairs = pairs}] -> Right (ListValue {listValueItems = map fst pairs})
+          [DictValue {dictValuePairs = pairs}] -> Right (ListValue {listValueItems = map dictPairKey pairs})
           [_] -> Left ("Type error: keys expects dict at " ++ showPos pos)
           _ -> Left ("Argument count mismatch when calling keys at " ++ showPos pos)
         "get" -> Just $ case args of
@@ -124,7 +129,7 @@ callCollectionBuiltin config =
           [_, _, _] -> Left ("Type error: setdefault expects dict as first argument at " ++ showPos pos)
           _ -> Left ("Argument count mismatch when calling setdefault at " ++ showPos pos)
         "values" -> Just $ case args of
-          [DictValue {dictValuePairs = pairs}] -> Right (ListValue {listValueItems = map snd pairs})
+          [DictValue {dictValuePairs = pairs}] -> Right (ListValue {listValueItems = map dictPairValue pairs})
           [_] -> Left ("Type error: values expects dict at " ++ showPos pos)
           _ -> Left ("Argument count mismatch when calling values at " ++ showPos pos)
         "items" -> Just $ case args of
@@ -137,13 +142,13 @@ callCollectionBuiltin config =
         _ -> Nothing
   where
     numberPairs [] = Just []
-    numberPairs (IntValue {intValue = n} : restVals) = fmap ((fromIntegral n, IntValue {intValue = n}) :) (numberPairs restVals)
-    numberPairs (FloatValue {floatValue = n} : restVals) = fmap ((n, FloatValue {floatValue = n}) :) (numberPairs restVals)
+    numberPairs (IntValue {intValue = n} : restVals) = fmap (NumberSortPair {numberSortPairSortKey = fromIntegral n, numberSortPairValue = IntValue {intValue = n}} :) (numberPairs restVals)
+    numberPairs (FloatValue {floatValue = n} : restVals) = fmap (NumberSortPair {numberSortPairSortKey = n, numberSortPairValue = FloatValue {floatValue = n}} :) (numberPairs restVals)
     numberPairs (_ : _) = Nothing
 
     lookupDictValue [] _ = Nothing
-    lookupDictValue ((k, v) : restPairs) target
-      | k == target = Just v
+    lookupDictValue (entry : restPairs) target
+      | dictPairKey entry == target = Just (dictPairValue entry)
       | otherwise = lookupDictValue restPairs target
 
     removeFirstValue [] _ = Nothing
@@ -155,21 +160,20 @@ callCollectionBuiltin config =
       let maxIndex = fromIntegral (length values)
           clampedIndex = max 0 (min index maxIndex)
           splitIndex = fromIntegral clampedIndex
-          (leftValues, rightValues) = splitAt splitIndex values
+          leftValues = take splitIndex values
+          rightValues = drop splitIndex values
        in leftValues ++ (value : rightValues)
 
-    updateDictValue [] key value = [(key, value)]
-    updateDictValue ((k, v) : restPairs) key value
-      | k == key = (k, value) : restPairs
-      | otherwise = (k, v) : updateDictValue restPairs key value
+    updateDictValue [] key value = [DictPair {dictPairKey = key, dictPairValue = value}]
+    updateDictValue (entry : restPairs) key value
+      | dictPairKey entry == key = DictPair {dictPairKey = key, dictPairValue = value} : restPairs
+      | otherwise = entry : updateDictValue restPairs key value
 
     mergeDictValues pairs [] = pairs
-    mergeDictValues pairs ((key, value) : restPairs) =
-      mergeDictValues (updateDictValue pairs key value) restPairs
+    mergeDictValues pairs (entry : restPairs) =
+      mergeDictValues (updateDictValue pairs (dictPairKey entry) (dictPairValue entry)) restPairs
 
     setDefaultDictValue pairs key defaultValue =
       case lookupDictValue pairs key of
         Just _ -> pairs
-        Nothing -> pairs ++ [(key, defaultValue)]
-
-    pairToList (k, v) = ListValue {listValueItems = [k, v]}
+        Nothing -> pairs ++ [DictPair {dictPairKey = key, dictPairValue = defaultValue}]

@@ -1,5 +1,6 @@
 module PythonHS.VM.ToForIterable (toForIterable) where
 
+import PythonHS.Evaluator.DictPair (DictPair (..))
 import PythonHS.Evaluator.ShowPos (showPos)
 import PythonHS.Evaluator.Value (Value (..))
 import PythonHS.Lexer.Position (Position)
@@ -15,5 +16,5 @@ toForIterable config =
            in Right (map IntValue [0 .. upper - 1])
         ListValue {listValueItems = vals} -> Right vals
         TupleValue {tupleValueItems = vals} -> Right vals
-        DictValue {dictValuePairs = pairs} -> Right (map fst pairs)
+        DictValue {dictValuePairs = pairs} -> Right (map dictPairKey pairs)
         _ -> Left ("Type error: for expects iterable (int range, list, or dict) at " ++ showPos pos)

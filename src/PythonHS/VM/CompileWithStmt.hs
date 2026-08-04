@@ -9,6 +9,7 @@ import PythonHS.VM.CompileExprAt (compileExprAt)
 import PythonHS.VM.CompileExprAtConfig (CompileExprAtConfig (..))
 import PythonHS.VM.CompileExprResult (CompileExprResult (..))
 import PythonHS.VM.CompileWithStmtConfig (CompileWithStmtConfig (..))
+import PythonHS.VM.CompiledCallArg (CompiledCallArg (..))
 import PythonHS.VM.Instruction (Instruction (..))
 
 compileWithStmt :: CompileWithStmtConfig -> Either String CompileExprResult
@@ -27,7 +28,7 @@ compileWithStmt config = do
   let contextManagerVar = "__context_manager_" ++ show baseIndex ++ "__"
   let setupCode = contextManagerCode ++ [StoreName {storeNameName = contextManagerVar}]
 
-  let entryInstruction = CallFunction {callFunctionName = "__enter__", callFunctionArgs = [([LoadName {loadNameName = contextManagerVar, loadNamePos = contextManagerPos ctxManager}], Nothing, contextManagerPos ctxManager)], callFunctionPos = contextManagerPos ctxManager}
+  let entryInstruction = CallFunction {callFunctionName = "__enter__", callFunctionArgs = [CompiledCallArg {compiledCallArgCode = [LoadName {loadNameName = contextManagerVar, loadNamePos = contextManagerPos ctxManager}], compiledCallArgKeyword = Nothing, compiledCallArgPos = contextManagerPos ctxManager}], callFunctionPos = contextManagerPos ctxManager}
   let withEntry = WithEntry {entryCallExpr = CallExpr {callExprName = "__enter__", callExprArgs = [contextManagerExpr ctxManager], callExprPos = contextManagerPos ctxManager}, entryCallInstruction = entryInstruction, entryPos = contextManagerPos ctxManager}
   let enterCode = [LoadName {loadNameName = contextManagerVar, loadNamePos = contextManagerPos ctxManager}, entryCallInstruction withEntry]
 
@@ -40,13 +41,13 @@ compileWithStmt config = do
   let bodyCode = compileExprResultCode bodyResult
   let bodyEndIndex = compileExprResultEndIndex bodyResult
   let exitNormalStartIndex = bodyEndIndex + 2
-  let nonePos = ([PushConst {pushConstValue = NoneValue}], Nothing, contextManagerPos ctxManager)
+  let nonePos = CompiledCallArg {compiledCallArgCode = [PushConst {pushConstValue = NoneValue}], compiledCallArgKeyword = Nothing, compiledCallArgPos = contextManagerPos ctxManager}
 
   let exitNormalInstruction =
         CallFunction
           { callFunctionName = "__exit__",
             callFunctionArgs =
-              [ ([LoadName {loadNameName = contextManagerVar, loadNamePos = contextManagerPos ctxManager}], Nothing, contextManagerPos ctxManager),
+              [ CompiledCallArg {compiledCallArgCode = [LoadName {loadNameName = contextManagerVar, loadNamePos = contextManagerPos ctxManager}], compiledCallArgKeyword = Nothing, compiledCallArgPos = contextManagerPos ctxManager},
                 nonePos,
                 nonePos,
                 nonePos
@@ -62,9 +63,9 @@ compileWithStmt config = do
         CallFunction
           { callFunctionName = "__exit__",
             callFunctionArgs =
-              [ ([LoadName {loadNameName = contextManagerVar, loadNamePos = contextManagerPos ctxManager}], Nothing, contextManagerPos ctxManager),
-                ([LoadPendingException], Nothing, contextManagerPos ctxManager),
-                ([LoadPendingException], Nothing, contextManagerPos ctxManager),
+              [ CompiledCallArg {compiledCallArgCode = [LoadName {loadNameName = contextManagerVar, loadNamePos = contextManagerPos ctxManager}], compiledCallArgKeyword = Nothing, compiledCallArgPos = contextManagerPos ctxManager},
+                CompiledCallArg {compiledCallArgCode = [LoadPendingException], compiledCallArgKeyword = Nothing, compiledCallArgPos = contextManagerPos ctxManager},
+                CompiledCallArg {compiledCallArgCode = [LoadPendingException], compiledCallArgKeyword = Nothing, compiledCallArgPos = contextManagerPos ctxManager},
                 nonePos
               ],
             callFunctionPos = contextManagerPos ctxManager

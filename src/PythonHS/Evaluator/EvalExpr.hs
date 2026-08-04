@@ -4,18 +4,21 @@ import Data.Map.Strict qualified as Map
 import PythonHS.AST.DictEntry (DictEntry (..))
 import PythonHS.AST.Expr (Expr (..))
 import PythonHS.AST.Stmt (Stmt)
+import PythonHS.Evaluator.DictPair (DictPair (..))
 import PythonHS.Evaluator.Env (Env)
 import PythonHS.Evaluator.EvalCallExpr (evalCallExpr)
 import PythonHS.Evaluator.EvalExprBinary (evalExprBinary)
 import PythonHS.Evaluator.EvalExprBinaryInput (EvalExprBinaryInput (..))
 import PythonHS.Evaluator.EvalExprResult (EvalExprResult (..))
+import PythonHS.Evaluator.EvalStmtResult (EvalStmtResult)
+import PythonHS.Evaluator.EvaluatedArgsResult (EvaluatedArgsResult (..))
 import PythonHS.Evaluator.FuncEnv (FuncEnv)
 import PythonHS.Evaluator.ShowPos (showPos)
 import PythonHS.Evaluator.Value (Value (..))
 import PythonHS.Lexer.Position (Position)
 
 evalExpr ::
-  (Env -> FuncEnv -> [String] -> [Stmt] -> Either String (Env, FuncEnv, [String], Maybe (Value, Position))) ->
+  (Env -> FuncEnv -> [String] -> [Stmt] -> Either String EvalStmtResult) ->
   Env ->
   FuncEnv ->
   Expr ->
@@ -27,14 +30,14 @@ evalExpr evalStatementsFn env fenv expr =
     StringExpr {stringExprValue} -> Right (EvalExprResult (StringValue stringExprValue) [] env)
     NoneExpr {} -> Right (EvalExprResult NoneValue [] env)
     ListExpr {listExprItems} -> do
-      (vals, outs, envAfterArgs) <- evalArgs env fenv listExprItems
-      Right (EvalExprResult (ListValue vals) outs envAfterArgs)
+      argsResult <- evalArgs env fenv listExprItems
+      Right (EvalExprResult (ListValue (evaluatedArgsResultValues argsResult)) (evaluatedArgsResultOutputs argsResult) (evaluatedArgsResultEnv argsResult))
     TupleExpr {tupleExprItems} -> do
-      (vals, outs, envAfterArgs) <- evalArgs env fenv tupleExprItems
-      Right (EvalExprResult (TupleValue vals) outs envAfterArgs)
+      argsResult <- evalArgs env fenv tupleExprItems
+      Right (EvalExprResult (TupleValue (evaluatedArgsResultValues argsResult)) (evaluatedArgsResultOutputs argsResult) (evaluatedArgsResultEnv argsResult))
     DictExpr {dictExprEntries} -> do
-      (pairs, outs, envAfterEntries) <- evalDictEntries env fenv dictExprEntries
-      Right (EvalExprResult (DictValue pairs) outs envAfterEntries)
+      entriesResult <- evalDictEntries env fenv dictExprEntries
+      Right (EvalExprResult (DictValue (evaluatedArgsResultValues entriesResult)) (evaluatedArgsResultOutputs entriesResult) (evaluatedArgsResultEnv entriesResult))
     ListComprehensionExpr {listComprehensionExprPos} ->
       Left $ "Runtime error: list comprehension is only supported in vm engine at " ++ showPos listComprehensionExprPos
     ListComprehensionClausesExpr {listComprehensionClausesExprPos} ->
@@ -76,19 +79,19 @@ evalExpr evalStatementsFn env fenv expr =
     SliceExpr {} ->
       Left $ "Runtime error: slicing is only supported in vm engine at " ++ showPos (exprPos expr)
   where
-    evalArgs currentEnv currentFenv = foldl go (Right ([], [], currentEnv))
+    evalArgs currentEnv currentFenv = foldl go (Right EvaluatedArgsResult {evaluatedArgsResultValues = [], evaluatedArgsResultOutputs = [], evaluatedArgsResultEnv = currentEnv})
       where
         go acc argExpr = do
-          (vals, outs, envNow) <- acc
-          EvalExprResult value exprOuts envNext <- evalExpr evalStatementsFn envNow currentFenv argExpr
-          Right (vals ++ [value], outs ++ exprOuts, envNext)
+          result <- acc
+          EvalExprResult value exprOuts envNext <- evalExpr evalStatementsFn (evaluatedArgsResultEnv result) currentFenv argExpr
+          Right EvaluatedArgsResult {evaluatedArgsResultValues = evaluatedArgsResultValues result ++ [value], evaluatedArgsResultOutputs = evaluatedArgsResultOutputs result ++ exprOuts, evaluatedArgsResultEnv = envNext}
 
-    evalDictEntries currentEnv _ [] = Right ([], [], currentEnv)
+    evalDictEntries currentEnv _ [] = Right EvaluatedArgsResult {evaluatedArgsResultValues = [], evaluatedArgsResultOutputs = [], evaluatedArgsResultEnv = currentEnv}
     evalDictEntries currentEnv currentFenv (DictEntry {dictEntryKey = keyExpr, dictEntryValue = valueExpr} : restEntries) = do
       EvalExprResult keyVal keyOuts envAfterKey <- evalExpr evalStatementsFn currentEnv currentFenv keyExpr
       EvalExprResult valueVal valueOuts envAfterValue <- evalExpr evalStatementsFn envAfterKey currentFenv valueExpr
-      (restVals, restOuts, envAfterRest) <- evalDictEntries envAfterValue currentFenv restEntries
-      Right ((keyVal, valueVal) : restVals, keyOuts ++ valueOuts ++ restOuts, envAfterRest)
+      restResult <- evalDictEntries envAfterValue currentFenv restEntries
+      Right EvaluatedArgsResult {evaluatedArgsResultValues = DictPair {dictPairKey = keyVal, dictPairValue = valueVal} : evaluatedArgsResultValues restResult, evaluatedArgsResultOutputs = keyOuts ++ valueOuts ++ evaluatedArgsResultOutputs restResult, evaluatedArgsResultEnv = evaluatedArgsResultEnv restResult}
 
     exprPos (IntegerExpr _ pos) = pos
     exprPos (FloatExpr _ pos) = pos

@@ -8,9 +8,11 @@ import PythonHS.Lexer.Position (Position)
 import PythonHS.VM.BindCallArguments (bindCallArguments)
 import PythonHS.VM.BindDefaults (bindDefaults)
 import PythonHS.VM.CollectFunctionGlobalDecls (collectFunctionGlobalDecls)
+import PythonHS.VM.CompiledCallArg (CompiledCallArg (..))
 import PythonHS.VM.EnvState (EnvState (..))
 import PythonHS.VM.EvaluateUserArgs (evaluateUserArgs)
 import PythonHS.VM.ExceptionState (ExceptionState (..))
+import PythonHS.VM.FunctionInfo (FunctionInfo (..))
 import PythonHS.VM.Instruction (Instruction)
 import PythonHS.VM.LoopState (LoopState (..))
 import PythonHS.VM.VMState (VMState (..))
@@ -18,14 +20,14 @@ import PythonHS.VM.VMState (VMState (..))
 executeCallValueFunction ::
   (VMState -> Either String VMState) ->
   Bool ->
-  [([Instruction], Maybe String, Position)] ->
+  [CompiledCallArg Instruction] ->
   Position ->
   [Value] ->
   Map.Map String Value ->
   Map.Map String Value ->
-  Map.Map String ([String], [(String, [Instruction])], [Instruction]) ->
+  Map.Map String FunctionInfo ->
   [String] ->
-  Either String ([Value], Map.Map String Value, Map.Map String Value, Map.Map String ([String], [(String, [Instruction])], [Instruction]), [String])
+  Either String ([Value], Map.Map String Value, Map.Map String Value, Map.Map String FunctionInfo, [String])
 executeCallValueFunction execute isTopLevel compiledArgs pos stack globalsEnv localEnv functions outputs =
   case stack of
     callableValue : restStack ->
@@ -33,7 +35,7 @@ executeCallValueFunction execute isTopLevel compiledArgs pos stack globalsEnv lo
         FunctionRefValue functionName capturedBindings ->
           case Map.lookup functionName functions of
             Nothing -> Left ("Name error: undefined function " ++ functionName ++ " at " ++ showPos pos)
-            Just (params, defaultCodes, functionCode) -> do
+            Just (FunctionInfo params defaultCodes functionCode) -> do
               (argValues, argKinds, globalsAfterArgs, functionsAfterArgs, outputsAfterArgs) <-
                 evaluateUserArgs execute functionName pos localEnv compiledArgs globalsEnv functions outputs False Set.empty [] []
               let (boundArgValues, boundArgKinds) = injectBoundSelf params capturedBindings argValues argKinds

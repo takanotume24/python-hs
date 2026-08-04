@@ -5,8 +5,10 @@ import Data.Set qualified as Set
 import PythonHS.Evaluator.ShowPos (showPos)
 import PythonHS.Evaluator.Value (Value (ListValue))
 import PythonHS.Lexer.Position (Position)
+import PythonHS.VM.CompiledComprehensionClause (CompiledComprehensionClause (..))
 import PythonHS.VM.EnvState (EnvState (..))
 import PythonHS.VM.ExceptionState (ExceptionState (..))
+import PythonHS.VM.FunctionInfo (FunctionInfo)
 import PythonHS.VM.Instruction (Instruction)
 import PythonHS.VM.IsTruthy (isTruthy)
 import PythonHS.VM.LoopState (LoopState (..))
@@ -16,14 +18,14 @@ import PythonHS.VM.VMState (VMState (..))
 
 executeListComprehension ::
   (VMState -> Either String VMState) ->
-  [([String], [Instruction], [[Instruction]])] ->
+  [CompiledComprehensionClause Instruction] ->
   [Instruction] ->
   Position ->
   Map.Map String Value ->
   Map.Map String Value ->
-  Map.Map String ([String], [(String, [Instruction])], [Instruction]) ->
+  Map.Map String FunctionInfo ->
   [String] ->
-  Either String (Value, Map.Map String Value, Map.Map String ([String], [(String, [Instruction])], [Instruction]), [String])
+  Either String (Value, Map.Map String Value, Map.Map String FunctionInfo, [String])
 executeListComprehension execute clauses valueCode pos globalsEnv localEnv functions outputs = do
   (items, globalsAfterItems, functionsAfterItems, outputsAfterItems) <-
     evalClauses clauses localEnv [] globalsEnv functions outputs
@@ -66,12 +68,12 @@ executeListComprehension execute clauses valueCode pos globalsEnv localEnv funct
       finalState <- execute state
       value <- requireElement (extractReturnValue finalState)
       Right (acc ++ [value], envGlobals (vmEnv finalState), envFunctions (vmEnv finalState), vmOutputs finalState)
-    evalClauses ((loopTargets, iterCode, condCodes) : restClauses) localsNow acc globalsNow functionsNow outputsNow = do
-      let iterState = emptyState iterCode globalsNow localsNow functionsNow outputsNow
+    evalClauses (clause : restClauses) localsNow acc globalsNow functionsNow outputsNow = do
+      let iterState = emptyState (compiledComprehensionClauseIterCode clause) globalsNow localsNow functionsNow outputsNow
       finalIterState <- execute iterState
       iterValue <- requireValue (extractReturnValue finalIterState)
       iterItems <- toForIterable ToForIterableConfig {toForIterableValue = iterValue, toForIterablePos = pos}
-      evalClauseItems loopTargets condCodes restClauses localsNow iterItems acc (envGlobals (vmEnv finalIterState)) (envFunctions (vmEnv finalIterState)) (vmOutputs finalIterState)
+      evalClauseItems (compiledComprehensionClauseTargets clause) (compiledComprehensionClauseConds clause) restClauses localsNow iterItems acc (envGlobals (vmEnv finalIterState)) (envFunctions (vmEnv finalIterState)) (vmOutputs finalIterState)
 
     evalClauseItems _ _ _ _ [] acc globalsNow functionsNow outputsNow =
       Right (acc, globalsNow, functionsNow, outputsNow)

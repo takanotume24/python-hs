@@ -12,11 +12,14 @@ import PythonHS.VM.ExecuteArithmeticInstruction (executeArithmeticInstruction)
 import PythonHS.VM.ExecuteArithmeticInstructionConfig (ExecuteArithmeticInstructionConfig (..))
 import PythonHS.VM.ExecuteCallFunction (executeCallFunction)
 import PythonHS.VM.ExecuteCallValueFunction (executeCallValueFunction)
+import PythonHS.VM.ExecuteCheckWithResult (executeCheckWithResult)
+import PythonHS.VM.ExecuteCheckWithResultConfig (ExecuteCheckWithResultConfig (..))
 import PythonHS.VM.ExecuteDefineClassInstruction (executeDefineClassInstruction)
 import PythonHS.VM.ExecuteForNext (executeForNext)
 import PythonHS.VM.ExecuteListComprehension (executeListComprehension)
 import PythonHS.VM.ExecuteMatchPattern (executeMatchPattern)
 import PythonHS.VM.ExecuteUnpackToNames (executeUnpackToNames)
+import PythonHS.VM.FunctionInfo (FunctionInfo (..))
 import PythonHS.VM.HandleExceptionInstruction (handleExceptionInstruction)
 import PythonHS.VM.HandleExceptionInstructionConfig (HandleExceptionInstructionConfig (..))
 import PythonHS.VM.Instruction (Instruction (..))
@@ -25,6 +28,7 @@ import PythonHS.VM.LookupNameWithAttr (lookupNameWithAttr)
 import PythonHS.VM.LoopState (LoopState (..))
 import PythonHS.VM.PopValues (popValues)
 import PythonHS.VM.PopValuesConfig (PopValuesConfig (..))
+import PythonHS.VM.PopValuesResult (PopValuesResult (..))
 import PythonHS.VM.StoreNameWithAttr (storeNameWithAttr)
 import PythonHS.VM.ToForIterable (toForIterable)
 import PythonHS.VM.ToForIterableConfig (ToForIterableConfig (..))
@@ -61,20 +65,20 @@ executeOneInstruction execute state instruction =
             BuildList count ->
               case popValues PopValuesConfig {popValuesCount = count, popValuesStack = vmStack state} of
                 Left err -> Left err
-                Right (values, rest) ->
-                  execute state {vmIp = vmIp state + 1, vmStack = ListValue values : rest}
+                Right popResult ->
+                  execute state {vmIp = vmIp state + 1, vmStack = ListValue (popValuesResultPopped popResult) : popValuesResultRest popResult}
             BuildTuple count ->
               case popValues PopValuesConfig {popValuesCount = count, popValuesStack = vmStack state} of
                 Left err -> Left err
-                Right (values, rest) ->
-                  execute state {vmIp = vmIp state + 1, vmStack = TupleValue values : rest}
+                Right popResult ->
+                  execute state {vmIp = vmIp state + 1, vmStack = TupleValue (popValuesResultPopped popResult) : popValuesResultRest popResult}
             BuildDict count ->
               case popValues PopValuesConfig {popValuesCount = count * 2, popValuesStack = vmStack state} of
                 Left err -> Left err
-                Right (flatValues, rest) ->
-                  case toPairs flatValues of
+                Right popResult ->
+                  case toPairs (popValuesResultPopped popResult) of
                     Left err -> Left err
-                    Right pairs -> execute state {vmIp = vmIp state + 1, vmStack = DictValue pairs : rest}
+                    Right pairs -> execute state {vmIp = vmIp state + 1, vmStack = DictValue pairs : popValuesResultRest popResult}
             MatchPattern pat _ -> do
               (newStack, newGlobals, newLocals) <-
                 executeMatchPattern scopeCtx pat (vmStack state) (envGlobals (vmEnv state)) (envLocals (vmEnv state))
@@ -110,35 +114,20 @@ executeOneInstruction execute state instruction =
               if handlerIp < 0 || handlerIp >= length (vmCode state)
                 then Left ("Runtime error: invalid handler IP " ++ show handlerIp ++ " for PushWithHandler")
                 else execute state {vmIp = vmIp state + 1, vmException = (vmException state) {exceptionHandlers = handlerIp : exceptionHandlers (vmException state)}}
-            CheckWithResult ->
-              case vmStack state of
-                resultValue : rest ->
-                  if isTruthy resultValue
-                    then execute state {vmIp = vmIp state + 1, vmStack = rest}
-                    else case exceptionHandlers (vmException state) of
-                      handlerIp : restHandlers ->
-                        let err = case Map.lookup "__python_hs_pending_except_error__" (envLocals (vmEnv state)) of
-                              Just (StringValue s) -> s
-                              _ -> "Runtime error: error at 9:3"
-                            newLocals = Map.insert "__python_hs_pending_except_error__" (StringValue err) (envLocals (vmEnv state))
-                            newEnv = (vmEnv state) {envLocals = newLocals}
-                            newException = (vmException state) {exceptionHandlers = restHandlers}
-                         in execute state {vmIp = handlerIp, vmStack = rest, vmEnv = newEnv, vmException = newException}
-                      [] -> Left "Runtime error: unhandled exception in with statement"
-                _ -> Left "VM runtime error: check with result requires one value on stack"
+            CheckWithResult -> executeCheckWithResult ExecuteCheckWithResultConfig {executeCheckWithResultState = state, executeCheckWithResultExecute = execute}
             DupTop ->
               case vmStack state of
                 value : rest -> execute state {vmIp = vmIp state + 1, vmStack = value : value : rest}
                 _ -> Left "VM runtime error: dup requires one value on stack"
             DefineFunction name params defaultCodes functionCode ->
-              execute state {vmIp = vmIp state + 1, vmEnv = (vmEnv state) {envFunctions = Map.insert name (params, defaultCodes, functionCode) (envFunctions (vmEnv state))}}
+              execute state {vmIp = vmIp state + 1, vmEnv = (vmEnv state) {envFunctions = Map.insert name FunctionInfo {functionInfoParams = params, functionInfoDefaults = defaultCodes, functionInfoCode = functionCode} (envFunctions (vmEnv state))}}
             CreateLambda name params defaultCodes functionCode ->
               let captured = Map.toList (envLocals (vmEnv state))
                in execute
                     state
                       { vmIp = vmIp state + 1,
                         vmStack = FunctionRefValue name captured : vmStack state,
-                        vmEnv = (vmEnv state) {envFunctions = Map.insert name (params, defaultCodes, functionCode) (envFunctions (vmEnv state))}
+                        vmEnv = (vmEnv state) {envFunctions = Map.insert name FunctionInfo {functionInfoParams = params, functionInfoDefaults = defaultCodes, functionInfoCode = functionCode} (envFunctions (vmEnv state))}
                       }
             DefineClass className maybeBase methods ->
               executeDefineClassInstruction execute state (DefineClass className maybeBase methods)

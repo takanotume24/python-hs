@@ -8,14 +8,15 @@ import PythonHS.Lexer.Position (Position)
 import PythonHS.VM.CompileExprResult (CompileExprResult (..))
 import PythonHS.VM.CompileMatchConfig (CompileMatchConfig (..))
 import PythonHS.VM.Instruction (Instruction (..))
+import PythonHS.VM.MatchCasesCompileResult (MatchCasesCompileResult (..))
 
 compileMatch :: CompileMatchConfig -> Either String CompileExprResult
 compileMatch config = do
   subjectResult <- compileExpr baseIndex subjectExpr
   let subjectName = "__python_hs_match_subject_" ++ show baseIndex
-  (caseCode, endIndex) <- compileCases (compileExprResultEndIndex subjectResult + 1) subjectName cases
-  let fullCode = compileExprResultCode subjectResult ++ [StoreName {storeNameName = subjectName}] ++ patchEndJumps endIndex caseCode
-  pure (CompileExprResult {compileExprResultCode = fullCode, compileExprResultEndIndex = endIndex})
+  casesResult <- compileCases (compileExprResultEndIndex subjectResult + 1) subjectName cases
+  let fullCode = compileExprResultCode subjectResult ++ [StoreName {storeNameName = subjectName}] ++ patchEndJumps (matchCasesCompileResultEndIndex casesResult) (matchCasesCompileResultCode casesResult)
+  pure (CompileExprResult {compileExprResultCode = fullCode, compileExprResultEndIndex = matchCasesCompileResultEndIndex casesResult})
   where
     compileExpr = compileMatchCompileExpr config
     compileStatements = compileMatchCompileStatements config
@@ -25,7 +26,7 @@ compileMatch config = do
     inFunction = compileMatchInFunction config
     maybeLoop = compileMatchMaybeLoop config
 
-    compileCases nextIndex _ [] = Right ([], nextIndex)
+    compileCases nextIndex _ [] = Right MatchCasesCompileResult {matchCasesCompileResultCode = [], matchCasesCompileResultEndIndex = nextIndex}
     compileCases nextIndex subjectName' (MatchCase {matchCasePattern = pat, matchCaseGuard = maybeGuard, matchCaseBody = bodyStmts, matchCasePos = patPos} : restCases) = do
       let loadAndMatch = [LoadName {loadNameName = subjectName', loadNamePos = patPos}, MatchPattern {matchPatternPattern = pat, matchPatternPos = patPos}]
       let jumpAfterMatchIndex = nextIndex + 2
@@ -38,14 +39,14 @@ compileMatch config = do
       bodyResult <- compileStatements (compileExprResultEndIndex guardResult) inFunction maybeLoop bodyStmts
       let nextCaseStart = compileExprResultEndIndex bodyResult + 1
       let guardCodeFixed = patchGuardJump nextCaseStart (compileExprResultCode guardResult)
-      (restCode, endIndex) <- compileCases nextCaseStart subjectName' restCases
+      restResult <- compileCases nextCaseStart subjectName' restCases
       let thisCase =
             loadAndMatch
               ++ [JumpIfFalse {jumpIfFalseTarget = nextCaseStart}]
               ++ guardCodeFixed
               ++ compileExprResultCode bodyResult
               ++ [Jump {jumpTarget = 0}]
-      Right (thisCase ++ restCode, endIndex)
+      Right MatchCasesCompileResult {matchCasesCompileResultCode = thisCase ++ matchCasesCompileResultCode restResult, matchCasesCompileResultEndIndex = matchCasesCompileResultEndIndex restResult}
 
     patchGuardJump target codes =
       case reverse codes of

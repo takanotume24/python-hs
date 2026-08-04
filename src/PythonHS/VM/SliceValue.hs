@@ -3,6 +3,7 @@ module PythonHS.VM.SliceValue (sliceValue) where
 import PythonHS.Evaluator.ShowPos (showPos)
 import PythonHS.Evaluator.Value (Value (..))
 import PythonHS.Lexer.Position (Position)
+import PythonHS.VM.SliceBoundsResult (SliceBoundsResult (..))
 import PythonHS.VM.SliceValueConfig (SliceValueConfig (..))
 
 sliceValue :: SliceValueConfig -> Either String Value
@@ -17,21 +18,21 @@ sliceValue config = case seqValue of
     startVal = sliceValueStartVal config
     endVal = sliceValueEndVal config
     sliceValues values startBound endBound = do
-      (startIdx, endIdx) <- sliceBounds (length values) startBound endBound
-      let sliceLen = max 0 (endIdx - startIdx)
-      Right (take sliceLen (drop startIdx values))
+      boundsResult <- sliceBounds (length values) startBound endBound
+      let sliceLen = max 0 (sliceBoundsResultEnd boundsResult - sliceBoundsResultStart boundsResult)
+      Right (take sliceLen (drop (sliceBoundsResultStart boundsResult) values))
 
     sliceString s startBound endBound = do
-      (startIdx, endIdx) <- sliceBounds (length s) startBound endBound
-      let sliceLen = max 0 (endIdx - startIdx)
-      Right (take sliceLen (drop startIdx s))
+      boundsResult <- sliceBounds (length s) startBound endBound
+      let sliceLen = max 0 (sliceBoundsResultEnd boundsResult - sliceBoundsResultStart boundsResult)
+      Right (take sliceLen (drop (sliceBoundsResultStart boundsResult) s))
 
     sliceBounds lenNow startBound endBound = do
       startIdx <- normalizeBound 0 lenNow startBound
       endIdx <- normalizeBound lenNow lenNow endBound
       let clampedStart = max 0 (min lenNow startIdx)
           clampedEnd = max 0 (min lenNow endIdx)
-      Right (clampedStart, clampedEnd)
+      Right SliceBoundsResult {sliceBoundsResultStart = clampedStart, sliceBoundsResultEnd = clampedEnd}
 
     normalizeBound defaultVal lenNow value =
       case value of

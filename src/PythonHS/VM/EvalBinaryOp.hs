@@ -14,12 +14,21 @@ evalBinaryOp config =
       pos = evalBinaryOpPos config
    in case op of
         AddOperator ->
-          case (left, right) of
-            (IntValue {intValue = l}, IntValue {intValue = r}) -> Right (IntValue {intValue = l + r})
-            (FloatValue {floatValue = l}, FloatValue {floatValue = r}) -> Right (FloatValue {floatValue = l + r})
-            (IntValue {intValue = l}, FloatValue {floatValue = r}) -> Right (FloatValue {floatValue = fromIntegral l + r})
-            (FloatValue {floatValue = l}, IntValue {intValue = r}) -> Right (FloatValue {floatValue = l + fromIntegral r})
-            (StringValue {stringValue = l}, StringValue {stringValue = r}) -> Right (StringValue {stringValue = l ++ r})
+          case left of
+            IntValue {intValue = l} ->
+              case right of
+                IntValue {intValue = r} -> Right (IntValue {intValue = l + r})
+                FloatValue {floatValue = r} -> Right (FloatValue {floatValue = fromIntegral l + r})
+                _ -> Left ("Type error: + expects int+int or string+string at " ++ showPos pos)
+            FloatValue {floatValue = l} ->
+              case right of
+                FloatValue {floatValue = r} -> Right (FloatValue {floatValue = l + r})
+                IntValue {intValue = r} -> Right (FloatValue {floatValue = l + fromIntegral r})
+                _ -> Left ("Type error: + expects int+int or string+string at " ++ showPos pos)
+            StringValue {stringValue = l} ->
+              case right of
+                StringValue {stringValue = r} -> Right (StringValue {stringValue = l ++ r})
+                _ -> Left ("Type error: + expects int+int or string+string at " ++ showPos pos)
             _ -> Left ("Type error: + expects int+int or string+string at " ++ showPos pos)
         SubtractOperator -> evalNumericBinary "-" pos left right (-)
         MultiplyOperator -> evalNumericBinary "*" pos left right (*)
@@ -44,8 +53,11 @@ evalBinaryOp config =
     evalNumericBinary context pos' left' right' opFn = do
       leftNumber <- expectNumber context pos' left'
       rightNumber <- expectNumber context pos' right'
-      case (left', right') of
-        (IntValue {intValue = _}, IntValue {intValue = _}) -> Right (IntValue {intValue = truncate (opFn leftNumber rightNumber)})
+      case left' of
+        IntValue {intValue = _} ->
+          case right' of
+            IntValue {intValue = _} -> Right (IntValue {intValue = truncate (opFn leftNumber rightNumber)})
+            _ -> Right (FloatValue {floatValue = opFn leftNumber rightNumber})
         _ -> Right (FloatValue {floatValue = opFn leftNumber rightNumber})
 
     evalDivide pos' left' right' = do
@@ -63,8 +75,11 @@ evalBinaryOp config =
         else
           let quotient = leftNumber / rightNumber
               floored = fromIntegral (floor quotient :: Int)
-           in case (left', right') of
-                (IntValue {intValue = _}, IntValue {intValue = _}) -> Right (IntValue {intValue = floor quotient})
+           in case left' of
+                IntValue {intValue = _} ->
+                  case right' of
+                    IntValue {intValue = _} -> Right (IntValue {intValue = floor quotient})
+                    _ -> Right (FloatValue {floatValue = floored})
                 _ -> Right (FloatValue {floatValue = floored})
 
     evalModulo pos' left' right' = do
@@ -76,23 +91,46 @@ evalBinaryOp config =
           let quotient = leftNumber / rightNumber
               floored = fromIntegral (floor quotient :: Int)
               remainder = leftNumber - rightNumber * floored
-           in case (left', right') of
-                (IntValue {intValue = leftInt}, IntValue {intValue = rightInt}) -> Right (IntValue {intValue = leftInt `mod` rightInt})
+           in case left' of
+                IntValue {intValue = leftInt} ->
+                  case right' of
+                    IntValue {intValue = rightInt} -> Right (IntValue {intValue = leftInt `mod` rightInt})
+                    _ -> Right (FloatValue {floatValue = remainder})
                 _ -> Right (FloatValue {floatValue = remainder})
 
     evalEqComparison left' right' =
-      case (left', right') of
-        (IntValue {intValue = leftInt}, FloatValue {floatValue = rightFloat}) -> Right (IntValue {intValue = if (fromIntegral leftInt :: Double) == rightFloat then 1 else 0})
-        (FloatValue {floatValue = leftFloat}, IntValue {intValue = rightInt}) -> Right (IntValue {intValue = if leftFloat == (fromIntegral rightInt :: Double) then 1 else 0})
-        (TupleValue {tupleValueItems = leftVals}, TupleValue {tupleValueItems = rightVals}) -> Right (IntValue {intValue = if leftVals == rightVals then 1 else 0})
-        _ -> Right (IntValue {intValue = if left' == right' then 1 else 0})
+      let fallback = Right (IntValue {intValue = if left' == right' then 1 else 0})
+       in case left' of
+            IntValue {intValue = leftInt} ->
+              case right' of
+                FloatValue {floatValue = rightFloat} -> Right (IntValue {intValue = if (fromIntegral leftInt :: Double) == rightFloat then 1 else 0})
+                _ -> fallback
+            FloatValue {floatValue = leftFloat} ->
+              case right' of
+                IntValue {intValue = rightInt} -> Right (IntValue {intValue = if leftFloat == (fromIntegral rightInt :: Double) then 1 else 0})
+                _ -> fallback
+            TupleValue {tupleValueItems = leftVals} ->
+              case right' of
+                TupleValue {tupleValueItems = rightVals} -> Right (IntValue {intValue = if leftVals == rightVals then 1 else 0})
+                _ -> fallback
+            _ -> fallback
 
     evalNotEqComparison left' right' =
-      case (left', right') of
-        (IntValue {intValue = leftInt}, FloatValue {floatValue = rightFloat}) -> Right (IntValue {intValue = if (fromIntegral leftInt :: Double) /= rightFloat then 1 else 0})
-        (FloatValue {floatValue = leftFloat}, IntValue {intValue = rightInt}) -> Right (IntValue {intValue = if leftFloat /= (fromIntegral rightInt :: Double) then 1 else 0})
-        (TupleValue {tupleValueItems = leftVals}, TupleValue {tupleValueItems = rightVals}) -> Right (IntValue {intValue = if leftVals /= rightVals then 1 else 0})
-        _ -> Right (IntValue {intValue = if left' /= right' then 1 else 0})
+      let fallback = Right (IntValue {intValue = if left' /= right' then 1 else 0})
+       in case left' of
+            IntValue {intValue = leftInt} ->
+              case right' of
+                FloatValue {floatValue = rightFloat} -> Right (IntValue {intValue = if (fromIntegral leftInt :: Double) /= rightFloat then 1 else 0})
+                _ -> fallback
+            FloatValue {floatValue = leftFloat} ->
+              case right' of
+                IntValue {intValue = rightInt} -> Right (IntValue {intValue = if leftFloat /= (fromIntegral rightInt :: Double) then 1 else 0})
+                _ -> fallback
+            TupleValue {tupleValueItems = leftVals} ->
+              case right' of
+                TupleValue {tupleValueItems = rightVals} -> Right (IntValue {intValue = if leftVals /= rightVals then 1 else 0})
+                _ -> fallback
+            _ -> fallback
 
     evalNumericComparison context pos' left' right' cmp = do
       leftNumber <- expectNumber context pos' left'
@@ -100,48 +138,49 @@ evalBinaryOp config =
       Right (IntValue {intValue = if cmp leftNumber rightNumber then 1 else 0})
 
     evalOrderComparison context pos' left' right' cmp =
-      case (left', right') of
-        (InstanceValue {instanceValueClass = leftClass, instanceValueAttrs = leftAttrs}, InstanceValue {instanceValueClass = rightClass, instanceValueAttrs = rightAttrs}) ->
-          if leftClass == rightClass
-            then do
-              ordResult <- compareInstanceValues leftAttrs rightAttrs
-              Right (IntValue {intValue = if cmp ordResult then 1 else 0})
-            else Left ("Type error: expected int in " ++ context ++ " at " ++ showPos pos')
-        (TupleValue {tupleValueItems = leftVals}, TupleValue {tupleValueItems = rightVals}) -> do
-          ordResult <- compareLists leftVals rightVals
-          Right (IntValue {intValue = if cmp ordResult then 1 else 0})
-        _ -> evalNumericComparison context pos' left' right' (\l r -> cmp (compare l r))
+      let fallback = evalNumericComparison context pos' left' right' (\l r -> cmp (compare l r))
+       in case left' of
+            InstanceValue {instanceValueClass = leftClass, instanceValueAttrs = leftAttrs} ->
+              case right' of
+                InstanceValue {instanceValueClass = rightClass, instanceValueAttrs = rightAttrs} ->
+                  if leftClass == rightClass
+                    then do
+                      ordResult <- compareInstanceValues leftAttrs rightAttrs
+                      Right (IntValue {intValue = if cmp ordResult then 1 else 0})
+                    else Left ("Type error: expected int in " ++ context ++ " at " ++ showPos pos')
+                _ -> fallback
+            TupleValue {tupleValueItems = leftVals} ->
+              case right' of
+                TupleValue {tupleValueItems = rightVals} -> do
+                  ordResult <- compareLists leftVals rightVals
+                  Right (IntValue {intValue = if cmp ordResult then 1 else 0})
+                _ -> fallback
+            _ -> fallback
 
     compareInstanceValues leftAttrs rightAttrs =
       compareLists (filterDataclassAttrs leftAttrs) (filterDataclassAttrs rightAttrs)
 
-    filterDataclassAttrs pairs =
-      case pairs of
-        [] -> []
-        (name, value) : rest ->
-          if name == "__python_hs_frozen__"
-            then filterDataclassAttrs rest
-            else value : filterDataclassAttrs rest
+    filterDataclassAttrs [] = []
+    filterDataclassAttrs (pair : rest) =
+      if fst pair == "__python_hs_frozen__"
+        then filterDataclassAttrs rest
+        else snd pair : filterDataclassAttrs rest
 
-    compareLists leftValues rightValues =
-      case (leftValues, rightValues) of
-        ([], []) -> Right EQ
-        ([], _ : _) -> Right LT
-        (_ : _, []) -> Right GT
-        (leftValue : leftRest, rightValue : rightRest) ->
-          let firstCompare = compareSingleValue leftValue rightValue
-           in if firstCompare == EQ
-                then compareLists leftRest rightRest
-                else Right firstCompare
+    compareLists [] [] = Right EQ
+    compareLists [] (_ : _) = Right LT
+    compareLists (_ : _) [] = Right GT
+    compareLists (leftValue : leftRest) (rightValue : rightRest) =
+      let firstCompare = compareSingleValue leftValue rightValue
+       in if firstCompare == EQ
+            then compareLists leftRest rightRest
+            else Right firstCompare
 
-    compareSingleValue leftValue rightValue =
-      case (leftValue, rightValue) of
-        (IntValue {intValue = leftInt}, IntValue {intValue = rightInt}) -> compare leftInt rightInt
-        (FloatValue {floatValue = leftFloat}, FloatValue {floatValue = rightFloat}) -> compare leftFloat rightFloat
-        (IntValue {intValue = leftInt}, FloatValue {floatValue = rightFloat}) -> compare (fromIntegral leftInt :: Double) rightFloat
-        (FloatValue {floatValue = leftFloat}, IntValue {intValue = rightInt}) -> compare leftFloat (fromIntegral rightInt :: Double)
-        (StringValue {stringValue = leftString}, StringValue {stringValue = rightString}) -> compare leftString rightString
-        _ -> compare (show leftValue) (show rightValue)
+    compareSingleValue (IntValue {intValue = leftInt}) (IntValue {intValue = rightInt}) = compare leftInt rightInt
+    compareSingleValue (FloatValue {floatValue = leftFloat}) (FloatValue {floatValue = rightFloat}) = compare leftFloat rightFloat
+    compareSingleValue (IntValue {intValue = leftInt}) (FloatValue {floatValue = rightFloat}) = compare (fromIntegral leftInt :: Double) rightFloat
+    compareSingleValue (FloatValue {floatValue = leftFloat}) (IntValue {intValue = rightInt}) = compare leftFloat (fromIntegral rightInt :: Double)
+    compareSingleValue (StringValue {stringValue = leftString}) (StringValue {stringValue = rightString}) = compare leftString rightString
+    compareSingleValue leftValue rightValue = compare (show leftValue) (show rightValue)
 
     expectNumber _ _ IntValue {intValue = n} = Right (fromIntegral n)
     expectNumber _ _ FloatValue {floatValue = n} = Right n

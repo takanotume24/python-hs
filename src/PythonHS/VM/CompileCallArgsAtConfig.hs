@@ -1,10 +1,9 @@
 module PythonHS.VM.CompileCallArgsAtConfig (CompileCallArgsAtConfig (..)) where
 
 import PythonHS.AST.Expr (Expr)
-import PythonHS.Lexer.Position (Position)
-import PythonHS.VM.Instruction (Instruction)
+import PythonHS.VM.CompileExprResult (CompileExprResult)
 
 data CompileCallArgsAtConfig = CompileCallArgsAtConfig
-  { compileCallArgsAtCompileExpr :: Int -> Expr -> Either String ([Instruction], Int),
+  { compileCallArgsAtCompileExpr :: Int -> Expr -> Either String CompileExprResult,
     compileCallArgsAtArgs :: [Expr]
   }

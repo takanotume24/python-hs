@@ -3,11 +3,11 @@ module PythonHS.CLI.ProcessSubmission (processSubmission) where
 import PythonHS.AST.Program (Program (Program))
 import PythonHS.CLI.ProcessSubmissionConfig (ProcessSubmissionConfig (..))
 import PythonHS.CLI.SubmissionResult (SubmissionResult (..))
-import PythonHS.Evaluator.Env (Env)
 import PythonHS.Evaluator.EvalExpr (evalExpr)
 import PythonHS.Evaluator.EvalExprResult (EvalExprResult (..))
 import PythonHS.Evaluator.EvalStatements (evalStatements)
-import PythonHS.Evaluator.FuncEnv (FuncEnv)
+import PythonHS.Evaluator.EvalStmtResult (EvalStmtResult (..))
+import PythonHS.Evaluator.EvalStmtRet (EvalStmtRet (..))
 import PythonHS.Evaluator.ShowPos (showPos)
 import PythonHS.Evaluator.Value (Value (BreakValue, ContinueValue, NoneValue))
 import PythonHS.Evaluator.ValueToReplOutput (valueToReplOutput)
@@ -45,11 +45,11 @@ processSubmission config =
             Right (Program stmts) ->
               case evalStatements env fenv [] stmts of
                 Left err -> Left err
-                Right (env', fenv', outs, mret) ->
+                Right EvalStmtResult {evalStmtResultEnv = env', evalStmtResultFuncEnv = fenv', evalStmtResultOutputs = outs, evalStmtResultRet = mret} ->
                   case mret of
-                    Just (BreakValue, pos) -> Left $ "Break outside loop at " ++ showPos pos
-                    Just (ContinueValue, pos) -> Left $ "Continue outside loop at " ++ showPos pos
-                    Just (_, pos) -> Left $ "Return outside function at " ++ showPos pos
+                    Just EvalStmtRet {evalStmtRetValue = BreakValue, evalStmtRetPos = pos} -> Left $ "Break outside loop at " ++ showPos pos
+                    Just EvalStmtRet {evalStmtRetValue = ContinueValue, evalStmtRetPos = pos} -> Left $ "Continue outside loop at " ++ showPos pos
+                    Just EvalStmtRet {evalStmtRetPos = pos} -> Left $ "Return outside function at " ++ showPos pos
                     Nothing -> Right SubmissionResult {submissionEnv = env', submissionFuncEnv = fenv', submissionOutputs = outs}
   where
     parseReplExpr tokens =

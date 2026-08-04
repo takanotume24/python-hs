@@ -4,16 +4,19 @@ import PythonHS.AST.DictEntry (DictEntry (..))
 import PythonHS.AST.Expr (Expr (..))
 import PythonHS.AST.MappingPatternEntry (MappingPatternEntry (..))
 import PythonHS.AST.Pattern (Pattern (..))
+import PythonHS.Evaluator.DictPair (DictPair (..))
 import PythonHS.Evaluator.Value (Value (..))
+import PythonHS.VM.MappingMatchResult (MappingMatchResult (..))
 import PythonHS.VM.MatchPatternBindingsConfig (MatchPatternBindingsConfig (..))
+import PythonHS.VM.PatternBinding (PatternBinding (..))
 
-matchPatternBindings :: MatchPatternBindingsConfig -> Maybe [(String, Value)]
+matchPatternBindings :: MatchPatternBindingsConfig -> Maybe [PatternBinding]
 matchPatternBindings config = case patternValue of
   WildcardPattern {} -> Just []
-  CapturePattern {capturePatternName = name} -> Just [(name, subjectValue)]
+  CapturePattern {capturePatternName = name} -> Just [PatternBinding {patternBindingName = name, patternBindingValue = subjectValue}]
   AsPattern {asPatternInner = innerPattern, asPatternAlias = aliasName} -> do
     innerBindings <- matchPatternBindings MatchPatternBindingsConfig {matchPatternBindingsPattern = innerPattern, matchPatternBindingsSubject = subjectValue}
-    Just (innerBindings ++ [(aliasName, subjectValue)])
+    Just (innerBindings ++ [PatternBinding {patternBindingName = aliasName, patternBindingValue = subjectValue}])
   ValuePattern {valuePatternExpr = expr} ->
     case exprToValue expr of
       Just expected -> if expected == subjectValue then Just [] else Nothing
@@ -30,12 +33,14 @@ matchPatternBindings config = case patternValue of
     case subjectValue of
       DictValue {dictValuePairs = entries} ->
         case matchMappingPairs pairs entries [] [] of
-          Just (bindings, matchedKeys) ->
-            case maybeRestCapture of
-              Nothing -> Just bindings
-              Just restName ->
-                let restEntries = filter (\(k, _) -> notElem k matchedKeys) entries
-                 in Just (bindings ++ [(restName, DictValue {dictValuePairs = restEntries})])
+          Just mappingResult ->
+            let bindings = mappingMatchResultBindings mappingResult
+                matchedKeys = mappingMatchResultMatchedKeys mappingResult
+             in case maybeRestCapture of
+                  Nothing -> Just bindings
+                  Just restName ->
+                    let restEntries = filter (\entry -> notElem (dictPairKey entry) matchedKeys) entries
+                     in Just (bindings ++ [PatternBinding {patternBindingName = restName, patternBindingValue = DictValue {dictValuePairs = restEntries}}])
           Nothing -> Nothing
       _ -> Nothing
   where
@@ -53,7 +58,7 @@ matchPatternBindings config = case patternValue of
                 else Nothing
             Just restName ->
               let restValues = drop (length items) values
-               in Just (prefixBindings ++ [(restName, ListValue {listValueItems = restValues})])
+               in Just (prefixBindings ++ [PatternBinding {patternBindingName = restName, patternBindingValue = ListValue {listValueItems = restValues}}])
     firstMatch [] = Nothing
     firstMatch (current : rest) =
       case matchPatternBindings MatchPatternBindingsConfig {matchPatternBindingsPattern = current, matchPatternBindingsSubject = subjectValue} of
@@ -66,7 +71,7 @@ matchPatternBindings config = case patternValue of
       matchSequence restPatterns restValues (acc ++ nextBindings)
     matchSequence _ _ _ = Nothing
 
-    matchMappingPairs [] _ acc matchedKeys = Just (acc, matchedKeys)
+    matchMappingPairs [] _ acc matchedKeys = Just MappingMatchResult {mappingMatchResultBindings = acc, mappingMatchResultMatchedKeys = matchedKeys}
     matchMappingPairs (MappingPatternEntry {mappingPatternEntryKey = keyExpr, mappingPatternEntryValue = valuePattern} : restPairs) entries acc matchedKeys = do
       keyValue <- exprToValue keyExpr
       subjectValueAtKey <- lookupKey keyValue entries
@@ -74,8 +79,8 @@ matchPatternBindings config = case patternValue of
       matchMappingPairs restPairs entries (acc ++ newBindings) (matchedKeys ++ [keyValue])
 
     lookupKey _ [] = Nothing
-    lookupKey key ((k, v) : rest)
-      | key == k = Just v
+    lookupKey key (entry : rest)
+      | key == dictPairKey entry = Just (dictPairValue entry)
       | otherwise = lookupKey key rest
 
     exprToValue IntegerExpr {integerExprValue = n} = Just (IntValue {intValue = n})
@@ -98,4 +103,4 @@ matchPatternBindings config = case patternValue of
       keyValue <- exprToValue keyExpr
       valueValue <- exprToValue valueExpr
       restPairs <- mapPairs rest
-      Just ((keyValue, valueValue) : restPairs)
+      Just (DictPair {dictPairKey = keyValue, dictPairValue = valueValue} : restPairs)

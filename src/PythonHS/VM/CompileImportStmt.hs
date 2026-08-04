@@ -3,11 +3,12 @@ module PythonHS.VM.CompileImportStmt (compileImportStmt) where
 import PythonHS.AST.FromImportEntry (FromImportEntry (..))
 import PythonHS.AST.ImportEntry (ImportEntry (..))
 import PythonHS.AST.Stmt (Stmt (..))
+import PythonHS.Evaluator.ModuleAttr (ModuleAttr (..))
 import PythonHS.Evaluator.ShowPos (showPos)
 import PythonHS.Evaluator.Value (Value (..))
-import PythonHS.Lexer.Position (Position)
 import PythonHS.VM.CompileExprResult (CompileExprResult (..))
 import PythonHS.VM.CompileImportStmtConfig (CompileImportStmtConfig (..))
+import PythonHS.VM.CompiledCallArg (CompiledCallArg (..))
 import PythonHS.VM.Instruction (Instruction (..))
 
 compileImportStmt :: CompileImportStmtConfig -> Either String CompileExprResult
@@ -91,7 +92,7 @@ compileImportStmt config = case stmt of
               Nothing -> name
        in if name == "pi" || name == "e"
             then
-              let callArgs = [([LoadName {loadNameName = moduleAlias, loadNamePos = pos}], Nothing, pos)]
+              let callArgs = [CompiledCallArg {compiledCallArgCode = [LoadName {loadNameName = moduleAlias, loadNamePos = pos}], compiledCallArgKeyword = Nothing, compiledCallArgPos = pos}]
                in Right
                     ( CompileExprResult
                         { compileExprResultCode = [CallFunction {callFunctionName = name, callFunctionArgs = callArgs, callFunctionPos = pos}, StoreName {storeNameName = targetName}],
@@ -102,7 +103,7 @@ compileImportStmt config = case stmt of
               if isMathUnaryFunction name
                 then
                   let wrapperParam = "__python_hs_import_arg"
-                      callArgs = [([LoadName {loadNameName = moduleAlias, loadNamePos = pos}], Nothing, pos), ([LoadName {loadNameName = wrapperParam, loadNamePos = pos}], Nothing, pos)]
+                      callArgs = [CompiledCallArg {compiledCallArgCode = [LoadName {loadNameName = moduleAlias, loadNamePos = pos}], compiledCallArgKeyword = Nothing, compiledCallArgPos = pos}, CompiledCallArg {compiledCallArgCode = [LoadName {loadNameName = wrapperParam, loadNamePos = pos}], compiledCallArgKeyword = Nothing, compiledCallArgPos = pos}]
                       wrapperBody = [CallFunction {callFunctionName = name, callFunctionArgs = callArgs, callFunctionPos = pos}, ReturnTop]
                    in Right
                         ( CompileExprResult
@@ -154,7 +155,7 @@ compileImportStmt config = case stmt of
 
     buildAttrs _ [] = []
     buildAttrs prefix [leaf] =
-      [(leaf, ModuleValue {moduleValueName = prefix ++ "." ++ leaf, moduleValueAttrs = []})]
+      [ModuleAttr {moduleAttrName = leaf, moduleAttrValue = ModuleValue {moduleValueName = prefix ++ "." ++ leaf, moduleValueAttrs = []}}]
     buildAttrs prefix (x : xs) =
       let nextPrefix = prefix ++ "." ++ x
-       in [(x, ModuleValue {moduleValueName = nextPrefix, moduleValueAttrs = buildAttrs nextPrefix xs})]
+       in [ModuleAttr {moduleAttrName = x, moduleAttrValue = ModuleValue {moduleValueName = nextPrefix, moduleValueAttrs = buildAttrs nextPrefix xs}}]

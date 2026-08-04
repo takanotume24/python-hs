@@ -3,11 +3,12 @@ module PythonHS.VM.BindPatternCaptures (bindPatternCaptures) where
 import Data.Map.Strict qualified as Map
 import Data.Set qualified as Set
 import PythonHS.Evaluator.Value (Value)
+import PythonHS.VM.PatternBinding (PatternBinding (..))
 import PythonHS.VM.VMScopeContext (VMScopeContext (vmScopeContextGlobalDecls, vmScopeContextIsTopLevel))
 
 bindPatternCaptures ::
   VMScopeContext ->
-  [(String, Value)] ->
+  [PatternBinding] ->
   Map.Map String Value ->
   Map.Map String Value ->
   (Map.Map String Value, Map.Map String Value)
@@ -17,12 +18,14 @@ bindPatternCaptures scopeCtx captures globalsEnv localEnv =
     isTopLevel = vmScopeContextIsTopLevel scopeCtx
     globalDecls = vmScopeContextGlobalDecls scopeCtx
     apply [] globals locals = (globals, locals)
-    apply ((name, value) : rest) globals locals =
-      if isTopLevel || Set.member name globalDecls
-        then
-          let newGlobals = Map.insert name value globals
-              newLocals = if isTopLevel then newGlobals else locals
-           in apply rest newGlobals newLocals
-        else
-          let newLocals = Map.insert name value locals
-           in apply rest globals newLocals
+    apply (capture : rest) globals locals =
+      let name = patternBindingName capture
+          value = patternBindingValue capture
+       in if isTopLevel || Set.member name globalDecls
+            then
+              let newGlobals = Map.insert name value globals
+                  newLocals = if isTopLevel then newGlobals else locals
+               in apply rest newGlobals newLocals
+            else
+              let newLocals = Map.insert name value locals
+               in apply rest globals newLocals

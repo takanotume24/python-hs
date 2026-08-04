@@ -1,6 +1,7 @@
 module PythonHS.Runner.RunnerCaseCoverageReport (runnerCaseCoverageReport) where
 
 import Data.List (sort)
+import PythonHS.Runner.QuotedLiteralResult (QuotedLiteralResult (..))
 import PythonHS.Runner.RunnerCaseCoverageReportConfig (RunnerCaseCoverageReportConfig (..))
 
 runnerCaseCoverageReport :: RunnerCaseCoverageReportConfig -> IO String
@@ -27,7 +28,7 @@ runnerCaseCoverageReport config = do
             Just afterPrefix ->
               case takeQuotedLiteral afterPrefix of
                 Nothing -> []
-                Just (literal, rest) -> literal : go rest
+                Just result -> quotedLiteralResultLiteral result : go (quotedLiteralResultRest result)
 
         findPrefix needle haystack
           | startsWith needle haystack = Just (drop (length needle) haystack)
@@ -45,7 +46,8 @@ runnerCaseCoverageReport config = do
       parseLiteral text []
       where
         parseLiteral [] _ = Nothing
-        parseLiteral ('"' : rest) acc = Just (reverse acc, rest)
+        parseLiteral ('"' : rest) acc =
+          Just QuotedLiteralResult {quotedLiteralResultLiteral = reverse acc, quotedLiteralResultRest = rest}
         parseLiteral ('\\' : escaped : rest) acc = parseLiteral rest (escaped : '\\' : acc)
         parseLiteral (_ : []) _ = Nothing
         parseLiteral (ch : rest) acc = parseLiteral rest (ch : acc)
@@ -58,13 +60,16 @@ runnerCaseCoverageReport config = do
             x : xs -> x : collapse (dropWhile (== x) xs)
 
     listDifference left right =
-      case (left, right) of
-        ([], _) -> []
-        (items, []) -> items
-        (l : ls, r : rs)
-          | l == r -> listDifference ls rs
-          | l < r -> l : listDifference ls (r : rs)
-          | otherwise -> listDifference (l : ls) rs
+      case left of
+        [] -> []
+        items -> case right of
+          [] -> items
+          (r : rs) ->
+            case left of
+              (l : ls)
+                | l == r -> listDifference ls rs
+                | l < r -> l : listDifference ls (r : rs)
+                | otherwise -> listDifference (l : ls) rs
 
     renderReport missingParity missingVm =
       unlines

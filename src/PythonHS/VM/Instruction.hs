@@ -4,6 +4,9 @@ import PythonHS.AST.BinaryOperator (BinaryOperator)
 import PythonHS.AST.Pattern (Pattern)
 import PythonHS.Evaluator.Value (Value)
 import PythonHS.Lexer.Position (Position)
+import PythonHS.VM.CompiledCallArg (CompiledCallArg)
+import PythonHS.VM.CompiledComprehensionClause (CompiledComprehensionClause)
+import PythonHS.VM.CompiledDefaultCode (CompiledDefaultCode)
 
 data Instruction
   = PushConst {pushConstValue :: Value}
@@ -48,13 +51,13 @@ data Instruction
   | DefineFunction
       { defineFunctionName :: String,
         defineFunctionParams :: [String],
-        defineFunctionDefaultCodes :: [(String, [Instruction])],
+        defineFunctionDefaultCodes :: [CompiledDefaultCode Instruction],
         defineFunctionCode :: [Instruction]
       }
   | CreateLambda
       { createLambdaName :: String,
         createLambdaParams :: [String],
-        createLambdaDefaultCodes :: [(String, [Instruction])],
+        createLambdaDefaultCodes :: [CompiledDefaultCode Instruction],
         createLambdaCode :: [Instruction]
       }
   | DefineClass
@@ -63,17 +66,17 @@ data Instruction
         defineClassMethods :: [(String, String)]
       }
   | BuildListComprehension
-      { buildListComprehensionClauses :: [([String], [Instruction], [[Instruction]])],
+      { buildListComprehensionClauses :: [CompiledComprehensionClause Instruction],
         buildListComprehensionValueCode :: [Instruction],
         buildListComprehensionPos :: Position
       }
   | CallFunction
       { callFunctionName :: String,
-        callFunctionArgs :: [([Instruction], Maybe String, Position)],
+        callFunctionArgs :: [CompiledCallArg Instruction],
         callFunctionPos :: Position
       }
   | CallValueFunction
-      { callValueFunctionArgs :: [([Instruction], Maybe String, Position)],
+      { callValueFunctionArgs :: [CompiledCallArg Instruction],
         callValueFunctionPos :: Position
       }
   | UnpackToNames

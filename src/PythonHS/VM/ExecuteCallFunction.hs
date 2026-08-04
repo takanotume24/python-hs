@@ -10,6 +10,7 @@ import PythonHS.VM.BindDefaults (bindDefaults)
 import PythonHS.VM.CallBuiltin (callBuiltin)
 import PythonHS.VM.CallBuiltinConfig (CallBuiltinConfig (..))
 import PythonHS.VM.CollectFunctionGlobalDecls (collectFunctionGlobalDecls)
+import PythonHS.VM.CompiledCallArg (CompiledCallArg (..))
 import PythonHS.VM.EnvState (EnvState (..))
 import PythonHS.VM.EvaluateBuiltinArgs (evaluateBuiltinArgs)
 import PythonHS.VM.EvaluateUserArgs (evaluateUserArgs)
@@ -19,7 +20,9 @@ import PythonHS.VM.ExecuteCallValueFunction (executeCallValueFunction)
 import PythonHS.VM.ExecuteCreateInstance (executeCreateInstance)
 import PythonHS.VM.FindMethodFunctionName (findMethodFunctionName)
 import PythonHS.VM.FirstKeywordArg (firstKeywordArg)
+import PythonHS.VM.FunctionInfo (FunctionInfo (..))
 import PythonHS.VM.Instruction (Instruction)
+import PythonHS.VM.KeywordArgInfo (KeywordArgInfo (..))
 import PythonHS.VM.LookupName (lookupName)
 import PythonHS.VM.LoopState (LoopState (..))
 import PythonHS.VM.ModulePrefixFor (modulePrefixFor)
@@ -29,21 +32,21 @@ executeCallFunction ::
   (VMState -> Either String VMState) ->
   Bool ->
   String ->
-  [([Instruction], Maybe String, Position)] ->
+  [CompiledCallArg Instruction] ->
   Position ->
   [Value] ->
   Map.Map String Value ->
   Map.Map String Value ->
-  Map.Map String ([String], [(String, [Instruction])], [Instruction]) ->
+  Map.Map String FunctionInfo ->
   [String] ->
-  Either String ([Value], Map.Map String Value, Map.Map String Value, Map.Map String ([String], [(String, [Instruction])], [Instruction]), [String])
+  Either String ([Value], Map.Map String Value, Map.Map String Value, Map.Map String FunctionInfo, [String])
 executeCallFunction execute isTopLevel fname compiledArgs pos stack globalsEnv localEnv functions outputs =
   case lookupName fname localEnv globalsEnv of
     Just callableValue@(FunctionRefValue _ _) ->
       executeCallValueFunction execute isTopLevel compiledArgs pos (callableValue : stack) globalsEnv localEnv functions outputs
     _ ->
       case Map.lookup fname functions of
-        Just (params, defaultCodes, functionCode) -> do
+        Just (FunctionInfo params defaultCodes functionCode) -> do
           (argValues, argKinds, globalsAfterArgs, functionsAfterArgs, outputsAfterArgs) <-
             evaluateUserArgs execute fname pos localEnv compiledArgs globalsEnv functions outputs False Set.empty [] []
           initialLocals <- bindCallArguments fname pos params argValues argKinds
@@ -73,9 +76,9 @@ executeCallFunction execute isTopLevel fname compiledArgs pos stack globalsEnv l
           Right (returnValue : stack, envGlobals (vmEnv finalState), newLocalEnv, envFunctions (vmEnv finalState), vmOutputs finalState)
         Nothing ->
           case firstKeywordArg compiledArgs of
-            Just (_, argPos)
+            Just kwInfo
               | isBuiltinName fname ->
-                  Left ("Argument error: keyword arguments are not supported for builtin " ++ fname ++ " at " ++ showPos argPos)
+                  Left ("Argument error: keyword arguments are not supported for builtin " ++ fname ++ " at " ++ showPos (keywordArgInfoPos kwInfo))
             _ ->
               case evaluateBuiltinArgs execute localEnv compiledArgs globalsEnv functions outputs [] of
                 Left err -> Left err
@@ -102,9 +105,9 @@ executeCallFunction execute isTopLevel fname compiledArgs pos stack globalsEnv l
         Just result -> result
         Nothing ->
           case firstKeywordArg compiledArgs of
-            Just (_, argPos)
+            Just kwInfo
               | isBuiltinName fname ->
-                  Left ("Argument error: keyword arguments are not supported for builtin " ++ fname ++ " at " ++ showPos argPos)
+                  Left ("Argument error: keyword arguments are not supported for builtin " ++ fname ++ " at " ++ showPos (keywordArgInfoPos kwInfo))
             Nothing ->
               case callBuiltin CallBuiltinConfig {callBuiltinName = fname, callBuiltinArgs = args, callBuiltinPos = pos} of
                 Just (Left err) -> Left err

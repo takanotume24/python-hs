@@ -13,12 +13,21 @@ evalExprBinary input = case op of
   AddOperator -> do
     EvalExprResult {evalExprResultValue = leftVal, evalExprResultOutputs = leftOuts, evalExprResultEnv = envAfterLeft} <- evalExprFn env fenv leftExpr
     EvalExprResult {evalExprResultValue = rightVal, evalExprResultOutputs = rightOuts, evalExprResultEnv = envAfterRight} <- evalExprFn envAfterLeft fenv rightExpr
-    case (leftVal, rightVal) of
-      (IntValue {intValue = leftInt}, IntValue {intValue = rightInt}) -> Right (EvalExprResult {evalExprResultValue = IntValue {intValue = leftInt + rightInt}, evalExprResultOutputs = leftOuts ++ rightOuts, evalExprResultEnv = envAfterRight})
-      (FloatValue {floatValue = leftFloat}, FloatValue {floatValue = rightFloat}) -> Right (EvalExprResult {evalExprResultValue = FloatValue {floatValue = leftFloat + rightFloat}, evalExprResultOutputs = leftOuts ++ rightOuts, evalExprResultEnv = envAfterRight})
-      (IntValue {intValue = leftInt}, FloatValue {floatValue = rightFloat}) -> Right (EvalExprResult {evalExprResultValue = FloatValue {floatValue = fromIntegral leftInt + rightFloat}, evalExprResultOutputs = leftOuts ++ rightOuts, evalExprResultEnv = envAfterRight})
-      (FloatValue {floatValue = leftFloat}, IntValue {intValue = rightInt}) -> Right (EvalExprResult {evalExprResultValue = FloatValue {floatValue = leftFloat + fromIntegral rightInt}, evalExprResultOutputs = leftOuts ++ rightOuts, evalExprResultEnv = envAfterRight})
-      (StringValue {stringValue = leftString}, StringValue {stringValue = rightString}) -> Right (EvalExprResult {evalExprResultValue = StringValue {stringValue = leftString ++ rightString}, evalExprResultOutputs = leftOuts ++ rightOuts, evalExprResultEnv = envAfterRight})
+    case leftVal of
+      IntValue {intValue = leftInt} ->
+        case rightVal of
+          IntValue {intValue = rightInt} -> Right (EvalExprResult {evalExprResultValue = IntValue {intValue = leftInt + rightInt}, evalExprResultOutputs = leftOuts ++ rightOuts, evalExprResultEnv = envAfterRight})
+          FloatValue {floatValue = rightFloat} -> Right (EvalExprResult {evalExprResultValue = FloatValue {floatValue = fromIntegral leftInt + rightFloat}, evalExprResultOutputs = leftOuts ++ rightOuts, evalExprResultEnv = envAfterRight})
+          _ -> Left $ "Type error: + expects int+int or string+string at " ++ showPos pos
+      FloatValue {floatValue = leftFloat} ->
+        case rightVal of
+          FloatValue {floatValue = rightFloat} -> Right (EvalExprResult {evalExprResultValue = FloatValue {floatValue = leftFloat + rightFloat}, evalExprResultOutputs = leftOuts ++ rightOuts, evalExprResultEnv = envAfterRight})
+          IntValue {intValue = rightInt} -> Right (EvalExprResult {evalExprResultValue = FloatValue {floatValue = leftFloat + fromIntegral rightInt}, evalExprResultOutputs = leftOuts ++ rightOuts, evalExprResultEnv = envAfterRight})
+          _ -> Left $ "Type error: + expects int+int or string+string at " ++ showPos pos
+      StringValue {stringValue = leftString} ->
+        case rightVal of
+          StringValue {stringValue = rightString} -> Right (EvalExprResult {evalExprResultValue = StringValue {stringValue = leftString ++ rightString}, evalExprResultOutputs = leftOuts ++ rightOuts, evalExprResultEnv = envAfterRight})
+          _ -> Left $ "Type error: + expects int+int or string+string at " ++ showPos pos
       _ -> Left $ "Type error: + expects int+int or string+string at " ++ showPos pos
   SubtractOperator -> evalNumericBinary env fenv leftExpr rightExpr pos (\leftNumber rightNumber -> leftNumber - rightNumber)
   MultiplyOperator -> evalNumericBinary env fenv leftExpr rightExpr pos (\leftNumber rightNumber -> leftNumber * rightNumber)
@@ -65,8 +74,11 @@ evalExprBinary input = case op of
       EvalExprResult {evalExprResultValue = rightVal, evalExprResultOutputs = rightOuts, evalExprResultEnv = envAfterRight} <- evalExprFn envAfterLeft currentFenv re
       leftNumber <- expectNumber context pos' leftVal
       rightNumber <- expectNumber context pos' rightVal
-      case (leftVal, rightVal) of
-        (IntValue {}, IntValue {}) -> Right (EvalExprResult {evalExprResultValue = IntValue {intValue = truncate (opFn leftNumber rightNumber)}, evalExprResultOutputs = leftOuts ++ rightOuts, evalExprResultEnv = envAfterRight})
+      case leftVal of
+        IntValue {} ->
+          case rightVal of
+            IntValue {} -> Right (EvalExprResult {evalExprResultValue = IntValue {intValue = truncate (opFn leftNumber rightNumber)}, evalExprResultOutputs = leftOuts ++ rightOuts, evalExprResultEnv = envAfterRight})
+            _ -> Right (EvalExprResult {evalExprResultValue = FloatValue {floatValue = opFn leftNumber rightNumber}, evalExprResultOutputs = leftOuts ++ rightOuts, evalExprResultEnv = envAfterRight})
         _ -> Right (EvalExprResult {evalExprResultValue = FloatValue {floatValue = opFn leftNumber rightNumber}, evalExprResultOutputs = leftOuts ++ rightOuts, evalExprResultEnv = envAfterRight})
       where
         context = case op of SubtractOperator -> "-"; MultiplyOperator -> "*"; _ -> ""
@@ -90,8 +102,11 @@ evalExprBinary input = case op of
         else
           let quotient = leftNumber / rightNumber
               floored = fromIntegral (floor quotient :: Int)
-           in case (leftVal, rightVal) of
-                (IntValue {}, IntValue {}) -> Right (EvalExprResult {evalExprResultValue = IntValue {intValue = floor quotient}, evalExprResultOutputs = leftOuts ++ rightOuts, evalExprResultEnv = envAfterRight})
+           in case leftVal of
+                IntValue {} ->
+                  case rightVal of
+                    IntValue {} -> Right (EvalExprResult {evalExprResultValue = IntValue {intValue = floor quotient}, evalExprResultOutputs = leftOuts ++ rightOuts, evalExprResultEnv = envAfterRight})
+                    _ -> Right (EvalExprResult {evalExprResultValue = FloatValue {floatValue = floored}, evalExprResultOutputs = leftOuts ++ rightOuts, evalExprResultEnv = envAfterRight})
                 _ -> Right (EvalExprResult {evalExprResultValue = FloatValue {floatValue = floored}, evalExprResultOutputs = leftOuts ++ rightOuts, evalExprResultEnv = envAfterRight})
 
     evalModulo currentEnv currentFenv le re pos' = do
@@ -105,25 +120,42 @@ evalExprBinary input = case op of
           let quotient = leftNumber / rightNumber
               floored = fromIntegral (floor quotient :: Int)
               remainder = leftNumber - rightNumber * floored
-           in case (leftVal, rightVal) of
-                (IntValue {intValue = leftInt}, IntValue {intValue = rightInt}) -> Right (EvalExprResult {evalExprResultValue = IntValue {intValue = leftInt `mod` rightInt}, evalExprResultOutputs = leftOuts ++ rightOuts, evalExprResultEnv = envAfterRight})
+           in case leftVal of
+                IntValue {intValue = leftInt} ->
+                  case rightVal of
+                    IntValue {intValue = rightInt} -> Right (EvalExprResult {evalExprResultValue = IntValue {intValue = leftInt `mod` rightInt}, evalExprResultOutputs = leftOuts ++ rightOuts, evalExprResultEnv = envAfterRight})
+                    _ -> Right (EvalExprResult {evalExprResultValue = FloatValue {floatValue = remainder}, evalExprResultOutputs = leftOuts ++ rightOuts, evalExprResultEnv = envAfterRight})
                 _ -> Right (EvalExprResult {evalExprResultValue = FloatValue {floatValue = remainder}, evalExprResultOutputs = leftOuts ++ rightOuts, evalExprResultEnv = envAfterRight})
 
     evalEqComparison currentEnv currentFenv le re pos' = do
       EvalExprResult {evalExprResultValue = leftVal, evalExprResultOutputs = leftOuts, evalExprResultEnv = envAfterLeft} <- evalExprFn currentEnv currentFenv le
       EvalExprResult {evalExprResultValue = rightVal, evalExprResultOutputs = rightOuts, evalExprResultEnv = envAfterRight} <- evalExprFn envAfterLeft currentFenv re
-      case (leftVal, rightVal) of
-        (IntValue {intValue = leftInt}, FloatValue {floatValue = rightFloat}) -> Right (EvalExprResult {evalExprResultValue = IntValue {intValue = if (fromIntegral leftInt :: Double) == rightFloat then 1 else 0}, evalExprResultOutputs = leftOuts ++ rightOuts, evalExprResultEnv = envAfterRight})
-        (FloatValue {floatValue = leftFloat}, IntValue {intValue = rightInt}) -> Right (EvalExprResult {evalExprResultValue = IntValue {intValue = if leftFloat == (fromIntegral rightInt :: Double) then 1 else 0}, evalExprResultOutputs = leftOuts ++ rightOuts, evalExprResultEnv = envAfterRight})
-        _ -> Right (EvalExprResult {evalExprResultValue = IntValue {intValue = if leftVal == rightVal then 1 else 0}, evalExprResultOutputs = leftOuts ++ rightOuts, evalExprResultEnv = envAfterRight})
+      let fallback = Right (EvalExprResult {evalExprResultValue = IntValue {intValue = if leftVal == rightVal then 1 else 0}, evalExprResultOutputs = leftOuts ++ rightOuts, evalExprResultEnv = envAfterRight})
+       in case leftVal of
+            IntValue {intValue = leftInt} ->
+              case rightVal of
+                FloatValue {floatValue = rightFloat} -> Right (EvalExprResult {evalExprResultValue = IntValue {intValue = if (fromIntegral leftInt :: Double) == rightFloat then 1 else 0}, evalExprResultOutputs = leftOuts ++ rightOuts, evalExprResultEnv = envAfterRight})
+                _ -> fallback
+            FloatValue {floatValue = leftFloat} ->
+              case rightVal of
+                IntValue {intValue = rightInt} -> Right (EvalExprResult {evalExprResultValue = IntValue {intValue = if leftFloat == (fromIntegral rightInt :: Double) then 1 else 0}, evalExprResultOutputs = leftOuts ++ rightOuts, evalExprResultEnv = envAfterRight})
+                _ -> fallback
+            _ -> fallback
 
     evalNotEqComparison currentEnv currentFenv le re pos' = do
       EvalExprResult {evalExprResultValue = leftVal, evalExprResultOutputs = leftOuts, evalExprResultEnv = envAfterLeft} <- evalExprFn currentEnv currentFenv le
       EvalExprResult {evalExprResultValue = rightVal, evalExprResultOutputs = rightOuts, evalExprResultEnv = envAfterRight} <- evalExprFn envAfterLeft currentFenv re
-      case (leftVal, rightVal) of
-        (IntValue {intValue = leftInt}, FloatValue {floatValue = rightFloat}) -> Right (EvalExprResult {evalExprResultValue = IntValue {intValue = if (fromIntegral leftInt :: Double) /= rightFloat then 1 else 0}, evalExprResultOutputs = leftOuts ++ rightOuts, evalExprResultEnv = envAfterRight})
-        (FloatValue {floatValue = leftFloat}, IntValue {intValue = rightInt}) -> Right (EvalExprResult {evalExprResultValue = IntValue {intValue = if leftFloat /= (fromIntegral rightInt :: Double) then 1 else 0}, evalExprResultOutputs = leftOuts ++ rightOuts, evalExprResultEnv = envAfterRight})
-        _ -> Right (EvalExprResult {evalExprResultValue = IntValue {intValue = if leftVal /= rightVal then 1 else 0}, evalExprResultOutputs = leftOuts ++ rightOuts, evalExprResultEnv = envAfterRight})
+      let fallback = Right (EvalExprResult {evalExprResultValue = IntValue {intValue = if leftVal /= rightVal then 1 else 0}, evalExprResultOutputs = leftOuts ++ rightOuts, evalExprResultEnv = envAfterRight})
+       in case leftVal of
+            IntValue {intValue = leftInt} ->
+              case rightVal of
+                FloatValue {floatValue = rightFloat} -> Right (EvalExprResult {evalExprResultValue = IntValue {intValue = if (fromIntegral leftInt :: Double) /= rightFloat then 1 else 0}, evalExprResultOutputs = leftOuts ++ rightOuts, evalExprResultEnv = envAfterRight})
+                _ -> fallback
+            FloatValue {floatValue = leftFloat} ->
+              case rightVal of
+                IntValue {intValue = rightInt} -> Right (EvalExprResult {evalExprResultValue = IntValue {intValue = if leftFloat /= (fromIntegral rightInt :: Double) then 1 else 0}, evalExprResultOutputs = leftOuts ++ rightOuts, evalExprResultEnv = envAfterRight})
+                _ -> fallback
+            _ -> fallback
 
     evalNumericComparison currentEnv currentFenv le re pos' context cmp = do
       EvalExprResult {evalExprResultValue = leftVal, evalExprResultOutputs = leftOuts, evalExprResultEnv = envAfterLeft} <- evalExprFn currentEnv currentFenv le

@@ -1,8 +1,8 @@
 module PythonHS.VM.CallStdlibBuiltin (callStdlibBuiltin) where
 
+import PythonHS.Evaluator.ModuleAttr (ModuleAttr (..))
 import PythonHS.Evaluator.ShowPos (showPos)
 import PythonHS.Evaluator.Value (Value (..))
-import PythonHS.Lexer.Position (Position)
 import PythonHS.VM.CallStdlibBuiltinConfig (CallStdlibBuiltinConfig (..))
 
 callStdlibBuiltin :: CallStdlibBuiltinConfig -> Maybe (Either String Value)
@@ -31,8 +31,8 @@ callStdlibBuiltin config = case name of
       case values of
         [ModuleValue {moduleValueName = moduleName}, StringValue {stringValue = s}]
           | moduleName == "json" ->
-              case reads s of
-                [(n, "")] -> Right (IntValue {intValue = n})
+              case filter (null . snd) (reads s) of
+                [parsed] -> Right (IntValue {intValue = fst parsed})
                 _ -> Left ("Value error: loads expects integer JSON literal at " ++ showPos pos)
         [ModuleValue {}, _] -> Left ("Type error: loads expects string at " ++ showPos pos)
         [_, _] -> Left ("Type error: loads expects json module receiver at " ++ showPos pos)
@@ -65,9 +65,9 @@ callStdlibBuiltin config = case name of
         [obj, StringValue {stringValue = attrName}] ->
           case obj of
             ModuleValue {moduleValueAttrs = attrs} ->
-              case lookup attrName attrs of
-                Just value -> Right value
-                Nothing -> Left ("Attribute error: module has no attribute '" ++ attrName ++ "' at " ++ showPos attrPos)
+              case filter (\attr -> moduleAttrName attr == attrName) attrs of
+                (attr : _) -> Right (moduleAttrValue attr)
+                [] -> Left ("Attribute error: module has no attribute '" ++ attrName ++ "' at " ++ showPos attrPos)
             _ -> Left ("Type error: getattr expects module object at " ++ showPos attrPos)
         [_, _] -> Left ("Type error: getattr expects string attribute name at " ++ showPos attrPos)
         _ -> Left ("Argument count mismatch when calling getattr at " ++ showPos attrPos)

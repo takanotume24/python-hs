@@ -1,5 +1,6 @@
 module PythonHS.Evaluator.ValueToReplOutput (valueToReplOutput) where
 
+import PythonHS.Evaluator.DictPair (DictPair (..))
 import PythonHS.Evaluator.Value (Value (..))
 
 valueToReplOutput :: Value -> String
@@ -19,7 +20,7 @@ valueToReplOutput value =
     BreakValue -> "<break>"
     ContinueValue -> "<continue>"
   where
-    pairToOutput (key, itemValue) = valueToReplOutput key ++ ": " ++ valueToReplOutput itemValue
+    pairToOutput pair = valueToReplOutput (dictPairKey pair) ++ ": " ++ valueToReplOutput (dictPairValue pair)
 
     joinWithCommaSpace [] = ""
     joinWithCommaSpace [x] = x

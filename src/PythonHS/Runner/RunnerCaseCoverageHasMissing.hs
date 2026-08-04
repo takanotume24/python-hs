@@ -9,6 +9,9 @@ runnerCaseCoverageHasMissing report =
       case dropWhile (/= marker) (lines text) of
         _ : value : _ ->
           case reads value of
-            [(n, "")] -> n
+            [parsed] ->
+              if null (snd parsed)
+                then fst parsed
+                else 0
             _ -> 0
         _ -> 0

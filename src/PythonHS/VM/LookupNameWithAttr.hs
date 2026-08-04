@@ -1,6 +1,7 @@
 module PythonHS.VM.LookupNameWithAttr (lookupNameWithAttr) where
 
 import Data.Map.Strict qualified as Map
+import PythonHS.Evaluator.ModuleAttr (ModuleAttr (..))
 import PythonHS.Evaluator.Value (Value (ClassValue, FunctionRefValue, InstanceValue, ModuleValue))
 import PythonHS.VM.FindMethodFunctionName (findMethodFunctionName)
 import PythonHS.VM.LookupName (lookupName)
@@ -43,9 +44,9 @@ lookupNameWithAttr name localNow globalsNow =
                     Just functionName -> loadAttrPath (FunctionRefValue functionName []) restAttrs
                     Nothing -> Nothing
             ModuleValue moduleName moduleAttrs ->
-              case lookup attrName moduleAttrs of
-                Just attrValue -> loadAttrPath attrValue restAttrs
-                Nothing ->
+              case filter (\attr -> moduleAttrName attr == attrName) moduleAttrs of
+                (attr : _) -> loadAttrPath (moduleAttrValue attr) restAttrs
+                [] ->
                   let mappedName = modulePrefixFor (splitAttrPath moduleName) ++ attrName
                    in case lookupName mappedName localNow globalsNow of
                         Just attrValue -> loadAttrPath attrValue restAttrs

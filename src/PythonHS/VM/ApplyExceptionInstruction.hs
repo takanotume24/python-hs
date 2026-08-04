@@ -2,26 +2,27 @@ module PythonHS.VM.ApplyExceptionInstruction (applyExceptionInstruction) where
 
 import Data.Map.Strict qualified as Map
 import PythonHS.Evaluator.Value (Value (StringValue))
+import PythonHS.VM.ExceptionApplyResult (ExceptionApplyResult (..))
 import PythonHS.VM.ExecutePendingExceptionInstruction (executePendingExceptionInstruction)
 import PythonHS.VM.Instruction (Instruction (LoadPendingException, MatchExceptionType, PopExceptionHandler, PushExceptionHandler, PushFinallyHandler, PushWithHandler, RaisePendingError, RaisePendingException))
 
-applyExceptionInstruction :: Int -> Instruction -> [Value] -> Map.Map String Value -> [Int] -> Either String (Maybe String, Int, [Value], [Int])
+applyExceptionInstruction :: Int -> Instruction -> [Value] -> Map.Map String Value -> [Int] -> Either String ExceptionApplyResult
 applyExceptionInstruction ip instruction stack localEnv exceptionHandlers =
   case instruction of
     PushExceptionHandler handlerIp ->
-      Right (Nothing, ip + 1, stack, handlerIp : exceptionHandlers)
+      Right ExceptionApplyResult {exceptionApplyResultError = Nothing, exceptionApplyResultIp = ip + 1, exceptionApplyResultStack = stack, exceptionApplyResultHandlers = handlerIp : exceptionHandlers}
     PushFinallyHandler handlerIp ->
-      Right (Nothing, ip + 1, stack, encodeFinallyHandler handlerIp : exceptionHandlers)
+      Right ExceptionApplyResult {exceptionApplyResultError = Nothing, exceptionApplyResultIp = ip + 1, exceptionApplyResultStack = stack, exceptionApplyResultHandlers = encodeFinallyHandler handlerIp : exceptionHandlers}
     PushWithHandler handlerIp ->
-      Right (Nothing, ip + 1, stack, handlerIp : exceptionHandlers)
+      Right ExceptionApplyResult {exceptionApplyResultError = Nothing, exceptionApplyResultIp = ip + 1, exceptionApplyResultStack = stack, exceptionApplyResultHandlers = handlerIp : exceptionHandlers}
     PopExceptionHandler ->
       case exceptionHandlers of
-        _ : restHandlers -> Right (Nothing, ip + 1, stack, restHandlers)
+        _ : restHandlers -> Right ExceptionApplyResult {exceptionApplyResultError = Nothing, exceptionApplyResultIp = ip + 1, exceptionApplyResultStack = stack, exceptionApplyResultHandlers = restHandlers}
         [] -> Left "Runtime error: attempting to pop from empty exception handler stack"
     RaisePendingError ->
       case Map.lookup pendingFinallyErrorName localEnv of
-        Just (StringValue err) -> Right (Just err, ip, stack, exceptionHandlers)
-        _ -> Right (Nothing, ip + 1, stack, exceptionHandlers)
+        Just (StringValue err) -> Right ExceptionApplyResult {exceptionApplyResultError = Just err, exceptionApplyResultIp = ip, exceptionApplyResultStack = stack, exceptionApplyResultHandlers = exceptionHandlers}
+        _ -> Right ExceptionApplyResult {exceptionApplyResultError = Nothing, exceptionApplyResultIp = ip + 1, exceptionApplyResultStack = stack, exceptionApplyResultHandlers = exceptionHandlers}
     pendingInstruction@(LoadPendingException) -> runPending pendingInstruction
     pendingInstruction@(MatchExceptionType _) -> runPending pendingInstruction
     pendingInstruction@(RaisePendingException) -> runPending pendingInstruction
@@ -33,6 +34,6 @@ applyExceptionInstruction ip instruction stack localEnv exceptionHandlers =
     runPending pendingInstruction =
       case executePendingExceptionInstruction pendingExceptErrorName pendingInstruction stack localEnv of
         Left err -> Left err
-        Right (maybeErr, newStack) -> Right (maybeErr, ip + 1, newStack, exceptionHandlers)
+        Right result -> Right ExceptionApplyResult {exceptionApplyResultError = fst result, exceptionApplyResultIp = ip + 1, exceptionApplyResultStack = snd result, exceptionApplyResultHandlers = exceptionHandlers}
 
     encodeFinallyHandler handlerIp = negate (handlerIp + 1)

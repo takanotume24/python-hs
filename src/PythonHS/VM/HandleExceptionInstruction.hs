@@ -2,6 +2,7 @@ module PythonHS.VM.HandleExceptionInstruction (handleExceptionInstruction) where
 
 import PythonHS.VM.ApplyExceptionInstruction (applyExceptionInstruction)
 import PythonHS.VM.EnvState (EnvState (..))
+import PythonHS.VM.ExceptionApplyResult (ExceptionApplyResult (..))
 import PythonHS.VM.ExceptionState (ExceptionState (..))
 import PythonHS.VM.HandleExceptionInstructionConfig (HandleExceptionInstructionConfig (..))
 import PythonHS.VM.Instruction (Instruction (..))
@@ -21,6 +22,8 @@ handleExceptionInstruction config = case instruction of
     processExceptionInstruction =
       case applyExceptionInstruction (vmIp state) instruction (vmStack state) (envLocals (vmEnv state)) (exceptionHandlers (vmException state)) of
         Left err -> Left err
-        Right (Just err, _, _, _) -> Left err
-        Right (Nothing, nextIp, nextStack, nextHandlers) ->
-          execute state {vmIp = nextIp, vmStack = nextStack, vmException = (vmException state) {exceptionHandlers = nextHandlers}}
+        Right applyResult ->
+          case exceptionApplyResultError applyResult of
+            Just err -> Left err
+            Nothing ->
+              execute state {vmIp = exceptionApplyResultIp applyResult, vmStack = exceptionApplyResultStack applyResult, vmException = (vmException state) {exceptionHandlers = exceptionApplyResultHandlers applyResult}}

@@ -6,11 +6,16 @@ import PythonHS.Lexer.Position (Position)
 import PythonHS.VM.GetitemValueConfig (GetitemValueConfig (..))
 
 getitemValue :: GetitemValueConfig -> Either String Value
-getitemValue config = case (seqValue, indexValue) of
-  (ListValue {listValueItems = vals}, IntValue {intValue = idx}) -> getAtValues vals idx
-  (TupleValue {tupleValueItems = vals}, IntValue {intValue = idx}) -> getAtValues vals idx
-  (StringValue {stringValue = s}, IntValue {intValue = idx}) -> getAtString s idx
-  (_, IntValue {}) -> Left ("Type error: getitem expects list, tuple, or string as first argument at " ++ showPos pos)
+getitemValue config = case seqValue of
+  ListValue {listValueItems = vals}
+    | IntValue {intValue = idx} <- indexValue -> getAtValues vals idx
+  TupleValue {tupleValueItems = vals}
+    | IntValue {intValue = idx} <- indexValue -> getAtValues vals idx
+  StringValue {stringValue = s}
+    | IntValue {intValue = idx} <- indexValue -> getAtString s idx
+  _
+    | IntValue {} <- indexValue ->
+        Left ("Type error: getitem expects list, tuple, or string as first argument at " ++ showPos pos)
   _ -> Left ("Type error: getitem expects int index at " ++ showPos pos)
   where
     pos = getitemValuePos config

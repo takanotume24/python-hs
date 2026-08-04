@@ -1,23 +1,19 @@
 module PythonHS.Evaluator.EvalWithStmt (evalWithStmt) where
 
-import PythonHS.AST.Expr (Expr)
-import PythonHS.AST.Stmt (Stmt)
 import PythonHS.AST.WithContext (ContextManager (..))
 import PythonHS.Evaluator.BindContextResult (bindContextResult)
 import PythonHS.Evaluator.EnterContextManager (enterContextManager)
 import PythonHS.Evaluator.EnterContextManagerInput (EnterContextManagerInput (..))
-import PythonHS.Evaluator.Env (Env)
 import PythonHS.Evaluator.EvalContextManager (exitContextManager, exitContextManagerWithException)
 import PythonHS.Evaluator.EvalExprResult (EvalExprResult (..))
+import PythonHS.Evaluator.EvalStmtResult (EvalStmtResult (..))
 import PythonHS.Evaluator.EvalWithStmtConfig (EvalWithStmtConfig (..))
 import PythonHS.Evaluator.EvalWithStmtInput (EvalWithStmtInput (..))
 import PythonHS.Evaluator.ExitContextManagerInput (ExitContextManagerInput (..))
 import PythonHS.Evaluator.ExitContextManagerWithExceptionInput (ExitContextManagerWithExceptionInput (..))
-import PythonHS.Evaluator.FuncEnv (FuncEnv)
 import PythonHS.Evaluator.Value (Value (IntValue))
-import PythonHS.Lexer.Position (Position)
 
-evalWithStmt :: EvalWithStmtInput -> Either String (Env, FuncEnv, [String], Maybe (Value, Position))
+evalWithStmt :: EvalWithStmtInput -> Either String EvalStmtResult
 evalWithStmt input =
   let config = evalWithStmtInputConfig input
       env = evalWithStmtInputEnv input
@@ -44,7 +40,7 @@ evalWithStmt input =
         let envAfterBind = bindContextResult (contextManagerVarName ctxManager) enterValue envAfterEnter
 
         case evalStatementsFn envAfterBind fenv [] body of
-          Right (envAfterBody, fenvAfterBody, bodyOuts, _) -> do
+          Right EvalStmtResult {evalStmtResultEnv = envAfterBody, evalStmtResultFuncEnv = fenvAfterBody, evalStmtResultOutputs = bodyOuts} -> do
             exitResult <- exitContextManager ExitContextManagerInput {exitContextManagerEvalExprFn = evalExprFn, exitContextManagerEnv = envAfterBody, exitContextManagerFuncEnv = fenvAfterBody, exitContextManagerContextManager = ctxManager}
             let exitOuts = evalExprResultOutputs exitResult
             evalStatementsFn envAfterBody fenvAfterBody (outputs ++ cmOuts ++ enterOuts ++ bodyOuts ++ exitOuts) rest

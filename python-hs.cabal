@@ -45,6 +45,7 @@ library
     , PythonHS.Runner.RunnerCaseCoverageHasMissing
     , PythonHS.Runner.RunnerCaseCoverageReport
     , PythonHS.Runner.RunnerCaseCoverageReportConfig
+    , PythonHS.Runner.QuotedLiteralResult
     , PythonHS.EvalProgram
     , PythonHS.CLI
     , PythonHS.Evaluator
@@ -166,6 +167,7 @@ library
     , PythonHS.Evaluator.ValueToOutput
     , PythonHS.Evaluator.ValueToReplOutput
     , PythonHS.Evaluator.RangeValues
+    , PythonHS.Evaluator.RangeValuesConfig
     , PythonHS.Evaluator.EvalWhileStmt
     , PythonHS.Evaluator.EvalWhileStmtConfig
     , PythonHS.Evaluator.EvalForStmt
@@ -184,10 +186,20 @@ library
     , PythonHS.Evaluator.EvalWithStmtInput
     , PythonHS.Evaluator.ExitContextManagerInput
     , PythonHS.Evaluator.ExitContextManagerWithExceptionInput
-    , PythonHS.Evaluator.RangeValuesConfig
+     , PythonHS.Evaluator.EvalStmtRet
+    , PythonHS.Evaluator.EvalStmtResult
+    , PythonHS.Evaluator.ModuleAttr
     , PythonHS.Evaluator.InsertAtIndex
     , PythonHS.Evaluator.InsertAtIndexConfig
     , PythonHS.Evaluator.PairToList
+    , PythonHS.Evaluator.LookupDictValue
+    , PythonHS.Evaluator.LookupDictValueConfig
+    , PythonHS.Evaluator.RemoveFirstValue
+    , PythonHS.Evaluator.RemoveFirstValueConfig
+    , PythonHS.Evaluator.NumberPairs
+    , PythonHS.Evaluator.NumberPairsConfig
+    , PythonHS.Evaluator.UpdateDictValue
+    , PythonHS.Evaluator.UpdateDictValueConfig
     , PythonHS.Evaluator.RangeOne
     , PythonHS.Runner.RunnerEngine
     , PythonHS.Runner.ResolveRunnerEngine
@@ -206,6 +218,8 @@ library
       , PythonHS.VM.CompileClassStmt
     , PythonHS.VM.CompileCompoundAssign
     , PythonHS.VM.CompileDecoratorApplications
+    , PythonHS.VM.ToCallArg
+    , PythonHS.VM.ToCallArgInput
     , PythonHS.VM.CompileDecoratedStmt
     , PythonHS.VM.CompileFunctionDefStmt
     , PythonHS.VM.CompileYieldCollectStmt
@@ -235,6 +249,8 @@ library
     , PythonHS.VM.ExecuteCallFunction
     , PythonHS.VM.ExecuteCallUserFunction
     , PythonHS.VM.ExecuteCallValueFunction
+    , PythonHS.VM.ExecuteCheckWithResult
+    , PythonHS.VM.ExecuteCheckWithResultConfig
     , PythonHS.VM.ExecuteCreateInstance
     , PythonHS.VM.ExecuteForNext
     , PythonHS.VM.ExecuteListComprehension
@@ -303,6 +319,30 @@ library
     , PythonHS.VM.ResolveTargetModulePathConfig
     , PythonHS.VM.SliceValueConfig
     , PythonHS.VM.ToForIterableConfig
+    , PythonHS.Evaluator.DictPair
+    , PythonHS.Evaluator.EvaluatedArgsResult
+    , PythonHS.Evaluator.NumberSortPair
+    , PythonHS.VM.CompileDefaultsResult
+    , PythonHS.VM.CompiledCallArg
+    , PythonHS.VM.CompiledComprehensionClause
+    , PythonHS.VM.CompiledDefaultCode
+    , PythonHS.VM.FunctionInfo
+    , PythonHS.VM.MethodInfo
+    , PythonHS.VM.CompiledMethodDef
+    , PythonHS.VM.FieldInfo
+    , PythonHS.VM.DataclassFlags
+    , PythonHS.VM.DataclassCompilationResult
+    , PythonHS.VM.LoopContext
+    , PythonHS.VM.PopValuesResult
+    , PythonHS.VM.FunctionDefStmtResult
+    , PythonHS.VM.SliceBoundsResult
+    , PythonHS.VM.PatternBinding
+    , PythonHS.VM.MappingMatchResult
+    , PythonHS.VM.KeywordArgInfo
+    , PythonHS.VM.MatchCasesCompileResult
+    , PythonHS.VM.DecoratorApplyResult
+    , PythonHS.VM.ExceptionApplyResult
+    , PythonHS.VM.MethodNamePair
   build-depends:
       base >=4.14 && <5
     , containers >=0.6 && <0.9

@@ -6,15 +6,28 @@ import PythonHS.AST.Stmt (Stmt (..))
 import PythonHS.Evaluator.Value (Value (..))
 import PythonHS.Lexer.Position (Position (..))
 import PythonHS.VM.CompileClassStmtConfig (CompileClassStmtConfig (..))
+import PythonHS.VM.CompileDefaultsResult (CompileDefaultsResult (..))
 import PythonHS.VM.CompileExprResult (CompileExprResult (..))
+import PythonHS.VM.CompiledCallArg (CompiledCallArg (..))
+import PythonHS.VM.CompiledDefaultCode (CompiledDefaultCode (..))
+import PythonHS.VM.CompiledMethodDef (CompiledMethodDef (..))
+import PythonHS.VM.DataclassCompilationResult (DataclassCompilationResult (..))
+import PythonHS.VM.DataclassFlags (DataclassFlags (..))
+import PythonHS.VM.FieldInfo (FieldInfo (..))
 import PythonHS.VM.Instruction (Instruction (..))
+import PythonHS.VM.MethodInfo (MethodInfo (..))
+import PythonHS.VM.MethodNamePair (MethodNamePair (..))
 
 compileClassStmt :: CompileClassStmtConfig -> Either String CompileExprResult
 compileClassStmt config = do
-  (methodsResult, methodPairs) <- compileMethodsAt baseIndex methods
-  (dataclassCode, dataclassPairs, dataclassCount) <- compileDataclassMethods fields methodNames maybeDataclass
-  let classCode = compileExprResultCode methodsResult ++ dataclassCode ++ [DefineClass {defineClassName = className, defineClassBase = maybeBase, defineClassMethods = methodPairs ++ dataclassPairs}]
-  pure (CompileExprResult {compileExprResultCode = classCode, compileExprResultEndIndex = compileExprResultEndIndex methodsResult + dataclassCount + 1})
+  methodsResult <- compileMethodsAt baseIndex methods
+  dataclassResult <- compileDataclassMethods fields methodNames maybeDataclass
+  let methodPairs = map (\m -> MethodNamePair {methodNamePairOriginal = methodInfoName m, methodNamePairMangled = className ++ "." ++ methodInfoName m}) methods
+      allPairs = methodPairs ++ dataclassCompilationResultPairs dataclassResult
+      originalNames = map methodNamePairOriginal allPairs
+      mangledNames = map methodNamePairMangled allPairs
+      classCode = compileExprResultCode methodsResult ++ dataclassCompilationResultCode dataclassResult ++ [DefineClass {defineClassName = className, defineClassBase = maybeBase, defineClassMethods = zip originalNames mangledNames}]
+  pure (CompileExprResult {compileExprResultCode = classCode, compileExprResultEndIndex = compileExprResultEndIndex methodsResult + dataclassCompilationResultCount dataclassResult + 1})
   where
     compileDefaultsFn = compileClassStmtCompileDefaults config
     compileStatements = compileClassStmtCompileStatements config
@@ -26,22 +39,21 @@ compileClassStmt config = do
     maybeDataclass = compileClassStmtMaybeDataclass config
     methods = collectMethods body
     fields = collectFields body
-    methodNames = map (\(n, _, _, _, _) -> n) methods
-    compileMethodAt idx (methodName, params, defaults, methodBody, methodPos) = do
-      let mangledName = className ++ "." ++ methodName
-      (defaultCodes, _) <- compileDefaultsFn compileExpr defaults
-      bodyResult <- compileStatements 0 True Nothing methodBody
+    methodNames = map methodInfoName methods
+
+    compileMethodsAt idx [] = Right CompileExprResult {compileExprResultCode = [], compileExprResultEndIndex = idx}
+    compileMethodsAt idx (methodInfo : restMethodInfos) = do
+      let mangledName = className ++ "." ++ methodInfoName methodInfo
+      defaultsResult <- compileDefaultsFn compileExpr (methodInfoDefaults methodInfo)
+      bodyResult <- compileStatements 0 True Nothing (methodInfoBody methodInfo)
       let functionCode =
-            if methodName == "__init__"
-              then compileExprResultCode bodyResult ++ [LoadName {loadNameName = "self", loadNamePos = methodPos}, ReturnTop]
+            if methodInfoName methodInfo == "__init__"
+              then compileExprResultCode bodyResult ++ [LoadName {loadNameName = "self", loadNamePos = methodInfoPos methodInfo}, ReturnTop]
               else compileExprResultCode bodyResult ++ [PushConst {pushConstValue = IntValue {intValue = 0}}, ReturnTop]
-      let methodInstr = DefineFunction {defineFunctionName = mangledName, defineFunctionParams = params, defineFunctionDefaultCodes = defaultCodes, defineFunctionCode = functionCode}
-      Right (CompileExprResult {compileExprResultCode = [methodInstr], compileExprResultEndIndex = idx + 1}, (methodName, mangledName))
-    compileMethodsAt idx [] = Right (CompileExprResult {compileExprResultCode = [], compileExprResultEndIndex = idx}, [])
-    compileMethodsAt idx (method : restMethods) = do
-      (methodResult, methodPair) <- compileMethodAt idx method
-      (restResult, restPairs) <- compileMethodsAt (compileExprResultEndIndex methodResult) restMethods
-      pure (CompileExprResult {compileExprResultCode = compileExprResultCode methodResult ++ compileExprResultCode restResult, compileExprResultEndIndex = compileExprResultEndIndex restResult}, methodPair : restPairs)
+      let methodInstr = DefineFunction {defineFunctionName = mangledName, defineFunctionParams = methodInfoParams methodInfo, defineFunctionDefaultCodes = compileDefaultsResultDefaults defaultsResult, defineFunctionCode = functionCode}
+      let methodResult = CompileExprResult {compileExprResultCode = [methodInstr], compileExprResultEndIndex = idx + 1}
+      restResult <- compileMethodsAt (compileExprResultEndIndex methodResult) restMethodInfos
+      pure CompileExprResult {compileExprResultCode = compileExprResultCode methodResult ++ compileExprResultCode restResult, compileExprResultEndIndex = compileExprResultEndIndex restResult}
 
     collectMethods items =
       case items of
@@ -49,9 +61,9 @@ compileClassStmt config = do
         item : restItems ->
           case item of
             FunctionDefStmt {functionDefStmtName = methodName, functionDefStmtParams = params, functionDefStmtBody = methodBody, functionDefStmtPos = methodPos} ->
-              (methodName, params, [], methodBody, methodPos) : collectMethods restItems
+              MethodInfo {methodInfoName = methodName, methodInfoParams = params, methodInfoDefaults = [], methodInfoBody = methodBody, methodInfoPos = methodPos} : collectMethods restItems
             FunctionDefDefaultsStmt {functionDefDefaultsStmtName = methodName, functionDefDefaultsStmtParams = params, functionDefDefaultsStmtDefaults = defaults, functionDefDefaultsStmtBody = methodBody, functionDefDefaultsStmtPos = methodPos} ->
-              (methodName, params, defaults, methodBody, methodPos) : collectMethods restItems
+              MethodInfo {methodInfoName = methodName, methodInfoParams = params, methodInfoDefaults = defaults, methodInfoBody = methodBody, methodInfoPos = methodPos} : collectMethods restItems
             _ -> collectMethods restItems
 
     collectFields items =
@@ -59,35 +71,39 @@ compileClassStmt config = do
         [] -> []
         item : restItems ->
           case item of
-            AnnAssignStmt {annAssignStmtName = fieldName, annAssignStmtValue = maybeDefault, annAssignStmtPos = pos} -> (fieldName, maybeDefault, pos) : collectFields restItems
+            AnnAssignStmt {annAssignStmtName = fieldName, annAssignStmtValue = maybeDefault, annAssignStmtPos = pos} ->
+              FieldInfo {fieldInfoName = fieldName, fieldInfoDefault = maybeDefault, fieldInfoPos = pos} : collectFields restItems
             _ -> collectFields restItems
 
-    compileDataclassMethods _ _ Nothing = Right ([], [], 0)
-    compileDataclassMethods fields' methodNames' (Just (isFrozen, isOrder)) = do
-      initDefaults <- compileInitDefaults fields'
-      let fieldNames = map (\(name, _, _) -> name) fields'
-          methodPos = fieldPos fields'
-          defineInit = buildInitMethod methodPos fieldNames initDefaults isFrozen
-          defineRepr = buildReprMethod methodPos fieldNames
-      defineEq <- buildEqMethod methodPos fieldNames
-      ltMethod <- if isOrder then buildOrderMethod LtOperator methodPos fieldNames else Right Nothing
-      gtMethod <- if isOrder then buildOrderMethod GtOperator methodPos fieldNames else Right Nothing
-      let generated =
-            concat
-              [ includeIfMissing "__init__" methodNames' [defineInit],
-                includeIfMissing "__repr__" methodNames' [defineRepr],
-                includeIfMissing "__eq__" methodNames' [defineEq],
-                includeIfMissing "__lt__" methodNames' (maybe [] (\m -> [m]) ltMethod),
-                includeIfMissing "__gt__" methodNames' (maybe [] (\m -> [m]) gtMethod)
-              ]
-          pairs = map (\(name, _, _, _) -> (name, className ++ "." ++ name)) generated
-          code = map (\(name, params, defaults, bodyCode) -> DefineFunction {defineFunctionName = className ++ "." ++ name, defineFunctionParams = params, defineFunctionDefaultCodes = defaults, defineFunctionCode = bodyCode}) generated
-      Right (code, pairs, length code)
+    compileDataclassMethods fields' methodNames' maybeFlags =
+      case maybeFlags of
+        Nothing -> Right DataclassCompilationResult {dataclassCompilationResultCode = [], dataclassCompilationResultPairs = [], dataclassCompilationResultCount = 0}
+        Just flags -> do
+          let isFrozen = dataclassFlagsFrozen flags
+              isOrder = dataclassFlagsOrder flags
+          initDefaults <- compileInitDefaults fields'
+          let fieldNames = map fieldInfoName fields'
+              methodPos = fieldPos fields'
+              defineInit = buildInitMethod methodPos fieldNames initDefaults isFrozen
+              defineRepr = buildReprMethod methodPos fieldNames
+          defineEq <- buildEqMethod methodPos fieldNames
+          ltMethod <- if isOrder then fmap Just (buildOrderMethod LtOperator methodPos fieldNames) else Right Nothing
+          gtMethod <- if isOrder then fmap Just (buildOrderMethod GtOperator methodPos fieldNames) else Right Nothing
+          let generated =
+                concat
+                  [ includeIfMissing "__init__" methodNames' [defineInit],
+                    includeIfMissing "__repr__" methodNames' [defineRepr],
+                    includeIfMissing "__eq__" methodNames' [defineEq],
+                    includeIfMissing "__lt__" methodNames' (maybe [] (\m -> [m]) ltMethod),
+                    includeIfMissing "__gt__" methodNames' (maybe [] (\m -> [m]) gtMethod)
+                  ]
+              names = map compiledMethodDefName generated
+              pairs = map (\name -> MethodNamePair {methodNamePairOriginal = name, methodNamePairMangled = className ++ "." ++ name}) names
+              code = map (\m -> DefineFunction {defineFunctionName = className ++ "." ++ compiledMethodDefName m, defineFunctionParams = compiledMethodDefParams m, defineFunctionDefaultCodes = compiledMethodDefDefaults m, defineFunctionCode = compiledMethodDefBody m}) generated
+          pure DataclassCompilationResult {dataclassCompilationResultCode = code, dataclassCompilationResultPairs = pairs, dataclassCompilationResultCount = length code}
       where
-        includeIfMissing name names values =
-          if elem name names
-            then []
-            else values
+        includeIfMissing name names' values =
+          if elem name names' then [] else values
 
         compileInitDefaults fields'' =
           compileDefaultsForFields fields'' []
@@ -95,21 +111,21 @@ compileClassStmt config = do
             compileDefaultsForFields items acc =
               case items of
                 [] -> Right (reverse acc)
-                (fieldName, maybeDefault, _) : rest ->
+                FieldInfo {fieldInfoName = fieldName, fieldInfoDefault = maybeDefault} : rest ->
                   case maybeDefault of
                     Nothing -> compileDefaultsForFields rest acc
                     Just (CallExpr {callExprName = "field", callExprArgs = [KeywordArgExpr {keywordArgExprName = "default_factory", keywordArgExprValue = IdentifierExpr {identifierExprName = "list"}}]}) ->
-                      compileDefaultsForFields rest ((fieldName, [BuildList {buildListCount = 0}, ReturnTop]) : acc)
+                      compileDefaultsForFields rest (CompiledDefaultCode {compiledDefaultCodeParam = fieldName, compiledDefaultCodeInstructions = [BuildList {buildListCount = 0}, ReturnTop]} : acc)
                     Just defaultExpr -> do
                       defaultCode <- fmap compileExprResultCode (compileExpr 0 defaultExpr)
-                      compileDefaultsForFields rest ((fieldName, defaultCode ++ [ReturnTop]) : acc)
+                      compileDefaultsForFields rest (CompiledDefaultCode {compiledDefaultCodeParam = fieldName, compiledDefaultCodeInstructions = defaultCode ++ [ReturnTop]} : acc)
 
         buildInitMethod pos fieldNames initDefaults isFrozen =
           let initBody =
                 concatMap (\fieldName -> [LoadName {loadNameName = fieldName, loadNamePos = pos}, StoreName {storeNameName = "self." ++ fieldName}]) fieldNames
                   ++ frozenMarker isFrozen
                   ++ [LoadName {loadNameName = "self", loadNamePos = pos}, ReturnTop]
-           in ("__init__", "self" : fieldNames, initDefaults, initBody)
+           in CompiledMethodDef {compiledMethodDefName = "__init__", compiledMethodDefParams = "self" : fieldNames, compiledMethodDefDefaults = initDefaults, compiledMethodDefBody = initBody}
           where
             frozenMarker frozen =
               if frozen
@@ -120,7 +136,7 @@ compileClassStmt config = do
           let start = [PushConst {pushConstValue = StringValue {stringValue = className ++ "("}}]
               fieldParts = buildFieldParts fieldNames True
               endPart = [PushConst {pushConstValue = StringValue {stringValue = ")"}}, ApplyBinary {applyBinaryOp = AddOperator, applyBinaryPos = pos}, ReturnTop]
-           in ("__repr__", ["self"], [], start ++ fieldParts ++ endPart)
+           in CompiledMethodDef {compiledMethodDefName = "__repr__", compiledMethodDefParams = ["self"], compiledMethodDefDefaults = [], compiledMethodDefBody = start ++ fieldParts ++ endPart}
           where
             buildFieldParts names isFirst =
               case names of
@@ -130,19 +146,18 @@ compileClassStmt config = do
                         if isFirst
                           then fieldName ++ "="
                           else ", " ++ fieldName ++ "="
-                      reprCall = CallFunction {callFunctionName = "__python_hs_repl_repr__", callFunctionArgs = [([LoadName {loadNameName = "self." ++ fieldName, loadNamePos = pos}], Nothing, pos)], callFunctionPos = pos}
-                   in [PushConst {pushConstValue = StringValue {stringValue = prefix}}, ApplyBinary {applyBinaryOp = AddOperator, applyBinaryPos = pos}, reprCall, ApplyBinary {applyBinaryOp = AddOperator, applyBinaryPos = pos}]
-                        ++ buildFieldParts rest False
+                      reprCall = CallFunction {callFunctionName = "__python_hs_repl_repr__", callFunctionArgs = [CompiledCallArg {compiledCallArgCode = [LoadName {loadNameName = "self." ++ fieldName, loadNamePos = pos}], compiledCallArgKeyword = Nothing, compiledCallArgPos = pos}], callFunctionPos = pos}
+                   in [PushConst {pushConstValue = StringValue {stringValue = prefix}}, ApplyBinary {applyBinaryOp = AddOperator, applyBinaryPos = pos}, reprCall, ApplyBinary {applyBinaryOp = AddOperator, applyBinaryPos = pos}] ++ buildFieldParts rest False
 
         buildEqMethod pos fieldNames = do
           eqExpr <- buildEqExpr pos fieldNames
           eqCode <- fmap compileExprResultCode (compileExpr 0 eqExpr)
-          Right ("__eq__", ["self", "other"], [], eqCode ++ [ReturnTop])
+          pure CompiledMethodDef {compiledMethodDefName = "__eq__", compiledMethodDefParams = ["self", "other"], compiledMethodDefDefaults = [], compiledMethodDefBody = eqCode ++ [ReturnTop]}
 
         buildOrderMethod op pos fieldNames = do
           orderExpr <- buildOrderExpr op pos fieldNames
           orderCode <- fmap compileExprResultCode (compileExpr 0 orderExpr)
-          Right (Just (methodName op, ["self", "other"], [], orderCode ++ [ReturnTop]))
+          pure CompiledMethodDef {compiledMethodDefName = methodName op, compiledMethodDefParams = ["self", "other"], compiledMethodDefDefaults = [], compiledMethodDefBody = orderCode ++ [ReturnTop]}
           where
             methodName LtOperator = "__lt__"
             methodName GtOperator = "__gt__"
@@ -175,5 +190,5 @@ compileClassStmt config = do
 
         fieldPos fields'' =
           case fields'' of
-            (_, _, pos) : _ -> pos
+            FieldInfo {fieldInfoPos = pos} : _ -> pos
             [] -> Position {line = 0, column = 0}

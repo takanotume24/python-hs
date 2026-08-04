@@ -9,6 +9,7 @@ import PythonHS.VM.BindDefaults (bindDefaults)
 import PythonHS.VM.CollectFunctionGlobalDecls (collectFunctionGlobalDecls)
 import PythonHS.VM.EnvState (EnvState (..))
 import PythonHS.VM.ExceptionState (ExceptionState (..))
+import PythonHS.VM.FunctionInfo (FunctionInfo (..))
 import PythonHS.VM.Instruction (Instruction)
 import PythonHS.VM.LoopState (LoopState (..))
 import PythonHS.VM.VMState (VMState (..))
@@ -23,15 +24,16 @@ executeCallUserFunction ::
   Maybe [(String, Value)] ->
   [Value] ->
   Map.Map String Value ->
-  Map.Map String ([String], [(String, [Instruction])], [Instruction]) ->
+  Map.Map String FunctionInfo ->
   [String] ->
-  Either String ([Value], Map.Map String Value, Map.Map String Value, Map.Map String ([String], [(String, [Instruction])], [Instruction]), [String])
+  Either String ([Value], Map.Map String Value, Map.Map String Value, Map.Map String FunctionInfo, [String])
 executeCallUserFunction execute isTopLevel pos stack localEnv targetName maybeCapturedBindings args globalsNow functionsNow outputsNow =
   case Map.lookup targetName functionsNow of
     Nothing -> Left ("Name error: undefined function " ++ targetName ++ " at " ++ showPos pos)
-    Just (params, defaultCodes, functionCode) -> do
-      let argKinds = map (\_ -> (Nothing, pos)) args
-      initialLocals <- bindCallArguments targetName pos params args argKinds
+    Just (FunctionInfo params defaultCodes functionCode) -> do
+      let initArgValues = args
+          initArgKinds = map (\_ -> (Nothing, pos)) args
+      initialLocals <- bindCallArguments targetName pos params initArgValues initArgKinds
       let capturedLocals =
             case maybeCapturedBindings of
               Just bindings -> Map.fromList bindings

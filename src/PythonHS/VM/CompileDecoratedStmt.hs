@@ -7,6 +7,7 @@ import PythonHS.VM.CompileDecoratedStmtConfig (CompileDecoratedStmtConfig (..))
 import PythonHS.VM.CompileDecoratorApplications (compileDecoratorApplications)
 import PythonHS.VM.CompileDecoratorApplicationsConfig (CompileDecoratorApplicationsConfig (..))
 import PythonHS.VM.CompileExprResult (CompileExprResult (..))
+import PythonHS.VM.DataclassFlags (DataclassFlags (..))
 import PythonHS.VM.StmtPosition (stmtPosition)
 
 compileDecoratedStmt :: CompileDecoratedStmtConfig -> Either String CompileExprResult
@@ -42,19 +43,19 @@ compileDecoratedStmt config = case parseDataclassConfig decorators of
 
     parseDataclassConfig exprs =
       case exprs of
-        [IdentifierExpr {identifierExprName = "dataclass"}] -> Right (Just (False, False))
+        [IdentifierExpr {identifierExprName = "dataclass"}] -> Right (Just DataclassFlags {dataclassFlagsFrozen = False, dataclassFlagsOrder = False})
         [CallExpr {callExprName = "dataclass", callExprArgs = args}] -> parseDataclassArgs args
         _ -> Right Nothing
 
-    parseDataclassArgs args = parseArgs args (False, False)
+    parseDataclassArgs args = parseArgs args False False
 
-    parseArgs args (frozenNow, orderNow) =
+    parseArgs args frozenNow orderNow =
       case args of
-        [] -> Right (Just (frozenNow, orderNow))
+        [] -> Right (Just DataclassFlags {dataclassFlagsFrozen = frozenNow, dataclassFlagsOrder = orderNow})
         KeywordArgExpr {keywordArgExprName = "frozen", keywordArgExprValue = IntegerExpr {integerExprValue = n}} : rest ->
-          parseArgs rest (n /= 0, orderNow)
+          parseArgs rest (n /= 0) orderNow
         KeywordArgExpr {keywordArgExprName = "order", keywordArgExprValue = IntegerExpr {integerExprValue = n}} : rest ->
-          parseArgs rest (frozenNow, n /= 0)
+          parseArgs rest frozenNow (n /= 0)
         KeywordArgExpr {keywordArgExprName = name} : _ ->
           Left ("VM compile error: unsupported dataclass option " ++ name ++ " at " ++ showPos (stmtPosition targetStmt))
         _ -> Left ("VM compile error: unsupported dataclass decorator arguments at " ++ showPos (stmtPosition targetStmt))

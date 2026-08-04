@@ -9,13 +9,15 @@ import PythonHS.Evaluator.Env (Env)
 import PythonHS.Evaluator.EvalBuiltinExpr (evalBuiltinExpr)
 import PythonHS.Evaluator.EvalBuiltinExprInput (EvalBuiltinExprInput (..))
 import PythonHS.Evaluator.EvalExprResult (EvalExprResult (..))
+import PythonHS.Evaluator.EvalStmtResult (EvalStmtResult (..))
+import PythonHS.Evaluator.EvalStmtRet (EvalStmtRet (..))
 import PythonHS.Evaluator.FuncEnv (FuncEnv)
 import PythonHS.Evaluator.ShowPos (showPos)
 import PythonHS.Evaluator.Value (Value (IntValue))
 import PythonHS.Lexer.Position (Position)
 
 evalCallExpr ::
-  (Env -> FuncEnv -> [String] -> [Stmt] -> Either String (Env, FuncEnv, [String], Maybe (Value, Position))) ->
+  (Env -> FuncEnv -> [String] -> [Stmt] -> Either String EvalStmtResult) ->
   (Env -> FuncEnv -> Expr -> Either String EvalExprResult) ->
   Env ->
   FuncEnv ->
@@ -32,9 +34,9 @@ evalCallExpr evalStatementsFn evalExprFn env fenv fname args pos =
       (bindingsWithDefaults, defaultOuts, envAfterDefaults) <- fillMissingDefaults envAfterArgs fenv params defaults baseBindings
       let globalNames = collectGlobalNames body
       let localEnv = Map.union bindingsWithDefaults envAfterDefaults
-      (finalEnv, _finalFenv, bodyOuts, ret) <- evalStatementsFn localEnv fenv [] body
+      EvalStmtResult {evalStmtResultEnv = finalEnv, evalStmtResultOutputs = bodyOuts, evalStmtResultRet = ret} <- evalStatementsFn localEnv fenv [] body
       let retVal = case ret of
-            Just (v, _) -> v
+            Just EvalStmtRet {evalStmtRetValue = v} -> v
             Nothing -> IntValue 0
       let propagatedEnv = applyGlobalWrites envAfterDefaults finalEnv globalNames
       Right (EvalExprResult retVal (argOuts ++ defaultOuts ++ bodyOuts) propagatedEnv)

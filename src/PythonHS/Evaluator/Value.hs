@@ -1,5 +1,8 @@
 module PythonHS.Evaluator.Value (Value (..)) where
 
+import PythonHS.Evaluator.DictPair (DictPair)
+import PythonHS.Evaluator.ModuleAttr (ModuleAttr)
+
 data Value
   = IntValue {intValue :: Integer}
   | FloatValue {floatValue :: Double}
@@ -7,8 +10,8 @@ data Value
   | NoneValue
   | ListValue {listValueItems :: [Value]}
   | TupleValue {tupleValueItems :: [Value]}
-  | DictValue {dictValuePairs :: [(Value, Value)]}
-  | ModuleValue {moduleValueName :: String, moduleValueAttrs :: [(String, Value)]}
+  | DictValue {dictValuePairs :: [DictPair Value Value]}
+  | ModuleValue {moduleValueName :: String, moduleValueAttrs :: [ModuleAttr Value]}
   | FunctionRefValue {functionRefValueName :: String, functionRefValueBindings :: [(String, Value)]}
   | ClassValue
       { classValueName :: String,

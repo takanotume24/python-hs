@@ -8,6 +8,8 @@ import PythonHS.Evaluator.EvalExpr (evalExpr)
 import PythonHS.Evaluator.EvalExprResult (EvalExprResult (..))
 import PythonHS.Evaluator.EvalForStmt (evalForStmt)
 import PythonHS.Evaluator.EvalForStmtConfig (EvalForStmtConfig (..))
+import PythonHS.Evaluator.EvalStmtResult (EvalStmtResult (..))
+import PythonHS.Evaluator.EvalStmtRet (EvalStmtRet (..))
 import PythonHS.Evaluator.EvalWhileStmt (evalWhileStmt)
 import PythonHS.Evaluator.EvalWhileStmtConfig (EvalWhileStmtConfig (..))
 import PythonHS.Evaluator.EvalWhileStmtInput (EvalWhileStmtInput (..))
@@ -21,8 +23,15 @@ import PythonHS.Evaluator.ValueToOutput (valueToOutput)
 import PythonHS.Lexer.Position (Position)
 import PythonHS.Parser.ExprPos (exprPos)
 
-evalStatements :: Env -> FuncEnv -> [String] -> [Stmt] -> Either String (Env, FuncEnv, [String], Maybe (Value, Position))
-evalStatements env fenv outputs [] = Right (env, fenv, outputs, Nothing)
+evalStatements :: Env -> FuncEnv -> [String] -> [Stmt] -> Either String EvalStmtResult
+evalStatements env fenv outputs [] =
+  Right
+    EvalStmtResult
+      { evalStmtResultEnv = env,
+        evalStmtResultFuncEnv = fenv,
+        evalStmtResultOutputs = outputs,
+        evalStmtResultRet = Nothing
+      }
 evalStatements env fenv outputs (stmt : rest) =
   case stmt of
     AssignStmt {assignStmtName, assignStmtValue} -> do
@@ -62,11 +71,11 @@ evalStatements env fenv outputs (stmt : rest) =
           evalStatements envAfterExpr fenv (outputs ++ exprOuts ++ [valueToOutput val]) rest
     ReturnStmt {returnStmtValue, returnStmtPos} -> do
       (val, exprOuts, envAfterExpr) <- extractResult <$> evalExpr evalStatements env fenv returnStmtValue
-      Right (envAfterExpr, fenv, outputs ++ exprOuts, Just (val, returnStmtPos))
+      Right baseResult {evalStmtResultEnv = envAfterExpr, evalStmtResultOutputs = outputs ++ exprOuts, evalStmtResultRet = Just EvalStmtRet {evalStmtRetValue = val, evalStmtRetPos = returnStmtPos}}
     YieldStmt {yieldStmtPos} -> Left $ "Runtime error: yield is only supported in vm engine at " ++ showPos yieldStmtPos
     YieldFromStmt {yieldFromStmtPos} -> Left $ "Runtime error: yield from is only supported in vm engine at " ++ showPos yieldFromStmtPos
-    BreakStmt {breakStmtPos} -> Right (env, fenv, outputs, Just (BreakValue, breakStmtPos))
-    ContinueStmt {continueStmtPos} -> Right (env, fenv, outputs, Just (ContinueValue, continueStmtPos))
+    BreakStmt {breakStmtPos} -> Right baseResult {evalStmtResultRet = Just EvalStmtRet {evalStmtRetValue = BreakValue, evalStmtRetPos = breakStmtPos}}
+    ContinueStmt {continueStmtPos} -> Right baseResult {evalStmtResultRet = Just EvalStmtRet {evalStmtRetValue = ContinueValue, evalStmtRetPos = continueStmtPos}}
     GlobalStmt {} -> evalStatements env fenv outputs rest
     ImportStmt {} -> evalStatements env fenv outputs rest
     FromImportStmt {} -> evalStatements env fenv outputs rest
@@ -83,15 +92,15 @@ evalStatements env fenv outputs (stmt : rest) =
       condNum <- expectTruthy "if condition" (exprPos ifStmtCond) condVal
       if condNum /= 0
         then do
-          (envThen, fenvThen, outputsThen, ret) <- evalStatements envAfterCond fenv [] ifStmtThen
+          EvalStmtResult {evalStmtResultEnv = envThen, evalStmtResultFuncEnv = fenvThen, evalStmtResultOutputs = outputsThen, evalStmtResultRet = ret} <- evalStatements envAfterCond fenv [] ifStmtThen
           case ret of
-            Just _ -> Right (envThen, fenvThen, outputs ++ condOuts ++ outputsThen, ret)
+            Just _ -> Right baseResult {evalStmtResultEnv = envThen, evalStmtResultFuncEnv = fenvThen, evalStmtResultOutputs = outputs ++ condOuts ++ outputsThen, evalStmtResultRet = ret}
             Nothing -> evalStatements envThen fenvThen (outputs ++ condOuts ++ outputsThen) rest
         else case ifStmtElse of
           Just elseBranch -> do
-            (envElse, fenvElse, outputsElse, ret) <- evalStatements envAfterCond fenv [] elseBranch
+            EvalStmtResult {evalStmtResultEnv = envElse, evalStmtResultFuncEnv = fenvElse, evalStmtResultOutputs = outputsElse, evalStmtResultRet = ret} <- evalStatements envAfterCond fenv [] elseBranch
             case ret of
-              Just _ -> Right (envElse, fenvElse, outputs ++ condOuts ++ outputsElse, ret)
+              Just _ -> Right baseResult {evalStmtResultEnv = envElse, evalStmtResultFuncEnv = fenvElse, evalStmtResultOutputs = outputs ++ condOuts ++ outputsElse, evalStmtResultRet = ret}
               Nothing -> evalStatements envElse fenvElse (outputs ++ condOuts ++ outputsElse) rest
           Nothing -> evalStatements envAfterCond fenv (outputs ++ condOuts) rest
     WhileStmt {whileStmtCond, whileStmtBody, whileStmtPos} ->
@@ -105,6 +114,8 @@ evalStatements env fenv outputs (stmt : rest) =
       evalStatements env (Map.insert functionDefDefaultsStmtName (functionDefDefaultsStmtParams, functionDefDefaultsStmtDefaults, functionDefDefaultsStmtBody) fenv) outputs rest
   where
     extractResult r = (evalExprResultValue r, evalExprResultOutputs r, evalExprResultEnv r)
+
+    baseResult = EvalStmtResult {evalStmtResultEnv = env, evalStmtResultFuncEnv = fenv, evalStmtResultOutputs = outputs, evalStmtResultRet = Nothing}
 
     lookupName env' name pos =
       case Map.lookup name env' of

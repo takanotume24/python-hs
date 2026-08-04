@@ -1,19 +1,17 @@
 module PythonHS.Evaluator.EvalWhileStmt (evalWhileStmt) where
 
-import PythonHS.AST.Expr (Expr (..))
-import PythonHS.AST.Stmt (Stmt)
-import PythonHS.Evaluator.Env (Env)
 import PythonHS.Evaluator.EvalExprResult (EvalExprResult (..))
+import PythonHS.Evaluator.EvalStmtResult (EvalStmtResult (..))
+import PythonHS.Evaluator.EvalStmtRet (EvalStmtRet (..))
 import PythonHS.Evaluator.EvalWhileStmtConfig (EvalWhileStmtConfig (..))
 import PythonHS.Evaluator.EvalWhileStmtInput (EvalWhileStmtInput (..))
-import PythonHS.Evaluator.FuncEnv (FuncEnv)
 import PythonHS.Evaluator.MaxLoopIterations (maxLoopIterations)
 import PythonHS.Evaluator.ShowPos (showPos)
 import PythonHS.Evaluator.Value (Value (..))
 import PythonHS.Lexer.Position (Position)
 import PythonHS.Parser.ExprPos (exprPos)
 
-evalWhileStmt :: EvalWhileStmtInput -> Either String (Env, FuncEnv, [String], Maybe (Value, Position))
+evalWhileStmt :: EvalWhileStmtInput -> Either String EvalStmtResult
 evalWhileStmt input = loop env fenv id 0
   where
     config = evalWhileStmtInputConfig input
@@ -39,13 +37,20 @@ evalWhileStmt input = loop env fenv id 0
           if iterations >= maxLoopIterations
             then Left $ "Value error: iteration limit exceeded at " ++ showPos whilePos
             else do
-              (envAfter, fenvAfter, outputsAfter, ret) <- evalStatementsFn envAfterCond fenv' [] body
+              EvalStmtResult {evalStmtResultEnv = envAfter, evalStmtResultFuncEnv = fenvAfter, evalStmtResultOutputs = outputsAfter, evalStmtResultRet = ret} <- evalStatementsFn envAfterCond fenv' [] body
               let nextOutputAcc = outputAcc . (condOuts ++) . (outputsAfter ++)
               let nextIterations = iterations + 1
               case ret of
-                Just (BreakValue, _) -> evalStatementsFn envAfter fenvAfter (outputs ++ nextOutputAcc []) rest
-                Just (ContinueValue, _) -> nextIterations `seq` loop envAfter fenvAfter nextOutputAcc nextIterations
-                Just _ -> Right (envAfter, fenvAfter, outputs ++ nextOutputAcc [], ret)
+                Just EvalStmtRet {evalStmtRetValue = BreakValue} -> evalStatementsFn envAfter fenvAfter (outputs ++ nextOutputAcc []) rest
+                Just EvalStmtRet {evalStmtRetValue = ContinueValue} -> nextIterations `seq` loop envAfter fenvAfter nextOutputAcc nextIterations
+                Just _ ->
+                  Right
+                    EvalStmtResult
+                      { evalStmtResultEnv = envAfter,
+                        evalStmtResultFuncEnv = fenvAfter,
+                        evalStmtResultOutputs = outputs ++ nextOutputAcc [],
+                        evalStmtResultRet = ret
+                      }
                 Nothing -> nextIterations `seq` loop envAfter fenvAfter nextOutputAcc nextIterations
 
     expectTruthy :: String -> Position -> Value -> Either String Int

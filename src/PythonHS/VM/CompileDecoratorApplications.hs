@@ -3,8 +3,11 @@ module PythonHS.VM.CompileDecoratorApplications (compileDecoratorApplications) w
 import PythonHS.AST.Expr (Expr (..))
 import PythonHS.VM.CompileDecoratorApplicationsConfig (CompileDecoratorApplicationsConfig (..))
 import PythonHS.VM.CompileExprResult (CompileExprResult (..))
+import PythonHS.VM.DecoratorApplyResult (DecoratorApplyResult (..))
 import PythonHS.VM.ExprPosition (exprPosition)
 import PythonHS.VM.Instruction (Instruction (..))
+import PythonHS.VM.ToCallArg (toCallArg)
+import PythonHS.VM.ToCallArgInput (ToCallArgInput (..))
 
 compileDecoratorApplications :: CompileDecoratorApplicationsConfig -> Either String CompileExprResult
 compileDecoratorApplications config = compileAt baseIndex (reverse decorators)
@@ -19,12 +22,12 @@ compileDecoratorApplications config = compileAt baseIndex (reverse decorators)
         [] -> Right (CompileExprResult {compileExprResultCode = [], compileExprResultEndIndex = idx})
         decoratorExpr : rest -> do
           let pos = exprPosition decoratorExpr
-          (applyCode, afterApply) <-
+          applyResult <-
             case decoratorExpr of
               IdentifierExpr {identifierExprName = decoratorName} ->
-                Right ([CallFunction {callFunctionName = decoratorName, callFunctionArgs = [([LoadName {loadNameName = targetName, loadNamePos = pos}], Nothing, pos)], callFunctionPos = pos}, StoreName {storeNameName = targetName}], idx + 2)
+                Right DecoratorApplyResult {decoratorApplyResultCode = [CallFunction {callFunctionName = decoratorName, callFunctionArgs = [toCallArg ToCallArgInput {toCallArgInputCode = [LoadName {loadNameName = targetName, loadNamePos = pos}], toCallArgInputKeyword = Nothing, toCallArgInputPos = pos}], callFunctionPos = pos}, StoreName {storeNameName = targetName}], decoratorApplyResultNextIndex = idx + 2}
               _ -> do
                 decoratorResult <- compileExpr idx decoratorExpr
-                Right (compileExprResultCode decoratorResult ++ [CallValueFunction {callValueFunctionArgs = [([LoadName {loadNameName = targetName, loadNamePos = pos}], Nothing, pos)], callValueFunctionPos = pos}, StoreName {storeNameName = targetName}], compileExprResultEndIndex decoratorResult + 2)
-          restResult <- compileAt afterApply rest
-          Right (CompileExprResult {compileExprResultCode = applyCode ++ compileExprResultCode restResult, compileExprResultEndIndex = compileExprResultEndIndex restResult})
+                Right DecoratorApplyResult {decoratorApplyResultCode = compileExprResultCode decoratorResult ++ [CallValueFunction {callValueFunctionArgs = [toCallArg ToCallArgInput {toCallArgInputCode = [LoadName {loadNameName = targetName, loadNamePos = pos}], toCallArgInputKeyword = Nothing, toCallArgInputPos = pos}], callValueFunctionPos = pos}, StoreName {storeNameName = targetName}], decoratorApplyResultNextIndex = compileExprResultEndIndex decoratorResult + 2}
+          restResult <- compileAt (decoratorApplyResultNextIndex applyResult) rest
+          Right (CompileExprResult {compileExprResultCode = decoratorApplyResultCode applyResult ++ compileExprResultCode restResult, compileExprResultEndIndex = compileExprResultEndIndex restResult})

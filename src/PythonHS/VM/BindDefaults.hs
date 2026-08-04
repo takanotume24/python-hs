@@ -5,8 +5,10 @@ import Data.Set qualified as Set
 import PythonHS.Evaluator.ShowPos (showPos)
 import PythonHS.Evaluator.Value (Value (NoneValue))
 import PythonHS.Lexer.Position (Position)
+import PythonHS.VM.CompiledDefaultCode (CompiledDefaultCode (..))
 import PythonHS.VM.EnvState (EnvState (..))
 import PythonHS.VM.ExceptionState (ExceptionState (..))
+import PythonHS.VM.FunctionInfo (FunctionInfo)
 import PythonHS.VM.Instruction (Instruction)
 import PythonHS.VM.LoopState (LoopState (..))
 import PythonHS.VM.VMState (VMState (..))
@@ -16,16 +18,16 @@ bindDefaults ::
   String ->
   Position ->
   [String] ->
-  [(String, [Instruction])] ->
+  [CompiledDefaultCode Instruction] ->
   Map.Map String Value ->
   Map.Map String Value ->
-  Map.Map String ([String], [(String, [Instruction])], [Instruction]) ->
+  Map.Map String FunctionInfo ->
   [String] ->
-  Either String (Map.Map String Value, Map.Map String Value, Map.Map String ([String], [(String, [Instruction])], [Instruction]), [String])
+  Either String (Map.Map String Value, Map.Map String Value, Map.Map String FunctionInfo, [String])
 bindDefaults execute fname pos params defaultCodes initialLocals globalsNow functionsNow outputsNow =
   fill params initialLocals globalsNow functionsNow outputsNow
   where
-    defaultMap = Map.fromList (fmap (\(name, code) -> (canonicalName name, code)) defaultCodes)
+    defaultMap = Map.fromList (fmap (\d -> (canonicalName (compiledDefaultCodeParam d), compiledDefaultCodeInstructions d)) defaultCodes)
 
     fill remainingParams currentLocals currentGlobals currentFunctions currentOutputs =
       case remainingParams of

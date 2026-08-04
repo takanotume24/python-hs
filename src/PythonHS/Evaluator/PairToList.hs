@@ -1,6 +1,7 @@
 module PythonHS.Evaluator.PairToList (pairToList) where
 
+import PythonHS.Evaluator.DictPair (DictPair (..))
 import PythonHS.Evaluator.Value (Value (ListValue), listValueItems)
 
-pairToList :: (Value, Value) -> Value
-pairToList (k, v) = ListValue {listValueItems = [k, v]}
+pairToList :: DictPair Value Value -> Value
+pairToList pair = ListValue {listValueItems = [dictPairKey pair, dictPairValue pair]}

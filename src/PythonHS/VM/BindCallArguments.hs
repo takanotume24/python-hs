@@ -1,6 +1,7 @@
 module PythonHS.VM.BindCallArguments (bindCallArguments) where
 
 import Data.Map.Strict qualified as Map
+import PythonHS.Evaluator.DictPair (DictPair (..))
 import PythonHS.Evaluator.ShowPos (showPos)
 import PythonHS.Evaluator.Value (Value (DictValue, ListValue, StringValue))
 import PythonHS.Lexer.Position (Position)
@@ -67,7 +68,7 @@ bindCallArguments fname callPos params argValues argKinds = do
                       Nothing -> fixedBound
                   withKwArgs =
                     case kwArgName of
-                      Just name -> Map.insert name (DictValue (fmap (\(k, v) -> (StringValue k, v)) (extraKeywordPairs kwOrder keywordVals))) withVarArgs
+                      Just name -> Map.insert name (DictValue (extraKeywordPairs kwOrder keywordVals)) withVarArgs
                       Nothing -> withVarArgs
                in Right withKwArgs
       where
@@ -126,5 +127,5 @@ bindCallArguments fname callPos params argValues argKinds = do
           if name `elem` plainParams
             then extraKeywordPairs restNames keywordVals
             else case Map.lookup name keywordVals of
-              Just value -> (name, value) : extraKeywordPairs restNames keywordVals
+              Just value -> DictPair {dictPairKey = StringValue name, dictPairValue = value} : extraKeywordPairs restNames keywordVals
               Nothing -> extraKeywordPairs restNames keywordVals

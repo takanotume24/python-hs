@@ -10,6 +10,7 @@ import PythonHS.VM.CollectFunctionGlobalDecls (collectFunctionGlobalDecls)
 import PythonHS.VM.EnvState (EnvState (..))
 import PythonHS.VM.ExceptionState (ExceptionState (..))
 import PythonHS.VM.FindMethodFunctionName (findMethodFunctionName)
+import PythonHS.VM.FunctionInfo (FunctionInfo (..))
 import PythonHS.VM.Instruction (Instruction)
 import PythonHS.VM.LoopState (LoopState (..))
 import PythonHS.VM.VMState (VMState (..))
@@ -23,16 +24,16 @@ executeCreateInstance ::
   String ->
   [Value] ->
   Map.Map String Value ->
-  Map.Map String ([String], [(String, [Instruction])], [Instruction]) ->
+  Map.Map String FunctionInfo ->
   [String] ->
-  Either String ([Value], Map.Map String Value, Map.Map String Value, Map.Map String ([String], [(String, [Instruction])], [Instruction]), [String])
+  Either String ([Value], Map.Map String Value, Map.Map String Value, Map.Map String FunctionInfo, [String])
 executeCreateInstance execute isTopLevel pos stack localEnv className args globalsNow functionsNow outputsNow =
   let instanceValue = InstanceValue className []
    in case findMethodFunctionName globalsNow localEnv className "__init__" of
         Just initFunctionName ->
           case Map.lookup initFunctionName functionsNow of
             Nothing -> Left ("Name error: undefined function " ++ initFunctionName ++ " at " ++ showPos pos)
-            Just (initParams, initDefaults, initCode) -> do
+            Just (FunctionInfo initParams initDefaults initCode) -> do
               let initArgValues = instanceValue : args
                   initArgKinds = map (\_ -> (Nothing, pos)) initArgValues
               initialLocals <- bindCallArguments initFunctionName pos initParams initArgValues initArgKinds
