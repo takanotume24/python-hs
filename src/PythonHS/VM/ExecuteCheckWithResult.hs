@@ -3,8 +3,8 @@ module PythonHS.VM.ExecuteCheckWithResult (executeCheckWithResult) where
 import Data.Map.Strict qualified as Map
 import PythonHS.Evaluator.Value (Value (StringValue))
 import PythonHS.VM.EnvState (EnvState (..))
-import PythonHS.VM.ExecuteCheckWithResultConfig (ExecuteCheckWithResultConfig (..))
 import PythonHS.VM.ExceptionState (ExceptionState (..))
+import PythonHS.VM.ExecuteCheckWithResultConfig (ExecuteCheckWithResultConfig (..))
 import PythonHS.VM.IsTruthy (isTruthy)
 import PythonHS.VM.VMState (VMState (..))
 

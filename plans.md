@@ -271,18 +271,18 @@
 - `forM` / `mapM` の結果分解 `(value, rest)` — 多数
 
 ## 現在のスコープ（P54: function_declaration 段階的削減）
-- [ ] P54 開始: function_declaration（57件）をレコード型にまとめるリファクタリングを開始
-- [ ] P54-1: Parser 系 function_declaration（15ファイル）— 各 Config 型を導入し2引数を1引数に
-- [ ] P54-2: Evaluator 系 function_declaration（4ファイル）— `EvalExprInput` / `EvalStmtInput` 型を検討
-- [ ] P54-3: VM 系 function_declaration — `CompileExprInput` / `CompileStmtInput` 型を検討
-- [ ] P54-4: CLI 系 function_declaration — `RunFileInput` 型を検討
+- [x] P54 開始: function_declaration（57件）をレコード型にまとめるリファクタリングを開始
+- [x] P54-1: Parser 系 function_declaration（15ファイル）— 各 Config 型を導入し2引数を1引数に
+- [x] P54-2: Evaluator 系 function_declaration（4ファイル）— `EvalExprInput` / `EvalStmtInput` 型を検討
+- [x] P54-3: VM 系 function_declaration — `CompileExprInput` / `CompileStmtInput` 型を検討
+- [x] P54-4: CLI 系 function_declaration — `RunFileInput` 型を検討
 
 ## 現在のスコープ（P55: tuple 段階的削減）
-- [ ] P55 開始: tuple（541件）を専用レコード型に置き換えるリファクタリングを開始
-- [ ] P55-1: Parser の `(Expr, [Token])` 戻り値 — `ParseResult` レコード型を検討
-- [ ] P55-2: VM コンパイラの残存タプル — `CompileExprResult` で未対応の箇所を確認
-- [ ] P55-3: Evaluator の env/fenv ペア — `EvalContext` レコード型を検討
-- [ ] P55-4: `forM` / `mapM` の結果分解 — 個別対応が必要な箇所を特定
+- [x] P55 開始: tuple（541件）を専用レコード型に置き換えるリファクタリングを開始
+- [x] P55-1: Parser の `(Expr, [Token])` 戻り値 — `ParseResult` レコード型を検討
+- [x] P55-2: VM コンパイラの残存タプル — `CompileExprResult` で未対応の箇所を確認
+- [x] P55-3: Evaluator の env/fenv ペア — `EvalContext` レコード型を検討
+- [x] P55-4: `forM` / `mapM` の結果分解 — 個別対応が必要な箇所を特定
 
 ## detect-positional-args プロジェクト全体分析結果（2026-07-03）
 
@@ -482,6 +482,10 @@
 
 ## メンテナンス記録（要約）
 - 注記: 以下は時系列ログ。古い日付の「未対応」項目は、その後のエントリで仕様更新済みの場合がある。
+- 2026-10-28
+  - [x] 品質ゲート修復: `ormolu` が `src/PythonHS/VM/ExecuteCheckWithResult.hs` の import 順序で失敗していたため、`ExceptionState` と `ExecuteCheckWithResultConfig` の順序を修正
+  - [x] 状態確認: `cabal run detect-positional-args -- src` がすべてのカテゴリで 0 件を報告し、P54/P55 のリファクタリング目標は達成済み
+  - [x] 品質ゲート再実行: `cabal run quality-gate` が全項目 PASS することを確認
 - 2026-03-02
   - [x] P19開始/完了: VM専用で `yield` / `yield from` を導入し、同日内にテスト・実装・品質ゲートまで完了
   - [x] P19継続: lexer/parser/AST に `yield` 構文を追加（`YieldToken`、`YieldStmt`、`YieldFromStmt`、`ParseYieldStmt`）
