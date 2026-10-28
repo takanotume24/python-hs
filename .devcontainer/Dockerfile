@@ -6,9 +6,9 @@ FROM ${BASE_IMAGE}
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 ARG DEBIAN_FRONTEND=noninteractive
-ARG GHC_VERSION=latest
-ARG CABAL_VERSION=latest
-ARG HLS_VERSION=latest
+ARG GHC_VERSION=9.12.2
+ARG CABAL_VERSION=3.14.2.0
+ARG HLS_VERSION=2.10.0.0
 
 ENV BOOTSTRAP_HASKELL_NONINTERACTIVE=1
 ENV BOOTSTRAP_HASKELL_ADJUST_BASHRC=0
@@ -43,7 +43,7 @@ RUN curl --proto '=https' --tlsv1.2 -fsSL https://get-ghcup.haskell.org | sh \
 
 # Install Haskell formatting and linting tools required by the quality gate.
 RUN cabal update \
-    && cabal install ormolu hlint --overwrite-policy=always \
+    && cabal install ormolu hlint \
     && cabal clean
 
-RUN curl -fsSL https://opencode.ai/install | bash
+RUN curl -fsSL https://opencode.ai/v2/install | bash
