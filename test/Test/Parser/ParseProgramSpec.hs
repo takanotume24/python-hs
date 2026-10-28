@@ -1,5 +1,6 @@
 module Test.Parser.ParseProgramSpec (spec) where
 
+import Data.Either (isRight)
 import PythonHS.AST.BinaryOperator (BinaryOperator (..))
 import PythonHS.AST.DictEntry (DictEntry (..))
 import PythonHS.AST.ExceptSuite (ExceptSuite (..))
@@ -89,7 +90,7 @@ import PythonHS.Lexer.TokenType
   )
 import PythonHS.Parser.ParseError (ParseError (ExpectedExpression))
 import PythonHS.Parser.ParseProgram (parseProgram)
-import Test.Hspec (Spec, describe, expectationFailure, it, shouldBe)
+import Test.Hspec (Spec, describe, expectationFailure, it, shouldBe, shouldSatisfy)
 
 spec :: Spec
 spec = describe "parseProgram" $ do
@@ -182,6 +183,21 @@ spec = describe "parseProgram" $ do
                 (Position 1 1)
             ]
         )
+
+  it "parses decorated method inside class body" $ do
+    case scanTokens "class A:\n  @staticmethod\n  def f(x): return x + 1\n" of
+      Right tokens -> parseProgram tokens `shouldSatisfy` isRight
+      Left _ -> expectationFailure "lexer error"
+
+  it "parses decorated method inside class body followed by top-level statement" $ do
+    case scanTokens "class A:\n  @staticmethod\n  def f(x): return x + 1\nprint A.f(2)\n" of
+      Right tokens -> parseProgram tokens `shouldSatisfy` isRight
+      Left _ -> expectationFailure "lexer error"
+
+  it "parses decorated method inside class body followed by multiple top-level statements" $ do
+    case scanTokens "class A:\n  @staticmethod\n  def f(x): return x + 1\nprint A.f(2)\na = A()\ng = a.f\nprint g(3)\n" of
+      Right tokens -> parseProgram tokens `shouldSatisfy` isRight
+      Left _ -> expectationFailure "lexer error"
 
   it "parses dotted assignment target as assign stmt name" $ do
     parseProgram

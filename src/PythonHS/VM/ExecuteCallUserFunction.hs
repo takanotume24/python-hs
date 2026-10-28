@@ -10,7 +10,6 @@ import PythonHS.VM.CollectFunctionGlobalDecls (collectFunctionGlobalDecls)
 import PythonHS.VM.EnvState (EnvState (..))
 import PythonHS.VM.ExceptionState (ExceptionState (..))
 import PythonHS.VM.FunctionInfo (FunctionInfo (..))
-import PythonHS.VM.Instruction (Instruction)
 import PythonHS.VM.LoopState (LoopState (..))
 import PythonHS.VM.VMState (VMState (..))
 

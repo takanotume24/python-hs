@@ -284,6 +284,12 @@
 - [x] P55-3: Evaluator の env/fenv ペア — `EvalContext` レコード型を検討
 - [x] P55-4: `forM` / `mapM` の結果分解 — 個別対応が必要な箇所を特定
 
+## 現在のスコープ（P56: VM class method binding 拡張）
+- [x] P56 開始: `@staticmethod` / `@classmethod` によるメソッド束縛制御を VM に導入
+- [x] P56-1: `@staticmethod` サポート — クラス・インスタンス経由で self を束縛せず呼び出し
+- [x] P56-2: `@classmethod` サポート — クラス・インスタンス経由で cls を第1引数に束縛
+- [x] P56-3: 品質ゲート再実行（`cabal test` / `cabal run check-structure` / warning 0）
+
 ## detect-positional-args プロジェクト全体分析結果（2026-07-03）
 
 ### 分析概要
@@ -482,6 +488,14 @@
 
 ## メンテナンス記録（要約）
 - 注記: 以下は時系列ログ。古い日付の「未対応」項目は、その後のエントリで仕様更新済みの場合がある。
+- 2026-10-28
+  - [x] P56 完了: VM class method binding 拡張 — `@staticmethod` / `@classmethod` を VM に導入
+  - [x] P56-1 実装: `MethodKind` / `MethodNamePair` 型を追加し、`ClassValue` にメソッド種別を保持
+  - [x] P56-1 実装: `CompileClassStmt` がクラス内の `DecoratedStmt` を収集し、`@staticmethod` / `@classmethod` を判別
+  - [x] P56-1/2 実装: `LookupNameWithAttr` / `ExecuteCallFunction` で静的・クラスメソッドの束縛制御を追加
+  - [x] P56 テスト: `RunSourceVmSpec` / `ParseProgramSpec` に `@staticmethod` / `@classmethod` ケースを追加
+  - [x] P56 構造制約対応: `CollectClassMethods` を分離し、`CompileClassStmt` の 200 行制約を維持
+  - [x] P56 品質ゲート: `cabal run quality-gate` が全項目 PASS することを確認
 - 2026-10-28
   - [x] 品質ゲート修復: `ormolu` が `src/PythonHS/VM/ExecuteCheckWithResult.hs` の import 順序で失敗していたため、`ExceptionState` と `ExecuteCheckWithResultConfig` の順序を修正
   - [x] 状態確認: `cabal run detect-positional-args -- src` がすべてのカテゴリで 0 件を報告し、P54/P55 のリファクタリング目標は達成済み

@@ -107,6 +107,12 @@ spec = describe "runSourceVm (vm mvp)" $ do
   it "supports inherited unbound method value call via class attribute lookup" $ do
     runSourceVm "class A:\n  def f(self):\n    return 7\nclass B(A):\n  pass\ng = B.f\nprint g(B())\n" `shouldBe` Right ["7"]
 
+  it "supports @staticmethod method call via class and instance" $ do
+    runSourceVm "class A:\n  @staticmethod\n  def f(x): return x + 1\nprint A.f(2)\na = A()\ng = a.f\nprint g(3)\n" `shouldBe` Right ["3", "4"]
+
+  it "supports @classmethod method call via class and instance" $ do
+    runSourceVm "class A:\n  @classmethod\n  def f(cls, x): return x + 1\nprint A.f(2)\na = A()\ng = a.f\nprint g(3)\n" `shouldBe` Right ["3", "4"]
+
   it "runs function decorators in bottom-up order" $ do
     runSourceVm "def add1(fn):\n  return lambda x: (fn)(x) + 1\ndef mul2(fn):\n  return lambda x: (fn)(x) * 2\n@add1\n@mul2\ndef f(x):\n  return x\nprint f(3)\n" `shouldBe` Right ["7"]
 

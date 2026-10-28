@@ -25,6 +25,8 @@ import PythonHS.VM.Instruction (Instruction)
 import PythonHS.VM.KeywordArgInfo (KeywordArgInfo (..))
 import PythonHS.VM.LookupName (lookupName)
 import PythonHS.VM.LoopState (LoopState (..))
+import PythonHS.VM.MethodKind (MethodKind (..))
+import PythonHS.VM.MethodNamePair (MethodNamePair (..))
 import PythonHS.VM.ModulePrefixFor (modulePrefixFor)
 import PythonHS.VM.VMState (VMState (..))
 
@@ -88,15 +90,17 @@ executeCallFunction execute isTopLevel fname compiledArgs pos stack globalsEnv l
                       executeCreateInstance execute isTopLevel pos stack localEnv className args globalsAfterArgs functionsAfterArgs outputsAfterArgs
                     _ ->
                       case args of
-                        ClassValue className _ _ : methodArgs@(InstanceValue _ _ : _) ->
+                        classValueArg@(ClassValue className _ _) : restArgs ->
                           case findMethodFunctionName globalsAfterArgs localEnv className fname of
-                            Just methodFunctionName ->
-                              executeCallUserFunction execute isTopLevel pos stack localEnv methodFunctionName Nothing methodArgs globalsAfterArgs functionsAfterArgs outputsAfterArgs
+                            Just methodPair ->
+                              let methodArgs = methodArgsForClassCall methodPair classValueArg restArgs
+                               in executeCallUserFunction execute isTopLevel pos stack localEnv (methodNamePairMangled methodPair) Nothing methodArgs globalsAfterArgs functionsAfterArgs outputsAfterArgs
                             Nothing -> callBuiltinOrFail args globalsAfterArgs functionsAfterArgs outputsAfterArgs
-                        InstanceValue className _ : _ ->
+                        instanceArg@(InstanceValue className _) : restArgs ->
                           case findMethodFunctionName globalsAfterArgs localEnv className fname of
-                            Just methodFunctionName ->
-                              executeCallUserFunction execute isTopLevel pos stack localEnv methodFunctionName Nothing args globalsAfterArgs functionsAfterArgs outputsAfterArgs
+                            Just methodPair ->
+                              let methodArgs = methodArgsForInstanceCall methodPair className instanceArg restArgs globalsAfterArgs localEnv
+                               in executeCallUserFunction execute isTopLevel pos stack localEnv (methodNamePairMangled methodPair) Nothing methodArgs globalsAfterArgs functionsAfterArgs outputsAfterArgs
                             Nothing -> callBuiltinOrFail args globalsAfterArgs functionsAfterArgs outputsAfterArgs
                         _ -> callBuiltinOrFail args globalsAfterArgs functionsAfterArgs outputsAfterArgs
   where
@@ -137,6 +141,21 @@ executeCallFunction execute isTopLevel fname compiledArgs pos stack globalsEnv l
         (segment, []) -> [segment]
         (segment, '.' : rest) -> segment : splitByDot rest
         _ -> [text]
+
+    methodArgsForClassCall methodPair classValue restArgs =
+      case methodNamePairKind methodPair of
+        StaticMethod -> restArgs
+        ClassMethod -> classValue : restArgs
+        InstanceMethod -> restArgs
+
+    methodArgsForInstanceCall methodPair className instanceArg restArgs globalsNow localsNow =
+      case methodNamePairKind methodPair of
+        StaticMethod -> restArgs
+        ClassMethod ->
+          case lookupName className localsNow globalsNow of
+            Just classValue@ClassValue {} -> classValue : restArgs
+            _ -> restArgs
+        InstanceMethod -> instanceArg : restArgs
 
     isBuiltinName name =
       case callBuiltin CallBuiltinConfig {callBuiltinName = name, callBuiltinArgs = [], callBuiltinPos = pos} of

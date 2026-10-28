@@ -4,12 +4,14 @@ import PythonHS.AST.Expr (Expr)
 import PythonHS.AST.FunctionDefault (FunctionDefault)
 import PythonHS.AST.Stmt (Stmt)
 import PythonHS.Lexer.Position (Position)
+import PythonHS.VM.MethodKind (MethodKind)
 
 data MethodInfo = MethodInfo
   { methodInfoName :: String,
     methodInfoParams :: [String],
     methodInfoDefaults :: [FunctionDefault Expr],
     methodInfoBody :: [Stmt],
-    methodInfoPos :: Position
+    methodInfoPos :: Position,
+    methodInfoKind :: MethodKind
   }
   deriving (Eq, Show)

@@ -7,6 +7,7 @@ import PythonHS.Lexer.Position (Position)
 import PythonHS.VM.CompiledCallArg (CompiledCallArg)
 import PythonHS.VM.CompiledComprehensionClause (CompiledComprehensionClause)
 import PythonHS.VM.CompiledDefaultCode (CompiledDefaultCode)
+import PythonHS.VM.MethodNamePair (MethodNamePair)
 
 data Instruction
   = PushConst {pushConstValue :: Value}
@@ -63,7 +64,7 @@ data Instruction
   | DefineClass
       { defineClassName :: String,
         defineClassBase :: Maybe String,
-        defineClassMethods :: [(String, String)]
+        defineClassMethods :: [MethodNamePair]
       }
   | BuildListComprehension
       { buildListComprehensionClauses :: [CompiledComprehensionClause Instruction],

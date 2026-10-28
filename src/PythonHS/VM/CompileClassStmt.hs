@@ -5,6 +5,7 @@ import PythonHS.AST.Expr (Expr (..))
 import PythonHS.AST.Stmt (Stmt (..))
 import PythonHS.Evaluator.Value (Value (..))
 import PythonHS.Lexer.Position (Position (..))
+import PythonHS.VM.CollectClassMethods (collectClassMethods)
 import PythonHS.VM.CompileClassStmtConfig (CompileClassStmtConfig (..))
 import PythonHS.VM.CompileDefaultsResult (CompileDefaultsResult (..))
 import PythonHS.VM.CompileExprResult (CompileExprResult (..))
@@ -16,17 +17,16 @@ import PythonHS.VM.DataclassFlags (DataclassFlags (..))
 import PythonHS.VM.FieldInfo (FieldInfo (..))
 import PythonHS.VM.Instruction (Instruction (..))
 import PythonHS.VM.MethodInfo (MethodInfo (..))
+import PythonHS.VM.MethodKind (MethodKind (..))
 import PythonHS.VM.MethodNamePair (MethodNamePair (..))
 
 compileClassStmt :: CompileClassStmtConfig -> Either String CompileExprResult
 compileClassStmt config = do
   methodsResult <- compileMethodsAt baseIndex methods
   dataclassResult <- compileDataclassMethods fields methodNames maybeDataclass
-  let methodPairs = map (\m -> MethodNamePair {methodNamePairOriginal = methodInfoName m, methodNamePairMangled = className ++ "." ++ methodInfoName m}) methods
+  let methodPairs = map (\m -> MethodNamePair {methodNamePairOriginal = methodInfoName m, methodNamePairMangled = className ++ "." ++ methodInfoName m, methodNamePairKind = methodInfoKind m}) methods
       allPairs = methodPairs ++ dataclassCompilationResultPairs dataclassResult
-      originalNames = map methodNamePairOriginal allPairs
-      mangledNames = map methodNamePairMangled allPairs
-      classCode = compileExprResultCode methodsResult ++ dataclassCompilationResultCode dataclassResult ++ [DefineClass {defineClassName = className, defineClassBase = maybeBase, defineClassMethods = zip originalNames mangledNames}]
+      classCode = compileExprResultCode methodsResult ++ dataclassCompilationResultCode dataclassResult ++ [DefineClass {defineClassName = className, defineClassBase = maybeBase, defineClassMethods = allPairs}]
   pure (CompileExprResult {compileExprResultCode = classCode, compileExprResultEndIndex = compileExprResultEndIndex methodsResult + dataclassCompilationResultCount dataclassResult + 1})
   where
     compileDefaultsFn = compileClassStmtCompileDefaults config
@@ -37,7 +37,7 @@ compileClassStmt config = do
     maybeBase = compileClassStmtMaybeBase config
     body = compileClassStmtBody config
     maybeDataclass = compileClassStmtMaybeDataclass config
-    methods = collectMethods body
+    methods = collectClassMethods body
     fields = collectFields body
     methodNames = map methodInfoName methods
 
@@ -54,17 +54,6 @@ compileClassStmt config = do
       let methodResult = CompileExprResult {compileExprResultCode = [methodInstr], compileExprResultEndIndex = idx + 1}
       restResult <- compileMethodsAt (compileExprResultEndIndex methodResult) restMethodInfos
       pure CompileExprResult {compileExprResultCode = compileExprResultCode methodResult ++ compileExprResultCode restResult, compileExprResultEndIndex = compileExprResultEndIndex restResult}
-
-    collectMethods items =
-      case items of
-        [] -> []
-        item : restItems ->
-          case item of
-            FunctionDefStmt {functionDefStmtName = methodName, functionDefStmtParams = params, functionDefStmtBody = methodBody, functionDefStmtPos = methodPos} ->
-              MethodInfo {methodInfoName = methodName, methodInfoParams = params, methodInfoDefaults = [], methodInfoBody = methodBody, methodInfoPos = methodPos} : collectMethods restItems
-            FunctionDefDefaultsStmt {functionDefDefaultsStmtName = methodName, functionDefDefaultsStmtParams = params, functionDefDefaultsStmtDefaults = defaults, functionDefDefaultsStmtBody = methodBody, functionDefDefaultsStmtPos = methodPos} ->
-              MethodInfo {methodInfoName = methodName, methodInfoParams = params, methodInfoDefaults = defaults, methodInfoBody = methodBody, methodInfoPos = methodPos} : collectMethods restItems
-            _ -> collectMethods restItems
 
     collectFields items =
       case items of
@@ -98,7 +87,7 @@ compileClassStmt config = do
                     includeIfMissing "__gt__" methodNames' (maybe [] (\m -> [m]) gtMethod)
                   ]
               names = map compiledMethodDefName generated
-              pairs = map (\name -> MethodNamePair {methodNamePairOriginal = name, methodNamePairMangled = className ++ "." ++ name}) names
+              pairs = map (\name -> MethodNamePair {methodNamePairOriginal = name, methodNamePairMangled = className ++ "." ++ name, methodNamePairKind = InstanceMethod}) names
               code = map (\m -> DefineFunction {defineFunctionName = className ++ "." ++ compiledMethodDefName m, defineFunctionParams = compiledMethodDefParams m, defineFunctionDefaultCodes = compiledMethodDefDefaults m, defineFunctionCode = compiledMethodDefBody m}) generated
           pure DataclassCompilationResult {dataclassCompilationResultCode = code, dataclassCompilationResultPairs = pairs, dataclassCompilationResultCount = length code}
       where

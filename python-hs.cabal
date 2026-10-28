@@ -243,6 +243,7 @@ library
     , PythonHS.VM.ResolveStarExportNames
     , PythonHS.VM.ResolveLocalImports
     , PythonHS.VM.TransformImportAliases
+    , PythonHS.VM.CollectClassMethods
     , PythonHS.VM.CollectFunctionGlobalDecls
     , PythonHS.VM.EvaluateBuiltinArgs
     , PythonHS.VM.ExecuteArithmeticInstruction
@@ -328,6 +329,7 @@ library
     , PythonHS.VM.CompiledDefaultCode
     , PythonHS.VM.FunctionInfo
     , PythonHS.VM.MethodInfo
+    , PythonHS.VM.MethodKind
     , PythonHS.VM.CompiledMethodDef
     , PythonHS.VM.FieldInfo
     , PythonHS.VM.DataclassFlags

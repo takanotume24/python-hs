@@ -2,6 +2,8 @@ module PythonHS.Evaluator.Value (Value (..)) where
 
 import PythonHS.Evaluator.DictPair (DictPair)
 import PythonHS.Evaluator.ModuleAttr (ModuleAttr)
+import PythonHS.VM.MethodKind (MethodKind)
+import PythonHS.VM.MethodNamePair (MethodNamePair)
 
 data Value
   = IntValue {intValue :: Integer}
@@ -16,7 +18,7 @@ data Value
   | ClassValue
       { classValueName :: String,
         classValueBase :: Maybe String,
-        classValueMethods :: [(String, String)]
+        classValueMethods :: [MethodNamePair]
       }
   | InstanceValue
       { instanceValueClass :: String,

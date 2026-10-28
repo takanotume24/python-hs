@@ -3,7 +3,6 @@ module PythonHS.VM.EvaluateBuiltinArgs (evaluateBuiltinArgs) where
 import Data.Map.Strict qualified as Map
 import Data.Set qualified as Set
 import PythonHS.Evaluator.Value (Value (NoneValue))
-import PythonHS.Lexer.Position (Position)
 import PythonHS.VM.CompiledCallArg (CompiledCallArg (..))
 import PythonHS.VM.EnvState (EnvState (..))
 import PythonHS.VM.ExceptionState (ExceptionState (..))
