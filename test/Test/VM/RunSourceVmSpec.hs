@@ -152,6 +152,21 @@ spec = describe "runSourceVm (vm mvp)" $ do
   it "supports instance attribute assignment without class attribute" $ do
     runSourceVm "class A:\n  pass\na = A()\na.x = 1\nprint a.x\n" `shouldBe` Right ["1"]
 
+  it "shares class attribute reassignment across instances" $ do
+    runSourceVm "class A:\n  xs = []\nA.xs = append(A.xs, 1)\na = A()\nb = A()\nprint a.xs\nprint b.xs\nprint A.xs\n" `shouldBe` Right ["[1]", "[1]", "[1]"]
+
+  it "shares class attribute reassignment through classmethod" $ do
+    runSourceVm "class A:\n  xs = []\n  @classmethod\n  def add(cls, x):\n    cls.xs = append(cls.xs, x)\n_ = A.add(1)\na = A()\nprint a.xs\nprint A.xs\n" `shouldBe` Right ["[1]", "[1]"]
+
+  it "keeps class attribute assignment after instance creation" $ do
+    runSourceVm "class A:\n  x = 1\nA.x = 2\na = A()\nprint A.x\nprint a.x\n" `shouldBe` Right ["2", "2"]
+
+  it "updates instance fallback after class attribute reassignment" $ do
+    runSourceVm "class A:\n  x = 1\na = A()\nA.x = 2\nprint a.x\nprint A.x\n" `shouldBe` Right ["2", "2"]
+
+  it "keeps class attribute reassignment visible through classmethod after instance creation" $ do
+    runSourceVm "class A:\n  x = 1\n  @classmethod\n  def set(cls, v):\n    cls.x = v\na = A()\n_ = A.set(2)\nprint a.x\nprint A.x\n" `shouldBe` Right ["2", "2"]
+
   it "runs function decorators in bottom-up order" $ do
     runSourceVm "def add1(fn):\n  return lambda x: (fn)(x) + 1\ndef mul2(fn):\n  return lambda x: (fn)(x) * 2\n@add1\n@mul2\ndef f(x):\n  return x\nprint f(3)\n" `shouldBe` Right ["7"]
 

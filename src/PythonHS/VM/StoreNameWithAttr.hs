@@ -2,7 +2,7 @@ module PythonHS.VM.StoreNameWithAttr (storeNameWithAttr) where
 
 import Data.Map.Strict qualified as Map
 import Data.Set qualified as Set
-import PythonHS.Evaluator.Value (Value (ClassValue, InstanceValue, IntValue))
+import PythonHS.Evaluator.Value (Value (..))
 import PythonHS.VM.LookupName (lookupName)
 import PythonHS.VM.VMScopeContext (VMScopeContext (vmScopeContextGlobalDecls, vmScopeContextIsTopLevel))
 
@@ -25,9 +25,17 @@ storeNameWithAttr scopeCtx name value globalsNow localsNow =
               case storeAttrPath rootValue (splitAttrPath attrTail) value of
                 Left err -> Left err
                 Right newRoot ->
-                  if Map.member rootName localsNow
-                    then Right (globalsNow, Map.insert rootName newRoot localsNow)
-                    else Right (Map.insert rootName newRoot globalsNow, localsNow)
+                  let classNameMaybe = classNameFromValue rootName newRoot
+                      localsWithRoot = Map.insert rootName newRoot localsNow
+                      globalsWithRoot = Map.insert rootName newRoot globalsNow
+                      localsWithClass = insertClassName classNameMaybe newRoot localsWithRoot
+                      globalsWithClass = insertClassName classNameMaybe newRoot globalsWithRoot
+                   in if isTopLevelNow
+                        then Right (globalsWithClass, localsWithClass)
+                        else
+                          if Map.member rootName localsNow
+                            then Right (insertClassName classNameMaybe newRoot globalsNow, localsWithClass)
+                            else Right (globalsWithClass, localsNow)
         _ -> Left "VM runtime error: invalid store target"
   where
     splitAttrPath path =
@@ -63,6 +71,17 @@ storeNameWithAttr scopeCtx name value globalsNow localsNow =
                        in Right (InstanceValue className newPairs)
                 Nothing -> Left ("Name error: undefined identifier " ++ attrName ++ " at 0:0")
             _ -> Left "Type error: attribute store expects instance at 0:0"
+
+    classNameFromValue rootName rootValue =
+      case rootValue of
+        ClassValue {classValueName = className} ->
+          if className == rootName then Nothing else Just className
+        _ -> Nothing
+
+    insertClassName maybeName newValue env =
+      case maybeName of
+        Just className -> Map.insert className newValue env
+        Nothing -> env
 
     upsertAttr key newValue pairs =
       case pairs of

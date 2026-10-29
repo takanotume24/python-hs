@@ -317,6 +317,12 @@
 - [x] P60-3: 他のインスタンスには影響しないことを確認
 - [x] P60-4: 品質ゲート再実行（`cabal test` / `cabal run check-structure` / warning 0）
 
+## 現在のスコープ（P61: VM class attribute reassignment visibility）
+- [x] P61 開始: クラス属性の再束縛がインスタンスから見えることを回帰テストで固定
+- [x] P61-1: `A.xs = append(A.xs, 1)` 後に `a.xs` / `b.xs` が更新後の値を返す
+- [x] P61-2: `@classmethod` 内で `cls.xs = append(cls.xs, x)` した場合もインスタンスから反映される
+- [x] P61-3: 品質ゲート再実行（`cabal test` / `cabal run check-structure` / warning 0）
+
 ## detect-positional-args プロジェクト全体分析結果（2026-07-03）
 
 ### 分析概要
@@ -515,6 +521,12 @@
 
 ## メンテナンス記録（要約）
 - 注記: 以下は時系列ログ。古い日付の「未対応」項目は、その後のエントリで仕様更新済みの場合がある。
+- 2026-10-29
+  - [x] P61 完了: VM class attribute reassignment visibility — クラス属性の再束縛がインスタンスに反映
+  - [x] P61 実装: `StoreNameWithAttr` で属性パスのトップレベル時に `envLocals` と `envGlobals` を同期
+  - [x] P61 実装: `ClassValue` 更新時に `classValueName` のグローバル束縛も更新し、`@classmethod` 内からの変更を反映
+  - [x] P61 テスト: `RunSourceVmSpec` に `A.xs = ...` / `cls.xs = ...` / インスタンス生成後の反映ケースを追加
+  - [x] P61 品質ゲート: `cabal run quality-gate` が全項目 PASS することを確認
 - 2026-10-29
   - [x] P60 完了: VM instance attribute shadowing — インスタンス属性がクラス属性をシャドウイング
   - [x] P60 テスト: `RunSourceVmSpec` に `a.x = 2` でのシャドウイング・他インスタンス非影響・新規属性追加ケースを追加
