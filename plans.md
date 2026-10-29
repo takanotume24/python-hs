@@ -297,6 +297,12 @@
 - [x] P57-3: インスタンスからのクラス属性フォールバック参照（`a.x`）を実装
 - [x] P57-4: 品質ゲート再実行（`cabal test` / `cabal run check-structure` / warning 0）
 
+## 現在のスコープ（P58: VM class attribute inheritance）
+- [x] P58 開始: クラス属性を単一継承で解決できるように VM を拡張
+- [x] P58-1: `B.x` / `b.x`（`class B(A): pass`）で `A` のクラス属性を参照
+- [x] P58-2: サブクラルでオーバーライドしたクラス属性を優先（`class B(A): x = 2`）
+- [x] P58-3: 品質ゲート再実行（`cabal test` / `cabal run check-structure` / warning 0）
+
 ## detect-positional-args プロジェクト全体分析結果（2026-07-03）
 
 ### 分析概要
@@ -495,6 +501,12 @@
 
 ## メンテナンス記録（要約）
 - 注記: 以下は時系列ログ。古い日付の「未対応」項目は、その後のエントリで仕様更新済みの場合がある。
+- 2026-10-29
+  - [x] P58 完了: VM class attribute inheritance — 単一継承でクラス属性を解決
+  - [x] P58 実装: `LookupNameWithAttr` に `findClassAttrOrMethod` ヘルパーを追加し、クラスと基底クラスを MRO 順に走査
+  - [x] P58 実装: `B.x` / `b.x` で `A` のクラス属性を参照可能にし、サブクラスでのオーバーライドも優先
+  - [x] P58 テスト: `RunSourceVmSpec` に継承クラス属性の参照・オーバーライドケースを追加
+  - [x] P58 品質ゲート: `cabal run quality-gate` が全項目 PASS することを確認
 - 2026-10-29
   - [x] P57 完了: VM class attributes — クラス本体の代入文を `ClassValue` の属性として保持
   - [x] P57 実装: `ClassAttrItem` / `CollectClassAttrs` / `CompileClassAttrs` を追加し、`StoreClassAttr` 命令でクラス属性を格納

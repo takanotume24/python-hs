@@ -122,6 +122,15 @@ spec = describe "runSourceVm (vm mvp)" $ do
   it "supports class attribute assignment" $ do
     runSourceVm "class A:\n  x = 1\nA.x = 2\nprint A.x\n" `shouldBe` Right ["2"]
 
+  it "supports inherited class attributes referenced from subclass" $ do
+    runSourceVm "class A:\n  x = 1\nclass B(A):\n  pass\nprint B.x\n" `shouldBe` Right ["1"]
+
+  it "supports inherited class attributes as fallback from instance" $ do
+    runSourceVm "class A:\n  x = 1\nclass B(A):\n  pass\nb = B()\nprint b.x\n" `shouldBe` Right ["1"]
+
+  it "supports subclass overriding inherited class attributes" $ do
+    runSourceVm "class A:\n  x = 1\nclass B(A):\n  x = 2\nprint B.x\nb = B()\nprint b.x\n" `shouldBe` Right ["2", "2"]
+
   it "runs function decorators in bottom-up order" $ do
     runSourceVm "def add1(fn):\n  return lambda x: (fn)(x) + 1\ndef mul2(fn):\n  return lambda x: (fn)(x) * 2\n@add1\n@mul2\ndef f(x):\n  return x\nprint f(3)\n" `shouldBe` Right ["7"]
 

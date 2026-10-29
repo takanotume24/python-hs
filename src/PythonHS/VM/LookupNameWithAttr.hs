@@ -3,7 +3,6 @@ module PythonHS.VM.LookupNameWithAttr (lookupNameWithAttr) where
 import Data.Map.Strict qualified as Map
 import PythonHS.Evaluator.ModuleAttr (ModuleAttr (..))
 import PythonHS.Evaluator.Value (Value (ClassValue, FunctionRefValue, InstanceValue, ModuleValue))
-import PythonHS.VM.FindMethodFunctionName (findMethodFunctionName)
 import PythonHS.VM.LookupName (lookupName)
 import PythonHS.VM.MethodKind (MethodKind (..))
 import PythonHS.VM.MethodNamePair (MethodNamePair (..))
@@ -24,6 +23,20 @@ lookupNameWithAttr name localNow globalsNow =
         (segment, []) -> [segment]
         (segment, '.' : rest) -> segment : splitAttrPath rest
         _ -> [path]
+
+    findClassAttrOrMethod className attrName =
+      case lookupName className localNow globalsNow of
+        Just (ClassValue _ maybeBase methods classAttrs) ->
+          case lookup attrName classAttrs of
+            Just attrValue -> Just (Right attrValue)
+            Nothing ->
+              case filter (\methodPair -> methodNamePairOriginal methodPair == attrName) methods of
+                (methodPair : _) -> Just (Left methodPair)
+                [] ->
+                  case maybeBase of
+                    Just baseName -> findClassAttrOrMethod baseName attrName
+                    Nothing -> Nothing
+        _ -> Nothing
 
     methodRefForInstance methodPair instanceValue className =
       case methodNamePairKind methodPair of
@@ -49,30 +62,15 @@ lookupNameWithAttr name localNow globalsNow =
               case lookup attrName attrPairs of
                 Just attrValue -> loadAttrPath attrValue restAttrs
                 Nothing ->
-                  case lookupName className localNow globalsNow of
-                    Just (ClassValue _ _ _ classAttrs) ->
-                      case lookup attrName classAttrs of
-                        Just attrValue -> loadAttrPath attrValue restAttrs
-                        Nothing ->
-                          case findMethodFunctionName globalsNow localNow className attrName of
-                            Just methodPair ->
-                              loadAttrPath (methodRefForInstance methodPair currentValue className) restAttrs
-                            Nothing -> Nothing
-                    _ ->
-                      case findMethodFunctionName globalsNow localNow className attrName of
-                        Just methodPair ->
-                          loadAttrPath (methodRefForInstance methodPair currentValue className) restAttrs
-                        Nothing -> Nothing
-            ClassValue className _ methods classAttrs ->
-              case lookup attrName classAttrs of
-                Just attrValue -> loadAttrPath attrValue restAttrs
-                Nothing ->
-                  case filter (\methodPair -> methodNamePairOriginal methodPair == attrName) methods of
-                    (methodPair : _) -> loadAttrPath (methodRefForClass methodPair currentValue) restAttrs
-                    [] ->
-                      case findMethodFunctionName globalsNow localNow className attrName of
-                        Just methodPair -> loadAttrPath (methodRefForClass methodPair currentValue) restAttrs
-                        Nothing -> Nothing
+                  case findClassAttrOrMethod className attrName of
+                    Just (Right attrValue) -> loadAttrPath attrValue restAttrs
+                    Just (Left methodPair) -> loadAttrPath (methodRefForInstance methodPair currentValue className) restAttrs
+                    Nothing -> Nothing
+            ClassValue className _ _ _ ->
+              case findClassAttrOrMethod className attrName of
+                Just (Right attrValue) -> loadAttrPath attrValue restAttrs
+                Just (Left methodPair) -> loadAttrPath (methodRefForClass methodPair currentValue) restAttrs
+                Nothing -> Nothing
             ModuleValue moduleName moduleAttrs ->
               case filter (\attr -> moduleAttrName attr == attrName) moduleAttrs of
                 (attr : _) -> loadAttrPath (moduleAttrValue attr) restAttrs
