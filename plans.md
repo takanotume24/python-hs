@@ -310,6 +310,13 @@
 - [x] P59-3: 継承・オーバーライドしたクラス属性をメソッド内から参照
 - [x] P59-4: 品質ゲート再実行（`cabal test` / `cabal run check-structure` / warning 0）
 
+## 現在のスコープ（P60: VM instance attribute shadowing）
+- [x] P60 開始: インスタンス属性がクラス属性をシャドウイングする挙動を VM で固定
+- [x] P60-1: `a.x = 2` でインスタンス属性を作成し、`a.x` は `2` を返す
+- [x] P60-2: `A.x` はクラス属性のまま変化しないことを確認
+- [x] P60-3: 他のインスタンスには影響しないことを確認
+- [x] P60-4: 品質ゲート再実行（`cabal test` / `cabal run check-structure` / warning 0）
+
 ## detect-positional-args プロジェクト全体分析結果（2026-07-03）
 
 ### 分析概要
@@ -508,6 +515,11 @@
 
 ## メンテナンス記録（要約）
 - 注記: 以下は時系列ログ。古い日付の「未対応」項目は、その後のエントリで仕様更新済みの場合がある。
+- 2026-10-29
+  - [x] P60 完了: VM instance attribute shadowing — インスタンス属性がクラス属性をシャドウイング
+  - [x] P60 テスト: `RunSourceVmSpec` に `a.x = 2` でのシャドウイング・他インスタンス非影響・新規属性追加ケースを追加
+  - [x] P60 確認: `StoreNameWithAttr` の `InstanceValue` 経由で既に実装済み
+  - [x] P60 品質ゲート: `cabal run quality-gate` が全項目 PASS することを確認
 - 2026-10-29
   - [x] P59 完了: VM class attribute access from methods — メソッド本体からクラス属性を参照
   - [x] P59 テスト: `RunSourceVmSpec` に `self.x` / `cls.x` / 継承・オーバーライドケースを追加

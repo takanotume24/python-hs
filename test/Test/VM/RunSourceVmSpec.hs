@@ -143,6 +143,15 @@ spec = describe "runSourceVm (vm mvp)" $ do
   it "supports overridden class attribute access from method" $ do
     runSourceVm "class A:\n  x = 1\nclass B(A):\n  x = 2\n  def get_x(self):\n    return self.x\nb = B()\nprint b.get_x()\n" `shouldBe` Right ["2"]
 
+  it "supports instance attribute shadowing class attribute" $ do
+    runSourceVm "class A:\n  x = 1\na = A()\na.x = 2\nprint a.x\nprint A.x\n" `shouldBe` Right ["2", "1"]
+
+  it "does not affect other instances when shadowing class attribute" $ do
+    runSourceVm "class A:\n  x = 1\na = A()\nb = A()\na.x = 2\nprint a.x\nprint b.x\nprint A.x\n" `shouldBe` Right ["2", "1", "1"]
+
+  it "supports instance attribute assignment without class attribute" $ do
+    runSourceVm "class A:\n  pass\na = A()\na.x = 1\nprint a.x\n" `shouldBe` Right ["1"]
+
   it "runs function decorators in bottom-up order" $ do
     runSourceVm "def add1(fn):\n  return lambda x: (fn)(x) + 1\ndef mul2(fn):\n  return lambda x: (fn)(x) * 2\n@add1\n@mul2\ndef f(x):\n  return x\nprint f(3)\n" `shouldBe` Right ["7"]
 
