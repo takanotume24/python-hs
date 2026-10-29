@@ -182,6 +182,15 @@ spec = describe "runSourceVm (vm mvp)" $ do
   it "prefers subclass class attribute over inherited method" $ do
     runSourceVm "class A:\n  def x(self):\n    return 1\nclass B(A):\n  x = 2\nb = B()\nprint b.x\n" `shouldBe` Right ["2"]
 
+  it "supports augmented assignment on class attribute" $ do
+    runSourceVm "class A:\n  x = 1\nA.x += 2\nprint A.x\n" `shouldBe` Right ["3"]
+
+  it "supports augmented assignment on instance attribute fallback" $ do
+    runSourceVm "class A:\n  x = 1\na = A()\na.x += 2\nprint a.x\nprint A.x\n" `shouldBe` Right ["3", "1"]
+
+  it "supports augmented assignment on class attribute through classmethod" $ do
+    runSourceVm "class A:\n  x = 1\n  @classmethod\n  def inc(cls):\n    cls.x += 2\n_ = A.inc()\nprint A.x\na = A()\nprint a.x\n" `shouldBe` Right ["3", "3"]
+
   it "runs function decorators in bottom-up order" $ do
     runSourceVm "def add1(fn):\n  return lambda x: (fn)(x) + 1\ndef mul2(fn):\n  return lambda x: (fn)(x) * 2\n@add1\n@mul2\ndef f(x):\n  return x\nprint f(3)\n" `shouldBe` Right ["7"]
 

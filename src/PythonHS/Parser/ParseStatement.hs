@@ -100,6 +100,36 @@ parseStatement tokenStream =
           let valueExpr = parseResultValue valueResult
               remaining = parseResultRemaining valueResult
           Right (ParseResult {parseResultValue = AssignStmt {assignStmtName = obj ++ "." ++ attr, assignStmtValue = valueExpr, assignStmtPos = pos}, parseResultRemaining = remaining})
+        Token {tokenType = IdentifierToken, lexeme = obj, position = pos} : Token {tokenType = DotToken} : Token {tokenType = IdentifierToken, lexeme = attr} : Token {tokenType = PlusAssignToken} : rest -> do
+          valueResult <- parseExpr rest
+          let valueExpr = parseResultValue valueResult
+              remaining = parseResultRemaining valueResult
+          Right (ParseResult {parseResultValue = AddAssignStmt {addAssignStmtName = obj ++ "." ++ attr, addAssignStmtValue = valueExpr, addAssignStmtPos = pos}, parseResultRemaining = remaining})
+        Token {tokenType = IdentifierToken, lexeme = obj, position = pos} : Token {tokenType = DotToken} : Token {tokenType = IdentifierToken, lexeme = attr} : Token {tokenType = MinusAssignToken} : rest -> do
+          valueResult <- parseExpr rest
+          let valueExpr = parseResultValue valueResult
+              remaining = parseResultRemaining valueResult
+          Right (ParseResult {parseResultValue = SubAssignStmt {subAssignStmtName = obj ++ "." ++ attr, subAssignStmtValue = valueExpr, subAssignStmtPos = pos}, parseResultRemaining = remaining})
+        Token {tokenType = IdentifierToken, lexeme = obj, position = pos} : Token {tokenType = DotToken} : Token {tokenType = IdentifierToken, lexeme = attr} : Token {tokenType = StarAssignToken} : rest -> do
+          valueResult <- parseExpr rest
+          let valueExpr = parseResultValue valueResult
+              remaining = parseResultRemaining valueResult
+          Right (ParseResult {parseResultValue = MulAssignStmt {mulAssignStmtName = obj ++ "." ++ attr, mulAssignStmtValue = valueExpr, mulAssignStmtPos = pos}, parseResultRemaining = remaining})
+        Token {tokenType = IdentifierToken, lexeme = obj, position = pos} : Token {tokenType = DotToken} : Token {tokenType = IdentifierToken, lexeme = attr} : Token {tokenType = SlashAssignToken} : rest -> do
+          valueResult <- parseExpr rest
+          let valueExpr = parseResultValue valueResult
+              remaining = parseResultRemaining valueResult
+          Right (ParseResult {parseResultValue = DivAssignStmt {divAssignStmtName = obj ++ "." ++ attr, divAssignStmtValue = valueExpr, divAssignStmtPos = pos}, parseResultRemaining = remaining})
+        Token {tokenType = IdentifierToken, lexeme = obj, position = pos} : Token {tokenType = DotToken} : Token {tokenType = IdentifierToken, lexeme = attr} : Token {tokenType = PercentAssignToken} : rest -> do
+          valueResult <- parseExpr rest
+          let valueExpr = parseResultValue valueResult
+              remaining = parseResultRemaining valueResult
+          Right (ParseResult {parseResultValue = ModAssignStmt {modAssignStmtName = obj ++ "." ++ attr, modAssignStmtValue = valueExpr, modAssignStmtPos = pos}, parseResultRemaining = remaining})
+        Token {tokenType = IdentifierToken, lexeme = obj, position = pos} : Token {tokenType = DotToken} : Token {tokenType = IdentifierToken, lexeme = attr} : Token {tokenType = DoubleSlashAssignToken} : rest -> do
+          valueResult <- parseExpr rest
+          let valueExpr = parseResultValue valueResult
+              remaining = parseResultRemaining valueResult
+          Right (ParseResult {parseResultValue = FloorDivAssignStmt {floorDivAssignStmtName = obj ++ "." ++ attr, floorDivAssignStmtValue = valueExpr, floorDivAssignStmtPos = pos}, parseResultRemaining = remaining})
         Token {tokenType = IdentifierToken, lexeme = firstName, position = pos} : Token {tokenType = CommaToken} : rest ->
           parseUnpackAssign (ParseUnpackAssignConfig {parseUnpackAssignFirstName = firstName, parseUnpackAssignPos = pos, parseUnpackAssignTokenStream = rest})
         Token {tokenType = IdentifierToken, lexeme = name, position = pos} : Token {tokenType = ColonToken} : rest ->

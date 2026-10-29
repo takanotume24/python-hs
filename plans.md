@@ -336,6 +336,12 @@
 - [x] P63-2: サブクラスのクラス属性が親クラスのメソッドを上書き
 - [x] P63-3: 品質ゲート再実行（`cabal test` / `cabal run check-structure` / warning 0）
 
+## 現在のスコープ（P64: VM augmented assignment on attributes）
+- [x] P64 開始: 属性パスに対する複合代入（`A.x += 1` / `a.x += 1`）を VM でサポート
+- [x] P64-1: パーサに `obj.attr += expr` の各演算子ケースを追加
+- [x] P64-2: クラス属性 / インスタンス属性 / classmethod 内 `cls.x` に対する `+=` をテスト
+- [x] P64-3: 品質ゲート再実行（`cabal test` / `cabal run check-structure` / warning 0）
+
 ## detect-positional-args プロジェクト全体分析結果（2026-07-03）
 
 ### 分析概要
@@ -534,6 +540,12 @@
 
 ## メンテナンス記録（要約）
 - 注記: 以下は時系列ログ。古い日付の「未対応」項目は、その後のエントリで仕様更新済みの場合がある。
+- 2026-10-29
+  - [x] P64 完了: VM augmented assignment on attributes
+  - [x] P64 実装: `ParseStatement` に `obj.attr += expr` など6種類の複合代入パターンを追加
+  - [x] P64 確認: 既存の `CompileCompoundAssign` が `LoadName`/`StoreName` で属性パスを扱えるため、VM 側は変更なし
+  - [x] P64 テスト: `RunSourceVmSpec` に `A.x += 1` / `a.x += 1` / `@classmethod` 内 `cls.x += 1` ケースを追加
+  - [x] P64 品質ゲート: `cabal run quality-gate` が全項目 PASS することを確認
 - 2026-10-29
   - [x] P63 完了: VM class attribute / method override precedence
   - [x] P63 確認: `findClassAttrOrMethod` の MRO 順探索により、サブクラスのメソッド／クラス属性が正しく優先されることをテストで固定
