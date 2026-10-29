@@ -167,6 +167,15 @@ spec = describe "runSourceVm (vm mvp)" $ do
   it "keeps class attribute reassignment visible through classmethod after instance creation" $ do
     runSourceVm "class A:\n  x = 1\n  @classmethod\n  def set(cls, v):\n    cls.x = v\na = A()\n_ = A.set(2)\nprint a.x\nprint A.x\n" `shouldBe` Right ["2", "2"]
 
+  it "supports class attribute referencing another class attribute" $ do
+    runSourceVm "class A:\n  x = 1\n  y = x + 1\nprint A.y\n" `shouldBe` Right ["2"]
+
+  it "supports class attribute referencing global variable" $ do
+    runSourceVm "n = 1\nclass A:\n  x = n + 1\nprint A.x\n" `shouldBe` Right ["2"]
+
+  it "does not overwrite instance shadowing when class attribute changes" $ do
+    runSourceVm "class A:\n  x = 1\na = A()\na.x = 2\nA.x = 3\nprint a.x\nb = A()\nprint b.x\nprint A.x\n" `shouldBe` Right ["2", "3", "3"]
+
   it "runs function decorators in bottom-up order" $ do
     runSourceVm "def add1(fn):\n  return lambda x: (fn)(x) + 1\ndef mul2(fn):\n  return lambda x: (fn)(x) * 2\n@add1\n@mul2\ndef f(x):\n  return x\nprint f(3)\n" `shouldBe` Right ["7"]
 

@@ -248,6 +248,8 @@ library
     , PythonHS.VM.CollectClassAttrs
     , PythonHS.VM.CompileClassAttrs
     , PythonHS.VM.CompileClassAttrsConfig
+    , PythonHS.VM.RewriteClassAttrRefs
+    , PythonHS.VM.RewriteClassAttrRefsConfig
     , PythonHS.VM.CollectFunctionGlobalDecls
     , PythonHS.VM.EvaluateBuiltinArgs
     , PythonHS.VM.ExecuteArithmeticInstruction

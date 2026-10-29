@@ -323,6 +323,13 @@
 - [x] P61-2: `@classmethod` 内で `cls.xs = append(cls.xs, x)` した場合もインスタンスから反映される
 - [x] P61-3: 品質ゲート再実行（`cabal test` / `cabal run check-structure` / warning 0）
 
+## 現在のスコープ（P62: VM class attribute cross-reference and shadowing interactions）
+- [x] P62 開始: クラス属性同士の参照・外部変数参照・シャドウイング相互作用を回帰テストで固定
+- [x] P62-1: クラス属性 `y = x + 1` のように他のクラス属性を参照して定義
+- [x] P62-2: クラス属性がグローバル変数を参照して定義
+- [x] P62-3: インスタンス属性でシャドウイング後、クラス属性を変更してもインスタンス属性は上書きされない
+- [x] P62-4: 品質ゲート再実行（`cabal test` / `cabal run check-structure` / warning 0）
+
 ## detect-positional-args プロジェクト全体分析結果（2026-07-03）
 
 ### 分析概要
@@ -521,6 +528,11 @@
 
 ## メンテナンス記録（要約）
 - 注記: 以下は時系列ログ。古い日付の「未対応」項目は、その後のエントリで仕様更新済みの場合がある。
+- 2026-10-29
+  - [x] P62 完了: VM class attribute cross-reference and shadowing interactions
+  - [x] P62 実装: `RewriteClassAttrRefs` を追加し、クラス属性定義式内の同クラス属性参照を `A.x` 形式に書き換え
+  - [x] P62 テスト: `RunSourceVmSpec` に `y = x + 1` / グローバル変数参照 / シャドウイング非上書きケースを追加
+  - [x] P62 品質ゲート: `cabal run quality-gate` が全項目 PASS することを確認
 - 2026-10-29
   - [x] P61 完了: VM class attribute reassignment visibility — クラス属性の再束縛がインスタンスに反映
   - [x] P61 実装: `StoreNameWithAttr` で属性パスのトップレベル時に `envLocals` と `envGlobals` を同期
