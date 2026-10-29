@@ -330,6 +330,12 @@
 - [x] P62-3: インスタンス属性でシャドウイング後、クラス属性を変更してもインスタンス属性は上書きされない
 - [x] P62-4: 品質ゲート再実行（`cabal test` / `cabal run check-structure` / warning 0）
 
+## 現在のスコープ（P63: VM class attribute / method override precedence）
+- [x] P63 開始: 継承時のクラス属性とメソッドの優先順位を回帰テストで固定
+- [x] P63-1: サブクラスのメソッドが親クラスのクラス属性を上書き
+- [x] P63-2: サブクラスのクラス属性が親クラスのメソッドを上書き
+- [x] P63-3: 品質ゲート再実行（`cabal test` / `cabal run check-structure` / warning 0）
+
 ## detect-positional-args プロジェクト全体分析結果（2026-07-03）
 
 ### 分析概要
@@ -528,6 +534,11 @@
 
 ## メンテナンス記録（要約）
 - 注記: 以下は時系列ログ。古い日付の「未対応」項目は、その後のエントリで仕様更新済みの場合がある。
+- 2026-10-29
+  - [x] P63 完了: VM class attribute / method override precedence
+  - [x] P63 確認: `findClassAttrOrMethod` の MRO 順探索により、サブクラスのメソッド／クラス属性が正しく優先されることをテストで固定
+  - [x] P63 テスト: `RunSourceVmSpec` に「サブクラスメソッドが親クラス属性を上書き」「サブクラス属性が親メソッドを上書き」ケースを追加
+  - [x] P63 品質ゲート: `cabal run quality-gate` が全項目 PASS することを確認
 - 2026-10-29
   - [x] P62 完了: VM class attribute cross-reference and shadowing interactions
   - [x] P62 実装: `RewriteClassAttrRefs` を追加し、クラス属性定義式内の同クラス属性参照を `A.x` 形式に書き換え
