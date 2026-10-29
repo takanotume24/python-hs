@@ -15,7 +15,7 @@ executeDefineClassInstruction ::
 executeDefineClassInstruction execute state instruction =
   case instruction of
     DefineClass className maybeBase methods ->
-      let classValue = ClassValue className maybeBase methods
+      let classValue = ClassValue className maybeBase methods []
           env = vmEnv state
        in if vmIsTopLevel state || Set.member className (envGlobalDecls env)
             then

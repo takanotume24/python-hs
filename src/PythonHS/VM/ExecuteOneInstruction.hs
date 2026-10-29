@@ -18,6 +18,7 @@ import PythonHS.VM.ExecuteDefineClassInstruction (executeDefineClassInstruction)
 import PythonHS.VM.ExecuteForNext (executeForNext)
 import PythonHS.VM.ExecuteListComprehension (executeListComprehension)
 import PythonHS.VM.ExecuteMatchPattern (executeMatchPattern)
+import PythonHS.VM.ExecuteStoreClassAttr (executeStoreClassAttr)
 import PythonHS.VM.ExecuteUnpackToNames (executeUnpackToNames)
 import PythonHS.VM.FunctionInfo (FunctionInfo (..))
 import PythonHS.VM.HandleExceptionInstruction (handleExceptionInstruction)
@@ -131,6 +132,8 @@ executeOneInstruction execute state instruction =
                       }
             DefineClass className maybeBase methods ->
               executeDefineClassInstruction execute state (DefineClass className maybeBase methods)
+            StoreClassAttr className attrName ->
+              executeStoreClassAttr execute state (StoreClassAttr className attrName)
             CallFunction fname compiledArgs pos -> do
               (newStack, newGlobals, newLocalEnv, newFunctions, newOutputs) <-
                 executeCallFunction execute (vmIsTopLevel state) fname compiledArgs pos (vmStack state) (envGlobals (vmEnv state)) (envLocals (vmEnv state)) (envFunctions (vmEnv state)) (vmOutputs state)

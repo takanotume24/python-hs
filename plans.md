@@ -290,6 +290,13 @@
 - [x] P56-2: `@classmethod` サポート — クラス・インスタンス経由で cls を第1引数に束縛
 - [x] P56-3: 品質ゲート再実行（`cabal test` / `cabal run check-structure` / warning 0）
 
+## 現在のスコープ（P57: VM class attributes）
+- [x] P57 開始: クラス本体におけるメソッド以外の文（クラス変数）を VM でサポート
+- [x] P57-1: クラス本体の代入文を収集し、`ClassValue` に属性として保持
+- [x] P57-2: クラス属性の参照（`A.x`）と更新（`A.x = ...`）を実装
+- [x] P57-3: インスタンスからのクラス属性フォールバック参照（`a.x`）を実装
+- [x] P57-4: 品質ゲート再実行（`cabal test` / `cabal run check-structure` / warning 0）
+
 ## detect-positional-args プロジェクト全体分析結果（2026-07-03）
 
 ### 分析概要
@@ -488,6 +495,14 @@
 
 ## メンテナンス記録（要約）
 - 注記: 以下は時系列ログ。古い日付の「未対応」項目は、その後のエントリで仕様更新済みの場合がある。
+- 2026-10-29
+  - [x] P57 完了: VM class attributes — クラス本体の代入文を `ClassValue` の属性として保持
+  - [x] P57 実装: `ClassAttrItem` / `CollectClassAttrs` / `CompileClassAttrs` を追加し、`StoreClassAttr` 命令でクラス属性を格納
+  - [x] P57 実装: `LookupNameWithAttr` でクラス属性参照（`A.x`）とインスタンスからのフォールバック（`a.x`）を追加
+  - [x] P57 実装: `StoreNameWithAttr` でクラス属性更新（`A.x = ...`）を追加
+  - [x] P57 修正: `ExecuteStoreClassAttr` がトップレベルで `envLocals` と `envGlobals` を同期するよう修正
+  - [x] P57 テスト: `RunSourceVmSpec` にクラス属性の参照・更新・インスタンスフォールバックケースを追加
+  - [x] P57 品質ゲート: `cabal run quality-gate` が全項目 PASS することを確認
 - 2026-10-28
   - [x] P56 完了: VM class method binding 拡張 — `@staticmethod` / `@classmethod` を VM に導入
   - [x] P56-1 実装: `MethodKind` / `MethodNamePair` 型を追加し、`ClassValue` にメソッド種別を保持

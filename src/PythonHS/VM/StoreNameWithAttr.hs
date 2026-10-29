@@ -2,7 +2,7 @@ module PythonHS.VM.StoreNameWithAttr (storeNameWithAttr) where
 
 import Data.Map.Strict qualified as Map
 import Data.Set qualified as Set
-import PythonHS.Evaluator.Value (Value (InstanceValue, IntValue))
+import PythonHS.Evaluator.Value (Value (ClassValue, InstanceValue, IntValue))
 import PythonHS.VM.LookupName (lookupName)
 import PythonHS.VM.VMScopeContext (VMScopeContext (vmScopeContextGlobalDecls, vmScopeContextIsTopLevel))
 
@@ -47,6 +47,9 @@ storeNameWithAttr scopeCtx name value globalsNow localsNow =
                 else
                   let newPairs = upsertAttr attrName valueToStore attrPairs
                    in Right (InstanceValue className newPairs)
+            ClassValue className maybeBase methods classAttrs ->
+              let newAttrs = upsertAttr attrName valueToStore classAttrs
+               in Right (ClassValue className maybeBase methods newAttrs)
             _ -> Left "Type error: attribute store expects instance at 0:0"
         attrName : restAttrs ->
           case currentValue of

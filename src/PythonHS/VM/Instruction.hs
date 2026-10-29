@@ -66,6 +66,10 @@ data Instruction
         defineClassBase :: Maybe String,
         defineClassMethods :: [MethodNamePair]
       }
+  | StoreClassAttr
+      { storeClassAttrClassName :: String,
+        storeClassAttrAttrName :: String
+      }
   | BuildListComprehension
       { buildListComprehensionClauses :: [CompiledComprehensionClause Instruction],
         buildListComprehensionValueCode :: [Instruction],

@@ -243,7 +243,11 @@ library
     , PythonHS.VM.ResolveStarExportNames
     , PythonHS.VM.ResolveLocalImports
     , PythonHS.VM.TransformImportAliases
+    , PythonHS.VM.ClassAttrItem
     , PythonHS.VM.CollectClassMethods
+    , PythonHS.VM.CollectClassAttrs
+    , PythonHS.VM.CompileClassAttrs
+    , PythonHS.VM.CompileClassAttrsConfig
     , PythonHS.VM.CollectFunctionGlobalDecls
     , PythonHS.VM.EvaluateBuiltinArgs
     , PythonHS.VM.ExecuteArithmeticInstruction
@@ -253,6 +257,7 @@ library
     , PythonHS.VM.ExecuteCheckWithResult
     , PythonHS.VM.ExecuteCheckWithResultConfig
     , PythonHS.VM.ExecuteCreateInstance
+    , PythonHS.VM.ExecuteStoreClassAttr
     , PythonHS.VM.ExecuteForNext
     , PythonHS.VM.ExecuteListComprehension
     , PythonHS.VM.ExecutePendingExceptionInstruction

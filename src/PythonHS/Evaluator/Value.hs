@@ -18,7 +18,8 @@ data Value
   | ClassValue
       { classValueName :: String,
         classValueBase :: Maybe String,
-        classValueMethods :: [MethodNamePair]
+        classValueMethods :: [MethodNamePair],
+        classValueAttrs :: [(String, Value)]
       }
   | InstanceValue
       { instanceValueClass :: String,

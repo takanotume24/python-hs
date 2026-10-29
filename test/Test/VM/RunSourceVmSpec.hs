@@ -113,6 +113,15 @@ spec = describe "runSourceVm (vm mvp)" $ do
   it "supports @classmethod method call via class and instance" $ do
     runSourceVm "class A:\n  @classmethod\n  def f(cls, x): return x + 1\nprint A.f(2)\na = A()\ng = a.f\nprint g(3)\n" `shouldBe` Right ["3", "4"]
 
+  it "supports class attributes referenced from class" $ do
+    runSourceVm "class A:\n  x = 1\nprint A.x\n" `shouldBe` Right ["1"]
+
+  it "supports class attributes as fallback from instance" $ do
+    runSourceVm "class A:\n  x = 1\na = A()\nprint a.x\n" `shouldBe` Right ["1"]
+
+  it "supports class attribute assignment" $ do
+    runSourceVm "class A:\n  x = 1\nA.x = 2\nprint A.x\n" `shouldBe` Right ["2"]
+
   it "runs function decorators in bottom-up order" $ do
     runSourceVm "def add1(fn):\n  return lambda x: (fn)(x) + 1\ndef mul2(fn):\n  return lambda x: (fn)(x) * 2\n@add1\n@mul2\ndef f(x):\n  return x\nprint f(3)\n" `shouldBe` Right ["7"]
 

@@ -86,11 +86,11 @@ executeCallFunction execute isTopLevel fname compiledArgs pos stack globalsEnv l
                 Left err -> Left err
                 Right (args, globalsAfterArgs, functionsAfterArgs, outputsAfterArgs) ->
                   case lookupName fname localEnv globalsEnv of
-                    Just (ClassValue className _ _) ->
+                    Just (ClassValue className _ _ _) ->
                       executeCreateInstance execute isTopLevel pos stack localEnv className args globalsAfterArgs functionsAfterArgs outputsAfterArgs
                     _ ->
                       case args of
-                        classValueArg@(ClassValue className _ _) : restArgs ->
+                        classValueArg@(ClassValue className _ _ _) : restArgs ->
                           case findMethodFunctionName globalsAfterArgs localEnv className fname of
                             Just methodPair ->
                               let methodArgs = methodArgsForClassCall methodPair classValueArg restArgs

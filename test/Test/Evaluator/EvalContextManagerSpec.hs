@@ -2,7 +2,7 @@ module Test.Evaluator.EvalContextManagerSpec (spec) where
 
 import Data.Map.Strict qualified as Map
 import PythonHS.AST.Expr (Expr (..))
-import PythonHS.AST.WithContext (ContextManager (..), WithEntry (..), WithExit (..))
+import PythonHS.AST.WithContext (ContextManager (..))
 import PythonHS.Evaluator.Env (Env)
 import PythonHS.Evaluator.EvalContextManager (EnterContextManagerInput (..), ExitContextManagerInput (..), ExitContextManagerWithExceptionInput (..), bindContextResult, enterContextManager, exitContextManager, exitContextManagerWithException)
 import PythonHS.Evaluator.EvalExprResult (EvalExprResult (..))

@@ -5,7 +5,10 @@ import PythonHS.AST.Expr (Expr (..))
 import PythonHS.AST.Stmt (Stmt (..))
 import PythonHS.Evaluator.Value (Value (..))
 import PythonHS.Lexer.Position (Position (..))
+import PythonHS.VM.CollectClassAttrs (collectClassAttrs)
 import PythonHS.VM.CollectClassMethods (collectClassMethods)
+import PythonHS.VM.CompileClassAttrs (compileClassAttrs)
+import PythonHS.VM.CompileClassAttrsConfig (CompileClassAttrsConfig (..))
 import PythonHS.VM.CompileClassStmtConfig (CompileClassStmtConfig (..))
 import PythonHS.VM.CompileDefaultsResult (CompileDefaultsResult (..))
 import PythonHS.VM.CompileExprResult (CompileExprResult (..))
@@ -26,8 +29,11 @@ compileClassStmt config = do
   dataclassResult <- compileDataclassMethods fields methodNames maybeDataclass
   let methodPairs = map (\m -> MethodNamePair {methodNamePairOriginal = methodInfoName m, methodNamePairMangled = className ++ "." ++ methodInfoName m, methodNamePairKind = methodInfoKind m}) methods
       allPairs = methodPairs ++ dataclassCompilationResultPairs dataclassResult
-      classCode = compileExprResultCode methodsResult ++ dataclassCompilationResultCode dataclassResult ++ [DefineClass {defineClassName = className, defineClassBase = maybeBase, defineClassMethods = allPairs}]
-  pure (CompileExprResult {compileExprResultCode = classCode, compileExprResultEndIndex = compileExprResultEndIndex methodsResult + dataclassCompilationResultCount dataclassResult + 1})
+      defineClassIndex = compileExprResultEndIndex methodsResult + dataclassCompilationResultCount dataclassResult
+      defineClassInstr = DefineClass {defineClassName = className, defineClassBase = maybeBase, defineClassMethods = allPairs}
+  attrsResult <- compileClassAttrs CompileClassAttrsConfig {compileClassAttrsCompileExpr = compileExpr, compileClassAttrsClassName = className, compileClassAttrsBaseIndex = defineClassIndex + 1, compileClassAttrsAttrs = classAttrs}
+  let classCode = compileExprResultCode methodsResult ++ dataclassCompilationResultCode dataclassResult ++ [defineClassInstr] ++ compileExprResultCode attrsResult
+  pure (CompileExprResult {compileExprResultCode = classCode, compileExprResultEndIndex = compileExprResultEndIndex attrsResult})
   where
     compileDefaultsFn = compileClassStmtCompileDefaults config
     compileStatements = compileClassStmtCompileStatements config
@@ -38,6 +44,7 @@ compileClassStmt config = do
     body = compileClassStmtBody config
     maybeDataclass = compileClassStmtMaybeDataclass config
     methods = collectClassMethods body
+    classAttrs = collectClassAttrs body
     fields = collectFields body
     methodNames = map methodInfoName methods
 

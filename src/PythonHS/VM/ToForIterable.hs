@@ -3,7 +3,6 @@ module PythonHS.VM.ToForIterable (toForIterable) where
 import PythonHS.Evaluator.DictPair (DictPair (..))
 import PythonHS.Evaluator.ShowPos (showPos)
 import PythonHS.Evaluator.Value (Value (..))
-import PythonHS.Lexer.Position (Position)
 import PythonHS.VM.ToForIterableConfig (ToForIterableConfig (..))
 
 toForIterable :: ToForIterableConfig -> Either String [Value]

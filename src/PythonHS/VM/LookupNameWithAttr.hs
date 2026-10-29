@@ -49,17 +49,30 @@ lookupNameWithAttr name localNow globalsNow =
               case lookup attrName attrPairs of
                 Just attrValue -> loadAttrPath attrValue restAttrs
                 Nothing ->
-                  case findMethodFunctionName globalsNow localNow className attrName of
-                    Just methodPair ->
-                      loadAttrPath (methodRefForInstance methodPair currentValue className) restAttrs
-                    Nothing -> Nothing
-            ClassValue className maybeBase methods ->
-              case filter (\methodPair -> methodNamePairOriginal methodPair == attrName) methods of
-                (methodPair : _) -> loadAttrPath (methodRefForClass methodPair currentValue) restAttrs
-                [] ->
-                  case findMethodFunctionName globalsNow localNow className attrName of
-                    Just methodPair -> loadAttrPath (methodRefForClass methodPair currentValue) restAttrs
-                    Nothing -> Nothing
+                  case lookupName className localNow globalsNow of
+                    Just (ClassValue _ _ _ classAttrs) ->
+                      case lookup attrName classAttrs of
+                        Just attrValue -> loadAttrPath attrValue restAttrs
+                        Nothing ->
+                          case findMethodFunctionName globalsNow localNow className attrName of
+                            Just methodPair ->
+                              loadAttrPath (methodRefForInstance methodPair currentValue className) restAttrs
+                            Nothing -> Nothing
+                    _ ->
+                      case findMethodFunctionName globalsNow localNow className attrName of
+                        Just methodPair ->
+                          loadAttrPath (methodRefForInstance methodPair currentValue className) restAttrs
+                        Nothing -> Nothing
+            ClassValue className _ methods classAttrs ->
+              case lookup attrName classAttrs of
+                Just attrValue -> loadAttrPath attrValue restAttrs
+                Nothing ->
+                  case filter (\methodPair -> methodNamePairOriginal methodPair == attrName) methods of
+                    (methodPair : _) -> loadAttrPath (methodRefForClass methodPair currentValue) restAttrs
+                    [] ->
+                      case findMethodFunctionName globalsNow localNow className attrName of
+                        Just methodPair -> loadAttrPath (methodRefForClass methodPair currentValue) restAttrs
+                        Nothing -> Nothing
             ModuleValue moduleName moduleAttrs ->
               case filter (\attr -> moduleAttrName attr == attrName) moduleAttrs of
                 (attr : _) -> loadAttrPath (moduleAttrValue attr) restAttrs
