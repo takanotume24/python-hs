@@ -131,6 +131,18 @@ spec = describe "runSourceVm (vm mvp)" $ do
   it "supports subclass overriding inherited class attributes" $ do
     runSourceVm "class A:\n  x = 1\nclass B(A):\n  x = 2\nprint B.x\nb = B()\nprint b.x\n" `shouldBe` Right ["2", "2"]
 
+  it "supports class attribute access from instance method" $ do
+    runSourceVm "class A:\n  x = 1\n  def get_x(self):\n    return self.x\na = A()\nprint a.get_x()\n" `shouldBe` Right ["1"]
+
+  it "supports class attribute access from classmethod" $ do
+    runSourceVm "class A:\n  x = 1\n  @classmethod\n  def get_x(cls):\n    return cls.x\nprint A.get_x()\na = A()\nprint a.get_x()\n" `shouldBe` Right ["1", "1"]
+
+  it "supports inherited class attribute access from method" $ do
+    runSourceVm "class A:\n  x = 1\nclass B(A):\n  def get_x(self):\n    return self.x\nb = B()\nprint b.get_x()\n" `shouldBe` Right ["1"]
+
+  it "supports overridden class attribute access from method" $ do
+    runSourceVm "class A:\n  x = 1\nclass B(A):\n  x = 2\n  def get_x(self):\n    return self.x\nb = B()\nprint b.get_x()\n" `shouldBe` Right ["2"]
+
   it "runs function decorators in bottom-up order" $ do
     runSourceVm "def add1(fn):\n  return lambda x: (fn)(x) + 1\ndef mul2(fn):\n  return lambda x: (fn)(x) * 2\n@add1\n@mul2\ndef f(x):\n  return x\nprint f(3)\n" `shouldBe` Right ["7"]
 

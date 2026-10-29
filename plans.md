@@ -303,6 +303,13 @@
 - [x] P58-2: サブクラルでオーバーライドしたクラス属性を優先（`class B(A): x = 2`）
 - [x] P58-3: 品質ゲート再実行（`cabal test` / `cabal run check-structure` / warning 0）
 
+## 現在のスコープ（P59: VM class attribute access from methods）
+- [x] P59 開始: メソッド本体からクラス属性を参照できるように回帰テストで固定
+- [x] P59-1: `self.x` でインスタンスメソッドからクラス属性を参照
+- [x] P59-2: `cls.x` でクラスメソッドからクラス属性を参照
+- [x] P59-3: 継承・オーバーライドしたクラス属性をメソッド内から参照
+- [x] P59-4: 品質ゲート再実行（`cabal test` / `cabal run check-structure` / warning 0）
+
 ## detect-positional-args プロジェクト全体分析結果（2026-07-03）
 
 ### 分析概要
@@ -501,6 +508,11 @@
 
 ## メンテナンス記録（要約）
 - 注記: 以下は時系列ログ。古い日付の「未対応」項目は、その後のエントリで仕様更新済みの場合がある。
+- 2026-10-29
+  - [x] P59 完了: VM class attribute access from methods — メソッド本体からクラス属性を参照
+  - [x] P59 テスト: `RunSourceVmSpec` に `self.x` / `cls.x` / 継承・オーバーライドケースを追加
+  - [x] P59 確認: P58 の `findClassAttrOrMethod` によりメソッド内からもクラス属性が解決済み
+  - [x] P59 品質ゲート: `cabal run quality-gate` が全項目 PASS することを確認
 - 2026-10-29
   - [x] P58 完了: VM class attribute inheritance — 単一継承でクラス属性を解決
   - [x] P58 実装: `LookupNameWithAttr` に `findClassAttrOrMethod` ヘルパーを追加し、クラスと基底クラスを MRO 順に走査
