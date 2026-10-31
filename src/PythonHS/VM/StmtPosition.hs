@@ -20,6 +20,7 @@ stmtPosition stmt =
     DivAssignStmt {divAssignStmtPos} -> divAssignStmtPos
     ModAssignStmt {modAssignStmtPos} -> modAssignStmtPos
     FloorDivAssignStmt {floorDivAssignStmtPos} -> floorDivAssignStmtPos
+    DeleteStmt {deleteStmtPos} -> deleteStmtPos
     FunctionDefStmt {functionDefStmtPos} -> functionDefStmtPos
     FunctionDefDefaultsStmt {functionDefDefaultsStmtPos} -> functionDefDefaultsStmtPos
     BreakStmt {breakStmtPos} -> breakStmtPos

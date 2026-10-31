@@ -9,6 +9,7 @@ import PythonHS.Lexer.TokenType
         ClassToken,
         ContinueToken,
         DefToken,
+        DelToken,
         ElifToken,
         ElseToken,
         ExceptToken,
@@ -51,6 +52,7 @@ keywordOrIdentifier value
   | value == "for" = ForToken
   | value == "in" = InToken
   | value == "def" = DefToken
+  | value == "del" = DelToken
   | value == "class" = ClassToken
   | value == "lambda" = LambdaToken
   | value == "yield" = YieldToken

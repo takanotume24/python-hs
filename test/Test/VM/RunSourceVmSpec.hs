@@ -191,6 +191,15 @@ spec = describe "runSourceVm (vm mvp)" $ do
   it "supports augmented assignment on class attribute through classmethod" $ do
     runSourceVm "class A:\n  x = 1\n  @classmethod\n  def inc(cls):\n    cls.x += 2\n_ = A.inc()\nprint A.x\na = A()\nprint a.x\n" `shouldBe` Right ["3", "3"]
 
+  it "supports deleting class attribute" $ do
+    runSourceVm "class A:\n  x = 1\ndel A.x\nprint A.x\n" `shouldBe` Left "Name error: undefined identifier A.x at 4:7"
+
+  it "supports deleting instance attribute" $ do
+    runSourceVm "class A:\n  x = 1\na = A()\na.x = 2\ndel a.x\nprint a.x\n" `shouldBe` Right ["1"]
+
+  it "supports deleting class attribute through classmethod" $ do
+    runSourceVm "class A:\n  x = 1\n  @classmethod\n  def remove(cls):\n    del cls.x\n_ = A.remove()\nprint A.x\n" `shouldBe` Left "Name error: undefined identifier A.x at 7:7"
+
   it "runs function decorators in bottom-up order" $ do
     runSourceVm "def add1(fn):\n  return lambda x: (fn)(x) + 1\ndef mul2(fn):\n  return lambda x: (fn)(x) * 2\n@add1\n@mul2\ndef f(x):\n  return x\nprint f(3)\n" `shouldBe` Right ["7"]
 

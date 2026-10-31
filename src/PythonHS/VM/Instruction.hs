@@ -16,6 +16,7 @@ data Instruction
         loadNamePos :: Position
       }
   | StoreName {storeNameName :: String}
+  | DeleteName {deleteNameTarget :: String}
   | BuildList {buildListCount :: Int}
   | BuildTuple {buildTupleCount :: Int}
   | BuildDict {buildDictCount :: Int}

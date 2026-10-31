@@ -42,6 +42,7 @@ data TokenType
   | ForToken
   | InToken
   | DefToken
+  | DelToken
   | ClassToken
   | LambdaToken
   | YieldToken

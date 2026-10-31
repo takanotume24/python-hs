@@ -37,6 +37,7 @@ transformImportAliases renameDefNames moduleAlias callAlias identAlias stmt =
       ModAssignStmt name (transformExpr moduleAlias callAlias identAlias expr) pos
     FloorDivAssignStmt {floorDivAssignStmtName = name, floorDivAssignStmtValue = expr, floorDivAssignStmtPos = pos} ->
       FloorDivAssignStmt name (transformExpr moduleAlias callAlias identAlias expr) pos
+    DeleteStmt {deleteStmtTarget = target, deleteStmtPos = pos} -> DeleteStmt target pos
     PrintStmt {printStmtValue = expr, printStmtPos = pos} -> PrintStmt (transformExpr moduleAlias callAlias identAlias expr) pos
     ReturnStmt {returnStmtValue = expr, returnStmtPos = pos} -> ReturnStmt (transformExpr moduleAlias callAlias identAlias expr) pos
     YieldStmt {yieldStmtValue = expr, yieldStmtPos = pos} -> YieldStmt (transformExpr moduleAlias callAlias identAlias expr) pos

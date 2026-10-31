@@ -15,6 +15,7 @@ import PythonHS.VM.ExecuteCallValueFunction (executeCallValueFunction)
 import PythonHS.VM.ExecuteCheckWithResult (executeCheckWithResult)
 import PythonHS.VM.ExecuteCheckWithResultConfig (ExecuteCheckWithResultConfig (..))
 import PythonHS.VM.ExecuteDefineClassInstruction (executeDefineClassInstruction)
+import PythonHS.VM.ExecuteDeleteName (executeDeleteName)
 import PythonHS.VM.ExecuteForNext (executeForNext)
 import PythonHS.VM.ExecuteListComprehension (executeListComprehension)
 import PythonHS.VM.ExecuteMatchPattern (executeMatchPattern)
@@ -63,6 +64,8 @@ executeOneInstruction execute state instruction =
                       let newEnv = (vmEnv state) {envGlobals = newGlobals, envLocals = newLocals}
                        in execute state {vmIp = vmIp state + 1, vmStack = rest, vmEnv = newEnv}
                 _ -> Left "VM runtime error: store requires one value on stack"
+            DeleteName target ->
+              executeDeleteName execute state (DeleteName target)
             BuildList count ->
               case popValues PopValuesConfig {popValuesCount = count, popValuesStack = vmStack state} of
                 Left err -> Left err

@@ -71,6 +71,10 @@ data Stmt
         floorDivAssignStmtValue :: Expr,
         floorDivAssignStmtPos :: Position
       }
+  | DeleteStmt
+      { deleteStmtTarget :: String,
+        deleteStmtPos :: Position
+      }
   | PrintStmt
       { printStmtValue :: Expr,
         printStmtPos :: Position

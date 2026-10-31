@@ -260,6 +260,7 @@ library
     , PythonHS.VM.ExecuteCheckWithResultConfig
     , PythonHS.VM.ExecuteCreateInstance
     , PythonHS.VM.ExecuteStoreClassAttr
+    , PythonHS.VM.ExecuteDeleteName
     , PythonHS.VM.ExecuteForNext
     , PythonHS.VM.ExecuteListComprehension
     , PythonHS.VM.ExecutePendingExceptionInstruction

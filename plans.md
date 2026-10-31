@@ -342,6 +342,13 @@
 - [x] P64-2: クラス属性 / インスタンス属性 / classmethod 内 `cls.x` に対する `+=` をテスト
 - [x] P64-3: 品質ゲート再実行（`cabal test` / `cabal run check-structure` / warning 0）
 
+## 現在のスコープ（P65: VM delete on attributes）
+- [x] P65 開始: 属性パスに対する `del`（`del A.x` / `del a.x`）を VM でサポート
+- [x] P65-1: 字句解析に `DelToken` を追加し、`del` をキーワードとして認識
+- [x] P65-2: AST / パーサ / コンパイル / 実行に `DeleteStmt` / `DeleteName` を追加
+- [x] P65-3: クラス属性 / インスタンス属性 / classmethod 内 `cls.x` の削除をテスト
+- [x] P65-4: 品質ゲート再実行（`cabal test` / `cabal run check-structure` / warning 0）
+
 ## detect-positional-args プロジェクト全体分析結果（2026-07-03）
 
 ### 分析概要
@@ -540,6 +547,13 @@
 
 ## メンテナンス記録（要約）
 - 注記: 以下は時系列ログ。古い日付の「未対応」項目は、その後のエントリで仕様更新済みの場合がある。
+- 2026-10-31
+  - [x] P65 完了: VM delete on attributes
+  - [x] P65 実装: `DelToken` を追加し、`del` をキーワードとして認識
+  - [x] P65 実装: AST / パーサ / コンパイル / 実行に `DeleteStmt` / `DeleteName` を追加
+  - [x] P65 実装: `ExecuteDeleteName` で単純名・属性パスの削除、ClassValue 更新時のグローバル同期を実装
+  - [x] P65 テスト: `RunSourceVmSpec` に `del A.x` / `del a.x` / `@classmethod` 内 `del cls.x` ケースを追加
+  - [x] P65 品質ゲート: `cabal run quality-gate` が全項目 PASS することを確認
 - 2026-10-29
   - [x] P64 完了: VM augmented assignment on attributes
   - [x] P64 実装: `ParseStatement` に `obj.attr += expr` など6種類の複合代入パターンを追加
