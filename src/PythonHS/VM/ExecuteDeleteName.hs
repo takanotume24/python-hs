@@ -21,10 +21,10 @@ executeDeleteName execute state instruction =
         Left err -> Left err
         Right newEnv -> execute state {vmIp = vmIp state + 1, vmEnv = newEnv}
     _ -> Left "VM runtime error: unexpected instruction in executeDeleteName"
-
--- The rest of the implementation lives in the where clause to keep the
--- top-level function single and focused on instruction dispatch.
   where
+    -- The rest of the implementation lives in the where clause to keep the
+    -- top-level function single and focused on instruction dispatch.
+
     deleteTarget scopeCtx target env =
       case break (== '.') target of
         (_, []) -> deleteSimpleName scopeCtx target env

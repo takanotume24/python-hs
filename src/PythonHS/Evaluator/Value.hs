@@ -27,4 +27,5 @@ data Value
       }
   | BreakValue
   | ContinueValue
+  | UnboundLocalValue {unboundLocalValueName :: String}
   deriving (Eq, Show)

@@ -18,3 +18,4 @@ isTruthy value =
     InstanceValue {} -> True
     BreakValue -> True
     ContinueValue -> True
+    UnboundLocalValue {} -> False

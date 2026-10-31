@@ -251,6 +251,8 @@ library
     , PythonHS.VM.RewriteClassAttrRefs
     , PythonHS.VM.RewriteClassAttrRefsConfig
     , PythonHS.VM.CollectFunctionGlobalDecls
+    , PythonHS.VM.CollectFunctionGlobalStmtDecls
+    , PythonHS.VM.CollectFunctionLocalDecls
     , PythonHS.VM.EvaluateBuiltinArgs
     , PythonHS.VM.ExecuteArithmeticInstruction
     , PythonHS.VM.ExecuteCallFunction

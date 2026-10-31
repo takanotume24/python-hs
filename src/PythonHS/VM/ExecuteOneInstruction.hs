@@ -4,7 +4,7 @@ import Data.Map.Strict qualified as Map
 import Data.Set qualified as Set
 import PythonHS.Evaluator.MaxLoopIterations (maxLoopIterations)
 import PythonHS.Evaluator.ShowPos (showPos)
-import PythonHS.Evaluator.Value (Value (DictValue, FunctionRefValue, ListValue, StringValue, TupleValue))
+import PythonHS.Evaluator.Value (Value (DictValue, FunctionRefValue, ListValue, StringValue, TupleValue, UnboundLocalValue), unboundLocalValueName)
 import PythonHS.Evaluator.ValueToOutput (valueToOutput)
 import PythonHS.VM.EnvState (EnvState (..))
 import PythonHS.VM.ExceptionState (ExceptionState (..))
@@ -48,7 +48,11 @@ executeOneInstruction execute state instruction =
             PushConst value -> execute state {vmIp = vmIp state + 1, vmStack = value : vmStack state}
             LoadName name pos ->
               case lookupNameWithAttr name (envLocals (vmEnv state)) (envGlobals (vmEnv state)) of
-                Just value -> execute state {vmIp = vmIp state + 1, vmStack = value : vmStack state}
+                Just value ->
+                  case value of
+                    UnboundLocalValue {unboundLocalValueName = unboundName} ->
+                      Left ("UnboundLocalError: local variable " ++ unboundName ++ " referenced before assignment at " ++ showPos pos)
+                    _ -> execute state {vmIp = vmIp state + 1, vmStack = value : vmStack state}
                 Nothing ->
                   case Map.lookup name (envFunctions (vmEnv state)) of
                     Just _ -> execute state {vmIp = vmIp state + 1, vmStack = FunctionRefValue name [] : vmStack state}

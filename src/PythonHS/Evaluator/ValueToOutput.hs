@@ -19,6 +19,7 @@ valueToOutput value =
     InstanceValue {instanceValueClass = className} -> "<" ++ className ++ " instance>"
     BreakValue -> "<break>"
     ContinueValue -> "<continue>"
+    UnboundLocalValue {unboundLocalValueName = name} -> "<unbound local " ++ name ++ ">"
   where
     pairToOutput pair = valueToOutput (dictPairKey pair) ++ ": " ++ valueToOutput (dictPairValue pair)
 

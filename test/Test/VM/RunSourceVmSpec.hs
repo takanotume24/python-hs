@@ -200,6 +200,9 @@ spec = describe "runSourceVm (vm mvp)" $ do
   it "supports deleting class attribute through classmethod" $ do
     runSourceVm "class A:\n  x = 1\n  @classmethod\n  def remove(cls):\n    del cls.x\n_ = A.remove()\nprint A.x\n" `shouldBe` Left "Name error: undefined identifier A.x at 7:7"
 
+  it "reports UnboundLocalError for local variable referenced before assignment" $ do
+    runSourceVm "x = 1\ndef f():\n  return x\n  x = 2\nprint f()\n" `shouldBe` Left "UnboundLocalError: local variable x referenced before assignment at 3:10"
+
   it "runs function decorators in bottom-up order" $ do
     runSourceVm "def add1(fn):\n  return lambda x: (fn)(x) + 1\ndef mul2(fn):\n  return lambda x: (fn)(x) * 2\n@add1\n@mul2\ndef f(x):\n  return x\nprint f(3)\n" `shouldBe` Right ["7"]
 

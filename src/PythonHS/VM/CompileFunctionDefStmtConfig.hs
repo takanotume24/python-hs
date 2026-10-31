@@ -1,5 +1,6 @@
 module PythonHS.VM.CompileFunctionDefStmtConfig (CompileFunctionDefStmtConfig (..)) where
 
+import Data.Set (Set)
 import PythonHS.AST.Expr (Expr)
 import PythonHS.AST.FunctionDefault (FunctionDefault)
 import PythonHS.AST.Stmt (Stmt)
@@ -12,5 +13,7 @@ data CompileFunctionDefStmtConfig = CompileFunctionDefStmtConfig
     compileFunctionDefStmtCompileExpr :: Int -> Expr -> Either String CompileExprResult,
     compileFunctionDefStmtPosDef :: Position,
     compileFunctionDefStmtDefaults :: [FunctionDefault Expr],
-    compileFunctionDefStmtBody :: [Stmt]
+    compileFunctionDefStmtBody :: [Stmt],
+    compileFunctionDefStmtParams :: [String],
+    compileFunctionDefStmtGlobalDecls :: Set String
   }

@@ -349,6 +349,14 @@
 - [x] P65-3: クラス属性 / インスタンス属性 / classmethod 内 `cls.x` の削除をテスト
 - [x] P65-4: 品質ゲート再実行（`cabal test` / `cabal run check-structure` / warning 0）
 
+## 現在のスコープ（P66: VM UnboundLocalError）
+- [x] P66 開始: 関数内で代入がある名前はローカル変数とみなし、代入前の参照をエラーにする
+- [x] P66-1: `UnboundLocalValue` センチネルを導入し、ローカル変数を未束縛状態で初期化
+- [x] P66-2: `LoadName` 時にセンチネルを検出して `UnboundLocalError` を返す
+- [x] P66-3: 関数コンパイル時にローカル宣言を収集し、センチネル初期化コードを挿入
+- [x] P66-4: `global` 宣言を AST から収集し、ローカル判定から除外する `CollectFunctionGlobalStmtDecls` を追加
+- [x] P66-5: 品質ゲート再実行（`cabal test` / `cabal run check-structure` / warning 0）
+
 ## detect-positional-args プロジェクト全体分析結果（2026-07-03）
 
 ### 分析概要
@@ -547,6 +555,14 @@
 
 ## メンテナンス記録（要約）
 - 注記: 以下は時系列ログ。古い日付の「未対応」項目は、その後のエントリで仕様更新済みの場合がある。
+- 2026-10-31
+  - [x] P66 完了: VM UnboundLocalError
+  - [x] P66 実装: `Value` に `UnboundLocalValue` センチネルを追加し、出力・真偽値処理も更新
+  - [x] P66 実装: `LoadName` で `UnboundLocalValue` を検出して `UnboundLocalError` を返す
+  - [x] P66 実装: `CollectFunctionLocalDecls` で関数内のローカル宣言を収集し、関数先頭でセンチネル初期化
+  - [x] P66 実装: `CollectFunctionGlobalStmtDecls` で `global` 宣言を AST から収集し、ローカル判定から除外
+  - [x] P66 テスト: `RunSourceVmSpec` に「代入前に参照されたローカル変数で `UnboundLocalError`」ケースを追加
+  - [x] P66 品質ゲート: `cabal run quality-gate` が全項目 PASS することを確認
 - 2026-10-31
   - [x] P65 完了: VM delete on attributes
   - [x] P65 実装: `DelToken` を追加し、`del` をキーワードとして認識
