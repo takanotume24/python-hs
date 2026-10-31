@@ -34,11 +34,18 @@ executeDeleteName execute state instruction =
     deleteSimpleName scopeCtx name env =
       let isTopLevelNow = vmScopeContextIsTopLevel scopeCtx
           globalDeclsNow = vmScopeContextGlobalDecls scopeCtx
+          unboundSentinel = UnboundLocalValue {unboundLocalValueName = name}
        in if isTopLevelNow || Set.member name globalDeclsNow
             then
               let newGlobals = Map.delete name (envGlobals env)
                in Right env {envGlobals = newGlobals, envLocals = if isTopLevelNow then newGlobals else envLocals env}
-            else Right env {envLocals = Map.delete name (envLocals env)}
+            else
+              if Map.member name (envLocals env)
+                then Right env {envLocals = Map.insert name unboundSentinel (Map.delete name (envLocals env))}
+                else
+                  if Map.member name (envGlobals env)
+                    then Right env {envGlobals = Map.delete name (envGlobals env)}
+                    else Left ("Name error: undefined identifier " ++ name ++ " at 0:0")
 
     splitAttrPath path =
       case break (== '.') path of

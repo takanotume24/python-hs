@@ -357,6 +357,12 @@
 - [x] P66-4: `global` 宣言を AST から収集し、ローカル判定から除外する `CollectFunctionGlobalStmtDecls` を追加
 - [x] P66-5: 品質ゲート再実行（`cabal test` / `cabal run check-structure` / warning 0）
 
+## 現在のスコープ（P67: VM local variable remains local after del）
+- [x] P67 開始: 関数内で `del x` した後も `x` はローカル変数のままとし、再参照を `UnboundLocalError` にする
+- [x] P67-1: `ExecuteDeleteName` で関数スコープのローカル名削除後に `UnboundLocalValue` センチネルを再挿入
+- [x] P67-2: 削除後の再参照で `UnboundLocalError` になるケースを `RunSourceVmSpec` に追加
+- [x] P67-3: 品質ゲート再実行（`cabal test` / `cabal run check-structure` / warning 0）
+
 ## detect-positional-args プロジェクト全体分析結果（2026-07-03）
 
 ### 分析概要
@@ -555,6 +561,12 @@
 
 ## メンテナンス記録（要約）
 - 注記: 以下は時系列ログ。古い日付の「未対応」項目は、その後のエントリで仕様更新済みの場合がある。
+- 2026-10-31
+  - [x] P67 完了: VM local variable remains local after del
+  - [x] P67 実装: `ExecuteDeleteName` で関数スコープのローカル名を削除した後、`UnboundLocalValue` センチネルを再挿入
+  - [x] P67 実装: 関数スコープで削除済みのローカル名を再参照した場合は `UnboundLocalError`、未束縛のグローバル名削除は `NameError` を維持
+  - [x] P67 テスト: `RunSourceVmSpec` に「関数内で `del x` 後に `x` を参照すると `UnboundLocalError`」ケースを追加
+  - [x] P67 品質ゲート: `cabal run quality-gate` が全項目 PASS することを確認
 - 2026-10-31
   - [x] P66 完了: VM UnboundLocalError
   - [x] P66 実装: `Value` に `UnboundLocalValue` センチネルを追加し、出力・真偽値処理も更新
