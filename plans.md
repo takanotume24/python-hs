@@ -369,6 +369,13 @@
 - [x] P68-2: モジュールレベル・関数内の両方で、ブロック後の `e` 参照が NameError / UnboundLocalError になるケースを追加
 - [x] P68-3: 品質ゲート再実行（`cabal test` / `cabal run check-structure` / warning 0）
 
+## 現在のスコープ（P69: VM exception catch-all）
+- [x] P69 開始: `except Exception` / `except BaseException` を全例外の基底クラスとして扱う
+- [x] P69-1: 例外型名のマッチングに `Exception` / `BaseException` の catch-all 経路を追加
+- [x] P69-2: `UnboundLocalError` を例外型名としてマッピング
+- [x] P69-3: catch-all を使う `RunSourceVmSpec` テストを追加
+- [x] P69-4: 品質ゲート再実行（`cabal test` / `cabal run check-structure` / warning 0）
+
 ## detect-positional-args プロジェクト全体分析結果（2026-07-03）
 
 ### 分析概要
@@ -567,6 +574,12 @@
 
 ## メンテナンス記録（要約）
 - 注記: 以下は時系列ログ。古い日付の「未対応」項目は、その後のエントリで仕様更新済みの場合がある。
+- 2026-11-02
+  - [x] P69 完了: VM exception catch-all
+  - [x] P69 実装: `except Exception` / `except BaseException` を全例外ベースの catch-all として扱う
+  - [x] P69 実装: `UnboundLocalError` を例外型名としてマッピングし、同名のエラーにも対応
+  - [x] P69 テスト: `RunSourceVmSpec` に catch-all の `Exception` / `BaseException` ケースを追加
+  - [x] P69 品質ゲート: `cabal run quality-gate` が全項目 PASS することを確認
 - 2026-11-02
   - [x] P68 完了: VM exception alias scoping
   - [x] P68 実装: `CompileTryExcept` で `except ... as e` の本体後に `DeleteName e` を挿入し、別名をブロック終了時に解除

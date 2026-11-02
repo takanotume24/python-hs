@@ -35,6 +35,12 @@ spec = describe "runSourceVm (vm mvp)" $ do
   it "matches typed except by runtime error category" $ do
     runSourceVm "try:\n  print len(1)\nexcept NameError:\n  print 1\nexcept TypeError:\n  print 2\nexcept:\n  print 3\n" `shouldBe` Right ["2"]
 
+  it "matches Exception as catch-all" $ do
+    runSourceVm "try:\n  raise 1\nexcept Exception as e:\n  result = e\nprint result\n" `shouldBe` Right ["Runtime error: 1 at 2:3"]
+
+  it "matches BaseException as catch-all" $ do
+    runSourceVm "try:\n  raise 1\nexcept BaseException as e:\n  result = e\nprint result\n" `shouldBe` Right ["Runtime error: 1 at 2:3"]
+
   it "binds typed except alias and rethrows on non-matching type" $ do
     runSourceVm "try:\n  raise \"boom\"\nexcept RuntimeError as e:\n  print e\n" `shouldBe` Right ["Runtime error: boom at 2:3"]
     runSourceVm "try:\n  raise \"boom\"\nexcept TypeError:\n  print 1\n" `shouldBe` Left "Runtime error: boom at 2:3"

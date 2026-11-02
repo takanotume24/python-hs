@@ -28,9 +28,13 @@ executePendingExceptionInstruction pendingExceptErrorName instruction stack loca
       case maybeTypeName of
         Nothing -> True
         Just typeName ->
-          case normalizeErrorType typeName of
-            Nothing -> False
-            Just expectedPrefix -> startsWith expectedPrefix err
+          case typeName of
+            "Exception" -> True
+            "BaseException" -> True
+            _ ->
+              case normalizeErrorType typeName of
+                Nothing -> False
+                Just expectedPrefix -> startsWith expectedPrefix err
 
     normalizeErrorType typeName
       | typeName == "RuntimeError" = Just "Runtime error:"
@@ -39,6 +43,7 @@ executePendingExceptionInstruction pendingExceptErrorName instruction stack loca
       | typeName == "NameError" = Just "Name error:"
       | typeName == "ArgumentError" = Just "Argument error:"
       | typeName == "ImportError" = Just "Import error:"
+      | typeName == "UnboundLocalError" = Just "UnboundLocalError:"
       | otherwise = Nothing
 
     startsWith prefix value = take (length prefix) value == prefix
