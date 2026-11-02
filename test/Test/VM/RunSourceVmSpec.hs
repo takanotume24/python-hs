@@ -44,6 +44,15 @@ spec = describe "runSourceVm (vm mvp)" $ do
   it "supports top-level expression statements" $ do
     runSourceVm "def f():\n  print 1\nf()\n" `shouldBe` Right ["1"]
 
+  it "fails top-level assert statement" $ do
+    runSourceVm "assert False\n" `shouldBe` Left "AssertionError: assertion failed at 1:1"
+
+  it "passes top-level assert statement" $ do
+    runSourceVm "assert True\n" `shouldBe` Right []
+
+  it "catches AssertionError" $ do
+    runSourceVm "try:\n  assert False\nexcept AssertionError:\n  print 1\n" `shouldBe` Right ["1"]
+
   it "supports nested function closing over outer local variable" $ do
     runSourceVm "def outer():\n  x = 1\n  def inner():\n    return x\n  return inner\nr = outer()\nprint r()\n" `shouldBe` Right ["1"]
 

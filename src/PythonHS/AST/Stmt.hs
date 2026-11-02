@@ -75,6 +75,10 @@ data Stmt
       { deleteStmtTarget :: String,
         deleteStmtPos :: Position
       }
+  | AssertStmt
+      { assertStmtCond :: Expr,
+        assertStmtPos :: Position
+      }
   | ExprStmt
       { exprStmtValue :: Expr,
         exprStmtPos :: Position

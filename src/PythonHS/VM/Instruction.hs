@@ -95,6 +95,7 @@ data Instruction
   | ReturnTop
   | PrintTop
   | PopTop
+  | AssertTop {assertTopPos :: Position}
   | CheckWithResult
   | Halt
   deriving (Eq, Show)

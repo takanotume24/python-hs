@@ -6,6 +6,7 @@ data TokenType
   | FloatToken
   | StringToken
   | AssignToken
+  | AssertToken
   | PlusAssignToken
   | MinusAssignToken
   | StarAssignToken

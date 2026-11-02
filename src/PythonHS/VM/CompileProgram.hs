@@ -86,6 +86,10 @@ compileProgram Program {programStmts = stmts} = do
         ModAssignStmt {modAssignStmtName = name, modAssignStmtValue = expr, modAssignStmtPos = pos} -> compileCompoundAssign CompileCompoundAssignConfig {compileCompoundAssignCompileExpr = compileExprAt', compileCompoundAssignBaseIndex = baseIndex, compileCompoundAssignName = name, compileCompoundAssignExpr = expr, compileCompoundAssignPos = pos, compileCompoundAssignOp = ModuloOperator}
         FloorDivAssignStmt {floorDivAssignStmtName = name, floorDivAssignStmtValue = expr, floorDivAssignStmtPos = pos} -> compileCompoundAssign CompileCompoundAssignConfig {compileCompoundAssignCompileExpr = compileExprAt', compileCompoundAssignBaseIndex = baseIndex, compileCompoundAssignName = name, compileCompoundAssignExpr = expr, compileCompoundAssignPos = pos, compileCompoundAssignOp = FloorDivideOperator}
         DeleteStmt {deleteStmtTarget = target} -> Right (CompileExprResult {compileExprResultCode = [DeleteName {deleteNameTarget = target}], compileExprResultEndIndex = baseIndex + 1})
+        AssertStmt {assertStmtCond = condition, assertStmtPos = pos} -> do
+          conditionResult <- compileExprAt' baseIndex condition
+          let code = compileExprResultCode conditionResult ++ [AssertTop {assertTopPos = pos}]
+          pure (CompileExprResult {compileExprResultCode = code, compileExprResultEndIndex = compileExprResultEndIndex conditionResult + 1})
         PrintStmt {printStmtValue = expr} -> do
           exprResult <- compileExprAt' baseIndex expr
           let code = compileExprResultCode exprResult ++ [PrintTop]

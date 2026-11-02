@@ -10,6 +10,8 @@ import PythonHS.VM.EnvState (EnvState (..))
 import PythonHS.VM.ExceptionState (ExceptionState (..))
 import PythonHS.VM.ExecuteArithmeticInstruction (executeArithmeticInstruction)
 import PythonHS.VM.ExecuteArithmeticInstructionConfig (ExecuteArithmeticInstructionConfig (..))
+import PythonHS.VM.ExecuteAssertInstruction (executeAssertInstruction)
+import PythonHS.VM.ExecuteAssertInstructionConfig (ExecuteAssertInstructionConfig (..))
 import PythonHS.VM.ExecuteCallFunction (executeCallFunction)
 import PythonHS.VM.ExecuteCallValueFunction (executeCallValueFunction)
 import PythonHS.VM.ExecuteCheckWithResult (executeCheckWithResult)
@@ -17,8 +19,14 @@ import PythonHS.VM.ExecuteCheckWithResultConfig (ExecuteCheckWithResultConfig (.
 import PythonHS.VM.ExecuteDefineClassInstruction (executeDefineClassInstruction)
 import PythonHS.VM.ExecuteDeleteName (executeDeleteName)
 import PythonHS.VM.ExecuteForNext (executeForNext)
+import PythonHS.VM.ExecuteJumpIfFalse (executeJumpIfFalse)
+import PythonHS.VM.ExecuteJumpIfFalseConfig (ExecuteJumpIfFalseConfig (..))
 import PythonHS.VM.ExecuteListComprehension (executeListComprehension)
+import PythonHS.VM.ExecuteLoopGuard (executeLoopGuard)
+import PythonHS.VM.ExecuteLoopGuardConfig (ExecuteLoopGuardConfig (..))
 import PythonHS.VM.ExecuteMatchPattern (executeMatchPattern)
+import PythonHS.VM.ExecutePushWithHandler (executePushWithHandler)
+import PythonHS.VM.ExecutePushWithHandlerConfig (ExecutePushWithHandlerConfig (..))
 import PythonHS.VM.ExecuteStackInstruction (executeStackInstruction)
 import PythonHS.VM.ExecuteStackInstructionConfig (ExecuteStackInstructionConfig (..))
 import PythonHS.VM.ExecuteStoreClassAttr (executeStoreClassAttr)
@@ -97,17 +105,9 @@ executeOneInstruction execute state instruction =
               execute state {vmIp = vmIp state + 1, vmStack = newStack, vmEnv = newEnv}
             Jump target -> execute state {vmIp = target}
             JumpIfFalse target ->
-              case vmStack state of
-                value : rest ->
-                  if isTruthy value
-                    then execute state {vmIp = vmIp state + 1, vmStack = rest}
-                    else execute state {vmIp = target, vmStack = rest}
-                _ -> Left "VM runtime error: conditional jump requires one value on stack"
+              executeJumpIfFalse ExecuteJumpIfFalseConfig {executeJumpIfFalseExecute = execute, executeJumpIfFalseState = state, executeJumpIfFalseTarget = target}
             LoopGuard pos ->
-              let currentCount = Map.findWithDefault 0 (vmIp state) (loopCounts (vmLoop state))
-               in if currentCount >= maxLoopIterations
-                    then Left ("Value error: iteration limit exceeded at " ++ showPos pos)
-                    else execute state {vmIp = vmIp state + 1, vmLoop = (vmLoop state) {loopCounts = Map.insert (vmIp state) (currentCount + 1) (loopCounts (vmLoop state))}}
+              executeLoopGuard ExecuteLoopGuardConfig {executeLoopGuardExecute = execute, executeLoopGuardState = state, executeLoopGuardPos = pos}
             ForSetup forNextIndex pos ->
               case vmStack state of
                 iterableValue : rest -> do
@@ -121,10 +121,7 @@ executeOneInstruction execute state instruction =
                   let newLoop = (vmLoop state) {loopForStates = newForStates}
                       newEnv = (vmEnv state) {envGlobals = newGlobals, envLocals = newLocals}
                    in execute state {vmIp = nextIp, vmLoop = newLoop, vmEnv = newEnv}
-            PushWithHandler handlerIp ->
-              if handlerIp < 0 || handlerIp >= length (vmCode state)
-                then Left ("Runtime error: invalid handler IP " ++ show handlerIp ++ " for PushWithHandler")
-                else execute state {vmIp = vmIp state + 1, vmException = (vmException state) {exceptionHandlers = handlerIp : exceptionHandlers (vmException state)}}
+            PushWithHandler handlerIp -> executePushWithHandler ExecutePushWithHandlerConfig {executePushWithHandlerExecute = execute, executePushWithHandlerState = state, executePushWithHandlerIp = handlerIp}
             CheckWithResult -> executeCheckWithResult ExecuteCheckWithResultConfig {executeCheckWithResultState = state, executeCheckWithResultExecute = execute}
             DupTop ->
               case vmStack state of
@@ -188,6 +185,8 @@ executeOneInstruction execute state instruction =
                 _ -> Left "VM runtime error: return requires one value on stack"
             PrintTop -> executeStackInstruction ExecuteStackInstructionConfig {executeStackInstructionExecute = execute, executeStackInstructionState = state, executeStackInstructionInstruction = PrintTop}
             PopTop -> executeStackInstruction ExecuteStackInstructionConfig {executeStackInstructionExecute = execute, executeStackInstructionState = state, executeStackInstructionInstruction = PopTop}
+            AssertTop pos ->
+              executeAssertInstruction ExecuteAssertInstructionConfig {executeAssertInstructionExecute = execute, executeAssertInstructionState = state, executeAssertInstructionInstruction = AssertTop pos}
             Halt -> Right state
             instruction'@(PushExceptionHandler _) -> handleExceptionInstruction HandleExceptionInstructionConfig {handleExceptionInstructionExecute = execute, handleExceptionInstructionState = state, handleExceptionInstructionInstruction = instruction'}
             instruction'@(PushFinallyHandler _) -> handleExceptionInstruction HandleExceptionInstructionConfig {handleExceptionInstructionExecute = execute, handleExceptionInstructionState = state, handleExceptionInstructionInstruction = instruction'}

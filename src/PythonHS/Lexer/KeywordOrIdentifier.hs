@@ -4,6 +4,7 @@ import PythonHS.Lexer.TokenType
   ( TokenType
       ( AndToken,
         AsToken,
+        AssertToken,
         BreakToken,
         CaseToken,
         ClassToken,
@@ -41,6 +42,7 @@ import PythonHS.Lexer.TokenType
 
 keywordOrIdentifier :: String -> TokenType
 keywordOrIdentifier value
+  | value == "assert" = AssertToken
   | value == "print" = PrintToken
   | value == "if" = IfToken
   | value == "elif" = ElifToken

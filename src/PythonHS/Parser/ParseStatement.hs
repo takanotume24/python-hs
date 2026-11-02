@@ -6,7 +6,8 @@ import PythonHS.Lexer.Position (Position (..))
 import PythonHS.Lexer.Token (Token (..))
 import PythonHS.Lexer.TokenType
   ( TokenType
-      ( AssignToken,
+      ( AssertToken,
+        AssignToken,
         AtToken,
         BreakToken,
         ClassToken,
@@ -42,6 +43,7 @@ import PythonHS.Lexer.TokenType
   )
 import PythonHS.Parser.ParseAnnAssignStmt (parseAnnAssignStmt)
 import PythonHS.Parser.ParseAnnAssignStmtConfig (ParseAnnAssignStmtConfig (..))
+import PythonHS.Parser.ParseAssertStmt (parseAssertStmt)
 import PythonHS.Parser.ParseClassStmt (parseClassStmt)
 import PythonHS.Parser.ParseClassStmtConfig (ParseClassStmtConfig (..))
 import PythonHS.Parser.ParseCompoundStmt (parseCompoundStmt)
@@ -71,6 +73,7 @@ parseStatement tokenStream =
    in case tokenStream of
         Token {tokenType = AtToken, position = pos} : _ ->
           parseDecoratedStmt (ParseDecoratedStmtConfig {parseDecoratedStmtExpr = parseExpr, parseDecoratedStmtStatement = parseStatement, parseDecoratedStmtPos = pos, parseDecoratedStmtTokenStream = tokenStream})
+        Token {tokenType = AssertToken} : _ -> parseAssertStmt tokenStream
         Token {tokenType = PrintToken, position = pos} : rest -> do
           valueResult <- parseExpr rest
           let valueExpr = parseResultValue valueResult
