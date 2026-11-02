@@ -90,6 +90,10 @@ compileProgram Program {programStmts = stmts} = do
           exprResult <- compileExprAt' baseIndex expr
           let code = compileExprResultCode exprResult ++ [PrintTop]
           pure (CompileExprResult {compileExprResultCode = code, compileExprResultEndIndex = compileExprResultEndIndex exprResult + 1})
+        ExprStmt {exprStmtValue = expr} -> do
+          exprResult <- compileExprAt' baseIndex expr
+          let code = compileExprResultCode exprResult ++ [PopTop]
+          pure (CompileExprResult {compileExprResultCode = code, compileExprResultEndIndex = compileExprResultEndIndex exprResult + 1})
         YieldStmt {yieldStmtValue = expr, yieldStmtPos = pos} -> if inFunction then compileYieldCollectStmt CompileYieldCollectStmtConfig {compileYieldCollectStmtCompileExpr = compileExprAt', compileYieldCollectStmtBaseIndex = baseIndex, compileYieldCollectStmtOperation = "append", compileYieldCollectStmtYieldedExpr = expr, compileYieldCollectStmtPos = pos} else Left ("VM compile error: unsupported statement at " ++ showPos (stmtPosition stmt))
         YieldFromStmt {yieldFromStmtValue = expr, yieldFromStmtPos = pos} -> if inFunction then compileYieldCollectStmt CompileYieldCollectStmtConfig {compileYieldCollectStmtCompileExpr = compileExprAt', compileYieldCollectStmtBaseIndex = baseIndex, compileYieldCollectStmtOperation = "extend", compileYieldCollectStmtYieldedExpr = expr, compileYieldCollectStmtPos = pos} else Left ("VM compile error: unsupported statement at " ++ showPos (stmtPosition stmt))
         IfStmt {ifStmtCond = cond, ifStmtThen = thenStmts, ifStmtElse = maybeElseStmts} -> do

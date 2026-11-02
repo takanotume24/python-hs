@@ -41,6 +41,9 @@ spec = describe "runSourceVm (vm mvp)" $ do
   it "matches BaseException as catch-all" $ do
     runSourceVm "try:\n  raise 1\nexcept BaseException as e:\n  result = e\nprint result\n" `shouldBe` Right ["Runtime error: 1 at 2:3"]
 
+  it "supports top-level expression statements" $ do
+    runSourceVm "def f():\n  print 1\nf()\n" `shouldBe` Right ["1"]
+
   it "binds typed except alias and rethrows on non-matching type" $ do
     runSourceVm "try:\n  raise \"boom\"\nexcept RuntimeError as e:\n  print e\n" `shouldBe` Right ["Runtime error: boom at 2:3"]
     runSourceVm "try:\n  raise \"boom\"\nexcept TypeError:\n  print 1\n" `shouldBe` Left "Runtime error: boom at 2:3"

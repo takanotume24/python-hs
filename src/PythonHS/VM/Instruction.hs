@@ -94,6 +94,7 @@ data Instruction
   | RaisePendingError
   | ReturnTop
   | PrintTop
+  | PopTop
   | CheckWithResult
   | Halt
   deriving (Eq, Show)

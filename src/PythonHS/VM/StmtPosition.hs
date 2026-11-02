@@ -21,6 +21,7 @@ stmtPosition stmt =
     ModAssignStmt {modAssignStmtPos} -> modAssignStmtPos
     FloorDivAssignStmt {floorDivAssignStmtPos} -> floorDivAssignStmtPos
     DeleteStmt {deleteStmtPos} -> deleteStmtPos
+    ExprStmt {exprStmtPos} -> exprStmtPos
     FunctionDefStmt {functionDefStmtPos} -> functionDefStmtPos
     FunctionDefDefaultsStmt {functionDefDefaultsStmtPos} -> functionDefDefaultsStmtPos
     BreakStmt {breakStmtPos} -> breakStmtPos

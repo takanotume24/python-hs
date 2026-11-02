@@ -101,6 +101,7 @@ library
     , PythonHS.Parser.ParseCallArgument
     , PythonHS.Parser.ParseCallArgumentConfig
     , PythonHS.Parser.ParseCallArgumentResult
+    , PythonHS.Parser.ParseCallStatement
     , PythonHS.Parser.ParseDecoratedStmt
     , PythonHS.Parser.ParseDecoratedStmtConfig
     , PythonHS.Parser.ParseComprehensionTail
@@ -265,6 +266,8 @@ library
     , PythonHS.VM.ExecuteDeleteName
     , PythonHS.VM.ExecuteForNext
     , PythonHS.VM.ExecuteListComprehension
+    , PythonHS.VM.ExecuteStackInstructionConfig
+    , PythonHS.VM.ExecuteStackInstruction
     , PythonHS.VM.ExecutePendingExceptionInstruction
     , PythonHS.VM.ExecuteUnpackToNames
     , PythonHS.VM.ExecuteMatchPattern

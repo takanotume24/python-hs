@@ -376,6 +376,14 @@
 - [x] P69-3: catch-all を使う `RunSourceVmSpec` テストを追加
 - [x] P69-4: 品質ゲート再実行（`cabal test` / `cabal run check-structure` / warning 0）
 
+## 現在のスコープ（P70: VM top-level expression statements）
+- [x] P70 開始: `f()` のようなトップレベル式文を受理する
+- [x] P70-1: `ExprStmt` を AST / parser / compile / 実行に追加
+- [x] P70-2: `PopTop` を VM 命令として追加し、式の値を捨てる
+- [x] P70-3: `ExecuteStackInstruction` を分割し、例外ハンドラの行数制約超過を解消
+- [x] P70-4: 実行結果の潤滑性を `RunSourceVmSpec` で固定
+- [x] P70-5: 品質ゲート再実行（`cabal test` / `cabal run check-structure` / warning 0）
+
 ## detect-positional-args プロジェクト全体分析結果（2026-07-03）
 
 ### 分析概要
@@ -574,6 +582,13 @@
 
 ## メンテナンス記録（要約）
 - 注記: 以下は時系列ログ。古い日付の「未対応」項目は、その後のエントリで仕様更新済みの場合がある。
+- 2026-11-02
+  - [x] P70 完了: VM top-level expression statements
+  - [x] P70 実装: `ExprStmt` を AST / パーサ / コンパイル / 実行に追加
+  - [x] P70 実装: `PopTop` を VM 命令として追加し、式の値を捨てる
+  - [x] P70 構造: `executeStackInstruction` を分離し、`ExecuteOneInstruction` / `ParseStatement` の行数制約超過を解消
+  - [x] P70 テスト: `RunSourceVmSpec` にトップレベルでの `f()` ケースを追加
+  - [x] P70 品質ゲート: `cabal run quality-gate` が全項目 PASS することを確認
 - 2026-11-02
   - [x] P69 完了: VM exception catch-all
   - [x] P69 実装: `except Exception` / `except BaseException` を全例外ベースの catch-all として扱う

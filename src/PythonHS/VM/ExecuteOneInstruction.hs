@@ -19,6 +19,8 @@ import PythonHS.VM.ExecuteDeleteName (executeDeleteName)
 import PythonHS.VM.ExecuteForNext (executeForNext)
 import PythonHS.VM.ExecuteListComprehension (executeListComprehension)
 import PythonHS.VM.ExecuteMatchPattern (executeMatchPattern)
+import PythonHS.VM.ExecuteStackInstruction (executeStackInstruction)
+import PythonHS.VM.ExecuteStackInstructionConfig (ExecuteStackInstructionConfig (..))
 import PythonHS.VM.ExecuteStoreClassAttr (executeStoreClassAttr)
 import PythonHS.VM.ExecuteUnpackToNames (executeUnpackToNames)
 import PythonHS.VM.FunctionInfo (FunctionInfo (..))
@@ -183,10 +185,10 @@ executeOneInstruction execute state instruction =
               case vmStack state of
                 value : _ -> Right state {vmStack = [value]}
                 _ -> Left "VM runtime error: return requires one value on stack"
-            PrintTop ->
-              case vmStack state of
-                value : rest -> execute state {vmIp = vmIp state + 1, vmStack = rest, vmOutputs = vmOutputs state ++ [valueToOutput value]}
-                _ -> Left "VM runtime error: print requires one value on stack"
+            instruction'@(PrintTop) ->
+              executeStackInstruction ExecuteStackInstructionConfig {executeStackInstructionExecute = execute, executeStackInstructionState = state, executeStackInstructionInstruction = instruction'}
+            instruction'@(PopTop) ->
+              executeStackInstruction ExecuteStackInstructionConfig {executeStackInstructionExecute = execute, executeStackInstructionState = state, executeStackInstructionInstruction = instruction'}
             Halt -> Right state
             instruction'@(PushExceptionHandler _) -> handleExceptionInstruction HandleExceptionInstructionConfig {handleExceptionInstructionExecute = execute, handleExceptionInstructionState = state, handleExceptionInstructionInstruction = instruction'}
             instruction'@(PushFinallyHandler _) -> handleExceptionInstruction HandleExceptionInstructionConfig {handleExceptionInstructionExecute = execute, handleExceptionInstructionState = state, handleExceptionInstructionInstruction = instruction'}

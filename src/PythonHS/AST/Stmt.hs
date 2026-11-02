@@ -75,6 +75,10 @@ data Stmt
       { deleteStmtTarget :: String,
         deleteStmtPos :: Position
       }
+  | ExprStmt
+      { exprStmtValue :: Expr,
+        exprStmtPos :: Position
+      }
   | PrintStmt
       { printStmtValue :: Expr,
         printStmtPos :: Position

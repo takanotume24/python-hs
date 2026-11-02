@@ -42,6 +42,7 @@ import PythonHS.Lexer.TokenType
   )
 import PythonHS.Parser.ParseAnnAssignStmt (parseAnnAssignStmt)
 import PythonHS.Parser.ParseAnnAssignStmtConfig (ParseAnnAssignStmtConfig (..))
+import PythonHS.Parser.ParseCallStatement (parseCallStatement)
 import PythonHS.Parser.ParseClassStmt (parseClassStmt)
 import PythonHS.Parser.ParseClassStmtConfig (ParseClassStmtConfig (..))
 import PythonHS.Parser.ParseCompoundStmt (parseCompoundStmt)
@@ -185,6 +186,9 @@ parseStatement tokenStream =
           parseWithStmt (ParseWithStmtConfig {parseWithStmtStatement = parseStatement, parseWithStmtPos = pos, parseWithStmtTokenStream = rest})
         Token {tokenType = ClassToken, position = posClass} : Token {tokenType = IdentifierToken, lexeme = name} : rest ->
           parseClassStmt (ParseClassStmtConfig {parseClassStmtSuite = parseSuiteWithStatements, parseClassStmtPos = posClass, parseClassStmtName = name, parseClassStmtTokenStream = rest})
-        Token {tokenType = IdentifierToken, position = pos} : _ -> Left (ExpectedAssignAfterIdentifier {parseErrorPosition = pos})
+        Token {tokenType = IdentifierToken, position = pos} : _ ->
+          case parseCallStatement tokenStream of
+            Just statementResult -> Right statementResult
+            Nothing -> Left (ExpectedAssignAfterIdentifier {parseErrorPosition = pos})
         tok : _ -> Left (ExpectedExpression {parseErrorPosition = position tok})
         [] -> Left (ExpectedExpression {parseErrorPosition = Position {line = 0, column = 0}})
