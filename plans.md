@@ -384,6 +384,11 @@
 - [x] P70-4: 実行結果の潤滑性を `RunSourceVmSpec` で固定
 - [x] P70-5: 品質ゲート再実行（`cabal test` / `cabal run check-structure` / warning 0）
 
+## 現在のスコープ（P71: VM top-level expression statements (attribute access)）
+- [x] P71 開始: 属性アクセスのようなトップレベル式文も受理する
+- [x] P71-1: `ParseCallStatement` で属性アクセス式文（`A.x`）を受理する
+- [x] P71-2: 品質ゲート再実行（`cabal test` / `cabal run check-structure` / warning 0）
+
 ## detect-positional-args プロジェクト全体分析結果（2026-07-03）
 
 ### 分析概要
@@ -582,6 +587,11 @@
 
 ## メンテナンス記録（要約）
 - 注記: 以下は時系列ログ。古い日付の「未対応」項目は、その後のエントリで仕様更新済みの場合がある。
+- 2026-11-02
+  - [x] P71 完了: VM top-level expression statements (attribute access)
+  - [x] P71 実装: `ParseCallStatement` で属性アクセス式文（`A.x`）を受理する
+  - [x] P71 設計: 式文として受理する式を呼び出し・属性アクセスに限定し、リテラルは REPL 経路に委譲
+  - [x] P71 品質ゲート: `cabal run quality-gate` が全項目 PASS することを確認
 - 2026-11-02
   - [x] P70 完了: VM top-level expression statements
   - [x] P70 実装: `ExprStmt` を AST / パーサ / コンパイル / 実行に追加
