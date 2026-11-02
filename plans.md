@@ -397,6 +397,13 @@
 - [x] P72-4: `AttributeError` の捕捉ケースを `RunSourceVmSpec` に追加
 - [x] P72-5: 品質ゲート再実行（`cabal test` / `cabal run check-structure` / warning 0）
 
+## 現在のスコープ（P73: VM nested function closure）
+- [x] P73 開始: ネストした `def` が外側のローカル変数を読めるようにする（読み取り専用クロージャ）
+- [x] P73-1: 外側スコープのローカル変数を closure として capture する `CreateLambda` 経路を VM コンパイルに追加
+- [x] P73-2: ネスト関数を `CreateLambda` + `StoreName` で内側スコープへ登録する
+- [x] P73-3: `RunSourceVmSpec` にクロージャ読み出しケースを追加
+- [x] P73-4: 品質ゲート再実行（`cabal test` / `cabal run check-structure` / warning 0）
+
 ## detect-positional-args プロジェクト全体分析結果（2026-07-03）
 
 ### 分析概要
@@ -595,6 +602,12 @@
 
 ## メンテナンス記録（要約）
 - 注記: 以下は時系列ログ。古い日付の「未対応」項目は、その後のエントリで仕様更新済みの場合がある。
+- 2026-11-02
+  - [x] P73 完了: VM nested function closure
+  - [x] P73 実装: 外側ローカル変数を closure として capture するための `CreateLambda` 経路を VM コンパイルに追加
+  - [x] P73 実装: ネスト関数を `CreateLambda` + `StoreName` で内側スコープへ登録
+  - [x] P73 テスト: `RunSourceVmSpec` にクロージャ読み出しケースを追加
+  - [x] P73 品質ゲート: `cabal run quality-gate` が全項目 PASS
 - 2026-11-02
   - [x] P72 完了: VM attribute errors
   - [x] P72 実装: 属性解決の失敗を `Attribute error:` として返すように `LookupNameWithAttr` を更新

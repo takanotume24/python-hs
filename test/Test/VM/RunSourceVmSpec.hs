@@ -44,6 +44,9 @@ spec = describe "runSourceVm (vm mvp)" $ do
   it "supports top-level expression statements" $ do
     runSourceVm "def f():\n  print 1\nf()\n" `shouldBe` Right ["1"]
 
+  it "supports nested function closing over outer local variable" $ do
+    runSourceVm "def outer():\n  x = 1\n  def inner():\n    return x\n  return inner\nr = outer()\nprint r()\n" `shouldBe` Right ["1"]
+
   it "matches AttributeError category" $ do
     runSourceVm "class A:\n  pass\na = A()\ntry:\n  _ = a.missing\nexcept AttributeError:\n  print 1\n" `shouldBe` Right ["1"]
 

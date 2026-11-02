@@ -142,10 +142,26 @@ compileProgram Program {programStmts = stmts} = do
         ClassDefStmt {classDefStmtName = className, classDefStmtBase = maybeBase, classDefStmtBody = body} -> compileClassDefStmt CompileClassDefStmtConfig {compileClassDefStmtCompileDefaults = \ce ds -> compileDefaults CompileDefaultsConfig {compileDefaultsCompileExpr = ce, compileDefaultsDefaults = ds}, compileClassDefStmtCompileStatements = compileStatements, compileClassDefStmtCompileExpr = compileExprAt', compileClassDefStmtBaseIndex = baseIndex, compileClassDefStmtClassName = className, compileClassDefStmtMaybeBase = maybeBase, compileClassDefStmtBody = body, compileClassDefStmtMaybeDataclass = Nothing}
         FunctionDefStmt {functionDefStmtName = name, functionDefStmtParams = params, functionDefStmtBody = body, functionDefStmtPos = posDef} ->
           let functionGlobalDecls = collectFunctionGlobalStmtDecls body
-           in fmap (\result -> CompileExprResult {compileExprResultCode = [DefineFunction {defineFunctionName = name, defineFunctionParams = params, defineFunctionDefaultCodes = [], defineFunctionCode = functionDefStmtResultCode result}], compileExprResultEndIndex = baseIndex + 1}) (compileFunctionDefStmt CompileFunctionDefStmtConfig {compileFunctionDefStmtCompileStatements = compileStatements, compileFunctionDefStmtCompileExpr = compileExprAt', compileFunctionDefStmtPosDef = posDef, compileFunctionDefStmtDefaults = [], compileFunctionDefStmtBody = body, compileFunctionDefStmtParams = params, compileFunctionDefStmtGlobalDecls = functionGlobalDecls})
+              nestedCode result =
+                [ CreateLambda {createLambdaName = name, createLambdaParams = params, createLambdaDefaultCodes = [], createLambdaCode = functionDefStmtResultCode result},
+                  StoreName {storeNameName = name}
+                ]
+              topLevelCode result =
+                [DefineFunction {defineFunctionName = name, defineFunctionParams = params, defineFunctionDefaultCodes = [], defineFunctionCode = functionDefStmtResultCode result}]
+           in fmap
+                (\result -> CompileExprResult {compileExprResultCode = if inFunction then nestedCode result else topLevelCode result, compileExprResultEndIndex = baseIndex + if inFunction then 2 else 1})
+                (compileFunctionDefStmt CompileFunctionDefStmtConfig {compileFunctionDefStmtCompileStatements = compileStatements, compileFunctionDefStmtCompileExpr = compileExprAt', compileFunctionDefStmtPosDef = posDef, compileFunctionDefStmtDefaults = [], compileFunctionDefStmtBody = body, compileFunctionDefStmtParams = params, compileFunctionDefStmtGlobalDecls = functionGlobalDecls})
         FunctionDefDefaultsStmt {functionDefDefaultsStmtName = name, functionDefDefaultsStmtParams = params, functionDefDefaultsStmtDefaults = defaults, functionDefDefaultsStmtBody = body, functionDefDefaultsStmtPos = posDef} ->
           let functionGlobalDecls = collectFunctionGlobalStmtDecls body
-           in fmap (\result -> CompileExprResult {compileExprResultCode = [DefineFunction {defineFunctionName = name, defineFunctionParams = params, defineFunctionDefaultCodes = functionDefStmtResultDefaults result, defineFunctionCode = functionDefStmtResultCode result}], compileExprResultEndIndex = baseIndex + 1}) (compileFunctionDefStmt CompileFunctionDefStmtConfig {compileFunctionDefStmtCompileStatements = compileStatements, compileFunctionDefStmtCompileExpr = compileExprAt', compileFunctionDefStmtPosDef = posDef, compileFunctionDefStmtDefaults = defaults, compileFunctionDefStmtBody = body, compileFunctionDefStmtParams = params, compileFunctionDefStmtGlobalDecls = functionGlobalDecls})
+              nestedCode result =
+                [ CreateLambda {createLambdaName = name, createLambdaParams = params, createLambdaDefaultCodes = functionDefStmtResultDefaults result, createLambdaCode = functionDefStmtResultCode result},
+                  StoreName {storeNameName = name}
+                ]
+              topLevelCode result =
+                [DefineFunction {defineFunctionName = name, defineFunctionParams = params, defineFunctionDefaultCodes = functionDefStmtResultDefaults result, defineFunctionCode = functionDefStmtResultCode result}]
+           in fmap
+                (\result -> CompileExprResult {compileExprResultCode = if inFunction then nestedCode result else topLevelCode result, compileExprResultEndIndex = baseIndex + if inFunction then 2 else 1})
+                (compileFunctionDefStmt CompileFunctionDefStmtConfig {compileFunctionDefStmtCompileStatements = compileStatements, compileFunctionDefStmtCompileExpr = compileExprAt', compileFunctionDefStmtPosDef = posDef, compileFunctionDefStmtDefaults = defaults, compileFunctionDefStmtBody = body, compileFunctionDefStmtParams = params, compileFunctionDefStmtGlobalDecls = functionGlobalDecls})
         ReturnStmt {returnStmtValue = expr} ->
           if inFunction
             then do
