@@ -404,6 +404,12 @@
 - [x] P73-3: `RunSourceVmSpec` にクロージャ読み出しケースを追加
 - [x] P73-4: 品質ゲート再実行（`cabal test` / `cabal run check-structure` / warning 0）
 
+## 現在のスコープ（P74: VM top-level expression statements generalization）
+- [x] P74 開始: トップレベル式文の受理条件を一般化する（パーサ等で式文が受理される範囲を広げる）
+- [x] P74-1: `ParseCallStatement` を `ParseExprStatement` に改名し、受理範囲を明確化
+- [x] P74-2: 呼び出し・属性アクセス式文の受理条件を統一
+- [x] P74-3: 品質ゲート再実行（`cabal test` / `cabal run check-structure` / warning 0）
+
 ## detect-positional-args プロジェクト全体分析結果（2026-07-03）
 
 ### 分析概要
@@ -602,6 +608,11 @@
 
 ## メンテナンス記録（要約）
 - 注記: 以下は時系列ログ。古い日付の「未対応」項目は、その後のエントリで仕様更新済みの場合がある。
+- 2026-11-02
+  - [x] P74 完了: VM top-level expression statements generalization
+  - [x] P74 実装: `ParseCallStatement` を `ParseExprStatement` に改名し、受理範囲の意図を明確化
+  - [x] P74 設計: 顶部レベル式文の受理を呼び出し・属性アクセスに絞る（REPL の式結果はそのまま）
+  - [x] P74 品質ゲート: `cabal run quality-gate` が全項目 PASS
 - 2026-11-02
   - [x] P73 完了: VM nested function closure
   - [x] P73 実装: 外側ローカル変数を closure として capture するための `CreateLambda` 経路を VM コンパイルに追加

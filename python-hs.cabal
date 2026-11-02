@@ -101,7 +101,7 @@ library
     , PythonHS.Parser.ParseCallArgument
     , PythonHS.Parser.ParseCallArgumentConfig
     , PythonHS.Parser.ParseCallArgumentResult
-    , PythonHS.Parser.ParseCallStatement
+    , PythonHS.Parser.ParseExprStatement
     , PythonHS.Parser.ParseDecoratedStmt
     , PythonHS.Parser.ParseDecoratedStmtConfig
     , PythonHS.Parser.ParseComprehensionTail

@@ -42,7 +42,6 @@ import PythonHS.Lexer.TokenType
   )
 import PythonHS.Parser.ParseAnnAssignStmt (parseAnnAssignStmt)
 import PythonHS.Parser.ParseAnnAssignStmtConfig (ParseAnnAssignStmtConfig (..))
-import PythonHS.Parser.ParseCallStatement (parseCallStatement)
 import PythonHS.Parser.ParseClassStmt (parseClassStmt)
 import PythonHS.Parser.ParseClassStmtConfig (ParseClassStmtConfig (..))
 import PythonHS.Parser.ParseCompoundStmt (parseCompoundStmt)
@@ -51,6 +50,7 @@ import PythonHS.Parser.ParseDecoratedStmt (parseDecoratedStmt)
 import PythonHS.Parser.ParseDecoratedStmtConfig (ParseDecoratedStmtConfig (..))
 import PythonHS.Parser.ParseError (ParseError (..))
 import PythonHS.Parser.ParseExpr (parseExpr)
+import PythonHS.Parser.ParseExprStatement (parseExprStatement)
 import PythonHS.Parser.ParseImportStmt (parseImportStmt)
 import PythonHS.Parser.ParseMatchStmt (parseMatchStmt)
 import PythonHS.Parser.ParseMatchStmtConfig (ParseMatchStmtConfig (..))
@@ -187,7 +187,7 @@ parseStatement tokenStream =
         Token {tokenType = ClassToken, position = posClass} : Token {tokenType = IdentifierToken, lexeme = name} : rest ->
           parseClassStmt (ParseClassStmtConfig {parseClassStmtSuite = parseSuiteWithStatements, parseClassStmtPos = posClass, parseClassStmtName = name, parseClassStmtTokenStream = rest})
         Token {tokenType = IdentifierToken, position = pos} : _ ->
-          case parseCallStatement tokenStream of
+          case parseExprStatement tokenStream of
             Just statementResult -> Right statementResult
             Nothing -> Left (ExpectedAssignAfterIdentifier {parseErrorPosition = pos})
         tok : _ -> Left (ExpectedExpression {parseErrorPosition = position tok})
