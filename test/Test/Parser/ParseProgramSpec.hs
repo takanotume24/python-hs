@@ -481,7 +481,44 @@ spec = describe "parseProgram" $ do
         ( Program
             [ TryExceptStmt
                 [RaiseStmt (StringExpr "x" (Position 2 9)) (Position 2 3)]
-                [ExceptSuite {exceptSuiteType = Just "RuntimeError", exceptSuiteAlias = Just "e", exceptSuiteBody = [PrintStmt (IdentifierExpr "e" (Position 4 9)) (Position 4 3)], exceptSuitePos = Position 3 1}]
+                [ExceptSuite {exceptSuiteType = Just ["RuntimeError"], exceptSuiteAlias = Just "e", exceptSuiteBody = [PrintStmt (IdentifierExpr "e" (Position 4 9)) (Position 4 3)], exceptSuitePos = Position 3 1}]
+                Nothing
+                (Position 1 1)
+            ]
+        )
+
+  it "parses parenthesized except types with alias" $ do
+    parseProgram
+      [ Token TryToken "try" (Position 1 1),
+        Token ColonToken ":" (Position 1 4),
+        Token NewlineToken "\\n" (Position 1 5),
+        Token IndentToken "<INDENT>" (Position 2 1),
+        Token RaiseToken "raise" (Position 2 3),
+        Token StringToken "x" (Position 2 9),
+        Token NewlineToken "\\n" (Position 2 12),
+        Token DedentToken "<DEDENT>" (Position 3 1),
+        Token ExceptToken "except" (Position 3 1),
+        Token LParenToken "(" (Position 3 8),
+        Token IdentifierToken "ValueError" (Position 3 9),
+        Token CommaToken "," (Position 3 19),
+        Token IdentifierToken "RuntimeError" (Position 3 21),
+        Token RParenToken ")" (Position 3 33),
+        Token AsToken "as" (Position 3 35),
+        Token IdentifierToken "e" (Position 3 38),
+        Token ColonToken ":" (Position 3 39),
+        Token NewlineToken "\\n" (Position 3 40),
+        Token IndentToken "<INDENT>" (Position 4 1),
+        Token PrintToken "print" (Position 4 3),
+        Token IdentifierToken "e" (Position 4 9),
+        Token NewlineToken "\\n" (Position 4 10),
+        Token DedentToken "<DEDENT>" (Position 5 1),
+        Token EOFToken "" (Position 5 1)
+      ]
+      `shouldBe` Right
+        ( Program
+            [ TryExceptStmt
+                [RaiseStmt (StringExpr "x" (Position 2 9)) (Position 2 3)]
+                [ExceptSuite {exceptSuiteType = Just ["ValueError", "RuntimeError"], exceptSuiteAlias = Just "e", exceptSuiteBody = [PrintStmt (IdentifierExpr "e" (Position 4 9)) (Position 4 3)], exceptSuitePos = Position 3 1}]
                 Nothing
                 (Position 1 1)
             ]

@@ -63,6 +63,18 @@ spec = describe "runSourceVm (vm mvp)" $ do
     runSourceVm "try:\n  raise \"boom\"\nexcept RuntimeError as e:\n  print e\n" `shouldBe` Right ["Runtime error: boom at 2:3"]
     runSourceVm "try:\n  raise \"boom\"\nexcept TypeError:\n  print 1\n" `shouldBe` Left "Runtime error: boom at 2:3"
 
+  it "matches one of parenthesized except types" $ do
+    runSourceVm "try:\n  raise 1\nexcept (ValueError, RuntimeError):\n  print 11\n" `shouldBe` Right ["11"]
+
+  it "binds alias with parenthesized except types" $ do
+    runSourceVm "try:\n  raise \"boom\"\nexcept (ValueError, RuntimeError) as e:\n  print e\n" `shouldBe` Right ["Runtime error: boom at 2:3"]
+
+  it "rethrows when no parenthesized except type matches" $ do
+    runSourceVm "try:\n  raise \"boom\"\nexcept (ValueError, NameError):\n  print 11\n" `shouldBe` Left "Runtime error: boom at 2:3"
+
+  it "matches typed suites in order before catch-all" $ do
+    runSourceVm "try:\n  raise 1\nexcept NameError:\n  print 10\nexcept (TypeError, RuntimeError):\n  print 11\nexcept:\n  print 12\n" `shouldBe` Right ["11"]
+
   it "matches value patterns and wildcard in order" $ do
     runSourceVm "x = 2\nmatch x:\n  case 1:\n    print 10\n  case 2:\n    print 20\n  case _:\n    print 30\n" `shouldBe` Right ["20"]
 

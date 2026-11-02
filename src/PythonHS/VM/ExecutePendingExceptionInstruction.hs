@@ -24,17 +24,19 @@ executePendingExceptionInstruction pendingExceptErrorName instruction stack loca
         _ -> Left "VM runtime error: pending exception is not set"
     _ -> Left "VM runtime error: executePendingExceptionInstruction called with non-pending-exception instruction"
   where
-    matchesExceptionType maybeTypeName err =
-      case maybeTypeName of
+    matchesExceptionType maybeTypeNames err =
+      case maybeTypeNames of
         Nothing -> True
-        Just typeName ->
-          case typeName of
-            "Exception" -> True
-            "BaseException" -> True
-            _ ->
-              case normalizeErrorType typeName of
-                Nothing -> False
-                Just expectedPrefix -> startsWith expectedPrefix err
+        Just typeNames -> any (matchesTypeName err) typeNames
+
+    matchesTypeName err typeName =
+      case typeName of
+        "Exception" -> True
+        "BaseException" -> True
+        _ ->
+          case normalizeErrorType typeName of
+            Nothing -> False
+            Just expectedPrefix -> startsWith expectedPrefix err
 
     normalizeErrorType typeName
       | typeName == "RuntimeError" = Just "Runtime error:"

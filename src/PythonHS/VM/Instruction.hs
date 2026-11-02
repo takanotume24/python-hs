@@ -36,7 +36,7 @@ data Instruction
   | PushWithHandler {pushWithHandlerIp :: Int}
   | PopExceptionHandler
   | LoadPendingException
-  | MatchExceptionType {matchExceptionTypeName :: Maybe String}
+  | MatchExceptionType {matchExceptionTypeName :: Maybe [String]}
   | DupTop
   | ApplyUnaryMinus {applyUnaryMinusPos :: Position}
   | ApplyNot {applyNotPos :: Position}

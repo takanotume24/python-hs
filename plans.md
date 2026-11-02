@@ -417,6 +417,13 @@
 - [x] P75-3: `except AssertionError` を `Assertion error:` 系エラーに対応
 - [x] P75-4: 品質ゲート再実行（`cabal test` / `cabal run check-structure` / warning 0）
 
+## 現在のスコープ（P76: VM multiple except types）
+- [x] P76 開始: `except (TypeError, RuntimeError):` の複数例外型対応
+- [x] P76-1: `ExceptSuite.exceptSuiteType` を `Maybe [String]` に変更
+- [x] P76-2: パーサが単一型名・括弧付き型名リスト・`as` エイリアス（任意）をパース
+- [x] P76-3: `MatchExceptionType` 命令を `Maybe [String]` に対応し、いずれかの型名一致で捕捉
+- [x] P76-4: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
+
 ## detect-positional-args プロジェクト全体分析結果（2026-07-03）
 
 ### 分析概要
@@ -615,6 +622,13 @@
 
 ## メンテナンス記録（要約）
 - 注記: 以下は時系列ログ。古い日付の「未対応」項目は、その後のエントリで仕様更新済みの場合がある。
+- 2026-11-02
+  - [x] P76 完了: VM multiple except types
+  - [x] P76 実装: `except` の型指定を単一名または `(A, B)` の括弧リスト（`as` エイリアス任意）としてパース
+  - [x] P76 実装: `MatchExceptionType` を型名リストに対応させ、リスト内のいずれかの型に一致したら捕捉
+  - [x] P76 テスト: `RunSourceVmSpec` に括弧リスト捕捉／エイリアス束縛／非一致リスト再送出／順序対応ケースを追加
+  - [x] P76 テスト: `ParseProgramSpec` に括弧リスト except の AST パースケースを追加
+  - [x] P76 品質ゲート: `cabal run quality-gate` が全項目 PASS
 - 2026-11-02
   - [x] P75 完了: VM assert statement
   - [x] P75 実装: `assert` 文をパーサ・コンパイル・実行に追加

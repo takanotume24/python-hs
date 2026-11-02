@@ -54,7 +54,7 @@ compileTryExcept config =
     compileExceptClauses currentIndex clauses =
       case clauses of
         [] -> Right (CompileExprResult {compileExprResultCode = [], compileExprResultEndIndex = currentIndex})
-        ExceptSuite {exceptSuiteType = maybeTypeName, exceptSuiteAlias = maybeAliasName, exceptSuiteBody = exceptStmts} : restClauses -> do
+        ExceptSuite {exceptSuiteType = maybeTypeNames, exceptSuiteAlias = maybeAliasName, exceptSuiteBody = exceptStmts} : restClauses -> do
           let aliasCode =
                 case maybeAliasName of
                   Nothing -> []
@@ -71,7 +71,7 @@ compileTryExcept config =
           let nextClauseStart = compileExprResultEndIndex bodyResult + length deleteAliasCode + 1
           restResult <- compileExceptClauses nextClauseStart restClauses
           let clauseCode =
-                [MatchExceptionType {matchExceptionTypeName = maybeTypeName}]
+                [MatchExceptionType {matchExceptionTypeName = maybeTypeNames}]
                   ++ [JumpIfFalse {jumpIfFalseTarget = nextClauseStart}]
                   ++ aliasCode
                   ++ compileExprResultCode bodyResult

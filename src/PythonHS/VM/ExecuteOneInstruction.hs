@@ -2,7 +2,6 @@ module PythonHS.VM.ExecuteOneInstruction (executeOneInstruction) where
 
 import Data.Map.Strict qualified as Map
 import Data.Set qualified as Set
-import PythonHS.Evaluator.MaxLoopIterations (maxLoopIterations)
 import PythonHS.Evaluator.ShowPos (showPos)
 import PythonHS.Evaluator.Value (Value (DictValue, FunctionRefValue, ListValue, StringValue, TupleValue, UnboundLocalValue), unboundLocalValueName)
 import PythonHS.Evaluator.ValueToOutput (valueToOutput)
@@ -35,7 +34,6 @@ import PythonHS.VM.FunctionInfo (FunctionInfo (..))
 import PythonHS.VM.HandleExceptionInstruction (handleExceptionInstruction)
 import PythonHS.VM.HandleExceptionInstructionConfig (HandleExceptionInstructionConfig (..))
 import PythonHS.VM.Instruction (Instruction (..))
-import PythonHS.VM.IsTruthy (isTruthy)
 import PythonHS.VM.LookupNameWithAttr (lookupNameWithAttr)
 import PythonHS.VM.LoopState (LoopState (..))
 import PythonHS.VM.PopValues (popValues)
