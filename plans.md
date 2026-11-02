@@ -363,6 +363,12 @@
 - [x] P67-2: 削除後の再参照で `UnboundLocalError` になるケースを `RunSourceVmSpec` に追加
 - [x] P67-3: 品質ゲート再実行（`cabal test` / `cabal run check-structure` / warning 0）
 
+## 現在のスコープ（P68: VM exception alias scoping）
+- [x] P68 開始: `except ... as e` で束縛した例外別名 `e` を except ブロック終了時に解除する
+- [x] P68-1: `CompileTryExcept` で except 本体の後に `DeleteName e` を挿入
+- [x] P68-2: モジュールレベル・関数内の両方で、ブロック後の `e` 参照が NameError / UnboundLocalError になるケースを追加
+- [x] P68-3: 品質ゲート再実行（`cabal test` / `cabal run check-structure` / warning 0）
+
 ## detect-positional-args プロジェクト全体分析結果（2026-07-03）
 
 ### 分析概要
@@ -561,6 +567,12 @@
 
 ## メンテナンス記録（要約）
 - 注記: 以下は時系列ログ。古い日付の「未対応」項目は、その後のエントリで仕様更新済みの場合がある。
+- 2026-11-02
+  - [x] P68 完了: VM exception alias scoping
+  - [x] P68 実装: `CompileTryExcept` で `except ... as e` の本体後に `DeleteName e` を挿入し、別名をブロック終了時に解除
+  - [x] P68 実装: モジュールレベルでは `NameError`、関数内では `UnboundLocalError` となることを確認
+  - [x] P68 テスト: `RunSourceVmSpec` にモジュールレベル・関数内の両方のケースを追加
+  - [x] P68 品質ゲート: `cabal run quality-gate` が全項目 PASS することを確認
 - 2026-10-31
   - [x] P67 完了: VM local variable remains local after del
   - [x] P67 実装: `ExecuteDeleteName` で関数スコープのローカル名を削除した後、`UnboundLocalValue` センチネルを再挿入

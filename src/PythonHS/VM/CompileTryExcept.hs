@@ -59,17 +59,22 @@ compileTryExcept config =
                 case maybeAliasName of
                   Nothing -> []
                   Just aliasName -> [LoadPendingException, StoreName {storeNameName = aliasName}]
+          let deleteAliasCode =
+                case maybeAliasName of
+                  Nothing -> []
+                  Just aliasName -> [DeleteName {deleteNameTarget = aliasName}]
           let bodyStartIndex = currentIndex + 2 + length aliasCode
           let compileStatements = compileTryExceptCompileStatements config
               inFunction = compileTryExceptInFunction config
               maybeLoop = compileTryExceptMaybeLoop config
           bodyResult <- compileStatements bodyStartIndex inFunction maybeLoop exceptStmts
-          restResult <- compileExceptClauses (compileExprResultEndIndex bodyResult + 1) restClauses
-          let nextClauseStart = compileExprResultEndIndex bodyResult + 1
+          let nextClauseStart = compileExprResultEndIndex bodyResult + length deleteAliasCode + 1
+          restResult <- compileExceptClauses nextClauseStart restClauses
           let clauseCode =
                 [MatchExceptionType {matchExceptionTypeName = maybeTypeName}]
                   ++ [JumpIfFalse {jumpIfFalseTarget = nextClauseStart}]
                   ++ aliasCode
                   ++ compileExprResultCode bodyResult
+                  ++ deleteAliasCode
                   ++ [Jump {jumpTarget = compileExprResultEndIndex restResult + 1}]
           pure (CompileExprResult {compileExprResultCode = clauseCode ++ compileExprResultCode restResult, compileExprResultEndIndex = compileExprResultEndIndex restResult})

@@ -206,6 +206,12 @@ spec = describe "runSourceVm (vm mvp)" $ do
   it "reports UnboundLocalError after deleting a local variable inside function" $ do
     runSourceVm "def f():\n  x = 1\n  del x\n  return x\nresult = f()\nprint result\n" `shouldBe` Left "UnboundLocalError: local variable x referenced before assignment at 4:10"
 
+  it "unbinds exception alias after except block at module level" $ do
+    runSourceVm "try:\n  raise 1\nexcept RuntimeError as e:\n  pass\nprint e\n" `shouldBe` Left "Name error: undefined identifier e at 5:7"
+
+  it "unbinds exception alias after except block inside function" $ do
+    runSourceVm "def f():\n  try:\n    raise 1\n  except RuntimeError as e:\n    pass\n  return e\nresult = f()\nprint result\n" `shouldBe` Left "UnboundLocalError: local variable e referenced before assignment at 6:10"
+
   it "runs function decorators in bottom-up order" $ do
     runSourceVm "def add1(fn):\n  return lambda x: (fn)(x) + 1\ndef mul2(fn):\n  return lambda x: (fn)(x) * 2\n@add1\n@mul2\ndef f(x):\n  return x\nprint f(3)\n" `shouldBe` Right ["7"]
 
