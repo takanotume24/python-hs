@@ -49,16 +49,17 @@ executeOneInstruction execute state instruction =
        in case instruction of
             PushConst value -> execute state {vmIp = vmIp state + 1, vmStack = value : vmStack state}
             LoadName name pos ->
-              case lookupNameWithAttr name (envLocals (vmEnv state)) (envGlobals (vmEnv state)) of
-                Just value ->
+              case lookupNameWithAttr name pos (envLocals (vmEnv state)) (envGlobals (vmEnv state)) of
+                Left attrError -> Left attrError
+                Right Nothing ->
+                  case Map.lookup name (envFunctions (vmEnv state)) of
+                    Just _ -> execute state {vmIp = vmIp state + 1, vmStack = FunctionRefValue name [] : vmStack state}
+                    Nothing -> Left ("Name error: undefined identifier " ++ name ++ " at " ++ showPos pos)
+                Right (Just value) ->
                   case value of
                     UnboundLocalValue {unboundLocalValueName = unboundName} ->
                       Left ("UnboundLocalError: local variable " ++ unboundName ++ " referenced before assignment at " ++ showPos pos)
                     _ -> execute state {vmIp = vmIp state + 1, vmStack = value : vmStack state}
-                Nothing ->
-                  case Map.lookup name (envFunctions (vmEnv state)) of
-                    Just _ -> execute state {vmIp = vmIp state + 1, vmStack = FunctionRefValue name [] : vmStack state}
-                    Nothing -> Left ("Name error: undefined identifier " ++ name ++ " at " ++ showPos pos)
             DeclareGlobal name ->
               execute state {vmIp = vmIp state + 1, vmEnv = (vmEnv state) {envGlobalDecls = Set.insert name (envGlobalDecls (vmEnv state))}}
             StoreName name ->
@@ -185,10 +186,8 @@ executeOneInstruction execute state instruction =
               case vmStack state of
                 value : _ -> Right state {vmStack = [value]}
                 _ -> Left "VM runtime error: return requires one value on stack"
-            instruction'@(PrintTop) ->
-              executeStackInstruction ExecuteStackInstructionConfig {executeStackInstructionExecute = execute, executeStackInstructionState = state, executeStackInstructionInstruction = instruction'}
-            instruction'@(PopTop) ->
-              executeStackInstruction ExecuteStackInstructionConfig {executeStackInstructionExecute = execute, executeStackInstructionState = state, executeStackInstructionInstruction = instruction'}
+            PrintTop -> executeStackInstruction ExecuteStackInstructionConfig {executeStackInstructionExecute = execute, executeStackInstructionState = state, executeStackInstructionInstruction = PrintTop}
+            PopTop -> executeStackInstruction ExecuteStackInstructionConfig {executeStackInstructionExecute = execute, executeStackInstructionState = state, executeStackInstructionInstruction = PopTop}
             Halt -> Right state
             instruction'@(PushExceptionHandler _) -> handleExceptionInstruction HandleExceptionInstructionConfig {handleExceptionInstructionExecute = execute, handleExceptionInstructionState = state, handleExceptionInstructionInstruction = instruction'}
             instruction'@(PushFinallyHandler _) -> handleExceptionInstruction HandleExceptionInstructionConfig {handleExceptionInstructionExecute = execute, handleExceptionInstructionState = state, handleExceptionInstructionInstruction = instruction'}

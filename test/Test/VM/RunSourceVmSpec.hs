@@ -44,6 +44,9 @@ spec = describe "runSourceVm (vm mvp)" $ do
   it "supports top-level expression statements" $ do
     runSourceVm "def f():\n  print 1\nf()\n" `shouldBe` Right ["1"]
 
+  it "matches AttributeError category" $ do
+    runSourceVm "class A:\n  pass\na = A()\ntry:\n  _ = a.missing\nexcept AttributeError:\n  print 1\n" `shouldBe` Right ["1"]
+
   it "binds typed except alias and rethrows on non-matching type" $ do
     runSourceVm "try:\n  raise \"boom\"\nexcept RuntimeError as e:\n  print e\n" `shouldBe` Right ["Runtime error: boom at 2:3"]
     runSourceVm "try:\n  raise \"boom\"\nexcept TypeError:\n  print 1\n" `shouldBe` Left "Runtime error: boom at 2:3"
@@ -201,13 +204,13 @@ spec = describe "runSourceVm (vm mvp)" $ do
     runSourceVm "class A:\n  x = 1\n  @classmethod\n  def inc(cls):\n    cls.x += 2\n_ = A.inc()\nprint A.x\na = A()\nprint a.x\n" `shouldBe` Right ["3", "3"]
 
   it "supports deleting class attribute" $ do
-    runSourceVm "class A:\n  x = 1\ndel A.x\nprint A.x\n" `shouldBe` Left "Name error: undefined identifier A.x at 4:7"
+    runSourceVm "class A:\n  x = 1\ndel A.x\nprint A.x\n" `shouldBe` Left "Attribute error: undefined attribute A.x at 4:7"
 
   it "supports deleting instance attribute" $ do
     runSourceVm "class A:\n  x = 1\na = A()\na.x = 2\ndel a.x\nprint a.x\n" `shouldBe` Right ["1"]
 
   it "supports deleting class attribute through classmethod" $ do
-    runSourceVm "class A:\n  x = 1\n  @classmethod\n  def remove(cls):\n    del cls.x\n_ = A.remove()\nprint A.x\n" `shouldBe` Left "Name error: undefined identifier A.x at 7:7"
+    runSourceVm "class A:\n  x = 1\n  @classmethod\n  def remove(cls):\n    del cls.x\n_ = A.remove()\nprint A.x\n" `shouldBe` Left "Attribute error: undefined attribute A.x at 7:7"
 
   it "reports UnboundLocalError for local variable referenced before assignment" $ do
     runSourceVm "x = 1\ndef f():\n  return x\n  x = 2\nprint f()\n" `shouldBe` Left "UnboundLocalError: local variable x referenced before assignment at 3:10"

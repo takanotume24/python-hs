@@ -389,6 +389,14 @@
 - [x] P71-1: `ParseCallStatement` で属性アクセス式文（`A.x`）を受理する
 - [x] P71-2: 品質ゲート再実行（`cabal test` / `cabal run check-structure` / warning 0）
 
+## 現在のスコープ（P72: VM attribute errors）
+- [x] P72 開始: 属性解決の失敗を `Attribute error:` として報告し、`except AttributeError` で捕捉できるようにする
+- [x] P72-1: `LookupNameWithAttr` を属性解決エラーを返すように更新
+- [x] P72-2: `except AttributeError` を `Attribute error:` 系エラーに対応させる
+- [x] P72-3: 既存の `del A.x` / `del cls.x` テストを新しいエラー文言に更新
+- [x] P72-4: `AttributeError` の捕捉ケースを `RunSourceVmSpec` に追加
+- [x] P72-5: 品質ゲート再実行（`cabal test` / `cabal run check-structure` / warning 0）
+
 ## detect-positional-args プロジェクト全体分析結果（2026-07-03）
 
 ### 分析概要
@@ -587,6 +595,12 @@
 
 ## メンテナンス記録（要約）
 - 注記: 以下は時系列ログ。古い日付の「未対応」項目は、その後のエントリで仕様更新済みの場合がある。
+- 2026-11-02
+  - [x] P72 完了: VM attribute errors
+  - [x] P72 実装: 属性解決の失敗を `Attribute error:` として返すように `LookupNameWithAttr` を更新
+  - [x] P72 実装: `except AttributeError` を `Attribute error:` 系エラーに対応
+  - [x] P72 テスト: 既有の `del A.x` / `del cls.x` テストを新しい文言に更新し、`AttributeError` 捕捉ケースを追加
+  - [x] P72 品質ゲート: `cabal run quality-gate` が全項目 PASS
 - 2026-11-02
   - [x] P71 完了: VM top-level expression statements (attribute access)
   - [x] P71 実装: `ParseCallStatement` で属性アクセス式文（`A.x`）を受理する

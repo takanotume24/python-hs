@@ -44,6 +44,7 @@ executePendingExceptionInstruction pendingExceptErrorName instruction stack loca
       | typeName == "ArgumentError" = Just "Argument error:"
       | typeName == "ImportError" = Just "Import error:"
       | typeName == "UnboundLocalError" = Just "UnboundLocalError:"
+      | typeName == "AttributeError" = Just "Attribute error:"
       | otherwise = Nothing
 
     startsWith prefix value = take (length prefix) value == prefix

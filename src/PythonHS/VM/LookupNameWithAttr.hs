@@ -2,22 +2,33 @@ module PythonHS.VM.LookupNameWithAttr (lookupNameWithAttr) where
 
 import Data.Map.Strict qualified as Map
 import PythonHS.Evaluator.ModuleAttr (ModuleAttr (..))
+import PythonHS.Evaluator.ShowPos (showPos)
 import PythonHS.Evaluator.Value (Value (ClassValue, FunctionRefValue, InstanceValue, ModuleValue))
+import PythonHS.Lexer.Position (Position)
 import PythonHS.VM.LookupName (lookupName)
 import PythonHS.VM.MethodKind (MethodKind (..))
 import PythonHS.VM.MethodNamePair (MethodNamePair (..))
 import PythonHS.VM.ModulePrefixFor (modulePrefixFor)
 
-lookupNameWithAttr :: String -> Map.Map String Value -> Map.Map String Value -> Maybe Value
-lookupNameWithAttr name localNow globalsNow =
+lookupNameWithAttr :: String -> Position -> Map.Map String Value -> Map.Map String Value -> Either String (Maybe Value)
+lookupNameWithAttr name pos localNow globalsNow =
   case break (== '.') name of
-    (_, []) -> lookupName name localNow globalsNow
+    (_, []) -> Right (lookupName name localNow globalsNow)
     (rootName, '.' : attrTail) ->
       case lookupName rootName localNow globalsNow of
-        Nothing -> Nothing
-        Just rootValue -> loadAttrPath rootValue (splitAttrPath attrTail)
-    _ -> Nothing
+        Nothing -> Right Nothing
+        Just rootValue ->
+          case loadAttrPath rootValue (splitAttrPath attrTail) of
+            Nothing -> Left (attributeError name pos)
+            Just attrValue -> Right (Just attrValue)
+    _ -> Right Nothing
   where
+    attributeError currentName currentPos =
+      "Attribute error: undefined attribute "
+        ++ currentName
+        ++ " at "
+        ++ showPos currentPos
+
     splitAttrPath path =
       case break (== '.') path of
         (segment, []) -> [segment]
