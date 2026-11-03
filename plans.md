@@ -493,6 +493,15 @@
 - [x] P83-3: 全テスト PASS（943 examples, 0 failures）
 - [x] P83-4: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
 
+## 現在のスコープ（P84: ユーザー定義例外クラスの継承対応）
+- [x] P84 開始: `class MyError(ValueError): pass` のようなユーザー定義例外サブクラスを `except ValueError` 等で捕捉できるようにする
+- [x] P84-1: `HandleExceptionInstruction` でローカル環境とグローバル環境を統合して例外マッチ時にクラス定義を参照可能にする
+- [x] P84-2: `ExecutePendingExceptionInstruction` に `isSubclassOf` / `anyBaseIs` を追加し、エラー文字列のクラス名から基底クラスを辿って一致判定
+- [x] P84-3: 組み込み例外クラス名に対してもサブクラスマッチを行うように変更
+- [x] P84-4: `RunSourceVmSpec` にユーザー定義例外サブクラスの発生・捕捉・非一致伝播テストを追加
+- [x] P84-5: 全テスト PASS（945 examples, 0 failures）
+- [x] P84-6: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
+
 ## detect-positional-args プロジェクト全体分析結果（2026-07-03）
 
 ### 分析概要
@@ -691,6 +700,12 @@
 
 ## メンテナンス記録（要約）
 - 注記: 以下は時系列ログ。古い日付の「未対応」項目は、その後のエントリで仕様更新済みの場合がある。
+- 2026-11-03
+  - [x] P84 完了: ユーザー定義例外クラスの継承対応
+  - [x] P84 実装: `HandleExceptionInstruction` でローカル環境とグローバル環境を統合してクラス定義を参照
+  - [x] P84 実装: `ExecutePendingExceptionInstruction` でエラー文字列のクラス名から基底クラスを辿って一致判定
+  - [x] P84 テスト: `RunSourceVmSpec` に `class MyError(ValueError): ...` の捕捉・非一致伝播ケースを追加
+  - [x] P84 品質ゲート: `cabal run quality-gate` が全項目 PASS（945 examples, 0 failures）
 - 2026-11-03
   - [x] P83 完了: ユーザー定義例外の print 表現と Exception/BaseException 捕捉
   - [x] P83 実装: `ValueToOutput` で `InstanceValue` の `message` 属性がある場合はそれを出力

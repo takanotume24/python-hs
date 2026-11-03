@@ -37,8 +37,12 @@ executePendingExceptionInstruction pendingExceptErrorName instruction stack loca
         "BaseException" -> True
         _ ->
           case normalizeErrorType typeName of
-            Just expectedPrefix -> startsWith expectedPrefix err
-            Nothing -> startsWith (typeName ++ ": ") err
+            Just expectedPrefix ->
+              startsWith expectedPrefix err
+                || isSubclassOf (errorClassName err) typeName localEnv
+            Nothing ->
+              startsWith (typeName ++ ": ") err
+                || isSubclassOf (errorClassName err) typeName localEnv
 
     normalizeErrorType typeName
       | typeName == "RuntimeError" = Just "Runtime error:"
@@ -53,3 +57,17 @@ executePendingExceptionInstruction pendingExceptErrorName instruction stack loca
       | otherwise = Nothing
 
     startsWith prefix value = take (length prefix) value == prefix
+
+    errorClassName err =
+      case break (== ':') err of
+        (className, ':' : _) -> className
+        _ -> ""
+
+    isSubclassOf className typeName env =
+      className /= "" && className /= typeName && anyBaseIs typeName env className
+
+    anyBaseIs target env className =
+      case Map.lookup className env of
+        Just ClassValue {classValueBase = Just baseName} ->
+          baseName == target || anyBaseIs target env baseName
+        _ -> False

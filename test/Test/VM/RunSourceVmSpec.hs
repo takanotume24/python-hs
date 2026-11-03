@@ -132,6 +132,12 @@ spec = describe "runSourceVm (vm mvp)" $ do
   it "catches user-defined exception class with except BaseException as" $ do
     runSourceVm "class MyError:\n  def __init__(self, message):\n    self.message = message\ntry:\n  raise MyError(\"boom\")\nexcept BaseException as e:\n  print e\n" `shouldBe` Right ["boom"]
 
+  it "catches user-defined exception subclass with except builtin base class" $ do
+    runSourceVm "class MyError(ValueError):\n  def __init__(self, message):\n    self.message = message\ntry:\n  raise MyError(\"boom\")\nexcept ValueError:\n  print 1\n" `shouldBe` Right ["1"]
+
+  it "propagates user-defined exception subclass when except base class does not match" $ do
+    runSourceVm "class MyError(ValueError):\n  def __init__(self, message):\n    self.message = message\ntry:\n  raise MyError(\"boom\")\nexcept TypeError:\n  print 1\n" `shouldBe` Left "MyError: boom at 5:3"
+
   it "propagates error raised in except suite" $ do
     runSourceVm "try:\n  raise 1\nexcept:\n  raise 2\n" `shouldBe` Left "Runtime error: 2 at 4:3"
 

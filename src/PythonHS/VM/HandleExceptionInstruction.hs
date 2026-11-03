@@ -1,5 +1,6 @@
 module PythonHS.VM.HandleExceptionInstruction (handleExceptionInstruction) where
 
+import Data.Map.Strict qualified as Map
 import PythonHS.VM.ApplyExceptionInstruction (applyExceptionInstruction)
 import PythonHS.VM.EnvState (EnvState (..))
 import PythonHS.VM.ExceptionApplyResult (ExceptionApplyResult (..))
@@ -19,7 +20,7 @@ handleExceptionInstruction config = case instruction of
     state = handleExceptionInstructionState config
     instruction = handleExceptionInstructionInstruction config
     processExceptionInstruction =
-      case applyExceptionInstruction (vmIp state) instruction (vmStack state) (envLocals (vmEnv state)) (exceptionHandlers (vmException state)) of
+      case applyExceptionInstruction (vmIp state) instruction (vmStack state) (Map.union (envLocals (vmEnv state)) (envGlobals (vmEnv state))) (exceptionHandlers (vmException state)) of
         Left err -> Left err
         Right applyResult ->
           case exceptionApplyResultError applyResult of
