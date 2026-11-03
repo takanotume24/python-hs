@@ -32,7 +32,7 @@ import PythonHS.VM.ExecuteUnpackToNames (executeUnpackToNames)
 import PythonHS.VM.FunctionInfo (FunctionInfo (..))
 import PythonHS.VM.HandleExceptionInstruction (handleExceptionInstruction)
 import PythonHS.VM.HandleExceptionInstructionConfig (HandleExceptionInstructionConfig (..))
-import PythonHS.VM.Instruction (Instruction (..))
+import PythonHS.VM.Instruction (Instruction (..), isExceptionInstruction)
 import PythonHS.VM.LookupNameWithAttr (lookupNameWithAttr)
 import PythonHS.VM.LoopState (LoopState (..))
 import PythonHS.VM.PopValues (popValues)
@@ -190,11 +190,7 @@ executeOneInstruction execute state instruction =
             AssertTop pos ->
               executeAssertInstruction ExecuteAssertInstructionConfig {executeAssertInstructionState = state, executeAssertInstructionInstruction = AssertTop pos}
             Halt -> Right state
-            instruction'@(PushExceptionHandler _) -> handleExceptionInstruction HandleExceptionInstructionConfig {handleExceptionInstructionState = state, handleExceptionInstructionInstruction = instruction'}
-            instruction'@(PushFinallyHandler _) -> handleExceptionInstruction HandleExceptionInstructionConfig {handleExceptionInstructionState = state, handleExceptionInstructionInstruction = instruction'}
-            instruction'@PopExceptionHandler -> handleExceptionInstruction HandleExceptionInstructionConfig {handleExceptionInstructionState = state, handleExceptionInstructionInstruction = instruction'}
-            instruction'@LoadPendingException -> handleExceptionInstruction HandleExceptionInstructionConfig {handleExceptionInstructionState = state, handleExceptionInstructionInstruction = instruction'}
-            instruction'@(MatchExceptionType _) -> handleExceptionInstruction HandleExceptionInstructionConfig {handleExceptionInstructionState = state, handleExceptionInstructionInstruction = instruction'}
-            instruction'@RaisePendingException -> handleExceptionInstruction HandleExceptionInstructionConfig {handleExceptionInstructionState = state, handleExceptionInstructionInstruction = instruction'}
-            instruction'@RaisePendingError -> handleExceptionInstruction HandleExceptionInstructionConfig {handleExceptionInstructionState = state, handleExceptionInstructionInstruction = instruction'}
+            instr
+              | isExceptionInstruction instr ->
+                  handleExceptionInstruction HandleExceptionInstructionConfig {handleExceptionInstructionState = state, handleExceptionInstructionInstruction = instr}
             _ -> Left "VM runtime error: unknown instruction"

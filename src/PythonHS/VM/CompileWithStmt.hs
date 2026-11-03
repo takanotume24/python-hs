@@ -64,8 +64,8 @@ compileWithStmt config = do
           { callFunctionName = "__exit__",
             callFunctionArgs =
               [ CompiledCallArg {compiledCallArgCode = [LoadName {loadNameName = contextManagerVar, loadNamePos = contextManagerPos ctxManager}], compiledCallArgKeyword = Nothing, compiledCallArgPos = contextManagerPos ctxManager},
-                CompiledCallArg {compiledCallArgCode = [LoadPendingException], compiledCallArgKeyword = Nothing, compiledCallArgPos = contextManagerPos ctxManager},
-                CompiledCallArg {compiledCallArgCode = [LoadPendingException], compiledCallArgKeyword = Nothing, compiledCallArgPos = contextManagerPos ctxManager},
+                CompiledCallArg {compiledCallArgCode = [LoadPendingExceptionClass], compiledCallArgKeyword = Nothing, compiledCallArgPos = contextManagerPos ctxManager},
+                CompiledCallArg {compiledCallArgCode = [LoadPendingExceptionMessage], compiledCallArgKeyword = Nothing, compiledCallArgPos = contextManagerPos ctxManager},
                 nonePos
               ],
             callFunctionPos = contextManagerPos ctxManager

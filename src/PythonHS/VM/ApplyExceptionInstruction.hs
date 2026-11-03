@@ -4,7 +4,7 @@ import Data.Map.Strict qualified as Map
 import PythonHS.Evaluator.Value (Value (StringValue))
 import PythonHS.VM.ExceptionApplyResult (ExceptionApplyResult (..))
 import PythonHS.VM.ExecutePendingExceptionInstruction (executePendingExceptionInstruction)
-import PythonHS.VM.Instruction (Instruction (LoadPendingException, MatchExceptionType, PopExceptionHandler, PushExceptionHandler, PushFinallyHandler, PushWithHandler, RaisePendingError, RaisePendingException))
+import PythonHS.VM.Instruction (Instruction (LoadPendingException, LoadPendingExceptionClass, LoadPendingExceptionMessage, MatchExceptionType, PopExceptionHandler, PushExceptionHandler, PushFinallyHandler, PushWithHandler, RaisePendingError, RaisePendingException))
 
 applyExceptionInstruction :: Int -> Instruction -> [Value] -> Map.Map String Value -> [Int] -> Either String ExceptionApplyResult
 applyExceptionInstruction ip instruction stack localEnv exceptionHandlers =
@@ -24,6 +24,8 @@ applyExceptionInstruction ip instruction stack localEnv exceptionHandlers =
         Just (StringValue err) -> Right ExceptionApplyResult {exceptionApplyResultError = Just err, exceptionApplyResultIp = ip, exceptionApplyResultStack = stack, exceptionApplyResultHandlers = exceptionHandlers}
         _ -> Right ExceptionApplyResult {exceptionApplyResultError = Nothing, exceptionApplyResultIp = ip + 1, exceptionApplyResultStack = stack, exceptionApplyResultHandlers = exceptionHandlers}
     pendingInstruction@(LoadPendingException) -> runPending pendingInstruction
+    pendingInstruction@LoadPendingExceptionClass -> runPending pendingInstruction
+    pendingInstruction@LoadPendingExceptionMessage -> runPending pendingInstruction
     pendingInstruction@(MatchExceptionType _) -> runPending pendingInstruction
     pendingInstruction@(RaisePendingException) -> runPending pendingInstruction
     _ -> Left "VM runtime error: applyExceptionInstruction called with non-exception instruction"

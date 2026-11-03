@@ -1,4 +1,4 @@
-module PythonHS.VM.Instruction (Instruction (..)) where
+module PythonHS.VM.Instruction (Instruction (..), isExceptionInstruction) where
 
 import PythonHS.AST.BinaryOperator (BinaryOperator)
 import PythonHS.AST.Pattern (Pattern)
@@ -36,6 +36,8 @@ data Instruction
   | PushWithHandler {pushWithHandlerIp :: Int}
   | PopExceptionHandler
   | LoadPendingException
+  | LoadPendingExceptionClass
+  | LoadPendingExceptionMessage
   | MatchExceptionType {matchExceptionTypeName :: Maybe [String]}
   | DupTop
   | ApplyUnaryMinus {applyUnaryMinusPos :: Position}
@@ -99,3 +101,18 @@ data Instruction
   | CheckWithResult
   | Halt
   deriving (Eq, Show)
+
+isExceptionInstruction :: Instruction -> Bool
+isExceptionInstruction instruction =
+  case instruction of
+    PushExceptionHandler {} -> True
+    PushFinallyHandler {} -> True
+    PushWithHandler {} -> True
+    PopExceptionHandler -> True
+    LoadPendingException -> True
+    LoadPendingExceptionClass -> True
+    LoadPendingExceptionMessage -> True
+    MatchExceptionType {} -> True
+    RaisePendingException -> True
+    RaisePendingError -> True
+    _ -> False

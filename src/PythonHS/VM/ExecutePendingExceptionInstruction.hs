@@ -2,7 +2,8 @@ module PythonHS.VM.ExecutePendingExceptionInstruction (executePendingExceptionIn
 
 import Data.Map.Strict qualified as Map
 import PythonHS.Evaluator.Value (Value (..))
-import PythonHS.VM.Instruction (Instruction (LoadPendingException, MatchExceptionType, RaisePendingException))
+import PythonHS.Evaluator.ValueToOutput (valueToOutput)
+import PythonHS.VM.Instruction (Instruction (LoadPendingException, LoadPendingExceptionClass, LoadPendingExceptionMessage, MatchExceptionType, RaisePendingException))
 
 executePendingExceptionInstruction :: String -> Instruction -> [Value] -> Map.Map String Value -> Either String (Maybe String, [Value])
 executePendingExceptionInstruction pendingExceptErrorName instruction stack localEnv =
@@ -10,6 +11,14 @@ executePendingExceptionInstruction pendingExceptErrorName instruction stack loca
     LoadPendingException ->
       case Map.lookup pendingExceptValueName localEnv of
         Just value -> Right (Nothing, value : stack)
+        Nothing -> Left "VM runtime error: pending exception is not set"
+    LoadPendingExceptionClass ->
+      case Map.lookup pendingExceptValueName localEnv of
+        Just value -> Right (Nothing, StringValue (exceptionClassName value) : stack)
+        Nothing -> Left "VM runtime error: pending exception is not set"
+    LoadPendingExceptionMessage ->
+      case Map.lookup pendingExceptValueName localEnv of
+        Just value -> Right (Nothing, StringValue (exceptionMessageText value) : stack)
         Nothing -> Left "VM runtime error: pending exception is not set"
     MatchExceptionType maybeTypeName ->
       let matched =
@@ -57,6 +66,21 @@ executePendingExceptionInstruction pendingExceptErrorName instruction stack loca
       | otherwise = Nothing
 
     startsWith prefix value = take (length prefix) value == prefix
+
+    exceptionClassName value =
+      case value of
+        ExceptionValue {exceptionValueClass = className} -> className
+        InstanceValue {instanceValueClass = className} -> className
+        _ -> "RuntimeError"
+
+    exceptionMessageText value =
+      case value of
+        ExceptionValue {exceptionValueMessage = message} -> message
+        InstanceValue {instanceValueAttrs = attrs} ->
+          case lookup "message" attrs of
+            Just (StringValue {stringValue = message}) -> message
+            _ -> ""
+        _ -> valueToOutput value
 
     errorClassName err =
       case break (== ':') err of

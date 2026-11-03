@@ -519,6 +519,16 @@
 - [x] P86-4: 全テスト PASS（950 examples, 0 failures）
 - [x] P86-5: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
 
+## 現在のスコープ（P87: コンテキストマネージャへの Python らしい例外情報渡し）
+- [x] P87 開始: `__exit__(self, exc_type, exc_value, traceback)` にクラス名文字列とメッセージ文字列を渡す
+- [x] P87-1: `Instruction` に `LoadPendingExceptionClass` / `LoadPendingExceptionMessage` を追加
+- [x] P87-2: `ExecutePendingExceptionInstruction` で生の例外値からクラス名・メッセージを抽出
+- [x] P87-3: `CompileWithStmt` の例外時 `__exit__` 呼び出しで新しい命令を使用
+- [x] P87-4: `ExecuteOneInstruction` の例外命令分岐を `isExceptionInstruction` ガードに集約し、200 行制限を遵守
+- [x] P87-5: `RunSourceVmSpec` の `__exit__` テストを `ValueError` / `boom` 出力に更新
+- [x] P87-6: 全テスト PASS（950 examples, 0 failures）
+- [x] P87-7: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
+
 ## detect-positional-args プロジェクト全体分析結果（2026-07-03）
 
 ### 分析概要
@@ -717,6 +727,14 @@
 
 ## メンテナンス記録（要約）
 - 注記: 以下は時系列ログ。古い日付の「未対応」項目は、その後のエントリで仕様更新済みの場合がある。
+- 2026-11-03
+  - [x] P87 完了: コンテキストマネージャへの Python らしい例外情報渡し
+  - [x] P87 実装: `LoadPendingExceptionClass` / `LoadPendingExceptionMessage` 命令を追加
+  - [x] P87 実装: `ExecutePendingExceptionInstruction` で生の例外値からクラス名・メッセージを抽出
+  - [x] P87 実装: `CompileWithStmt` の例外時 `__exit__` 呼び出しでクラス名・メッセージを渡す
+  - [x] P87 実装: `ExecuteOneInstruction` の例外命令分岐を `isExceptionInstruction` ガードに集約
+  - [x] P87 テスト: `RunSourceVmSpec` の `__exit__` テストを `ValueError` / `boom` 出力に更新
+  - [x] P87 品質ゲート: `cabal run quality-gate` が全項目 PASS（950 examples, 0 failures）
 - 2026-11-03
   - [x] P86 完了: コンテキストマネージャの例外情報引数
   - [x] P86 実装: `CompileWithStmt` が `with` 本文の例外を `__exit__` の exc_type / exc_value へ渡すことを確認
