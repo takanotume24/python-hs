@@ -3,7 +3,6 @@ module PythonHS.VM.ExecutePushWithHandlerConfig (ExecutePushWithHandlerConfig (.
 import PythonHS.VM.VMState (VMState)
 
 data ExecutePushWithHandlerConfig = ExecutePushWithHandlerConfig
-  { executePushWithHandlerExecute :: VMState -> Either String VMState,
-    executePushWithHandlerState :: VMState,
+  { executePushWithHandlerState :: VMState,
     executePushWithHandlerIp :: Int
   }

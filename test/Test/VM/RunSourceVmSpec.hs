@@ -75,6 +75,18 @@ spec = describe "runSourceVm (vm mvp)" $ do
   it "matches typed suites in order before catch-all" $ do
     runSourceVm "try:\n  raise 1\nexcept NameError:\n  print 10\nexcept (TypeError, RuntimeError):\n  print 11\nexcept:\n  print 12\n" `shouldBe` Right ["11"]
 
+  it "runs else suite when try body succeeds" $ do
+    runSourceVm "try:\n  print 1\nexcept:\n  print 9\nelse:\n  print 2\n" `shouldBe` Right ["1", "2"]
+
+  it "skips else suite when except catches an error" $ do
+    runSourceVm "try:\n  raise \"boom\"\nexcept:\n  print 7\nelse:\n  print 8\n" `shouldBe` Right ["7"]
+
+  it "runs else suite before finally when try body succeeds" $ do
+    runSourceVm "try:\n  print 1\nexcept:\n  print 9\nelse:\n  print 2\nfinally:\n  print 3\n" `shouldBe` Right ["1", "2", "3"]
+
+  it "propagates error raised in else suite" $ do
+    runSourceVm "try:\n  print 1\nexcept:\n  print 9\nelse:\n  raise \"late\"\n" `shouldBe` Left "Runtime error: late at 6:3"
+
   it "matches value patterns and wildcard in order" $ do
     runSourceVm "x = 2\nmatch x:\n  case 1:\n    print 10\n  case 2:\n    print 20\n  case _:\n    print 30\n" `shouldBe` Right ["20"]
 

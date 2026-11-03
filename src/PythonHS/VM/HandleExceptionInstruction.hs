@@ -16,7 +16,6 @@ handleExceptionInstruction config = case instruction of
       else processExceptionInstruction
   _ -> processExceptionInstruction
   where
-    execute = handleExceptionInstructionExecute config
     state = handleExceptionInstructionState config
     instruction = handleExceptionInstructionInstruction config
     processExceptionInstruction =
@@ -26,4 +25,9 @@ handleExceptionInstruction config = case instruction of
           case exceptionApplyResultError applyResult of
             Just err -> Left err
             Nothing ->
-              execute state {vmIp = exceptionApplyResultIp applyResult, vmStack = exceptionApplyResultStack applyResult, vmException = (vmException state) {exceptionHandlers = exceptionApplyResultHandlers applyResult}}
+              Right
+                state
+                  { vmIp = exceptionApplyResultIp applyResult,
+                    vmStack = exceptionApplyResultStack applyResult,
+                    vmException = (vmException state) {exceptionHandlers = exceptionApplyResultHandlers applyResult}
+                  }

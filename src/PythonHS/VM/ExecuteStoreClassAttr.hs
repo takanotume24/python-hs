@@ -8,11 +8,10 @@ import PythonHS.VM.LookupName (lookupName)
 import PythonHS.VM.VMState (VMState (..))
 
 executeStoreClassAttr ::
-  (VMState -> Either String VMState) ->
   VMState ->
   Instruction ->
   Either String VMState
-executeStoreClassAttr execute state instruction =
+executeStoreClassAttr state instruction =
   case instruction of
     StoreClassAttr className attrName ->
       case vmStack state of
@@ -29,7 +28,7 @@ executeStoreClassAttr execute state instruction =
                               then env {envLocals = newLocals, envGlobals = newLocals}
                               else env {envLocals = newLocals}
                     | otherwise = env {envGlobals = Map.insert className newClassValue (envGlobals env)}
-               in execute state {vmIp = vmIp state + 1, vmStack = rest, vmEnv = newEnv}
+               in Right state {vmIp = vmIp state + 1, vmStack = rest, vmEnv = newEnv}
             Just _ -> Left "Type error: class attribute store expects class value"
             Nothing -> Left ("Name error: undefined class " ++ className ++ " at 0:0")
         _ -> Left "VM runtime error: StoreClassAttr requires one value on stack"

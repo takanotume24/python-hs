@@ -40,7 +40,7 @@ MIT License — 詳細は [LICENSE](LICENSE) を参照してください。
 ### 構文解析（Parser）
 - [x] 文: `print`, 代入, 複合代入, `return`, `global`, `pass`
 - [x] 文: `import` / `from ... import`（alias, dotted, relative, star, 括弧付き）
-- [x] 文: `try/except`（複数節・型指定・alias対応）、`try/except/finally`、`raise`
+- [x] 文: `try/except`（複数節・型指定・alias対応）、`try/except/else`、`try/except/finally`、`raise`
 - [x] 文: `match/case`（値/OR/シーケンス/マッピング/ガード/`as`/`**rest`対応）
 - [x] 文: `class`（単一継承・デコレータ対応）
 - [x] 文: class フィールド型注釈（`name: type` / `name: type = expr`）対応
@@ -83,7 +83,7 @@ MIT License — 詳細は [LICENSE](LICENSE) を参照してください。
 - [x] `global`文・複合代入
 - [x] 組み込み関数（`len`, `bool`, `range`, list/dict系）
 - [x] `import`解決（math/dataclasses/local package/submodule/relative/star）
-- [x] 例外処理（`try/except/finally`, `raise`）
+- [x] 例外処理（`try/except/else`、`try/except/finally`、`raise`）
 - [x] `match/case`（パターンマッチ実行）
 - [x] `class`（インスタンス生成・メソッド呼び出し・継承・属性解決）
 - [x] `dataclass`（`__init__`/`__repr__`/`__eq__`/`order`/`frozen`自動生成）

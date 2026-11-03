@@ -3,7 +3,6 @@ module PythonHS.VM.ExecuteJumpIfFalseConfig (ExecuteJumpIfFalseConfig (..)) wher
 import PythonHS.VM.VMState (VMState)
 
 data ExecuteJumpIfFalseConfig = ExecuteJumpIfFalseConfig
-  { executeJumpIfFalseExecute :: VMState -> Either String VMState,
-    executeJumpIfFalseState :: VMState,
+  { executeJumpIfFalseState :: VMState,
     executeJumpIfFalseTarget :: Int
   }

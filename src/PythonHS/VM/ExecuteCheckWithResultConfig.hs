@@ -3,6 +3,5 @@ module PythonHS.VM.ExecuteCheckWithResultConfig (ExecuteCheckWithResultConfig (.
 import PythonHS.VM.VMState (VMState)
 
 data ExecuteCheckWithResultConfig = ExecuteCheckWithResultConfig
-  { executeCheckWithResultState :: VMState,
-    executeCheckWithResultExecute :: VMState -> Either String VMState
+  { executeCheckWithResultState :: VMState
   }

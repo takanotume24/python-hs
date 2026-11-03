@@ -70,7 +70,9 @@ executeCallFunction execute isTopLevel fname compiledArgs pos stack globalsEnv l
                     vmLoop = LoopState {loopForStates = Map.empty, loopCounts = Map.empty},
                     vmException = ExceptionState {exceptionHandlers = [], exceptionOutputs = []},
                     vmIsTopLevel = False,
-                    vmOutputs = outputsAfterDefaults
+                    vmOutputs = outputsAfterDefaults,
+                    vmTraceSteps = [],
+                    vmTraceFailure = Nothing
                   }
           finalState <- execute callState
           let returnValue = case vmStack finalState of (value : _) -> value; [] -> IntValue 0

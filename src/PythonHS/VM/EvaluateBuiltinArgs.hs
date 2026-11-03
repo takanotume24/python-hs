@@ -44,7 +44,9 @@ evaluateBuiltinArgs executeFn currentLocalEnv remainingArgs currentGlobals curre
                 vmLoop = LoopState {loopForStates = Map.empty, loopCounts = Map.empty},
                 vmException = ExceptionState {exceptionHandlers = [], exceptionOutputs = []},
                 vmIsTopLevel = False,
-                vmOutputs = outputsNow
+                vmOutputs = outputsNow,
+                vmTraceSteps = [],
+                vmTraceFailure = Nothing
               }
       finalState <- executeFn argState
       let argValue =

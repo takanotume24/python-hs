@@ -32,5 +32,7 @@ initVMState instructions =
             exceptionOutputs = []
           },
       vmIsTopLevel = True,
-      vmOutputs = []
+      vmOutputs = [],
+      vmTraceSteps = [],
+      vmTraceFailure = Nothing
     }

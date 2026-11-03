@@ -56,7 +56,9 @@ executeCreateInstance execute isTopLevel pos stack localEnv className args globa
                             vmLoop = LoopState {loopForStates = Map.empty, loopCounts = Map.empty},
                             vmException = ExceptionState {exceptionHandlers = [], exceptionOutputs = []},
                             vmIsTopLevel = False,
-                            vmOutputs = outputsAfterDefaults
+                            vmOutputs = outputsAfterDefaults,
+                            vmTraceSteps = [],
+                            vmTraceFailure = Nothing
                           }
                   finalState <- execute callState
                   let constructedInstance = case vmStack finalState of (instanceResult@(InstanceValue _ _) : _) -> instanceResult; _ -> instanceValue

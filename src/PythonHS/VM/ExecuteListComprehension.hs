@@ -55,7 +55,9 @@ executeListComprehension execute clauses valueCode pos globalsEnv localEnv funct
           vmLoop = LoopState {loopForStates = Map.empty, loopCounts = Map.empty},
           vmException = ExceptionState {exceptionHandlers = [], exceptionOutputs = []},
           vmIsTopLevel = False,
-          vmOutputs = outs
+          vmOutputs = outs,
+          vmTraceSteps = [],
+          vmTraceFailure = Nothing
         }
 
     extractReturnValue finalState =

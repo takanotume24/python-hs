@@ -54,7 +54,9 @@ bindDefaults execute fname pos params defaultCodes initialLocals globalsNow func
                             vmLoop = LoopState {loopForStates = Map.empty, loopCounts = Map.empty},
                             vmException = ExceptionState {exceptionHandlers = [], exceptionOutputs = []},
                             vmIsTopLevel = False,
-                            vmOutputs = currentOutputs
+                            vmOutputs = currentOutputs,
+                            vmTraceSteps = [],
+                            vmTraceFailure = Nothing
                           }
                   finalState <- execute defaultState
                   let defaultValue =

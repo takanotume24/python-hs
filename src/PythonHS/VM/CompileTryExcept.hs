@@ -14,33 +14,61 @@ compileTryExcept config =
       inFunction = compileTryExceptInFunction config
       maybeLoop = compileTryExceptMaybeLoop config
       tryStmts = compileTryExceptTryStmts config
+      maybeElse = compileTryExceptMaybeElse config
       exceptClauses = compileTryExceptExceptClauses config
       maybeFinally = compileTryExceptMaybeFinally config
+      hasElse = case maybeElse of
+        Just _ -> True
+        Nothing -> False
+      compileOptionalSuite index maybeSuite =
+        case maybeSuite of
+          Nothing -> Right (CompileExprResult {compileExprResultCode = [], compileExprResultEndIndex = index})
+          Just suiteStmts -> compileStatements index inFunction maybeLoop suiteStmts
    in case maybeFinally of
         Nothing -> do
-          let tryStartIndex = baseIndex + 1
-          tryResult <- compileStatements tryStartIndex inFunction maybeLoop tryStmts
-          let exceptStartIndex = compileExprResultEndIndex tryResult + 2
-          exceptResult <- compileExceptDispatch exceptStartIndex exceptClauses
-          let code =
-                [PushExceptionHandler {pushExceptionHandlerIp = exceptStartIndex}]
+          tryResult <- compileStatements (baseIndex + 1) inFunction maybeLoop tryStmts
+          let tryEnd = compileExprResultEndIndex tryResult
+          elseResult <- compileOptionalSuite (tryEnd + 2) maybeElse
+          let elseEnd = compileExprResultEndIndex elseResult
+              dispatchStart = case maybeElse of
+                Just _ -> elseEnd + 1
+                Nothing -> elseEnd
+          dispatchResult <- compileExceptDispatch dispatchStart exceptClauses
+          let finalEnd = compileExprResultEndIndex dispatchResult
+              successJump =
+                if hasElse
+                  then [Jump {jumpTarget = tryEnd + 2}]
+                  else [Jump {jumpTarget = finalEnd}]
+              code =
+                [PushExceptionHandler {pushExceptionHandlerIp = dispatchStart}]
                   ++ compileExprResultCode tryResult
-                  ++ [PopExceptionHandler, Jump {jumpTarget = compileExprResultEndIndex exceptResult}]
-                  ++ compileExprResultCode exceptResult
-          pure (CompileExprResult {compileExprResultCode = code, compileExprResultEndIndex = compileExprResultEndIndex exceptResult})
+                  ++ [PopExceptionHandler]
+                  ++ successJump
+                  ++ (if hasElse then compileExprResultCode elseResult ++ [Jump {jumpTarget = finalEnd}] else [])
+                  ++ compileExprResultCode dispatchResult
+          pure (CompileExprResult {compileExprResultCode = code, compileExprResultEndIndex = finalEnd})
         Just finallyStmts -> do
-          let tryStartIndex = baseIndex + 2
-          tryResult <- compileStatements tryStartIndex inFunction maybeLoop tryStmts
-          let exceptStartIndex = compileExprResultEndIndex tryResult + 2
-          exceptResult <- compileExceptDispatch exceptStartIndex exceptClauses
-          let finallyStartIndex = compileExprResultEndIndex exceptResult + 1
-          let finallyBodyStartIndex = finallyStartIndex + 1
-          finallyResult <- compileStatements finallyBodyStartIndex inFunction maybeLoop finallyStmts
-          let code =
-                [PushFinallyHandler {pushFinallyHandlerIp = finallyStartIndex}, PushExceptionHandler {pushExceptionHandlerIp = exceptStartIndex}]
+          tryResult <- compileStatements (baseIndex + 2) inFunction maybeLoop tryStmts
+          let tryEnd = compileExprResultEndIndex tryResult
+          elseResult <- compileOptionalSuite (tryEnd + 2) maybeElse
+          let elseEnd = compileExprResultEndIndex elseResult
+              dispatchStart = case maybeElse of
+                Just _ -> elseEnd + 1
+                Nothing -> elseEnd
+          dispatchResult <- compileExceptDispatch dispatchStart exceptClauses
+          let finallyStartIndex = compileExprResultEndIndex dispatchResult + 1
+          finallyResult <- compileStatements (finallyStartIndex + 1) inFunction maybeLoop finallyStmts
+          let successJump =
+                if hasElse
+                  then [Jump {jumpTarget = tryEnd + 2}]
+                  else [Jump {jumpTarget = finallyStartIndex}]
+              code =
+                [PushFinallyHandler {pushFinallyHandlerIp = finallyStartIndex}, PushExceptionHandler {pushExceptionHandlerIp = dispatchStart}]
                   ++ compileExprResultCode tryResult
-                  ++ [PopExceptionHandler, Jump {jumpTarget = finallyStartIndex}]
-                  ++ compileExprResultCode exceptResult
+                  ++ [PopExceptionHandler]
+                  ++ successJump
+                  ++ (if hasElse then compileExprResultCode elseResult ++ [Jump {jumpTarget = finallyStartIndex}] else [])
+                  ++ compileExprResultCode dispatchResult
                   ++ [Jump {jumpTarget = finallyStartIndex}, PopExceptionHandler]
                   ++ compileExprResultCode finallyResult
                   ++ [RaisePendingError]

@@ -4,7 +4,6 @@ import PythonHS.VM.Instruction (Instruction)
 import PythonHS.VM.VMState (VMState)
 
 data ExecuteAssertInstructionConfig = ExecuteAssertInstructionConfig
-  { executeAssertInstructionExecute :: VMState -> Either String VMState,
-    executeAssertInstructionState :: VMState,
+  { executeAssertInstructionState :: VMState,
     executeAssertInstructionInstruction :: Instruction
   }

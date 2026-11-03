@@ -10,16 +10,15 @@ import PythonHS.VM.VMScopeContext (VMScopeContext (..))
 import PythonHS.VM.VMState (VMState (..))
 
 executeDeleteName ::
-  (VMState -> Either String VMState) ->
   VMState ->
   Instruction ->
   Either String VMState
-executeDeleteName execute state instruction =
+executeDeleteName state instruction =
   case instruction of
     DeleteName target ->
       case deleteTarget (VMScopeContext (vmIsTopLevel state) (envGlobalDecls (vmEnv state))) target (vmEnv state) of
         Left err -> Left err
-        Right newEnv -> execute state {vmIp = vmIp state + 1, vmEnv = newEnv}
+        Right newEnv -> Right state {vmIp = vmIp state + 1, vmEnv = newEnv}
     _ -> Left "VM runtime error: unexpected instruction in executeDeleteName"
   where
     -- The rest of the implementation lives in the where clause to keep the

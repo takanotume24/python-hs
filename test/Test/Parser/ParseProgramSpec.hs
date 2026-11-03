@@ -372,6 +372,7 @@ spec = describe "parseProgram" $ do
                 [RaiseStmt (StringExpr "x" (Position 2 9)) (Position 2 3)]
                 [ExceptSuite {exceptSuiteType = Nothing, exceptSuiteAlias = Nothing, exceptSuiteBody = [PrintStmt (IntegerExpr 1 (Position 4 9)) (Position 4 3)], exceptSuitePos = Position 3 1}]
                 Nothing
+                Nothing
                 (Position 1 1)
             ]
         )
@@ -409,6 +410,7 @@ spec = describe "parseProgram" $ do
             [ TryExceptStmt
                 [PrintStmt (IntegerExpr 1 (Position 2 9)) (Position 2 3)]
                 [ExceptSuite {exceptSuiteType = Nothing, exceptSuiteAlias = Nothing, exceptSuiteBody = [PrintStmt (IntegerExpr 2 (Position 4 9)) (Position 4 3)], exceptSuitePos = Position 3 1}]
+                Nothing
                 (Just [PrintStmt (IntegerExpr 3 (Position 6 9)) (Position 6 3)])
                 (Position 1 1)
             ]
@@ -450,6 +452,7 @@ spec = describe "parseProgram" $ do
                   ExceptSuite {exceptSuiteType = Nothing, exceptSuiteAlias = Nothing, exceptSuiteBody = [PrintStmt (IntegerExpr 2 (Position 6 9)) (Position 6 3)], exceptSuitePos = Position 5 1}
                 ]
                 Nothing
+                Nothing
                 (Position 1 1)
             ]
         )
@@ -482,6 +485,7 @@ spec = describe "parseProgram" $ do
             [ TryExceptStmt
                 [RaiseStmt (StringExpr "x" (Position 2 9)) (Position 2 3)]
                 [ExceptSuite {exceptSuiteType = Just ["RuntimeError"], exceptSuiteAlias = Just "e", exceptSuiteBody = [PrintStmt (IdentifierExpr "e" (Position 4 9)) (Position 4 3)], exceptSuitePos = Position 3 1}]
+                Nothing
                 Nothing
                 (Position 1 1)
             ]
@@ -519,6 +523,47 @@ spec = describe "parseProgram" $ do
             [ TryExceptStmt
                 [RaiseStmt (StringExpr "x" (Position 2 9)) (Position 2 3)]
                 [ExceptSuite {exceptSuiteType = Just ["ValueError", "RuntimeError"], exceptSuiteAlias = Just "e", exceptSuiteBody = [PrintStmt (IdentifierExpr "e" (Position 4 9)) (Position 4 3)], exceptSuitePos = Position 3 1}]
+                Nothing
+                Nothing
+                (Position 1 1)
+            ]
+        )
+
+  it "parses else suite when try body has no error" $ do
+    parseProgram
+      [ Token TryToken "try" (Position 1 1),
+        Token ColonToken ":" (Position 1 4),
+        Token NewlineToken "\\n" (Position 1 5),
+        Token IndentToken "<INDENT>" (Position 2 1),
+        Token PrintToken "print" (Position 2 3),
+        Token IntegerToken "1" (Position 2 9),
+        Token NewlineToken "\\n" (Position 2 10),
+        Token DedentToken "<DEDENT>" (Position 3 1),
+        Token ExceptToken "except" (Position 3 1),
+        Token IdentifierToken "TypeError" (Position 3 8),
+        Token ColonToken ":" (Position 3 18),
+        Token NewlineToken "\\n" (Position 3 19),
+        Token IndentToken "<INDENT>" (Position 4 1),
+        Token PrintToken "print" (Position 4 3),
+        Token IntegerToken "2" (Position 4 9),
+        Token NewlineToken "\\n" (Position 4 10),
+        Token DedentToken "<DEDENT>" (Position 5 1),
+        Token ElseToken "else" (Position 5 1),
+        Token ColonToken ":" (Position 5 5),
+        Token NewlineToken "\\n" (Position 5 6),
+        Token IndentToken "<INDENT>" (Position 6 1),
+        Token PrintToken "print" (Position 6 3),
+        Token IntegerToken "3" (Position 6 9),
+        Token NewlineToken "\\n" (Position 6 10),
+        Token DedentToken "<DEDENT>" (Position 7 1),
+        Token EOFToken "" (Position 7 1)
+      ]
+      `shouldBe` Right
+        ( Program
+            [ TryExceptStmt
+                [PrintStmt (IntegerExpr 1 (Position 2 9)) (Position 2 3)]
+                [ExceptSuite {exceptSuiteType = Just ["TypeError"], exceptSuiteAlias = Nothing, exceptSuiteBody = [PrintStmt (IntegerExpr 2 (Position 4 9)) (Position 4 3)], exceptSuitePos = Position 3 1}]
+                (Just [PrintStmt (IntegerExpr 3 (Position 6 9)) (Position 6 3)])
                 Nothing
                 (Position 1 1)
             ]

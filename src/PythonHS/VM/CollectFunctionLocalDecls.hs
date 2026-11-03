@@ -32,11 +32,12 @@ collectFunctionLocalDecls params stmts globalDecls =
               fromElse = maybe Set.empty (foldMap collectFromStmt) maybeElse
            in Set.union fromThen fromElse
         WhileStmt {whileStmtBody = body} -> foldMap collectFromStmt body
-        TryExceptStmt {tryExceptStmtTryBody = tryBody, tryExceptStmtExceptSuites = exceptSuites, tryExceptStmtFinallyBody = maybeFinally} ->
+        TryExceptStmt {tryExceptStmtTryBody = tryBody, tryExceptStmtExceptSuites = exceptSuites, tryExceptStmtElseBody = maybeElse, tryExceptStmtFinallyBody = maybeFinally} ->
           let fromTry = foldMap collectFromStmt tryBody
+              fromElse = maybe Set.empty (foldMap collectFromStmt) maybeElse
               fromExcept = foldMap collectFromExceptSuite exceptSuites
               fromFinally = maybe Set.empty (foldMap collectFromStmt) maybeFinally
-           in Set.unions [fromTry, fromExcept, fromFinally]
+           in Set.unions [fromTry, fromExcept, fromFinally, fromElse]
         MatchStmt {matchStmtCases = cases} ->
           foldMap (\caseItem -> foldMap collectFromStmt (matchCaseBody caseItem)) cases
         FunctionDefStmt {functionDefStmtName = name} -> Set.singleton name

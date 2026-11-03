@@ -48,26 +48,26 @@ import PythonHS.VM.VMState (VMState (..))
 
 executeOneInstruction :: (VMState -> Either String VMState) -> VMState -> Instruction -> Either String VMState
 executeOneInstruction execute state instruction =
-  case executeArithmeticInstruction ExecuteArithmeticInstructionConfig {executeArithmeticInstructionExecute = execute, executeArithmeticInstructionState = state, executeArithmeticInstructionInstruction = instruction} of
+  case executeArithmeticInstruction ExecuteArithmeticInstructionConfig {executeArithmeticInstructionState = state, executeArithmeticInstructionInstruction = instruction} of
     Just result -> result
     Nothing ->
       let scopeCtx = VMScopeContext (vmIsTopLevel state) (envGlobalDecls (vmEnv state))
        in case instruction of
-            PushConst value -> execute state {vmIp = vmIp state + 1, vmStack = value : vmStack state}
+            PushConst value -> Right state {vmIp = vmIp state + 1, vmStack = value : vmStack state}
             LoadName name pos ->
               case lookupNameWithAttr name pos (envLocals (vmEnv state)) (envGlobals (vmEnv state)) of
                 Left attrError -> Left attrError
                 Right Nothing ->
                   case Map.lookup name (envFunctions (vmEnv state)) of
-                    Just _ -> execute state {vmIp = vmIp state + 1, vmStack = FunctionRefValue name [] : vmStack state}
+                    Just _ -> Right state {vmIp = vmIp state + 1, vmStack = FunctionRefValue name [] : vmStack state}
                     Nothing -> Left ("Name error: undefined identifier " ++ name ++ " at " ++ showPos pos)
                 Right (Just value) ->
                   case value of
                     UnboundLocalValue {unboundLocalValueName = unboundName} ->
                       Left ("UnboundLocalError: local variable " ++ unboundName ++ " referenced before assignment at " ++ showPos pos)
-                    _ -> execute state {vmIp = vmIp state + 1, vmStack = value : vmStack state}
+                    _ -> Right state {vmIp = vmIp state + 1, vmStack = value : vmStack state}
             DeclareGlobal name ->
-              execute state {vmIp = vmIp state + 1, vmEnv = (vmEnv state) {envGlobalDecls = Set.insert name (envGlobalDecls (vmEnv state))}}
+              Right state {vmIp = vmIp state + 1, vmEnv = (vmEnv state) {envGlobalDecls = Set.insert name (envGlobalDecls (vmEnv state))}}
             StoreName name ->
               case vmStack state of
                 value : rest ->
@@ -75,42 +75,41 @@ executeOneInstruction execute state instruction =
                     Left err -> Left err
                     Right (newGlobals, newLocals) ->
                       let newEnv = (vmEnv state) {envGlobals = newGlobals, envLocals = newLocals}
-                       in execute state {vmIp = vmIp state + 1, vmStack = rest, vmEnv = newEnv}
+                       in Right state {vmIp = vmIp state + 1, vmStack = rest, vmEnv = newEnv}
                 _ -> Left "VM runtime error: store requires one value on stack"
-            DeleteName target ->
-              executeDeleteName execute state (DeleteName target)
+            DeleteName target -> executeDeleteName state (DeleteName target)
             BuildList count ->
               case popValues PopValuesConfig {popValuesCount = count, popValuesStack = vmStack state} of
                 Left err -> Left err
                 Right popResult ->
-                  execute state {vmIp = vmIp state + 1, vmStack = ListValue (popValuesResultPopped popResult) : popValuesResultRest popResult}
+                  Right state {vmIp = vmIp state + 1, vmStack = ListValue (popValuesResultPopped popResult) : popValuesResultRest popResult}
             BuildTuple count ->
               case popValues PopValuesConfig {popValuesCount = count, popValuesStack = vmStack state} of
                 Left err -> Left err
                 Right popResult ->
-                  execute state {vmIp = vmIp state + 1, vmStack = TupleValue (popValuesResultPopped popResult) : popValuesResultRest popResult}
+                  Right state {vmIp = vmIp state + 1, vmStack = TupleValue (popValuesResultPopped popResult) : popValuesResultRest popResult}
             BuildDict count ->
               case popValues PopValuesConfig {popValuesCount = count * 2, popValuesStack = vmStack state} of
                 Left err -> Left err
                 Right popResult ->
                   case toPairs (popValuesResultPopped popResult) of
                     Left err -> Left err
-                    Right pairs -> execute state {vmIp = vmIp state + 1, vmStack = DictValue pairs : popValuesResultRest popResult}
+                    Right pairs -> Right state {vmIp = vmIp state + 1, vmStack = DictValue pairs : popValuesResultRest popResult}
             MatchPattern pat _ -> do
               (newStack, newGlobals, newLocals) <-
                 executeMatchPattern scopeCtx pat (vmStack state) (envGlobals (vmEnv state)) (envLocals (vmEnv state))
               let newEnv = (vmEnv state) {envGlobals = newGlobals, envLocals = newLocals}
-              execute state {vmIp = vmIp state + 1, vmStack = newStack, vmEnv = newEnv}
-            Jump target -> execute state {vmIp = target}
+              Right state {vmIp = vmIp state + 1, vmStack = newStack, vmEnv = newEnv}
+            Jump target -> Right state {vmIp = target}
             JumpIfFalse target ->
-              executeJumpIfFalse ExecuteJumpIfFalseConfig {executeJumpIfFalseExecute = execute, executeJumpIfFalseState = state, executeJumpIfFalseTarget = target}
+              executeJumpIfFalse ExecuteJumpIfFalseConfig {executeJumpIfFalseState = state, executeJumpIfFalseTarget = target}
             LoopGuard pos ->
-              executeLoopGuard ExecuteLoopGuardConfig {executeLoopGuardExecute = execute, executeLoopGuardState = state, executeLoopGuardPos = pos}
+              executeLoopGuard ExecuteLoopGuardConfig {executeLoopGuardState = state, executeLoopGuardPos = pos}
             ForSetup forNextIndex pos ->
               case vmStack state of
                 iterableValue : rest -> do
                   iterableValues <- toForIterable ToForIterableConfig {toForIterableValue = iterableValue, toForIterablePos = pos}
-                  execute state {vmIp = vmIp state + 1, vmStack = rest, vmLoop = (vmLoop state) {loopForStates = Map.insert forNextIndex iterableValues (loopForStates (vmLoop state))}}
+                  Right state {vmIp = vmIp state + 1, vmStack = rest, vmLoop = (vmLoop state) {loopForStates = Map.insert forNextIndex iterableValues (loopForStates (vmLoop state))}}
                 _ -> Left "VM runtime error: for setup requires iterable value on stack"
             ForNext name loopEndIndex _ ->
               case executeForNext scopeCtx (vmIp state) name loopEndIndex (loopForStates (vmLoop state)) (envGlobals (vmEnv state)) (envLocals (vmEnv state)) of
@@ -118,49 +117,49 @@ executeOneInstruction execute state instruction =
                 Right (nextIp, newForStates, newGlobals, newLocals) ->
                   let newLoop = (vmLoop state) {loopForStates = newForStates}
                       newEnv = (vmEnv state) {envGlobals = newGlobals, envLocals = newLocals}
-                   in execute state {vmIp = nextIp, vmLoop = newLoop, vmEnv = newEnv}
-            PushWithHandler handlerIp -> executePushWithHandler ExecutePushWithHandlerConfig {executePushWithHandlerExecute = execute, executePushWithHandlerState = state, executePushWithHandlerIp = handlerIp}
-            CheckWithResult -> executeCheckWithResult ExecuteCheckWithResultConfig {executeCheckWithResultState = state, executeCheckWithResultExecute = execute}
+                   in Right state {vmIp = nextIp, vmLoop = newLoop, vmEnv = newEnv}
+            PushWithHandler handlerIp -> executePushWithHandler ExecutePushWithHandlerConfig {executePushWithHandlerState = state, executePushWithHandlerIp = handlerIp}
+            CheckWithResult -> executeCheckWithResult ExecuteCheckWithResultConfig {executeCheckWithResultState = state}
             DupTop ->
               case vmStack state of
-                value : rest -> execute state {vmIp = vmIp state + 1, vmStack = value : value : rest}
+                value : rest -> Right state {vmIp = vmIp state + 1, vmStack = value : value : rest}
                 _ -> Left "VM runtime error: dup requires one value on stack"
             DefineFunction name params defaultCodes functionCode ->
-              execute state {vmIp = vmIp state + 1, vmEnv = (vmEnv state) {envFunctions = Map.insert name FunctionInfo {functionInfoParams = params, functionInfoDefaults = defaultCodes, functionInfoCode = functionCode} (envFunctions (vmEnv state))}}
+              Right state {vmIp = vmIp state + 1, vmEnv = (vmEnv state) {envFunctions = Map.insert name FunctionInfo {functionInfoParams = params, functionInfoDefaults = defaultCodes, functionInfoCode = functionCode} (envFunctions (vmEnv state))}}
             CreateLambda name params defaultCodes functionCode ->
               let captured = Map.toList (envLocals (vmEnv state))
-               in execute
+               in Right
                     state
                       { vmIp = vmIp state + 1,
                         vmStack = FunctionRefValue name captured : vmStack state,
                         vmEnv = (vmEnv state) {envFunctions = Map.insert name FunctionInfo {functionInfoParams = params, functionInfoDefaults = defaultCodes, functionInfoCode = functionCode} (envFunctions (vmEnv state))}
                       }
             DefineClass className maybeBase methods ->
-              executeDefineClassInstruction execute state (DefineClass className maybeBase methods)
+              executeDefineClassInstruction state (DefineClass className maybeBase methods)
             StoreClassAttr className attrName ->
-              executeStoreClassAttr execute state (StoreClassAttr className attrName)
+              executeStoreClassAttr state (StoreClassAttr className attrName)
             CallFunction fname compiledArgs pos -> do
               (newStack, newGlobals, newLocalEnv, newFunctions, newOutputs) <-
                 executeCallFunction execute (vmIsTopLevel state) fname compiledArgs pos (vmStack state) (envGlobals (vmEnv state)) (envLocals (vmEnv state)) (envFunctions (vmEnv state)) (vmOutputs state)
               let newEnv = (vmEnv state) {envGlobals = newGlobals, envLocals = newLocalEnv, envFunctions = newFunctions}
-              execute state {vmIp = vmIp state + 1, vmStack = newStack, vmEnv = newEnv, vmOutputs = newOutputs}
+              Right state {vmIp = vmIp state + 1, vmStack = newStack, vmEnv = newEnv, vmOutputs = newOutputs}
             CallValueFunction compiledArgs pos -> do
               (newStack, newGlobals, newLocalEnv, newFunctions, newOutputs) <-
                 executeCallValueFunction execute (vmIsTopLevel state) compiledArgs pos (vmStack state) (envGlobals (vmEnv state)) (envLocals (vmEnv state)) (envFunctions (vmEnv state)) (vmOutputs state)
               let newEnv = (vmEnv state) {envGlobals = newGlobals, envLocals = newLocalEnv, envFunctions = newFunctions}
-              execute state {vmIp = vmIp state + 1, vmStack = newStack, vmEnv = newEnv, vmOutputs = newOutputs}
+              Right state {vmIp = vmIp state + 1, vmStack = newStack, vmEnv = newEnv, vmOutputs = newOutputs}
             UnpackToNames names pos ->
               case vmStack state of
                 value : rest ->
                   case executeUnpackToNames scopeCtx pos names value (envGlobals (vmEnv state)) (envLocals (vmEnv state)) of
                     Left err -> Left err
                     Right (newGlobals, newLocals) ->
-                      execute state {vmIp = vmIp state + 1, vmStack = rest, vmEnv = (vmEnv state) {envGlobals = newGlobals, envLocals = newLocals}}
+                      Right state {vmIp = vmIp state + 1, vmStack = rest, vmEnv = (vmEnv state) {envGlobals = newGlobals, envLocals = newLocals}}
                 _ -> Left "VM runtime error: unpack requires one value on stack"
             BuildListComprehension clauses valueCode pos -> do
               (listValue, newGlobals, newFunctions, newOutputs) <-
                 executeListComprehension execute clauses valueCode pos (envGlobals (vmEnv state)) (envLocals (vmEnv state)) (envFunctions (vmEnv state)) (vmOutputs state)
-              execute
+              Right
                 state
                   { vmIp = vmIp state + 1,
                     vmStack = listValue : vmStack state,
@@ -174,23 +173,23 @@ executeOneInstruction execute state instruction =
                       newEnv = (vmEnv state) {envLocals = Map.insert "__python_hs_pending_except_error__" (StringValue err) (envLocals (vmEnv state))}
                    in case exceptionHandlers (vmException state) of
                         handlerIp : restHandlers ->
-                          execute state {vmIp = handlerIp, vmStack = rest, vmEnv = newEnv, vmException = (vmException state) {exceptionHandlers = restHandlers}}
+                          Right state {vmIp = handlerIp, vmStack = rest, vmEnv = newEnv, vmException = (vmException state) {exceptionHandlers = restHandlers}}
                         [] -> Left err
                 _ -> Left "VM runtime error: raise requires one value on stack"
             ReturnTop ->
               case vmStack state of
                 value : _ -> Right state {vmStack = [value]}
                 _ -> Left "VM runtime error: return requires one value on stack"
-            PrintTop -> executeStackInstruction ExecuteStackInstructionConfig {executeStackInstructionExecute = execute, executeStackInstructionState = state, executeStackInstructionInstruction = PrintTop}
-            PopTop -> executeStackInstruction ExecuteStackInstructionConfig {executeStackInstructionExecute = execute, executeStackInstructionState = state, executeStackInstructionInstruction = PopTop}
+            PrintTop -> executeStackInstruction ExecuteStackInstructionConfig {executeStackInstructionState = state, executeStackInstructionInstruction = PrintTop}
+            PopTop -> executeStackInstruction ExecuteStackInstructionConfig {executeStackInstructionState = state, executeStackInstructionInstruction = PopTop}
             AssertTop pos ->
-              executeAssertInstruction ExecuteAssertInstructionConfig {executeAssertInstructionExecute = execute, executeAssertInstructionState = state, executeAssertInstructionInstruction = AssertTop pos}
+              executeAssertInstruction ExecuteAssertInstructionConfig {executeAssertInstructionState = state, executeAssertInstructionInstruction = AssertTop pos}
             Halt -> Right state
-            instruction'@(PushExceptionHandler _) -> handleExceptionInstruction HandleExceptionInstructionConfig {handleExceptionInstructionExecute = execute, handleExceptionInstructionState = state, handleExceptionInstructionInstruction = instruction'}
-            instruction'@(PushFinallyHandler _) -> handleExceptionInstruction HandleExceptionInstructionConfig {handleExceptionInstructionExecute = execute, handleExceptionInstructionState = state, handleExceptionInstructionInstruction = instruction'}
-            instruction'@PopExceptionHandler -> handleExceptionInstruction HandleExceptionInstructionConfig {handleExceptionInstructionExecute = execute, handleExceptionInstructionState = state, handleExceptionInstructionInstruction = instruction'}
-            instruction'@LoadPendingException -> handleExceptionInstruction HandleExceptionInstructionConfig {handleExceptionInstructionExecute = execute, handleExceptionInstructionState = state, handleExceptionInstructionInstruction = instruction'}
-            instruction'@(MatchExceptionType _) -> handleExceptionInstruction HandleExceptionInstructionConfig {handleExceptionInstructionExecute = execute, handleExceptionInstructionState = state, handleExceptionInstructionInstruction = instruction'}
-            instruction'@RaisePendingException -> handleExceptionInstruction HandleExceptionInstructionConfig {handleExceptionInstructionExecute = execute, handleExceptionInstructionState = state, handleExceptionInstructionInstruction = instruction'}
-            instruction'@RaisePendingError -> handleExceptionInstruction HandleExceptionInstructionConfig {handleExceptionInstructionExecute = execute, handleExceptionInstructionState = state, handleExceptionInstructionInstruction = instruction'}
+            instruction'@(PushExceptionHandler _) -> handleExceptionInstruction HandleExceptionInstructionConfig {handleExceptionInstructionState = state, handleExceptionInstructionInstruction = instruction'}
+            instruction'@(PushFinallyHandler _) -> handleExceptionInstruction HandleExceptionInstructionConfig {handleExceptionInstructionState = state, handleExceptionInstructionInstruction = instruction'}
+            instruction'@PopExceptionHandler -> handleExceptionInstruction HandleExceptionInstructionConfig {handleExceptionInstructionState = state, handleExceptionInstructionInstruction = instruction'}
+            instruction'@LoadPendingException -> handleExceptionInstruction HandleExceptionInstructionConfig {handleExceptionInstructionState = state, handleExceptionInstructionInstruction = instruction'}
+            instruction'@(MatchExceptionType _) -> handleExceptionInstruction HandleExceptionInstructionConfig {handleExceptionInstructionState = state, handleExceptionInstructionInstruction = instruction'}
+            instruction'@RaisePendingException -> handleExceptionInstruction HandleExceptionInstructionConfig {handleExceptionInstructionState = state, handleExceptionInstructionInstruction = instruction'}
+            instruction'@RaisePendingError -> handleExceptionInstruction HandleExceptionInstructionConfig {handleExceptionInstructionState = state, handleExceptionInstructionInstruction = instruction'}
             _ -> Left "VM runtime error: unknown instruction"

@@ -19,11 +19,12 @@ collectFunctionGlobalStmtDecls stmts =
            in Set.union fromThen fromElse
         WhileStmt {whileStmtBody = body} -> foldMap collectFromStmt body
         ForStmt {forStmtBody = body} -> foldMap collectFromStmt body
-        TryExceptStmt {tryExceptStmtTryBody = tryBody, tryExceptStmtExceptSuites = exceptSuites, tryExceptStmtFinallyBody = maybeFinally} ->
+        TryExceptStmt {tryExceptStmtTryBody = tryBody, tryExceptStmtExceptSuites = exceptSuites, tryExceptStmtElseBody = maybeElse, tryExceptStmtFinallyBody = maybeFinally} ->
           let fromTry = foldMap collectFromStmt tryBody
+              fromElse = maybe Set.empty (foldMap collectFromStmt) maybeElse
               fromExcept = foldMap (foldMap collectFromStmt . exceptSuiteBody) exceptSuites
               fromFinally = maybe Set.empty (foldMap collectFromStmt) maybeFinally
-           in Set.unions [fromTry, fromExcept, fromFinally]
+           in Set.unions [fromTry, fromExcept, fromFinally, fromElse]
         WithStmt {withStmtBody = body} -> foldMap collectFromStmt body
         MatchStmt {matchStmtCases = cases} ->
           foldMap (foldMap collectFromStmt . matchCaseBody) cases

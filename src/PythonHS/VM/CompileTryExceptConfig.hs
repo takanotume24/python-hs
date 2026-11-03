@@ -13,5 +13,6 @@ data CompileTryExceptConfig = CompileTryExceptConfig
     compileTryExceptMaybeLoop :: Maybe LoopContext,
     compileTryExceptTryStmts :: [Stmt],
     compileTryExceptExceptClauses :: [ExceptSuite Stmt],
+    compileTryExceptMaybeElse :: Maybe [Stmt],
     compileTryExceptMaybeFinally :: Maybe [Stmt]
   }

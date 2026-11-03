@@ -110,6 +110,7 @@ data Stmt
   | TryExceptStmt
       { tryExceptStmtTryBody :: [Stmt],
         tryExceptStmtExceptSuites :: [ExceptSuite Stmt],
+        tryExceptStmtElseBody :: Maybe [Stmt],
         tryExceptStmtFinallyBody :: Maybe [Stmt],
         tryExceptStmtPos :: Position
       }

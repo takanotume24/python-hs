@@ -424,6 +424,19 @@
 - [x] P76-3: `MatchExceptionType` 命令を `Maybe [String]` に対応し、いずれかの型名一致で捕捉
 - [x] P76-4: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
 
+## 現在のスコープ（P77: VM try/except/else と例外ディスパッチャの再設計）
+- [x] P77 開始: `try/except/else` の `else` 節を VM でサポートする
+- [x] P77-1: parser / AST に `TryExceptStmt` の `tryExceptStmtElseBody` フィールドを追加
+- [x] P77-2: `CompileTryExcept` で `else` 節を命令列へコンパイル（`PopExceptionHandler` 後に `else` を実行）
+- [x] P77-3: `RunInstructions` のループを「1 命令ずつ実行して次状態を再帰」する形へ再設計
+- [x] P77-4: 例外ハンドラ変更命令（`PushExceptionHandler` / `PushFinallyHandler` / `PushWithHandler` / `PopExceptionHandler`）を、内部で `execute` を呼ばず `Right 次状態` を返す形に統一
+- [x] P77-5: 制御命令・算術・スタック等の tail-call `execute` を `Right 次状態` に置き換え、古い handler スタックで誤再ディスパッチしないようにする
+- [x] P77-6: `ReturnTop` / `Halt` をループ停止条件として扱い、サブ実行（引数評価・関数本体）が正しく終端するようにする
+- [x] P77-7: `RunInstructionsTrace` を新ループに合わせ更新
+- [x] P77-8: `RunSourceVmSpec` の `else` 節で発生したエラー位置を正しい行番号（`6:3`）に更新
+- [x] P77-9: `RunInstructionsSpec` を追加し、pop 後の raise・typed except 複数節・tracer 一致を回帰固定
+- [x] P77-10: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
+
 ## detect-positional-args プロジェクト全体分析結果（2026-07-03）
 
 ### 分析概要
@@ -622,6 +635,15 @@
 
 ## メンテナンス記録（要約）
 - 注記: 以下は時系列ログ。古い日付の「未対応」項目は、その後のエントリで仕様更新済みの場合がある。
+- 2026-11-03
+  - [x] P77 完了: VM try/except/else と例外ディスパッチャの再設計
+  - [x] P77 実装: parser / AST / コンパイルに `try/except/else` の `else` 節を追加
+  - [x] P77 実装: `RunInstructions` を1命令ずつ再帰するループに再設計し、pop 後の raise 等で誤再ディスパッチしないように修正
+  - [x] P77 実装: `PushExceptionHandler` / `PushFinallyHandler` / `PushWithHandler` / `PopExceptionHandler` / `RaiseTop` / 各制御命令を `Right 次状態` 返却形に統一
+  - [x] P77 実装: `ReturnTop` / `Halt` をループ停止条件として扱う
+  - [x] P77 テスト: `RunInstructionsSpec` を追加し、例外ハンドラ pop 後の raise・typed except 複数節・tracer 一致を回帰固定
+  - [x] P77 テスト: `RunSourceVmSpec` の else 節 raise 位置を `6:3` に修正
+  - [x] P77 品質ゲート: `cabal run quality-gate` が全項目 PASS
 - 2026-11-02
   - [x] P76 完了: VM multiple except types
   - [x] P76 実装: `except` の型指定を単一名または `(A, B)` の括弧リスト（`as` エイリアス任意）としてパース

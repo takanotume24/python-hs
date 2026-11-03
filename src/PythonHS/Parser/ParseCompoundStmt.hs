@@ -7,6 +7,7 @@ import PythonHS.Lexer.TokenType
   ( TokenType
       ( ColonToken,
         DefToken,
+        ElseToken,
         FinallyToken,
         ForToken,
         GtToken,
@@ -37,7 +38,6 @@ parseCompoundStmt config =
   let tokenStream = parseCompoundStmtTokenStream config
       parseExpr = parseCompoundStmtExpr config
       parseStatement = parseCompoundStmtStatement config
-      parseSuiteWithStatements tokens = parseSuite (ParseSuiteConfig {parseSuiteStatement = parseStatement, parseSuiteTokenStream = tokens})
    in case tokenStream of
         Token {tokenType = IfToken, position = pos} : rest -> do
           condResult <- parseExpr rest
@@ -63,13 +63,9 @@ parseCompoundStmt config =
               exceptResult <- parseExceptSuites (ParseExceptSuitesConfig {parseExceptSuitesSuite = parseSuiteWithStatements, parseExceptSuitesTokenStream = dropLeadingNewlines afterTrySuite})
               let exceptSuites = parseResultValue exceptResult
                   afterExceptSuites = parseResultRemaining exceptResult
-              case dropLeadingNewlines afterExceptSuites of
-                Token {tokenType = FinallyToken} : Token {tokenType = ColonToken} : afterFinallyColon -> do
-                  finallyResult <- parseSuiteWithStatements afterFinallyColon
-                  let finallySuite = parseResultValue finallyResult
-                      finalRest = parseResultRemaining finallyResult
-                  Right (ParseResult {parseResultValue = TryExceptStmt {tryExceptStmtTryBody = trySuite, tryExceptStmtExceptSuites = exceptSuites, tryExceptStmtFinallyBody = Just finallySuite, tryExceptStmtPos = pos}, parseResultRemaining = finalRest})
-                _ -> Right (ParseResult {parseResultValue = TryExceptStmt {tryExceptStmtTryBody = trySuite, tryExceptStmtExceptSuites = exceptSuites, tryExceptStmtFinallyBody = Nothing, tryExceptStmtPos = pos}, parseResultRemaining = afterExceptSuites})
+              elseResult <- parseElseSuiteTail afterExceptSuites
+              finallyResult <- parseFinallySuiteTail (parseResultRemaining elseResult)
+              Right (ParseResult {parseResultValue = TryExceptStmt {tryExceptStmtTryBody = trySuite, tryExceptStmtExceptSuites = exceptSuites, tryExceptStmtElseBody = parseResultValue elseResult, tryExceptStmtFinallyBody = parseResultValue finallyResult, tryExceptStmtPos = pos}, parseResultRemaining = parseResultRemaining finallyResult})
             Token {position = pos'} : _ -> Left (ExpectedExpression {parseErrorPosition = pos'})
             _ -> Left (ExpectedExpression {parseErrorPosition = Position {line = 0, column = 0}})
         Token {tokenType = WhileToken, position = pos} : rest -> do
@@ -125,3 +121,20 @@ parseCompoundStmt config =
             Token {position = pos'} : _ -> Left (ExpectedExpression {parseErrorPosition = pos'})
             _ -> Left (ExpectedExpression {parseErrorPosition = Position {line = 0, column = 0}})
         _ -> Left (ExpectedExpression {parseErrorPosition = Position {line = 0, column = 0}})
+  where
+    parseSuiteWithStatements tokens = parseSuite (ParseSuiteConfig {parseSuiteStatement = parseCompoundStmtStatement config, parseSuiteTokenStream = tokens})
+
+    parseElseSuiteTail tokens =
+      case dropLeadingNewlines tokens of
+        Token {tokenType = ElseToken} : Token {tokenType = ColonToken} : afterElseColon -> do
+          elseResult <- parseSuiteWithStatements afterElseColon
+          Right (ParseResult {parseResultValue = Just (parseResultValue elseResult), parseResultRemaining = parseResultRemaining elseResult})
+        Token {tokenType = ElseToken} : Token {position = pos} : _ -> Left (ExpectedExpression {parseErrorPosition = pos})
+        _ -> Right (ParseResult {parseResultValue = Nothing, parseResultRemaining = tokens})
+
+    parseFinallySuiteTail tokens =
+      case dropLeadingNewlines tokens of
+        Token {tokenType = FinallyToken} : Token {tokenType = ColonToken} : afterFinallyColon -> do
+          finallyResult <- parseSuiteWithStatements afterFinallyColon
+          Right (ParseResult {parseResultValue = Just (parseResultValue finallyResult), parseResultRemaining = parseResultRemaining finallyResult})
+        _ -> Right (ParseResult {parseResultValue = Nothing, parseResultRemaining = tokens})

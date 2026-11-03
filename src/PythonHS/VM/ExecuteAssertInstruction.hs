@@ -13,7 +13,7 @@ executeAssertInstruction config =
       case vmStack (executeAssertInstructionState config) of
         value : rest ->
           if isTruthy value
-            then executeAssertInstructionExecute config (executeAssertInstructionState config) {vmIp = vmIp (executeAssertInstructionState config) + 1, vmStack = rest}
+            then Right (executeAssertInstructionState config) {vmIp = vmIp (executeAssertInstructionState config) + 1, vmStack = rest}
             else Left ("AssertionError: assertion failed at " ++ showPos pos)
         [] -> Left "VM runtime error: assert requires one value on stack"
     _ -> Left "VM runtime error: unexpected instruction in executeAssertInstruction"

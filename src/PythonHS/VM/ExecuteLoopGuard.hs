@@ -14,8 +14,7 @@ executeLoopGuard config =
    in if currentCount >= maxLoopIterations
         then Left ("Value error: iteration limit exceeded at " ++ showPos (executeLoopGuardPos config))
         else
-          executeLoopGuardExecute
-            config
+          Right
             state
               { vmIp = vmIp state + 1,
                 vmLoop = (vmLoop state) {loopCounts = Map.insert (vmIp state) (currentCount + 1) (loopCounts (vmLoop state))}
