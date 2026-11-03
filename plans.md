@@ -511,6 +511,14 @@
 - [x] P85-5: 全テスト PASS（948 examples, 0 failures）
 - [x] P85-6: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
 
+## 現在のスコープ（P86: コンテキストマネージャの例外情報引数）
+- [x] P86 開始: `with` 本文で発生した例外情報を `__exit__(self, exc_type, exc_value, traceback)` に渡せるようにする
+- [x] P86-1: 既存の `CompileWithStmt` が例外時に `LoadPendingException` を使って exc_type / exc_value に生の例外値を渡していることを確認
+- [x] P86-2: `RunSourceVmSpec` に `__exit__` が例外情報を受け取って出力するケースを追加
+- [x] P86-3: `RunSourceVmSpec` に `__exit__` 内で別の例外を raise して元の例外を置き換えるケースを追加
+- [x] P86-4: 全テスト PASS（950 examples, 0 failures）
+- [x] P86-5: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
+
 ## detect-positional-args プロジェクト全体分析結果（2026-07-03）
 
 ### 分析概要
@@ -709,6 +717,12 @@
 
 ## メンテナンス記録（要約）
 - 注記: 以下は時系列ログ。古い日付の「未対応」項目は、その後のエントリで仕様更新済みの場合がある。
+- 2026-11-03
+  - [x] P86 完了: コンテキストマネージャの例外情報引数
+  - [x] P86 実装: `CompileWithStmt` が `with` 本文の例外を `__exit__` の exc_type / exc_value へ渡すことを確認
+  - [x] P86 テスト: `RunSourceVmSpec` に `__exit__` が例外情報を受け取って出力するケースを追加
+  - [x] P86 テスト: `RunSourceVmSpec` に `__exit__` 内で別の例外を raise して元の例外を置き換えるケースを追加
+  - [x] P86 品質ゲート: `cabal run quality-gate` が全項目 PASS（950 examples, 0 failures）
 - 2026-11-03
   - [x] P85 完了: `try/finally` 構文と finally 節での例外置き換え
   - [x] P85 実装: `ParseCompoundStmt` で `except` 節なしの `try/finally` を解析可能に

@@ -147,6 +147,12 @@ spec = describe "runSourceVm (vm mvp)" $ do
   it "runs finally after except catches exception" $ do
     runSourceVm "try:\n  raise 1\nexcept:\n  print 2\nfinally:\n  print 3\n" `shouldBe` Right ["2", "3"]
 
+  it "passes exception info to context manager __exit__" $ do
+    runSourceVm "class CM:\n  def __enter__(self):\n    return self\n  def __exit__(self, t, v, tb):\n    print t\n    print v\n    return 1\nwith CM():\n  raise ValueError(\"boom\")\n" `shouldBe` Right ["boom", "boom"]
+
+  it "replaces exception when context manager __exit__ raises" $ do
+    runSourceVm "class CM:\n  def __enter__(self):\n    return self\n  def __exit__(self, t, v, tb):\n    raise TypeError(\"wrapped\")\nwith CM():\n  raise ValueError(\"boom\")\n" `shouldBe` Left "Type error: wrapped at 5:5"
+
   it "propagates error raised in except suite" $ do
     runSourceVm "try:\n  raise 1\nexcept:\n  raise 2\n" `shouldBe` Left "Runtime error: 2 at 4:3"
 

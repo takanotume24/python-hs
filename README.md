@@ -83,7 +83,7 @@ MIT License — 詳細は [LICENSE](LICENSE) を参照してください。
 - [x] `global`文・複合代入
 - [x] 組み込み関数（`len`, `bool`, `range`, list/dict系）
 - [x] `import`解決（math/dataclasses/local package/submodule/relative/star）
-- [x] 例外処理（`try/except/else`、`try/finally`、`try/except/finally`、`raise`、bare `raise`、`except ... as`、ユーザー定義例外クラスとその継承、`ValueError`/`TypeError` 等の組み込み例外クラス）
+- [x] 例外処理（`try/except/else`、`try/finally`、`try/except/finally`、`raise`、bare `raise`、`except ... as`、ユーザー定義例外クラスとその継承、コンテキストマネージャへの例外情報渡し、`ValueError`/`TypeError` 等の組み込み例外クラス）
 - [x] `match/case`（パターンマッチ実行）
 - [x] `class`（インスタンス生成・メソッド呼び出し・継承・属性解決）
 - [x] `dataclass`（`__init__`/`__repr__`/`__eq__`/`order`/`frozen`自動生成）
