@@ -16,7 +16,10 @@ valueToOutput value =
     ModuleValue {moduleValueName} -> "<module:" ++ moduleValueName ++ ">"
     FunctionRefValue {functionRefValueName = name} -> "<function " ++ name ++ ">"
     ClassValue {classValueName = name} -> "<class " ++ name ++ ">"
-    InstanceValue {instanceValueClass = className} -> "<" ++ className ++ " instance>"
+    InstanceValue {instanceValueClass = className, instanceValueAttrs = attrs} ->
+      case lookup "message" attrs of
+        Just (StringValue {stringValue = message}) -> message
+        _ -> "<" ++ className ++ " instance>"
     ExceptionValue {exceptionValueMessage = message} -> message
     BreakValue -> "<break>"
     ContinueValue -> "<continue>"

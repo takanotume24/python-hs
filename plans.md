@@ -486,6 +486,13 @@
 - [x] P82-4: 全テスト PASS（941 examples, 0 failures）
 - [x] P82-5: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
 
+## 現在のスコープ（P83: ユーザー定義例外の print 表現と Exception/BaseException 捕捉）
+- [x] P83 開始: `except Exception as e` / `except BaseException as e` でユーザー定義例外もメッセージ付きで出力できるようにする
+- [x] P83-1: `ValueToOutput` で `InstanceValue` の `message` 属性がある場合はそれを出力するように変更
+- [x] P83-2: `RunSourceVmSpec` にユーザー定義例外を `except Exception as` / `except BaseException as` で捕捉するテストを追加
+- [x] P83-3: 全テスト PASS（943 examples, 0 failures）
+- [x] P83-4: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
+
 ## detect-positional-args プロジェクト全体分析結果（2026-07-03）
 
 ### 分析概要
@@ -684,6 +691,11 @@
 
 ## メンテナンス記録（要約）
 - 注記: 以下は時系列ログ。古い日付の「未対応」項目は、その後のエントリで仕様更新済みの場合がある。
+- 2026-11-03
+  - [x] P83 完了: ユーザー定義例外の print 表現と Exception/BaseException 捕捉
+  - [x] P83 実装: `ValueToOutput` で `InstanceValue` の `message` 属性がある場合はそれを出力
+  - [x] P83 テスト: `RunSourceVmSpec` にユーザー定義例外を `except Exception as` / `except BaseException as` で捕捉するケースを追加
+  - [x] P83 品質ゲート: `cabal run quality-gate` が全項目 PASS（943 examples, 0 failures）
 - 2026-11-03
   - [x] P82 完了: ユーザー定義例外クラスの raise
   - [x] P82 実装: `RaiseTopError` で `InstanceValue` を `ClassName: message` 形式に変換
