@@ -87,6 +87,15 @@ spec = describe "runSourceVm (vm mvp)" $ do
   it "propagates error raised in else suite" $ do
     runSourceVm "try:\n  print 1\nexcept:\n  print 9\nelse:\n  raise \"late\"\n" `shouldBe` Left "Runtime error: late at 6:3"
 
+  it "raises builtin exception class with message" $ do
+    runSourceVm "raise ValueError(\"boom\")\n" `shouldBe` Left "Value error: boom at 1:1"
+
+  it "catches builtin ValueError with except ValueError" $ do
+    runSourceVm "try:\n  raise ValueError(\"boom\")\nexcept ValueError:\n  print 1\nprint 2\n" `shouldBe` Right ["1", "2"]
+
+  it "propagates when except TypeError does not match builtin ValueError" $ do
+    runSourceVm "try:\n  raise ValueError(\"boom\")\nexcept TypeError:\n  print 1\n" `shouldBe` Left "Value error: boom at 2:3"
+
   it "propagates error raised in except suite" $ do
     runSourceVm "try:\n  raise 1\nexcept:\n  raise 2\n" `shouldBe` Left "Runtime error: 2 at 4:3"
 

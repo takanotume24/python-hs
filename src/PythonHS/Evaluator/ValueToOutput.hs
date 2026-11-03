@@ -17,6 +17,8 @@ valueToOutput value =
     FunctionRefValue {functionRefValueName = name} -> "<function " ++ name ++ ">"
     ClassValue {classValueName = name} -> "<class " ++ name ++ ">"
     InstanceValue {instanceValueClass = className} -> "<" ++ className ++ " instance>"
+    ExceptionValue {exceptionValueClass = className, exceptionValueMessage = message} ->
+      "<" ++ className ++ ": " ++ message ++ ">"
     BreakValue -> "<break>"
     ContinueValue -> "<continue>"
     UnboundLocalValue {unboundLocalValueName = name} -> "<unbound local " ++ name ++ ">"

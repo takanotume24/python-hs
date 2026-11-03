@@ -16,6 +16,7 @@ isTruthy value =
     ClassValue {} -> True
     FunctionRefValue {} -> True
     InstanceValue {} -> True
+    ExceptionValue {exceptionValueClass = className} -> className /= ""
     BreakValue -> True
     ContinueValue -> True
     UnboundLocalValue {} -> False

@@ -184,6 +184,7 @@ library
     , PythonHS.Evaluator.ExitContextManager
     , PythonHS.Evaluator.ExitContextManagerWithException
     , PythonHS.Evaluator.ValueToOutput
+    , PythonHS.Evaluator.ExceptionClassToPrefix
     , PythonHS.Evaluator.ValueToReplOutput
     , PythonHS.Evaluator.RangeValues
     , PythonHS.Evaluator.RangeValuesConfig
@@ -231,6 +232,8 @@ library
     , PythonHS.VM.SliceValue
     , PythonHS.VM.CallMathBuiltin
     , PythonHS.VM.CallStdlibBuiltin
+    , PythonHS.VM.CallExceptionClassBuiltin
+    , PythonHS.VM.CallExceptionClassBuiltinConfig
     , PythonHS.VM.BindCallArguments
       , PythonHS.VM.CompileCallArgsAt
       , PythonHS.VM.CompileClassDefStmt
@@ -361,6 +364,8 @@ library
     , PythonHS.VM.DataclassCompilationResult
     , PythonHS.VM.LoopContext
     , PythonHS.VM.PopValuesResult
+    , PythonHS.VM.RaiseTopError
+    , PythonHS.VM.RaiseTopErrorConfig
     , PythonHS.VM.FunctionDefStmtResult
     , PythonHS.VM.SliceBoundsResult
     , PythonHS.VM.PatternBinding

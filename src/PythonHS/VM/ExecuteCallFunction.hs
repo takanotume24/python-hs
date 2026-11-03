@@ -9,6 +9,8 @@ import PythonHS.VM.BindCallArguments (bindCallArguments)
 import PythonHS.VM.BindDefaults (bindDefaults)
 import PythonHS.VM.CallBuiltin (callBuiltin)
 import PythonHS.VM.CallBuiltinConfig (CallBuiltinConfig (..))
+import PythonHS.VM.CallExceptionClassBuiltin (callExceptionClassBuiltin)
+import PythonHS.VM.CallExceptionClassBuiltinConfig (CallExceptionClassBuiltinConfig (..))
 import PythonHS.VM.CollectFunctionGlobalDecls (collectFunctionGlobalDecls)
 import PythonHS.VM.CompiledCallArg (CompiledCallArg (..))
 import PythonHS.VM.EnvState (EnvState (..))
@@ -107,27 +109,33 @@ executeCallFunction execute isTopLevel fname compiledArgs pos stack globalsEnv l
                         _ -> callBuiltinOrFail args globalsAfterArgs functionsAfterArgs outputsAfterArgs
   where
     callBuiltinOrFail args globalsAfterArgs functionsAfterArgs outputsAfterArgs =
-      case callModuleMemberFunction args globalsAfterArgs functionsAfterArgs outputsAfterArgs of
-        Just result -> result
+      case callExceptionClassBuiltin CallExceptionClassBuiltinConfig {callExceptionClassBuiltinName = fname, callExceptionClassBuiltinArgs = args, callExceptionClassBuiltinPos = pos} of
+        Just (Right exceptionValue) ->
+          let newLocalEnv = if isTopLevel then globalsAfterArgs else localEnv
+           in Right (exceptionValue : stack, globalsAfterArgs, newLocalEnv, functionsAfterArgs, outputsAfterArgs)
+        Just (Left err) -> Left err
         Nothing ->
-          case firstKeywordArg compiledArgs of
-            Just kwInfo
-              | isBuiltinName fname ->
-                  Left ("Argument error: keyword arguments are not supported for builtin " ++ fname ++ " at " ++ showPos (keywordArgInfoPos kwInfo))
+          case callModuleMemberFunction args globalsAfterArgs functionsAfterArgs outputsAfterArgs of
+            Just result -> result
             Nothing ->
-              case callBuiltin CallBuiltinConfig {callBuiltinName = fname, callBuiltinArgs = args, callBuiltinPos = pos} of
-                Just (Left err) -> Left err
-                Just (Right builtinValue) ->
-                  let newLocalEnv = if isTopLevel then globalsAfterArgs else localEnv
-                   in Right (builtinValue : stack, globalsAfterArgs, newLocalEnv, functionsAfterArgs, outputsAfterArgs)
-                Nothing -> Left ("Name error: undefined function " ++ fname ++ " at " ++ showPos pos)
-            _ ->
-              case callBuiltin CallBuiltinConfig {callBuiltinName = fname, callBuiltinArgs = args, callBuiltinPos = pos} of
-                Just (Left err) -> Left err
-                Just (Right builtinValue) ->
-                  let newLocalEnv = if isTopLevel then globalsAfterArgs else localEnv
-                   in Right (builtinValue : stack, globalsAfterArgs, newLocalEnv, functionsAfterArgs, outputsAfterArgs)
-                Nothing -> Left ("Name error: undefined function " ++ fname ++ " at " ++ showPos pos)
+              case firstKeywordArg compiledArgs of
+                Just kwInfo
+                  | isBuiltinName fname ->
+                      Left ("Argument error: keyword arguments are not supported for builtin " ++ fname ++ " at " ++ showPos (keywordArgInfoPos kwInfo))
+                Nothing ->
+                  case callBuiltin CallBuiltinConfig {callBuiltinName = fname, callBuiltinArgs = args, callBuiltinPos = pos} of
+                    Just (Left err) -> Left err
+                    Just (Right builtinValue) ->
+                      let newLocalEnv = if isTopLevel then globalsAfterArgs else localEnv
+                       in Right (builtinValue : stack, globalsAfterArgs, newLocalEnv, functionsAfterArgs, outputsAfterArgs)
+                    Nothing -> Left ("Name error: undefined function " ++ fname ++ " at " ++ showPos pos)
+                _ ->
+                  case callBuiltin CallBuiltinConfig {callBuiltinName = fname, callBuiltinArgs = args, callBuiltinPos = pos} of
+                    Just (Left err) -> Left err
+                    Just (Right builtinValue) ->
+                      let newLocalEnv = if isTopLevel then globalsAfterArgs else localEnv
+                       in Right (builtinValue : stack, globalsAfterArgs, newLocalEnv, functionsAfterArgs, outputsAfterArgs)
+                    Nothing -> Left ("Name error: undefined function " ++ fname ++ " at " ++ showPos pos)
 
     callModuleMemberFunction args globalsNow functionsNow outputsNow =
       case args of

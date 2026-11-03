@@ -4,7 +4,6 @@ import Data.Map.Strict qualified as Map
 import Data.Set qualified as Set
 import PythonHS.Evaluator.ShowPos (showPos)
 import PythonHS.Evaluator.Value (Value (DictValue, FunctionRefValue, ListValue, StringValue, TupleValue, UnboundLocalValue), unboundLocalValueName)
-import PythonHS.Evaluator.ValueToOutput (valueToOutput)
 import PythonHS.VM.EnvState (EnvState (..))
 import PythonHS.VM.ExceptionState (ExceptionState (..))
 import PythonHS.VM.ExecuteArithmeticInstruction (executeArithmeticInstruction)
@@ -39,6 +38,8 @@ import PythonHS.VM.LoopState (LoopState (..))
 import PythonHS.VM.PopValues (popValues)
 import PythonHS.VM.PopValuesConfig (PopValuesConfig (..))
 import PythonHS.VM.PopValuesResult (PopValuesResult (..))
+import PythonHS.VM.RaiseTopError (raiseTopError)
+import PythonHS.VM.RaiseTopErrorConfig (RaiseTopErrorConfig (..))
 import PythonHS.VM.StoreNameWithAttr (storeNameWithAttr)
 import PythonHS.VM.ToForIterable (toForIterable)
 import PythonHS.VM.ToForIterableConfig (ToForIterableConfig (..))
@@ -169,7 +170,7 @@ executeOneInstruction execute state instruction =
             RaiseTop pos ->
               case vmStack state of
                 value : rest ->
-                  let err = "Runtime error: " ++ valueToOutput value ++ " at " ++ showPos pos
+                  let err = raiseTopError RaiseTopErrorConfig {raiseTopErrorValue = value, raiseTopErrorPos = pos}
                       newEnv = (vmEnv state) {envLocals = Map.insert "__python_hs_pending_except_error__" (StringValue err) (envLocals (vmEnv state))}
                    in case exceptionHandlers (vmException state) of
                         handlerIp : restHandlers ->

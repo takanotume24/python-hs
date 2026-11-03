@@ -446,6 +446,17 @@
 - [x] P78-5: `RunSourceVmSpec` に `except` 節内で再送出されたエラーが伝播するケースを追加
 - [x] P78-6: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
 
+## 現在のスコープ（P79: VM 組み込み例外クラスの最小対応）
+- [x] P79 開始: `raise ValueError("msg")` 形式の組み込み例外クラスを VM でサポートする
+- [x] P79-1: `Value` に `ExceptionValue { exceptionValueClass, exceptionValueMessage }` を追加
+- [x] P79-2: `ExceptionClassToPrefix` を追加し、クラス名からエラー接頭辞への対応を一元化
+- [x] P79-3: `CallExceptionClassBuiltin` / `CallExceptionClassBuiltinConfig` を追加し、`ValueError(...)` 等の呼び出しを `ExceptionValue` として構築
+- [x] P79-4: `RaiseTopError` / `RaiseTopErrorConfig` を追加し、`ExceptionValue` 発生時にクラス対応のエラー文字列を生成
+- [x] P79-5: `ExecuteCallFunction` のフォールバック経路に組み込み例外クラス構築を組み込む
+- [x] P79-6: `ValueToOutput` / `ValueToReplOutput` / `IsTruthy` に `ExceptionValue` のケースを追加
+- [x] P79-7: `RunSourceVmSpec` に `raise ValueError(...)` の発生・捕捉・非一致伝播ケースを追加
+- [x] P79-8: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
+
 ## detect-positional-args プロジェクト全体分析結果（2026-07-03）
 
 ### 分析概要
@@ -644,6 +655,13 @@
 
 ## メンテナンス記録（要約）
 - 注記: 以下は時系列ログ。古い日付の「未対応」項目は、その後のエントリで仕様更新済みの場合がある。
+- 2026-11-03
+  - [x] P79 完了: VM 組み込み例外クラスの最小対応
+  - [x] P79 実装: `Value` に `ExceptionValue` を追加し、`ValueError("msg")` 形式の raise を `Value error: msg` として生成
+  - [x] P79 実装: `CallExceptionClassBuiltin` で `ValueError` / `TypeError` 等の組み込み例外クラス呼び出しを `ExceptionValue` へ構築
+  - [x] P79 実装: `RaiseTopError` で `ExceptionValue` からクラス対応のエラー文字列を生成
+  - [x] P79 テスト: `RunSourceVmSpec` に `raise ValueError(...)` の発生・捕捉・非一致伝播ケースを追加
+  - [x] P79 品質ゲート: `cabal run quality-gate` が全項目 PASS
 - 2026-11-03
   - [x] P78 完了: VM 例外処理の回帰強化
   - [x] P78 テスト: `RunSourceVmSpec` に nested try・関数呼び出し内発生エラー・except 節内再送出・try/except 内 return のケースを追加

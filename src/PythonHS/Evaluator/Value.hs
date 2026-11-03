@@ -25,6 +25,10 @@ data Value
       { instanceValueClass :: String,
         instanceValueAttrs :: [(String, Value)]
       }
+  | ExceptionValue
+      { exceptionValueClass :: String,
+        exceptionValueMessage :: String
+      }
   | BreakValue
   | ContinueValue
   | UnboundLocalValue {unboundLocalValueName :: String}
