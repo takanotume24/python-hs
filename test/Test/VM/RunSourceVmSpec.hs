@@ -120,6 +120,12 @@ spec = describe "runSourceVm (vm mvp)" $ do
   it "re-raises current exception with bare raise" $ do
     runSourceVm "try:\n  raise ValueError(\"boom\")\nexcept:\n  raise\n" `shouldBe` Left "Value error: boom at 2:3"
 
+  it "raises user-defined exception class with message attribute" $ do
+    runSourceVm "class MyError:\n  def __init__(self, message):\n    self.message = message\nraise MyError(\"boom\")\n" `shouldBe` Left "MyError: boom at 4:1"
+
+  it "catches user-defined exception class with except" $ do
+    runSourceVm "class MyError:\n  def __init__(self, message):\n    self.message = message\ntry:\n  raise MyError(\"boom\")\nexcept MyError:\n  print 1\n" `shouldBe` Right ["1"]
+
   it "propagates error raised in except suite" $ do
     runSourceVm "try:\n  raise 1\nexcept:\n  raise 2\n" `shouldBe` Left "Runtime error: 2 at 4:3"
 

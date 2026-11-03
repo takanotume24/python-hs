@@ -13,4 +13,10 @@ raiseTopError config =
    in case value of
         ExceptionValue {exceptionValueClass = className, exceptionValueMessage = message} ->
           exceptionClassToPrefix className ++ message ++ " at " ++ showPos pos
+        InstanceValue {instanceValueClass = className, instanceValueAttrs = attrs} ->
+          let message =
+                case lookup "message" attrs of
+                  Just (StringValue {stringValue = text}) -> text
+                  _ -> ""
+           in className ++ ": " ++ message ++ " at " ++ showPos pos
         _ -> "Runtime error: " ++ valueToOutput value ++ " at " ++ showPos pos

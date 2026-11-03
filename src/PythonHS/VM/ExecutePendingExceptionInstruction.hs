@@ -37,8 +37,8 @@ executePendingExceptionInstruction pendingExceptErrorName instruction stack loca
         "BaseException" -> True
         _ ->
           case normalizeErrorType typeName of
-            Nothing -> False
             Just expectedPrefix -> startsWith expectedPrefix err
+            Nothing -> startsWith (typeName ++ ": ") err
 
     normalizeErrorType typeName
       | typeName == "RuntimeError" = Just "Runtime error:"

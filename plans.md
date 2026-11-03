@@ -478,6 +478,14 @@
 - [x] P81-9: 全テスト PASS（939 examples, 0 failures）
 - [x] P81-10: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
 
+## 現在のスコープ（P82: ユーザー定義例外クラスの raise）
+- [x] P82 開始: ユーザー定義クラスのインスタンスを `raise` して `ClassName: message` 形式のエラーにできるようにする
+- [x] P82-1: `RaiseTopError` に `InstanceValue` のケースを追加し、`message` 属性をメッセージとして使用
+- [x] P82-2: `ExecutePendingExceptionInstruction` で未知のクラス名に対して `ClassName: ` プレフィックスマッチで `except` 一致を判定
+- [x] P82-3: `RunSourceVmSpec` にユーザー定義例外クラスの発生・捕捉テストを追加
+- [x] P82-4: 全テスト PASS（941 examples, 0 failures）
+- [x] P82-5: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
+
 ## detect-positional-args プロジェクト全体分析結果（2026-07-03）
 
 ### 分析概要
@@ -676,6 +684,12 @@
 
 ## メンテナンス記録（要約）
 - 注記: 以下は時系列ログ。古い日付の「未対応」項目は、その後のエントリで仕様更新済みの場合がある。
+- 2026-11-03
+  - [x] P82 完了: ユーザー定義例外クラスの raise
+  - [x] P82 実装: `RaiseTopError` で `InstanceValue` を `ClassName: message` 形式に変換
+  - [x] P82 実装: `ExecutePendingExceptionInstruction` で未知のクラス名に対して `ClassName: ` プレフィックスマッチを使用
+  - [x] P82 テスト: `RunSourceVmSpec` にユーザー定義例外クラスの発生・捕捉ケースを追加
+  - [x] P82 品質ゲート: `cabal run quality-gate` が全項目 PASS（941 examples, 0 failures）
 - 2026-11-03
   - [x] P81 完了: VM 例外エイリアス束縛と bare raise
   - [x] P81 実装: `RaiseStmt` の `raiseStmtExpr` を `Maybe Expr` に変更し、bare raise をサポート
