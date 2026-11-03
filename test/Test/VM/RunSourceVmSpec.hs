@@ -138,6 +138,15 @@ spec = describe "runSourceVm (vm mvp)" $ do
   it "propagates user-defined exception subclass when except base class does not match" $ do
     runSourceVm "class MyError(ValueError):\n  def __init__(self, message):\n    self.message = message\ntry:\n  raise MyError(\"boom\")\nexcept TypeError:\n  print 1\n" `shouldBe` Left "MyError: boom at 5:3"
 
+  it "replaces original exception when finally raises" $ do
+    runSourceVm "try:\n  raise 1\nfinally:\n  raise 2\n" `shouldBe` Left "Runtime error: 2 at 4:3"
+
+  it "raises in finally when try body succeeds" $ do
+    runSourceVm "try:\n  print 1\nfinally:\n  raise 2\n" `shouldBe` Left "Runtime error: 2 at 4:3"
+
+  it "runs finally after except catches exception" $ do
+    runSourceVm "try:\n  raise 1\nexcept:\n  print 2\nfinally:\n  print 3\n" `shouldBe` Right ["2", "3"]
+
   it "propagates error raised in except suite" $ do
     runSourceVm "try:\n  raise 1\nexcept:\n  raise 2\n" `shouldBe` Left "Runtime error: 2 at 4:3"
 

@@ -8,6 +8,7 @@ import PythonHS.Lexer.TokenType
       ( ColonToken,
         DefToken,
         ElseToken,
+        ExceptToken,
         FinallyToken,
         ForToken,
         GtToken,
@@ -37,7 +38,6 @@ parseCompoundStmt :: ParseCompoundStmtConfig -> Either ParseError (ParseResult S
 parseCompoundStmt config =
   let tokenStream = parseCompoundStmtTokenStream config
       parseExpr = parseCompoundStmtExpr config
-      parseStatement = parseCompoundStmtStatement config
    in case tokenStream of
         Token {tokenType = IfToken, position = pos} : rest -> do
           condResult <- parseExpr rest
@@ -59,8 +59,8 @@ parseCompoundStmt config =
             Token {tokenType = ColonToken} : afterColon -> do
               tryResult <- parseSuiteWithStatements afterColon
               let trySuite = parseResultValue tryResult
-                  afterTrySuite = parseResultRemaining tryResult
-              exceptResult <- parseExceptSuites (ParseExceptSuitesConfig {parseExceptSuitesSuite = parseSuiteWithStatements, parseExceptSuitesTokenStream = dropLeadingNewlines afterTrySuite})
+                  afterTrySuite = dropLeadingNewlines (parseResultRemaining tryResult)
+              exceptResult <- parseOptionalExceptSuites afterTrySuite
               let exceptSuites = parseResultValue exceptResult
                   afterExceptSuites = parseResultRemaining exceptResult
               elseResult <- parseElseSuiteTail afterExceptSuites
@@ -123,6 +123,12 @@ parseCompoundStmt config =
         _ -> Left (ExpectedExpression {parseErrorPosition = Position {line = 0, column = 0}})
   where
     parseSuiteWithStatements tokens = parseSuite (ParseSuiteConfig {parseSuiteStatement = parseCompoundStmtStatement config, parseSuiteTokenStream = tokens})
+
+    parseOptionalExceptSuites tokens =
+      case tokens of
+        Token {tokenType = ExceptToken} : _ ->
+          parseExceptSuites (ParseExceptSuitesConfig {parseExceptSuitesSuite = parseSuiteWithStatements, parseExceptSuitesTokenStream = tokens})
+        _ -> Right (ParseResult {parseResultValue = [], parseResultRemaining = tokens})
 
     parseElseSuiteTail tokens =
       case dropLeadingNewlines tokens of

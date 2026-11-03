@@ -257,6 +257,7 @@ library
     , PythonHS.VM.CompileLogicalExpr
     , PythonHS.VM.CompileMatch
     , PythonHS.VM.CompileTryExcept
+    , PythonHS.VM.TryExceptDispatchPlan
     , PythonHS.VM.EvalBinaryOp
     , PythonHS.VM.FindModuleFile
     , PythonHS.VM.CollectExports

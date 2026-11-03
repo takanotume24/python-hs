@@ -1,11 +1,10 @@
 module PythonHS.VM.CompileTryExcept (compileTryExcept) where
 
 import PythonHS.AST.ExceptSuite (ExceptSuite (..))
-import PythonHS.AST.Stmt (Stmt)
-import PythonHS.Lexer.Position (Position)
 import PythonHS.VM.CompileExprResult (CompileExprResult (..))
 import PythonHS.VM.CompileTryExceptConfig (CompileTryExceptConfig (..))
 import PythonHS.VM.Instruction (Instruction (..))
+import PythonHS.VM.TryExceptDispatchPlan (TryExceptDispatchPlan (..))
 
 compileTryExcept :: CompileTryExceptConfig -> Either String CompileExprResult
 compileTryExcept config =
@@ -55,8 +54,26 @@ compileTryExcept config =
               dispatchStart = case maybeElse of
                 Just _ -> elseEnd + 1
                 Nothing -> elseEnd
-          dispatchResult <- compileExceptDispatch dispatchStart exceptClauses
-          let finallyStartIndex = compileExprResultEndIndex dispatchResult + 1
+          dispatchPlan <-
+            if null exceptClauses
+              then
+                let start = dispatchStart + 1
+                 in pure
+                      TryExceptDispatchPlan
+                        { tryExceptDispatchPlanResult = CompileExprResult {compileExprResultCode = [Jump {jumpTarget = start}], compileExprResultEndIndex = start},
+                          tryExceptDispatchPlanFinallyStart = start,
+                          tryExceptDispatchPlanFinallyTail = [PopExceptionHandler]
+                        }
+              else do
+                result <- compileExceptDispatch dispatchStart exceptClauses
+                let start = compileExprResultEndIndex result + 1
+                 in pure
+                      TryExceptDispatchPlan
+                        { tryExceptDispatchPlanResult = result,
+                          tryExceptDispatchPlanFinallyStart = start,
+                          tryExceptDispatchPlanFinallyTail = [Jump {jumpTarget = start}, PopExceptionHandler]
+                        }
+          let finallyStartIndex = tryExceptDispatchPlanFinallyStart dispatchPlan
           finallyResult <- compileStatements (finallyStartIndex + 1) inFunction maybeLoop finallyStmts
           let successJump =
                 if hasElse
@@ -68,8 +85,8 @@ compileTryExcept config =
                   ++ [PopExceptionHandler]
                   ++ successJump
                   ++ (if hasElse then compileExprResultCode elseResult ++ [Jump {jumpTarget = finallyStartIndex}] else [])
-                  ++ compileExprResultCode dispatchResult
-                  ++ [Jump {jumpTarget = finallyStartIndex}, PopExceptionHandler]
+                  ++ compileExprResultCode (tryExceptDispatchPlanResult dispatchPlan)
+                  ++ tryExceptDispatchPlanFinallyTail dispatchPlan
                   ++ compileExprResultCode finallyResult
                   ++ [RaisePendingError]
           pure (CompileExprResult {compileExprResultCode = code, compileExprResultEndIndex = compileExprResultEndIndex finallyResult + 1})

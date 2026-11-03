@@ -502,6 +502,15 @@
 - [x] P84-5: 全テスト PASS（945 examples, 0 failures）
 - [x] P84-6: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
 
+## 現在のスコープ（P85: `try/finally` 構文と finally 節での例外置き換え）
+- [x] P85 開始: `except` 節なしの `try/finally` をサポートし、finally 節での例外発生時に元の例外を正しく置き換える
+- [x] P85-1: `ParseCompoundStmt` で `try` 直後に `finally` がある場合にも空の except リストを許可
+- [x] P85-2: `CompileTryExcept` で except 節が空の場合に finally 開始位置へ直接ジャンプするディスパッチを生成
+- [x] P85-3: `TryExceptDispatchPlan` を追加してタプルを排除
+- [x] P85-4: `RunSourceVmSpec` に `try/finally` の発生・置き換え・実行順序テストを追加
+- [x] P85-5: 全テスト PASS（948 examples, 0 failures）
+- [x] P85-6: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
+
 ## detect-positional-args プロジェクト全体分析結果（2026-07-03）
 
 ### 分析概要
@@ -700,6 +709,13 @@
 
 ## メンテナンス記録（要約）
 - 注記: 以下は時系列ログ。古い日付の「未対応」項目は、その後のエントリで仕様更新済みの場合がある。
+- 2026-11-03
+  - [x] P85 完了: `try/finally` 構文と finally 節での例外置き換え
+  - [x] P85 実装: `ParseCompoundStmt` で `except` 節なしの `try/finally` を解析可能に
+  - [x] P85 実装: `CompileTryExcept` で except 節が空の場合に finally 開始位置へ直接ジャンプするディスパッチを生成
+  - [x] P85 実装: `TryExceptDispatchPlan` を追加してタプルを排除
+  - [x] P85 テスト: `RunSourceVmSpec` に `try/finally` の発生・置き換え・実行順序ケースを追加
+  - [x] P85 品質ゲート: `cabal run quality-gate` が全項目 PASS（948 examples, 0 failures）
 - 2026-11-03
   - [x] P84 完了: ユーザー定義例外クラスの継承対応
   - [x] P84 実装: `HandleExceptionInstruction` でローカル環境とグローバル環境を統合してクラス定義を参照
