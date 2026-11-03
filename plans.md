@@ -437,6 +437,15 @@
 - [x] P77-9: `RunInstructionsSpec` を追加し、pop 後の raise・typed except 複数節・tracer 一致を回帰固定
 - [x] P77-10: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
 
+## 現在のスコープ（P78: VM 例外処理の回帰強化）
+- [x] P78 開始: P77 のディスパッチャ再設計後に nested try / function call / except 節内再送出の網羅を強化
+- [x] P78-1: `RunSourceVmSpec` に inner handler が一致しない nested try を outer handler が捕捉するケースを追加
+- [x] P78-2: `RunSourceVmSpec` に inner handler が一致する nested try ケースを追加
+- [x] P78-3: `RunSourceVmSpec` に関数呼び出し内で発生したエラーを呼び出し元の `try/except` が捕捉するケースを追加
+- [x] P78-4: `RunSourceVmSpec` に `try/except` 内で `return` する関数ケースを追加
+- [x] P78-5: `RunSourceVmSpec` に `except` 節内で再送出されたエラーが伝播するケースを追加
+- [x] P78-6: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
+
 ## detect-positional-args プロジェクト全体分析結果（2026-07-03）
 
 ### 分析概要
@@ -635,6 +644,10 @@
 
 ## メンテナンス記録（要約）
 - 注記: 以下は時系列ログ。古い日付の「未対応」項目は、その後のエントリで仕様更新済みの場合がある。
+- 2026-11-03
+  - [x] P78 完了: VM 例外処理の回帰強化
+  - [x] P78 テスト: `RunSourceVmSpec` に nested try・関数呼び出し内発生エラー・except 節内再送出・try/except 内 return のケースを追加
+  - [x] P78 品質ゲート: `cabal run quality-gate` が全項目 PASS
 - 2026-11-03
   - [x] P77 完了: VM try/except/else と例外ディスパッチャの再設計
   - [x] P77 実装: parser / AST / コンパイルに `try/except/else` の `else` 節を追加

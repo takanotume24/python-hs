@@ -87,6 +87,21 @@ spec = describe "runSourceVm (vm mvp)" $ do
   it "propagates error raised in else suite" $ do
     runSourceVm "try:\n  print 1\nexcept:\n  print 9\nelse:\n  raise \"late\"\n" `shouldBe` Left "Runtime error: late at 6:3"
 
+  it "propagates error raised in except suite" $ do
+    runSourceVm "try:\n  raise 1\nexcept:\n  raise 2\n" `shouldBe` Left "Runtime error: 2 at 4:3"
+
+  it "catches error in nested try when inner handler does not match" $ do
+    runSourceVm "try:\n  try:\n    raise 1\n  except NameError:\n    print 1\nexcept:\n  print 2\n" `shouldBe` Right ["2"]
+
+  it "uses inner handler when nested try handler matches" $ do
+    runSourceVm "try:\n  try:\n    raise 1\n  except RuntimeError:\n    print 1\nexcept:\n  print 2\n" `shouldBe` Right ["1"]
+
+  it "catches error raised inside function call" $ do
+    runSourceVm "def f():\n  raise \"boom\"\ntry:\n  f()\nexcept:\n  print 1\n" `shouldBe` Right ["1"]
+
+  it "returns normally from function with try/except" $ do
+    runSourceVm "def f():\n  try:\n    return 1\n  except:\n    return 2\nprint f()\n" `shouldBe` Right ["1"]
+
   it "matches value patterns and wildcard in order" $ do
     runSourceVm "x = 2\nmatch x:\n  case 1:\n    print 10\n  case 2:\n    print 20\n  case _:\n    print 30\n" `shouldBe` Right ["20"]
 
