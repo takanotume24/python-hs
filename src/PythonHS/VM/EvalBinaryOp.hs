@@ -5,6 +5,10 @@ import PythonHS.Evaluator.ShowPos (showPos)
 import PythonHS.Evaluator.Value (Value (..))
 import PythonHS.Lexer.Position (Position)
 import PythonHS.VM.EvalBinaryOpConfig (EvalBinaryOpConfig (..))
+import PythonHS.VM.EvalBinaryOpDivide (evalBinaryOpDivide)
+import PythonHS.VM.EvalBinaryOpDivideConfig (EvalBinaryOpDivideConfig (..))
+import PythonHS.VM.EvalBinaryOpPower (evalBinaryOpPower)
+import PythonHS.VM.EvalBinaryOpPowerConfig (EvalBinaryOpPowerConfig (..))
 
 evalBinaryOp :: EvalBinaryOpConfig -> Either String Value
 evalBinaryOp config =
@@ -32,9 +36,10 @@ evalBinaryOp config =
             _ -> Left ("Type error: + expects int+int or string+string at " ++ showPos pos)
         SubtractOperator -> evalNumericBinary "-" pos left right (-)
         MultiplyOperator -> evalNumericBinary "*" pos left right (*)
-        DivideOperator -> evalDivide pos left right
+        DivideOperator -> evalBinaryOpDivide EvalBinaryOpDivideConfig {evalBinaryOpDivideConfigLeft = left, evalBinaryOpDivideConfigRight = right, evalBinaryOpDivideConfigPos = pos, evalBinaryOpDivideConfigExpectNumber = expectNumber "/"}
         FloorDivideOperator -> evalFloorDivide pos left right
         ModuloOperator -> evalModulo pos left right
+        PowerOperator -> evalBinaryOpPower EvalBinaryOpPowerConfig {evalBinaryOpPowerConfigLeft = left, evalBinaryOpPowerConfigRight = right, evalBinaryOpPowerConfigPos = pos, evalBinaryOpPowerConfigExpectNumber = expectNumber "**"}
         EqOperator -> evalEqComparison left right
         NotEqOperator -> evalNotEqComparison left right
         LtOperator -> evalOrderComparison "<" pos left right (\ordResult -> ordResult == LT)
@@ -59,13 +64,6 @@ evalBinaryOp config =
             IntValue {intValue = _} -> Right (IntValue {intValue = truncate (opFn leftNumber rightNumber)})
             _ -> Right (FloatValue {floatValue = opFn leftNumber rightNumber})
         _ -> Right (FloatValue {floatValue = opFn leftNumber rightNumber})
-
-    evalDivide pos' left' right' = do
-      leftNumber <- expectNumber "/" pos' left'
-      rightNumber <- expectNumber "/" pos' right'
-      if rightNumber == 0
-        then Left ("Value error: division by zero at " ++ showPos pos')
-        else Right (FloatValue {floatValue = leftNumber / rightNumber})
 
     evalFloorDivide pos' left' right' = do
       leftNumber <- expectNumber "//" pos' left'

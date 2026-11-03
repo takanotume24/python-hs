@@ -5,7 +5,7 @@ import PythonHS.AST.MappingPatternEntry (MappingPatternEntry (..))
 import PythonHS.AST.Pattern (Pattern (..))
 import PythonHS.Lexer.Position (Position (Position))
 import PythonHS.Lexer.Token (Token (..))
-import PythonHS.Lexer.TokenType (TokenType (AsToken, ColonToken, CommaToken, FalseToken, FloatToken, IdentifierToken, IntegerToken, LBraceToken, LBracketToken, NoneToken, PipeToken, RBraceToken, RBracketToken, StarToken, StringToken, TrueToken))
+import PythonHS.Lexer.TokenType (TokenType (AsToken, ColonToken, CommaToken, DoubleStarToken, FalseToken, FloatToken, IdentifierToken, IntegerToken, LBraceToken, LBracketToken, NoneToken, PipeToken, RBraceToken, RBracketToken, StarToken, StringToken, TrueToken))
 import PythonHS.Parser.ParseError (ParseError (..))
 import PythonHS.Parser.ParsePatternConfig (ParsePatternConfig (..))
 import PythonHS.Parser.ParseResult (ParseResult (..))
@@ -96,6 +96,8 @@ parsePattern config = do
 
     parseEntries mapPos acc maybeRestCapture stream =
       case stream of
+        Token {tokenType = DoubleStarToken} : Token {tokenType = IdentifierToken, lexeme = restName} : afterRest ->
+          parseAfterDoubleStar mapPos acc (Just restName) afterRest
         Token {tokenType = StarToken} : Token {tokenType = StarToken} : Token {tokenType = IdentifierToken, lexeme = restName} : afterRest ->
           parseAfterDoubleStar mapPos acc (Just restName) afterRest
         _ -> do

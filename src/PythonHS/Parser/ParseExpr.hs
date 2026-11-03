@@ -1,12 +1,13 @@
 module PythonHS.Parser.ParseExpr (parseExpr) where
 
-import PythonHS.AST.BinaryOperator (BinaryOperator (AddOperator, AndOperator, DivideOperator, EqOperator, FloorDivideOperator, GtOperator, GteOperator, LtOperator, LteOperator, ModuloOperator, MultiplyOperator, NotEqOperator, OrOperator, SubtractOperator))
+import PythonHS.AST.BinaryOperator (BinaryOperator (AddOperator, AndOperator, DivideOperator, EqOperator, FloorDivideOperator, GtOperator, GteOperator, LtOperator, LteOperator, ModuloOperator, MultiplyOperator, NotEqOperator, OrOperator, PowerOperator, SubtractOperator))
 import PythonHS.AST.Expr (Expr (..))
 import PythonHS.Lexer.Token (Token (Token))
 import PythonHS.Lexer.TokenType
   ( TokenType
       ( AndToken,
         DoubleSlashToken,
+        DoubleStarToken,
         EqToken,
         GtToken,
         GteToken,
@@ -124,29 +125,42 @@ parseExpr tokens = parseLambdaExpr (ParseLambdaExprConfig {lambdaExprFallback = 
     parseAddTail left remaining = Right (ParseResult {parseResultValue = left, parseResultRemaining = remaining})
 
     parseMul tokenStream = do
-      primaryResult <- parsePrimary (ParsePrimaryConfig {parsePrimaryExpr = parseExpr, parsePrimaryTokenStream = tokenStream})
-      let leftExpr = parseResultValue primaryResult
-          remaining = parseResultRemaining primaryResult
+      powerResult <- parsePower tokenStream
+      let leftExpr = parseResultValue powerResult
+          remaining = parseResultRemaining powerResult
       parseMulTail leftExpr remaining
 
     parseMulTail left (Token StarToken _ pos : rest) = do
-      rightResult <- parsePrimary (ParsePrimaryConfig {parsePrimaryExpr = parseExpr, parsePrimaryTokenStream = rest})
+      rightResult <- parsePower rest
       let rightExpr = parseResultValue rightResult
           remaining = parseResultRemaining rightResult
       parseMulTail (BinaryExpr {binaryExprOp = MultiplyOperator, binaryExprLeft = left, binaryExprRight = rightExpr, binaryExprPos = pos}) remaining
     parseMulTail left (Token SlashToken _ pos : rest) = do
-      rightResult <- parsePrimary (ParsePrimaryConfig {parsePrimaryExpr = parseExpr, parsePrimaryTokenStream = rest})
+      rightResult <- parsePower rest
       let rightExpr = parseResultValue rightResult
           remaining = parseResultRemaining rightResult
       parseMulTail (BinaryExpr {binaryExprOp = DivideOperator, binaryExprLeft = left, binaryExprRight = rightExpr, binaryExprPos = pos}) remaining
     parseMulTail left (Token DoubleSlashToken _ pos : rest) = do
-      rightResult <- parsePrimary (ParsePrimaryConfig {parsePrimaryExpr = parseExpr, parsePrimaryTokenStream = rest})
+      rightResult <- parsePower rest
       let rightExpr = parseResultValue rightResult
           remaining = parseResultRemaining rightResult
       parseMulTail (BinaryExpr {binaryExprOp = FloorDivideOperator, binaryExprLeft = left, binaryExprRight = rightExpr, binaryExprPos = pos}) remaining
     parseMulTail left (Token PercentToken _ pos : rest) = do
-      rightResult <- parsePrimary (ParsePrimaryConfig {parsePrimaryExpr = parseExpr, parsePrimaryTokenStream = rest})
+      rightResult <- parsePower rest
       let rightExpr = parseResultValue rightResult
           remaining = parseResultRemaining rightResult
       parseMulTail (BinaryExpr {binaryExprOp = ModuloOperator, binaryExprLeft = left, binaryExprRight = rightExpr, binaryExprPos = pos}) remaining
     parseMulTail left remaining = Right (ParseResult {parseResultValue = left, parseResultRemaining = remaining})
+
+    parsePower tokenStream = do
+      primaryResult <- parsePrimary (ParsePrimaryConfig {parsePrimaryExpr = parseExpr, parsePrimaryTokenStream = tokenStream})
+      let leftExpr = parseResultValue primaryResult
+          remaining = parseResultRemaining primaryResult
+      parsePowerTail leftExpr remaining
+
+    parsePowerTail left (Token DoubleStarToken _ pos : rest) = do
+      rightResult <- parsePower rest
+      let rightExpr = parseResultValue rightResult
+          remaining = parseResultRemaining rightResult
+      Right (ParseResult {parseResultValue = BinaryExpr {binaryExprOp = PowerOperator, binaryExprLeft = left, binaryExprRight = rightExpr, binaryExprPos = pos}, parseResultRemaining = remaining})
+    parsePowerTail left remaining = Right (ParseResult {parseResultValue = left, parseResultRemaining = remaining})

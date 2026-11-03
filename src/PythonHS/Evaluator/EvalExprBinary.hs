@@ -3,6 +3,8 @@ module PythonHS.Evaluator.EvalExprBinary (evalExprBinary) where
 import PythonHS.AST.BinaryOperator (BinaryOperator (..))
 import PythonHS.AST.Expr (Expr)
 import PythonHS.Evaluator.EvalExprBinaryInput (EvalExprBinaryInput (..))
+import PythonHS.Evaluator.EvalExprBinaryPower (evalExprBinaryPower)
+import PythonHS.Evaluator.EvalExprBinaryPowerConfig (EvalExprBinaryPowerConfig (..))
 import PythonHS.Evaluator.EvalExprResult (EvalExprResult (..))
 import PythonHS.Evaluator.ShowPos (showPos)
 import PythonHS.Evaluator.Value (Value (..))
@@ -34,6 +36,7 @@ evalExprBinary input = case op of
   DivideOperator -> evalDivide env fenv leftExpr rightExpr pos
   FloorDivideOperator -> evalFloorDivide env fenv leftExpr rightExpr pos
   ModuloOperator -> evalModulo env fenv leftExpr rightExpr pos
+  PowerOperator -> evalExprBinaryPower EvalExprBinaryPowerConfig {evalExprBinaryPowerConfigEvalExprFn = evalExprFn, evalExprBinaryPowerConfigEnv = env, evalExprBinaryPowerConfigFuncEnv = fenv, evalExprBinaryPowerConfigLeftExpr = leftExpr, evalExprBinaryPowerConfigRightExpr = rightExpr, evalExprBinaryPowerConfigPos = pos, evalExprBinaryPowerConfigExpectNumber = expectNumber "**"}
   EqOperator -> evalEqComparison env fenv leftExpr rightExpr pos
   NotEqOperator -> evalNotEqComparison env fenv leftExpr rightExpr pos
   LtOperator -> evalNumericComparison env fenv leftExpr rightExpr pos "<" (<)

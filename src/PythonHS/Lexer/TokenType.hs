@@ -16,6 +16,7 @@ data TokenType
   | PlusToken
   | MinusToken
   | StarToken
+  | DoubleStarToken
   | SlashToken
   | DoubleSlashToken
   | PercentToken

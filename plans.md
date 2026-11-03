@@ -529,6 +529,18 @@
 - [x] P87-6: 全テスト PASS（950 examples, 0 failures）
 - [x] P87-7: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
 
+## 現在のスコープ（P88: `**` 累乗演算子）
+- [x] P88 開始: `**` 累乗演算子を整数・浮動小数に対して右結合で実装する
+- [x] P88-1: 失敗テストを `RunSourceVmSpec` に追加（整数累乗、右結合、負指数）
+- [x] P88-2: `BinaryOperator` に `PowerOperator` を追加
+- [x] P88-3: `TokenType` に `DoubleStarToken` を追加し、`ScanTokenStep` で `**` を字句解析
+- [x] P88-4: `ParseExpr` で `**` を右結合に解析し、`*` `/` `%` `//` より高い優先度に配置
+- [x] P88-5: `ParseParameters` / `ParseCallArgument` / `ParsePattern` で既存の `**kwargs` / `**` 展開 / `**rest` も `DoubleStarToken` で受理
+- [x] P88-6: `EvalExprBinary` / `EvalBinaryOp` で `PowerOperator` を評価（整数指数は整数、負指数は浮動小数）
+- [x] P88-7: 200 行制限対応: `EvalExprBinaryPower` / `EvalBinaryOpPower` / `EvalBinaryOpDivide` を別ファイルに分離
+- [x] P88-8: 全テスト PASS（953 examples, 0 failures）
+- [x] P88-9: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
+
 ## detect-positional-args プロジェクト全体分析結果（2026-07-03）
 
 ### 分析概要
@@ -727,6 +739,15 @@
 
 ## メンテナンス記録（要約）
 - 注記: 以下は時系列ログ。古い日付の「未対応」項目は、その後のエントリで仕様更新済みの場合がある。
+- 2026-11-03
+  - [x] P88 完了: `**` 累乗演算子
+  - [x] P88 実装: `BinaryOperator` に `PowerOperator` を追加し、字句・構文・評価・VM 各経路で対応
+  - [x] P88 実装: `**` の字句解析を `DoubleStarToken` に統一し、既存の `**kwargs` / `**` 展開 / `**rest` も `DoubleStarToken` で受理
+  - [x] P88 実装: `**` を右結合かつ `*` `/` より高い優先度で解析
+  - [x] P88 実装: 整数指数は整数値、負指数は浮動小数値として評価
+  - [x] P88 構造対応: `EvalExprBinaryPower` / `EvalBinaryOpPower` / `EvalBinaryOpDivide` を分離し 200 行制限を遵守
+  - [x] P88 テスト: `RunSourceVmSpec` に整数累乗・右結合・負指数のケースを追加
+  - [x] P88 品質ゲート: `cabal run quality-gate` が全項目 PASS（953 examples, 0 failures）
 - 2026-11-03
   - [x] P87 完了: コンテキストマネージャへの Python らしい例外情報渡し
   - [x] P87 実装: `LoadPendingExceptionClass` / `LoadPendingExceptionMessage` 命令を追加

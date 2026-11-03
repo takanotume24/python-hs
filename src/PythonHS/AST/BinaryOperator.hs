@@ -4,6 +4,7 @@ data BinaryOperator
   = AddOperator
   | SubtractOperator
   | MultiplyOperator
+  | PowerOperator
   | DivideOperator
   | FloorDivideOperator
   | ModuloOperator

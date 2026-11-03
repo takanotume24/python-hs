@@ -18,6 +18,7 @@ import PythonHS.Lexer.TokenType
         DotToken,
         DoubleSlashAssignToken,
         DoubleSlashToken,
+        DoubleStarToken,
         EqToken,
         FloatToken,
         GtToken,
@@ -80,6 +81,7 @@ scanTokenStep config =
                 _ -> Right (ScanTokenStepResult (Token MinusToken "-" (Position ln col)) rest (Position ln (col + 1)))
           | c == '*' ->
               case rest of
+                ('*' : rest') -> Right (ScanTokenStepResult (Token DoubleStarToken "**" (Position ln col)) rest' (Position ln (col + 2)))
                 ('=' : rest') -> Right (ScanTokenStepResult (Token StarAssignToken "*=" (Position ln col)) rest' (Position ln (col + 2)))
                 _ -> Right (ScanTokenStepResult (Token StarToken "*" (Position ln col)) rest (Position ln (col + 1)))
           | c == '/' ->

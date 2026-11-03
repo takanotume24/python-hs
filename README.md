@@ -25,7 +25,7 @@ MIT License — 詳細は [LICENSE](LICENSE) を参照してください。
 - [x] 浮動小数リテラル（`1.23`, `1.`, `.5`, 指数表記 `1e3`, `1.2e-3`）
 - [x] 文字列リテラル（`"..."`）
 - [x] 真偽/Noneリテラル（`True`, `False`, `None`）
-- [x] 演算子（`+ - * / % //`, 比較, `and/or/not`）
+- [x] 演算子（`+ - * / % // **`, 比較, `and/or/not`）
 - [x] 複合代入（`+= -= *= /= %= //=`）
 - [x] 制御構文キーワード（`if/elif/else`, `while`, `for/in`, `break`, `continue`）
 - [x] 関数関連（`def`, `return`, `global`, `pass`, `lambda`, `yield`, `yield from`）
@@ -48,7 +48,7 @@ MIT License — 詳細は [LICENSE](LICENSE) を参照してください。
 - [x] 文: `yield` / `yield from`
 - [x] 制御構文: `if/elif/else`, `while`, `for`
 - [x] 関数定義: `def name(args): ...`（デフォルト引数・` *args`/` **kwargs`・型注釈）
-- [x] 式: 四則演算（`+ - * / % //`）, 比較, `not`, 関数呼び出し, `lambda`
+- [x] 式: 四則演算・累乗（`+ - * / % // **`）, 比較, `not`, 関数呼び出し, `lambda`
 - [x] 式: tuple（literal, index/slice, unpack, 比較, for反復）
 - [x] 式: list comprehension（for/if/nested/chained/if・walrus・unpack target）
 - [x] 式: walrus operator（`:=`）

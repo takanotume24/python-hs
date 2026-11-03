@@ -153,6 +153,15 @@ spec = describe "runSourceVm (vm mvp)" $ do
   it "replaces exception when context manager __exit__ raises" $ do
     runSourceVm "class CM:\n  def __enter__(self):\n    return self\n  def __exit__(self, t, v, tb):\n    raise TypeError(\"wrapped\")\nwith CM():\n  raise ValueError(\"boom\")\n" `shouldBe` Left "Type error: wrapped at 5:5"
 
+  it "evaluates power operator with integers" $ do
+    runSourceVm "print 2 ** 3\n" `shouldBe` Right ["8"]
+
+  it "evaluates right-associative power operator" $ do
+    runSourceVm "print 2 ** 3 ** 2\n" `shouldBe` Right ["512"]
+
+  it "evaluates power operator with negative exponent" $ do
+    runSourceVm "print 2 ** -1\n" `shouldBe` Right ["0.5"]
+
   it "propagates error raised in except suite" $ do
     runSourceVm "try:\n  raise 1\nexcept:\n  raise 2\n" `shouldBe` Left "Runtime error: 2 at 4:3"
 

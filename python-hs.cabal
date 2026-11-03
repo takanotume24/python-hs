@@ -197,6 +197,8 @@ library
     , PythonHS.Evaluator.EvalWithStmt
     , PythonHS.Evaluator.EvalWithStmtConfig
     , PythonHS.Evaluator.EvalExprBinary
+    , PythonHS.Evaluator.EvalExprBinaryPower
+    , PythonHS.Evaluator.EvalExprBinaryPowerConfig
     , PythonHS.Evaluator.EvalExpr
     , PythonHS.Evaluator.EvalCallExpr
     , PythonHS.Evaluator.EvalBuiltinExpr
@@ -259,6 +261,10 @@ library
     , PythonHS.VM.CompileTryExcept
     , PythonHS.VM.TryExceptDispatchPlan
     , PythonHS.VM.EvalBinaryOp
+    , PythonHS.VM.EvalBinaryOpDivide
+    , PythonHS.VM.EvalBinaryOpDivideConfig
+    , PythonHS.VM.EvalBinaryOpPower
+    , PythonHS.VM.EvalBinaryOpPowerConfig
     , PythonHS.VM.FindModuleFile
     , PythonHS.VM.CollectExports
     , PythonHS.VM.IsBuiltinImportModule

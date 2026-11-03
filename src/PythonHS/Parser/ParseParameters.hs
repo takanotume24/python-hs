@@ -5,7 +5,7 @@ import PythonHS.AST.Expr (Expr)
 import PythonHS.AST.FunctionDefault (FunctionDefault (..))
 import PythonHS.Lexer.Position (Position (Position))
 import PythonHS.Lexer.Token (Token (Token), position)
-import PythonHS.Lexer.TokenType (TokenType (AssignToken, ColonToken, CommaToken, IdentifierToken, RParenToken, StarToken))
+import PythonHS.Lexer.TokenType (TokenType (AssignToken, ColonToken, CommaToken, DoubleStarToken, IdentifierToken, RParenToken, StarToken))
 import PythonHS.Parser.ParseError (ParseError (ExpectedExpression))
 import PythonHS.Parser.ParseParametersResult (ParseParametersResult (..))
 import PythonHS.Parser.ParseResult (ParseResult (..))
@@ -50,6 +50,8 @@ parseParameters parseExpr = parseParametersWithState False False False Set.empty
           tok : _ -> Left (ExpectedExpression (position tok))
           _ -> Left (ExpectedExpression (Position 0 0))
 
+    parseSingleParameter (Token DoubleStarToken _ pPos : Token IdentifierToken p _ : rest) =
+      Right (ParseResult {parseResultValue = ParseSingleParameterResult {parseSingleParameterResultName = "**" ++ p, parseSingleParameterResultDefault = Nothing, parseSingleParameterResultPos = pPos}, parseResultRemaining = rest})
     parseSingleParameter (Token StarToken _ pPos : Token StarToken _ _ : Token IdentifierToken p _ : rest) =
       Right (ParseResult {parseResultValue = ParseSingleParameterResult {parseSingleParameterResultName = "**" ++ p, parseSingleParameterResultDefault = Nothing, parseSingleParameterResultPos = pPos}, parseResultRemaining = rest})
     parseSingleParameter (Token StarToken _ pPos : Token IdentifierToken p _ : rest) =
