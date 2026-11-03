@@ -465,6 +465,19 @@
 - [x] P80-4: 全テストが PASS（936 examples, 0 failures）
 - [x] P80-5: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
 
+## 現在のスコープ（P81: VM 例外エイリアス束縛と bare raise）
+- [x] P81 開始: `except ... as e` で例外オブジェクトを束縛し、bare `raise` で再発生できるようにする
+- [x] P81-1: `RaiseStmt` の `raiseStmtExpr` を `Maybe Expr` に変更し、bare raise を AST レベルで表現
+- [x] P81-2: `ParseRaiseStmt` / `ParseRaiseStmtConfig` を追加し、パーサーを 200 行以下に保ちながら bare raise を解析
+- [x] P81-3: 既存の alias テストを「例外オブジェクト（発生時の値）が束縛される」 semantics に更新
+- [x] P81-4: `RaiseTop` / `HandleRuntimeError` で `__python_hs_pending_except_value__` に生の例外値を保存
+- [x] P81-5: `LoadPendingException` を生の例外値をロードするように変更
+- [x] P81-6: bare raise を `RaisePendingException` 命令としてコンパイルし、元の例外を再発生
+- [x] P81-7: `ValueToOutput` で `ExceptionValue` の出力をメッセージ部分にする（`print e` で `boom`）
+- [x] P81-8: `RunSourceVmSpec` / `ParseProgramSpec` に `except ... as` と bare raise のテストを追加
+- [x] P81-9: 全テスト PASS（939 examples, 0 failures）
+- [x] P81-10: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
+
 ## detect-positional-args プロジェクト全体分析結果（2026-07-03）
 
 ### 分析概要
@@ -663,6 +676,13 @@
 
 ## メンテナンス記録（要約）
 - 注記: 以下は時系列ログ。古い日付の「未対応」項目は、その後のエントリで仕様更新済みの場合がある。
+- 2026-11-03
+  - [x] P81 完了: VM 例外エイリアス束縛と bare raise
+  - [x] P81 実装: `RaiseStmt` の `raiseStmtExpr` を `Maybe Expr` に変更し、bare raise をサポート
+  - [x] P81 実装: `except ... as e` で生の例外値（`ExceptionValue` 等）を `e` に束縛
+  - [x] P81 実装: bare `raise` を `RaisePendingException` 命令で元の例外を再発生
+  - [x] P81 テスト: `RunSourceVmSpec` / `ParseProgramSpec` に `except ... as` と bare raise のケースを追加
+  - [x] P81 品質ゲート: `cabal run quality-gate` が全項目 PASS（939 examples, 0 failures）
 - 2026-11-03
   - [x] P80 完了: VM 組み込み例外クラスの網羅的対応
   - [x] P80 実装: P79 の `ExceptionValue` 機構を `ValueError` 以外の `TypeError` / `NameError` / `AttributeError` に拡張

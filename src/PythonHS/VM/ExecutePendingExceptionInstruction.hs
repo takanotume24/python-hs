@@ -8,7 +8,7 @@ executePendingExceptionInstruction :: String -> Instruction -> [Value] -> Map.Ma
 executePendingExceptionInstruction pendingExceptErrorName instruction stack localEnv =
   case instruction of
     LoadPendingException ->
-      case Map.lookup pendingExceptErrorName localEnv of
+      case Map.lookup pendingExceptValueName localEnv of
         Just value -> Right (Nothing, value : stack)
         Nothing -> Left "VM runtime error: pending exception is not set"
     MatchExceptionType maybeTypeName ->
@@ -24,6 +24,8 @@ executePendingExceptionInstruction pendingExceptErrorName instruction stack loca
         _ -> Left "VM runtime error: pending exception is not set"
     _ -> Left "VM runtime error: executePendingExceptionInstruction called with non-pending-exception instruction"
   where
+    pendingExceptValueName = "__python_hs_pending_except_value__"
+
     matchesExceptionType maybeTypeNames err =
       case maybeTypeNames of
         Nothing -> True

@@ -57,10 +57,14 @@ compileProgram Program {programStmts = stmts} = do
         PassStmt {} -> Right (CompileExprResult {compileExprResultCode = [], compileExprResultEndIndex = baseIndex})
         DecoratedStmt {decoratedStmtDecorators = decorators, decoratedStmtTarget = targetStmt} -> compileDecoratedStmt CompileDecoratedStmtConfig {compileDecoratedStmtCompileStmt = compileStmt, compileDecoratedStmtCompileDataclassClass = \b c m bd mc -> compileClassDefStmt CompileClassDefStmtConfig {compileClassDefStmtCompileDefaults = \ce ds -> compileDefaults CompileDefaultsConfig {compileDefaultsCompileExpr = ce, compileDefaultsDefaults = ds}, compileClassDefStmtCompileStatements = compileStatements, compileClassDefStmtCompileExpr = compileExprAt', compileClassDefStmtBaseIndex = b, compileClassDefStmtClassName = c, compileClassDefStmtMaybeBase = m, compileClassDefStmtBody = bd, compileClassDefStmtMaybeDataclass = mc}, compileDecoratedStmtCompileExpr = compileExprAt', compileDecoratedStmtBaseIndex = baseIndex, compileDecoratedStmtInFunction = inFunction, compileDecoratedStmtMaybeLoop = maybeLoop, compileDecoratedStmtDecorators = decorators, compileDecoratedStmtTargetStmt = targetStmt}
         GlobalStmt {globalStmtName = name} -> Right (CompileExprResult {compileExprResultCode = [DeclareGlobal {declareGlobalName = name}], compileExprResultEndIndex = baseIndex + 1})
-        RaiseStmt {raiseStmtExpr = expr, raiseStmtPos = pos} -> do
-          exprResult <- compileExprAt' baseIndex expr
-          let code = compileExprResultCode exprResult ++ [RaiseTop {raiseTopPos = pos}]
-          pure (CompileExprResult {compileExprResultCode = code, compileExprResultEndIndex = compileExprResultEndIndex exprResult + 1})
+        RaiseStmt {raiseStmtExpr = maybeExpr, raiseStmtPos = pos} ->
+          case maybeExpr of
+            Nothing ->
+              pure (CompileExprResult {compileExprResultCode = [RaisePendingException], compileExprResultEndIndex = baseIndex + 1})
+            Just expr -> do
+              exprResult <- compileExprAt' baseIndex expr
+              let code = compileExprResultCode exprResult ++ [RaiseTop {raiseTopPos = pos}]
+              pure (CompileExprResult {compileExprResultCode = code, compileExprResultEndIndex = compileExprResultEndIndex exprResult + 1})
         TryExceptStmt {tryExceptStmtTryBody = tryStmts, tryExceptStmtExceptSuites = exceptStmts, tryExceptStmtElseBody = maybeElse, tryExceptStmtFinallyBody = maybeFinally} -> compileTryExcept CompileTryExceptConfig {compileTryExceptCompileStatements = compileStatements, compileTryExceptBaseIndex = baseIndex, compileTryExceptInFunction = inFunction, compileTryExceptMaybeLoop = maybeLoop, compileTryExceptTryStmts = tryStmts, compileTryExceptExceptClauses = exceptStmts, compileTryExceptMaybeElse = maybeElse, compileTryExceptMaybeFinally = maybeFinally}
         MatchStmt {matchStmtSubject = subjectExpr, matchStmtCases = matchCases} -> compileMatch CompileMatchConfig {compileMatchCompileExpr = compileExprAt', compileMatchCompileStatements = compileStatements, compileMatchBaseIndex = baseIndex, compileMatchInFunction = inFunction, compileMatchMaybeLoop = maybeLoop, compileMatchSubjectExpr = subjectExpr, compileMatchCases = matchCases}
         ImportStmt {} -> compileImportStmt CompileImportStmtConfig {compileImportStmtBaseIndex = baseIndex, compileImportStmtStmt = stmt}

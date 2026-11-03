@@ -342,7 +342,19 @@ spec = describe "parseProgram" $ do
       ]
       `shouldBe` Right
         ( Program
-            [ RaiseStmt (StringExpr "oops" (Position 1 7)) (Position 1 1)
+            [ RaiseStmt (Just (StringExpr "oops" (Position 1 7))) (Position 1 1)
+            ]
+        )
+
+  it "parses bare raise statement" $ do
+    parseProgram
+      [ Token RaiseToken "raise" (Position 1 1),
+        Token NewlineToken "\\n" (Position 1 6),
+        Token EOFToken "" (Position 2 1)
+      ]
+      `shouldBe` Right
+        ( Program
+            [ RaiseStmt Nothing (Position 1 1)
             ]
         )
 
@@ -369,7 +381,7 @@ spec = describe "parseProgram" $ do
       `shouldBe` Right
         ( Program
             [ TryExceptStmt
-                [RaiseStmt (StringExpr "x" (Position 2 9)) (Position 2 3)]
+                [RaiseStmt (Just (StringExpr "x" (Position 2 9))) (Position 2 3)]
                 [ExceptSuite {exceptSuiteType = Nothing, exceptSuiteAlias = Nothing, exceptSuiteBody = [PrintStmt (IntegerExpr 1 (Position 4 9)) (Position 4 3)], exceptSuitePos = Position 3 1}]
                 Nothing
                 Nothing
@@ -447,7 +459,7 @@ spec = describe "parseProgram" $ do
       `shouldBe` Right
         ( Program
             [ TryExceptStmt
-                [RaiseStmt (StringExpr "x" (Position 2 9)) (Position 2 3)]
+                [RaiseStmt (Just (StringExpr "x" (Position 2 9))) (Position 2 3)]
                 [ ExceptSuite {exceptSuiteType = Nothing, exceptSuiteAlias = Nothing, exceptSuiteBody = [PrintStmt (IntegerExpr 1 (Position 4 9)) (Position 4 3)], exceptSuitePos = Position 3 1},
                   ExceptSuite {exceptSuiteType = Nothing, exceptSuiteAlias = Nothing, exceptSuiteBody = [PrintStmt (IntegerExpr 2 (Position 6 9)) (Position 6 3)], exceptSuitePos = Position 5 1}
                 ]
@@ -483,7 +495,7 @@ spec = describe "parseProgram" $ do
       `shouldBe` Right
         ( Program
             [ TryExceptStmt
-                [RaiseStmt (StringExpr "x" (Position 2 9)) (Position 2 3)]
+                [RaiseStmt (Just (StringExpr "x" (Position 2 9))) (Position 2 3)]
                 [ExceptSuite {exceptSuiteType = Just ["RuntimeError"], exceptSuiteAlias = Just "e", exceptSuiteBody = [PrintStmt (IdentifierExpr "e" (Position 4 9)) (Position 4 3)], exceptSuitePos = Position 3 1}]
                 Nothing
                 Nothing
@@ -521,7 +533,7 @@ spec = describe "parseProgram" $ do
       `shouldBe` Right
         ( Program
             [ TryExceptStmt
-                [RaiseStmt (StringExpr "x" (Position 2 9)) (Position 2 3)]
+                [RaiseStmt (Just (StringExpr "x" (Position 2 9))) (Position 2 3)]
                 [ExceptSuite {exceptSuiteType = Just ["ValueError", "RuntimeError"], exceptSuiteAlias = Just "e", exceptSuiteBody = [PrintStmt (IdentifierExpr "e" (Position 4 9)) (Position 4 3)], exceptSuitePos = Position 3 1}]
                 Nothing
                 Nothing

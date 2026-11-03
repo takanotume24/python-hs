@@ -120,7 +120,7 @@ data Stmt
         matchStmtPos :: Position
       }
   | RaiseStmt
-      { raiseStmtExpr :: Expr,
+      { raiseStmtExpr :: Maybe Expr,
         raiseStmtPos :: Position
       }
   | PassStmt {passStmtPos :: Position}

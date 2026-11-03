@@ -56,6 +56,8 @@ import PythonHS.Parser.ParseExprStatement (parseExprStatement)
 import PythonHS.Parser.ParseImportStmt (parseImportStmt)
 import PythonHS.Parser.ParseMatchStmt (parseMatchStmt)
 import PythonHS.Parser.ParseMatchStmtConfig (ParseMatchStmtConfig (..))
+import PythonHS.Parser.ParseRaiseStmt (parseRaiseStmt)
+import PythonHS.Parser.ParseRaiseStmtConfig (ParseRaiseStmtConfig (..))
 import PythonHS.Parser.ParseResult (ParseResult (..))
 import PythonHS.Parser.ParseSuite (parseSuite)
 import PythonHS.Parser.ParseSuiteConfig (ParseSuiteConfig (..))
@@ -88,11 +90,8 @@ parseStatement tokenStream =
           Right (ParseResult {parseResultValue = ReturnStmt {returnStmtValue = valueExpr, returnStmtPos = pos}, parseResultRemaining = remaining})
         Token {tokenType = YieldToken, position = pos} : rest ->
           parseYieldStmt (ParseYieldStmtConfig {parseYieldStmtExpr = parseExpr, parseYieldStmtPos = pos, parseYieldStmtTokenStream = rest})
-        Token {tokenType = RaiseToken, position = pos} : rest -> do
-          valueResult <- parseExpr rest
-          let valueExpr = parseResultValue valueResult
-              remaining = parseResultRemaining valueResult
-          Right (ParseResult {parseResultValue = RaiseStmt {raiseStmtExpr = valueExpr, raiseStmtPos = pos}, parseResultRemaining = remaining})
+        Token {tokenType = RaiseToken, position = pos} : rest ->
+          parseRaiseStmt (ParseRaiseStmtConfig {parseRaiseStmtExpr = parseExpr, parseRaiseStmtPos = pos, parseRaiseStmtTokenStream = rest})
         Token {tokenType = BreakToken, position = pos} : rest -> Right (ParseResult {parseResultValue = BreakStmt {breakStmtPos = pos}, parseResultRemaining = rest})
         Token {tokenType = ContinueToken, position = pos} : rest -> Right (ParseResult {parseResultValue = ContinueStmt {continueStmtPos = pos}, parseResultRemaining = rest})
         Token {tokenType = PassToken, position = pos} : rest -> Right (ParseResult {parseResultValue = PassStmt {passStmtPos = pos}, parseResultRemaining = rest})

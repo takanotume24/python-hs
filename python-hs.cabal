@@ -146,6 +146,8 @@ library
     , PythonHS.Parser.ParsePatternConfig
     , PythonHS.Parser.ParseMatchStmt
     , PythonHS.Parser.ParseMatchStmtConfig
+    , PythonHS.Parser.ParseRaiseStmt
+    , PythonHS.Parser.ParseRaiseStmtConfig
       , PythonHS.Parser.ParseIfTail
       , PythonHS.Parser.ParseIfTailConfig
       , PythonHS.Parser.ParseSuite

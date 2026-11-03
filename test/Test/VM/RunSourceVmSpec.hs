@@ -35,11 +35,11 @@ spec = describe "runSourceVm (vm mvp)" $ do
   it "matches typed except by runtime error category" $ do
     runSourceVm "try:\n  print len(1)\nexcept NameError:\n  print 1\nexcept TypeError:\n  print 2\nexcept:\n  print 3\n" `shouldBe` Right ["2"]
 
-  it "matches Exception as catch-all" $ do
-    runSourceVm "try:\n  raise 1\nexcept Exception as e:\n  result = e\nprint result\n" `shouldBe` Right ["Runtime error: 1 at 2:3"]
+  it "matches Exception as catch-all and binds raised value" $ do
+    runSourceVm "try:\n  raise 1\nexcept Exception as e:\n  result = e\nprint result\n" `shouldBe` Right ["1"]
 
-  it "matches BaseException as catch-all" $ do
-    runSourceVm "try:\n  raise 1\nexcept BaseException as e:\n  result = e\nprint result\n" `shouldBe` Right ["Runtime error: 1 at 2:3"]
+  it "matches BaseException as catch-all and binds raised value" $ do
+    runSourceVm "try:\n  raise 1\nexcept BaseException as e:\n  result = e\nprint result\n" `shouldBe` Right ["1"]
 
   it "supports top-level expression statements" $ do
     runSourceVm "def f():\n  print 1\nf()\n" `shouldBe` Right ["1"]
@@ -59,15 +59,15 @@ spec = describe "runSourceVm (vm mvp)" $ do
   it "matches AttributeError category" $ do
     runSourceVm "class A:\n  pass\na = A()\ntry:\n  _ = a.missing\nexcept AttributeError:\n  print 1\n" `shouldBe` Right ["1"]
 
-  it "binds typed except alias and rethrows on non-matching type" $ do
-    runSourceVm "try:\n  raise \"boom\"\nexcept RuntimeError as e:\n  print e\n" `shouldBe` Right ["Runtime error: boom at 2:3"]
+  it "binds typed except alias to raised string value and rethrows on non-matching type" $ do
+    runSourceVm "try:\n  raise \"boom\"\nexcept RuntimeError as e:\n  print e\n" `shouldBe` Right ["boom"]
     runSourceVm "try:\n  raise \"boom\"\nexcept TypeError:\n  print 1\n" `shouldBe` Left "Runtime error: boom at 2:3"
 
   it "matches one of parenthesized except types" $ do
     runSourceVm "try:\n  raise 1\nexcept (ValueError, RuntimeError):\n  print 11\n" `shouldBe` Right ["11"]
 
-  it "binds alias with parenthesized except types" $ do
-    runSourceVm "try:\n  raise \"boom\"\nexcept (ValueError, RuntimeError) as e:\n  print e\n" `shouldBe` Right ["Runtime error: boom at 2:3"]
+  it "binds alias to raised string value with parenthesized except types" $ do
+    runSourceVm "try:\n  raise \"boom\"\nexcept (ValueError, RuntimeError) as e:\n  print e\n" `shouldBe` Right ["boom"]
 
   it "rethrows when no parenthesized except type matches" $ do
     runSourceVm "try:\n  raise \"boom\"\nexcept (ValueError, NameError):\n  print 11\n" `shouldBe` Left "Runtime error: boom at 2:3"
@@ -113,6 +113,12 @@ spec = describe "runSourceVm (vm mvp)" $ do
 
   it "catches builtin TypeError with except BaseException" $ do
     runSourceVm "try:\n  raise TypeError(\"bad\")\nexcept BaseException:\n  print 1\n" `shouldBe` Right ["1"]
+
+  it "binds builtin exception to alias with except ... as" $ do
+    runSourceVm "try:\n  raise ValueError(\"boom\")\nexcept ValueError as e:\n  print e\n" `shouldBe` Right ["boom"]
+
+  it "re-raises current exception with bare raise" $ do
+    runSourceVm "try:\n  raise ValueError(\"boom\")\nexcept:\n  raise\n" `shouldBe` Left "Value error: boom at 2:3"
 
   it "propagates error raised in except suite" $ do
     runSourceVm "try:\n  raise 1\nexcept:\n  raise 2\n" `shouldBe` Left "Runtime error: 2 at 4:3"

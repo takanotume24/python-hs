@@ -24,12 +24,16 @@ handleRuntimeError execute state result =
                   newEnv = (vmEnv state) {envLocals = newLocals}
                in execute state {vmIp = finalIp, vmEnv = newEnv, vmException = (vmException state) {exceptionHandlers = restHandlers}}
             else
-              let newLocals = Map.insert pendingExceptErrorName (StringValue err) (Map.delete pendingErrorName (envLocals (vmEnv state)))
+              let newLocals =
+                    Map.insert pendingExceptErrorName (StringValue err) $
+                      Map.insert pendingExceptValueName (StringValue err) $
+                        Map.delete pendingErrorName (envLocals (vmEnv state))
                   newEnv = (vmEnv state) {envLocals = newLocals}
                in execute state {vmIp = handlerIp, vmEnv = newEnv, vmException = (vmException state) {exceptionHandlers = restHandlers}}
         [] -> Left err
   where
     pendingErrorName = "__python_hs_pending_finally_error__"
     pendingExceptErrorName = "__python_hs_pending_except_error__"
+    pendingExceptValueName = "__python_hs_pending_except_value__"
     decodeFinallyHandler encoded = negate encoded - 1
     isFinallyHandler handlerIp = handlerIp < 0

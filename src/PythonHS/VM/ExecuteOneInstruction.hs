@@ -171,7 +171,11 @@ executeOneInstruction execute state instruction =
               case vmStack state of
                 value : rest ->
                   let err = raiseTopError RaiseTopErrorConfig {raiseTopErrorValue = value, raiseTopErrorPos = pos}
-                      newEnv = (vmEnv state) {envLocals = Map.insert "__python_hs_pending_except_error__" (StringValue err) (envLocals (vmEnv state))}
+                      newLocals =
+                        Map.insert "__python_hs_pending_except_error__" (StringValue err) $
+                          Map.insert "__python_hs_pending_except_value__" value $
+                            envLocals (vmEnv state)
+                      newEnv = (vmEnv state) {envLocals = newLocals}
                    in case exceptionHandlers (vmException state) of
                         handlerIp : restHandlers ->
                           Right state {vmIp = handlerIp, vmStack = rest, vmEnv = newEnv, vmException = (vmException state) {exceptionHandlers = restHandlers}}

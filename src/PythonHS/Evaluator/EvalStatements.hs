@@ -81,9 +81,12 @@ evalStatements env fenv outputs (stmt : rest) =
     FromImportStmt {} -> evalStatements env fenv outputs rest
     TryExceptStmt {tryExceptStmtPos} -> Left $ "Runtime error: try/except is only supported in vm engine at " ++ showPos tryExceptStmtPos
     MatchStmt {matchStmtPos} -> Left $ "Runtime error: match/case is only supported in vm engine at " ++ showPos matchStmtPos
-    RaiseStmt {raiseStmtExpr, raiseStmtPos} -> do
-      (val, _, _) <- extractResult <$> evalExpr evalStatements env fenv raiseStmtExpr
-      Left $ "Runtime error: " ++ valueToOutput val ++ " at " ++ showPos raiseStmtPos
+    RaiseStmt {raiseStmtExpr, raiseStmtPos} ->
+      case raiseStmtExpr of
+        Nothing -> Left $ "Runtime error: bare raise is only supported in vm engine at " ++ showPos raiseStmtPos
+        Just expr -> do
+          (val, _, _) <- extractResult <$> evalExpr evalStatements env fenv expr
+          Left $ "Runtime error: " ++ valueToOutput val ++ " at " ++ showPos raiseStmtPos
     PassStmt {} -> evalStatements env fenv outputs rest
     WithStmt {withStmtContextManager, withStmtVarName, withStmtBody, withStmtPos} ->
       evalWithStmt (EvalWithStmtInput (EvalWithStmtConfig evalStatements (evalExpr evalStatements)) env fenv outputs withStmtContextManager withStmtVarName withStmtBody withStmtPos rest)
