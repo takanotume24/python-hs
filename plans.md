@@ -457,6 +457,14 @@
 - [x] P79-7: `RunSourceVmSpec` に `raise ValueError(...)` の発生・捕捉・非一致伝播ケースを追加
 - [x] P79-8: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
 
+## 現在のスコープ（P80: VM 組み込み例外クラスの網羅的対応）
+- [x] P80 開始: P79 で作った `ExceptionValue` 機構を `ValueError` 以外の主要組み込み例外クラスに拡張
+- [x] P80-1: `RunSourceVmSpec` に `TypeError` / `NameError` / `AttributeError` / `except Exception` / `except BaseException` のテストを追加
+- [x] P80-2: 既存の `ExceptionClassToPrefix` / `CallExceptionClassBuiltin` / `RaiseTopError` が `ValueError` 以外の組み込み例外クラスにも自然に対応していることを確認
+- [x] P80-3: 追加した全例外クラステストが個別に PASS
+- [x] P80-4: 全テストが PASS（936 examples, 0 failures）
+- [x] P80-5: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
+
 ## detect-positional-args プロジェクト全体分析結果（2026-07-03）
 
 ### 分析概要
@@ -655,6 +663,11 @@
 
 ## メンテナンス記録（要約）
 - 注記: 以下は時系列ログ。古い日付の「未対応」項目は、その後のエントリで仕様更新済みの場合がある。
+- 2026-11-03
+  - [x] P80 完了: VM 組み込み例外クラスの網羅的対応
+  - [x] P80 実装: P79 の `ExceptionValue` 機構を `ValueError` 以外の `TypeError` / `NameError` / `AttributeError` に拡張
+  - [x] P80 テスト: `RunSourceVmSpec` に `raise TypeError(...)`, `raise NameError(...)`, `raise AttributeError(...)`, `except Exception`, `except BaseException` のケースを追加
+  - [x] P80 品質ゲート: `cabal run quality-gate` が全項目 PASS（936 examples, 0 failures）
 - 2026-11-03
   - [x] P79 完了: VM 組み込み例外クラスの最小対応
   - [x] P79 実装: `Value` に `ExceptionValue` を追加し、`ValueError("msg")` 形式の raise を `Value error: msg` として生成

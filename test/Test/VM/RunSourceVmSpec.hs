@@ -96,6 +96,24 @@ spec = describe "runSourceVm (vm mvp)" $ do
   it "propagates when except TypeError does not match builtin ValueError" $ do
     runSourceVm "try:\n  raise ValueError(\"boom\")\nexcept TypeError:\n  print 1\n" `shouldBe` Left "Value error: boom at 2:3"
 
+  it "raises builtin TypeError with message" $ do
+    runSourceVm "raise TypeError(\"bad\")\n" `shouldBe` Left "Type error: bad at 1:1"
+
+  it "raises builtin NameError with message" $ do
+    runSourceVm "raise NameError(\"missing\")\n" `shouldBe` Left "Name error: missing at 1:1"
+
+  it "raises builtin AttributeError with message" $ do
+    runSourceVm "raise AttributeError(\"no attr\")\n" `shouldBe` Left "Attribute error: no attr at 1:1"
+
+  it "catches builtin AttributeError with except AttributeError" $ do
+    runSourceVm "try:\n  raise AttributeError(\"no attr\")\nexcept AttributeError:\n  print 1\n" `shouldBe` Right ["1"]
+
+  it "catches builtin ValueError with except Exception" $ do
+    runSourceVm "try:\n  raise ValueError(\"boom\")\nexcept Exception:\n  print 1\n" `shouldBe` Right ["1"]
+
+  it "catches builtin TypeError with except BaseException" $ do
+    runSourceVm "try:\n  raise TypeError(\"bad\")\nexcept BaseException:\n  print 1\n" `shouldBe` Right ["1"]
+
   it "propagates error raised in except suite" $ do
     runSourceVm "try:\n  raise 1\nexcept:\n  raise 2\n" `shouldBe` Left "Runtime error: 2 at 4:3"
 
