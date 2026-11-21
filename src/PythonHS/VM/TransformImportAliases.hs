@@ -92,6 +92,7 @@ transformImportAliases renameDefNames moduleAlias callAlias identAlias stmt =
         UnaryMinusExpr {unaryMinusExprValue = value, unaryMinusExprPos = pos} -> UnaryMinusExpr (transformExpr moduleAliases callAliases identAliases value) pos
         NotExpr {notExprValue = value, notExprPos = pos} -> NotExpr (transformExpr moduleAliases callAliases identAliases value) pos
         BitwiseNotExpr {bitwiseNotExprValue = value, bitwiseNotExprPos = pos} -> BitwiseNotExpr (transformExpr moduleAliases callAliases identAliases value) pos
+        ComparisonChainExpr {comparisonChainLeft = left, comparisonChainOps = ops, comparisonChainRights = rights, comparisonChainPos = pos} -> ComparisonChainExpr (transformExpr moduleAliases callAliases identAliases left) ops (map (transformExpr moduleAliases callAliases identAliases) rights) pos
         BinaryExpr {binaryExprOp = op, binaryExprLeft = left, binaryExprRight = right, binaryExprPos = pos} ->
           BinaryExpr op (transformExpr moduleAliases callAliases identAliases left) (transformExpr moduleAliases callAliases identAliases right) pos
         CallExpr {callExprName = fname, callExprArgs = args, callExprPos = pos} ->

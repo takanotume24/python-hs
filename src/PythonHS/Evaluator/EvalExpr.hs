@@ -17,6 +17,8 @@ import PythonHS.Evaluator.FuncEnv (FuncEnv)
 import PythonHS.Evaluator.ShowPos (showPos)
 import PythonHS.Evaluator.Value (Value (..))
 import PythonHS.Lexer.Position (Position)
+import PythonHS.VM.EvalBinaryOp (evalBinaryOp)
+import PythonHS.VM.EvalBinaryOpConfig (EvalBinaryOpConfig (..))
 
 evalExpr ::
   (Env -> FuncEnv -> [String] -> [Stmt] -> Either String EvalStmtResult) ->
@@ -74,6 +76,8 @@ evalExpr evalStatementsFn env fenv expr =
       case v of
         IntValue {intValue = n} -> Right (EvalExprResult (IntValue (complement n)) outs envAfterExpr)
         _ -> Left $ "Type error: ~ expects int at " ++ showPos bitwiseNotExprPos
+    ComparisonChainExpr {comparisonChainLeft = leftExpr, comparisonChainOps = ops, comparisonChainRights = rights, comparisonChainPos = pos} ->
+      evalComparisonChain evalStatementsFn env fenv leftExpr ops rights pos
     BinaryExpr {binaryExprOp, binaryExprLeft, binaryExprRight, binaryExprPos} ->
       evalExprBinary (EvalExprBinaryInput (evalExpr evalStatementsFn) env fenv binaryExprOp binaryExprLeft binaryExprRight binaryExprPos)
     CallExpr {callExprName, callExprArgs, callExprPos} ->
@@ -117,11 +121,27 @@ evalExpr evalStatementsFn env fenv expr =
     exprPos (LambdaDefaultsExpr _ _ _ pos) = pos
     exprPos (UnaryMinusExpr _ pos) = pos
     exprPos (NotExpr _ pos) = pos
+    exprPos (BitwiseNotExpr _ pos) = pos
+    exprPos (ComparisonChainExpr _ _ _ pos) = pos
     exprPos (BinaryExpr _ _ _ pos) = pos
     exprPos (CallExpr _ _ pos) = pos
     exprPos (CallValueExpr _ _ pos) = pos
     exprPos (IndexExpr _ _ pos) = pos
     exprPos (SliceExpr _ _ _ pos) = pos
+
+    evalComparisonChain evalStatementsFn' currentEnv currentFenv leftExpr ops rights pos' = do
+      EvalExprResult leftVal leftOuts envAfterLeft <- evalExpr evalStatementsFn' currentEnv currentFenv leftExpr
+      evalComparisonItems evalStatementsFn' currentFenv leftVal leftOuts envAfterLeft ops rights pos'
+
+    evalComparisonItems _ _ _ accOuts envAfter [] [] _ = Right (EvalExprResult (IntValue 1) accOuts envAfter)
+    evalComparisonItems evalStatementsFn' currentFenv leftVal accOuts envAfter (op : restOps) (rightExpr : restRights) pos' = do
+      EvalExprResult rightVal rightOuts envAfterRight <- evalExpr evalStatementsFn' envAfter currentFenv rightExpr
+      case evalBinaryOp EvalBinaryOpConfig {evalBinaryOpOp = op, evalBinaryOpLeft = leftVal, evalBinaryOpRight = rightVal, evalBinaryOpPos = pos'} of
+        Left err -> Left err
+        Right resultVal ->
+          case resultVal of
+            IntValue {intValue = 0} -> Right (EvalExprResult (IntValue 0) (accOuts ++ rightOuts) envAfterRight)
+            _ -> evalComparisonItems evalStatementsFn' currentFenv rightVal (accOuts ++ rightOuts) envAfterRight restOps restRights pos'
 
     expectTruthy :: String -> Position -> Value -> Either String Int
     expectTruthy _ _ IntValue {intValue = n} = Right (if n == 0 then 0 else 1)

@@ -114,6 +114,7 @@ library
     , PythonHS.Parser.ParseExprConfig
     , PythonHS.Parser.ParseExprNoBitwiseOr
     , PythonHS.Parser.ParseExprWithConfig
+    , PythonHS.Parser.ParseComparisonItem
     , PythonHS.Parser.ParseBitwiseExpr
     , PythonHS.Parser.ParseBitwiseExprConfig
     , PythonHS.Parser.ParsePrimary
@@ -268,6 +269,9 @@ library
       , PythonHS.VM.CompileDictEntriesAt
       , PythonHS.VM.CompileDefaults
       , PythonHS.VM.CompileExprAt
+    , PythonHS.VM.CompileComparisonChain
+    , PythonHS.VM.CompileComparisonChainConfig
+    , PythonHS.VM.CompileComparisonChainBodyResult
       , PythonHS.VM.CompileExprItemsAt
       , PythonHS.VM.CompileExprResult
     , PythonHS.VM.CompileImportStmt
@@ -495,6 +499,7 @@ test-suite python-hs-test
     , Test.Parser.ParseProgramPart12Spec
     , Test.Parser.ParseProgramPart13Spec
     , Test.Parser.ParseProgramPart14Spec
+    , Test.Parser.ParseProgramPart15Spec
     , Test.Parser.ParserErrorPart1Spec
     , Test.Parser.ParserErrorPart2Spec
     , Test.Parser.ParserErrorPart3Spec

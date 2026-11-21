@@ -126,3 +126,16 @@ spec = describe "runSourceVm (vm mvp) - part 6" $ do
 
     it "reports type error for float operand" $ do
       runSourceVm "print 1.0 & 2\n" `shouldBe` Left "Type error: & expects int at 1:11"
+
+  describe "comparison chaining" $ do
+    it "evaluates chained less-than" $ do
+      runSourceVm "print 1 < 2 < 3\nprint 1 < 3 < 2\n" `shouldBe` Right ["1", "0"]
+
+    it "evaluates chained mixed comparisons" $ do
+      runSourceVm "print 1 < 3 > 2\nprint 1 <= 2 <= 2\n" `shouldBe` Right ["1", "1"]
+
+    it "short-circuits chained comparison" $ do
+      runSourceVm "def f():\n    print 'evaluated'\n    return 5\nprint 1 < 2 < f()\n" `shouldBe` Right ["evaluated", "1"]
+
+    it "short-circuits chained comparison on first false" $ do
+      runSourceVm "def f():\n    print 'evaluated'\n    return 5\nprint 3 < 2 < f()\n" `shouldBe` Right ["0"]

@@ -89,6 +89,12 @@ data Expr
       { bitwiseNotExprValue :: Expr,
         bitwiseNotExprPos :: Position
       }
+  | ComparisonChainExpr
+      { comparisonChainLeft :: Expr,
+        comparisonChainOps :: [BinaryOperator],
+        comparisonChainRights :: [Expr],
+        comparisonChainPos :: Position
+      }
   | BinaryExpr
       { binaryExprOp :: BinaryOperator,
         binaryExprLeft :: Expr,

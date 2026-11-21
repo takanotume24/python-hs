@@ -27,6 +27,7 @@ import PythonHS.Lexer.TokenType
   )
 import PythonHS.Parser.ParseBitwiseExpr (parseBitwiseExpr)
 import PythonHS.Parser.ParseBitwiseExprConfig (ParseBitwiseExprConfig (..))
+import PythonHS.Parser.ParseComparisonItem (ParseComparisonItem (..))
 import PythonHS.Parser.ParseError (ParseError)
 import PythonHS.Parser.ParseExprConfig (ParseExprConfig (..))
 import PythonHS.Parser.ParseLambdaExpr (parseLambdaExpr)
@@ -79,61 +80,49 @@ parseExprWithConfig config = parseLambdaExpr (ParseLambdaExprConfig {lambdaExprF
       nextResult <- parseComparisonOperand ts
       let left = parseResultValue nextResult
           rest = parseResultRemaining nextResult
-      parseComparisonTail left rest
+      itemsResult <- parseComparisonTail [] rest
+      let items = parseResultValue itemsResult
+          remaining = parseResultRemaining itemsResult
+      case items of
+        [] -> Right (ParseResult {parseResultValue = left, parseResultRemaining = remaining})
+        [ParseComparisonItem {parseComparisonItemOp = op, parseComparisonItemExpr = right, parseComparisonItemPos = pos}] -> Right (ParseResult {parseResultValue = BinaryExpr {binaryExprOp = op, binaryExprLeft = left, binaryExprRight = right, binaryExprPos = pos}, parseResultRemaining = remaining})
+        _ ->
+          let firstPos = case items of ParseComparisonItem {parseComparisonItemPos = pos} : _ -> pos; _ -> error "unreachable"
+           in Right (ParseResult {parseResultValue = ComparisonChainExpr {comparisonChainLeft = left, comparisonChainOps = map parseComparisonItemOp items, comparisonChainRights = map parseComparisonItemExpr items, comparisonChainPos = firstPos}, parseResultRemaining = remaining})
 
     parseComparisonOperand ts = if allowBitwiseOr then parseBitwiseExpr ParseBitwiseExprConfig {parseBitwiseExprConfigNextParser = parseAdd, parseBitwiseExprConfigTokens = ts} else parseAdd ts
 
-    parseComparisonTail left (Token EqToken _ pos : rest) = do
+    parseComparisonTail acc (Token EqToken _ pos : rest) = do
       rightResult <- parseComparisonOperand rest
-      let right = parseResultValue rightResult
-          afterRight = parseResultRemaining rightResult
-      parseComparisonTail (BinaryExpr {binaryExprOp = EqOperator, binaryExprLeft = left, binaryExprRight = right, binaryExprPos = pos}) afterRight
-    parseComparisonTail left (Token NotEqToken _ pos : rest) = do
+      parseComparisonTail (ParseComparisonItem {parseComparisonItemOp = EqOperator, parseComparisonItemExpr = parseResultValue rightResult, parseComparisonItemPos = pos} : acc) (parseResultRemaining rightResult)
+    parseComparisonTail acc (Token NotEqToken _ pos : rest) = do
       rightResult <- parseComparisonOperand rest
-      let right = parseResultValue rightResult
-          afterRight = parseResultRemaining rightResult
-      parseComparisonTail (BinaryExpr {binaryExprOp = NotEqOperator, binaryExprLeft = left, binaryExprRight = right, binaryExprPos = pos}) afterRight
-    parseComparisonTail left (Token LtToken _ pos : rest) = do
+      parseComparisonTail (ParseComparisonItem {parseComparisonItemOp = NotEqOperator, parseComparisonItemExpr = parseResultValue rightResult, parseComparisonItemPos = pos} : acc) (parseResultRemaining rightResult)
+    parseComparisonTail acc (Token LtToken _ pos : rest) = do
       rightResult <- parseComparisonOperand rest
-      let right = parseResultValue rightResult
-          afterRight = parseResultRemaining rightResult
-      parseComparisonTail (BinaryExpr {binaryExprOp = LtOperator, binaryExprLeft = left, binaryExprRight = right, binaryExprPos = pos}) afterRight
-    parseComparisonTail left (Token GtToken _ pos : rest) = do
+      parseComparisonTail (ParseComparisonItem {parseComparisonItemOp = LtOperator, parseComparisonItemExpr = parseResultValue rightResult, parseComparisonItemPos = pos} : acc) (parseResultRemaining rightResult)
+    parseComparisonTail acc (Token GtToken _ pos : rest) = do
       rightResult <- parseComparisonOperand rest
-      let right = parseResultValue rightResult
-          afterRight = parseResultRemaining rightResult
-      parseComparisonTail (BinaryExpr {binaryExprOp = GtOperator, binaryExprLeft = left, binaryExprRight = right, binaryExprPos = pos}) afterRight
-    parseComparisonTail left (Token LteToken _ pos : rest) = do
+      parseComparisonTail (ParseComparisonItem {parseComparisonItemOp = GtOperator, parseComparisonItemExpr = parseResultValue rightResult, parseComparisonItemPos = pos} : acc) (parseResultRemaining rightResult)
+    parseComparisonTail acc (Token LteToken _ pos : rest) = do
       rightResult <- parseComparisonOperand rest
-      let right = parseResultValue rightResult
-          afterRight = parseResultRemaining rightResult
-      parseComparisonTail (BinaryExpr {binaryExprOp = LteOperator, binaryExprLeft = left, binaryExprRight = right, binaryExprPos = pos}) afterRight
-    parseComparisonTail left (Token GteToken _ pos : rest) = do
+      parseComparisonTail (ParseComparisonItem {parseComparisonItemOp = LteOperator, parseComparisonItemExpr = parseResultValue rightResult, parseComparisonItemPos = pos} : acc) (parseResultRemaining rightResult)
+    parseComparisonTail acc (Token GteToken _ pos : rest) = do
       rightResult <- parseComparisonOperand rest
-      let right = parseResultValue rightResult
-          afterRight = parseResultRemaining rightResult
-      parseComparisonTail (BinaryExpr {binaryExprOp = GteOperator, binaryExprLeft = left, binaryExprRight = right, binaryExprPos = pos}) afterRight
-    parseComparisonTail left (Token InToken _ pos : rest) = do
+      parseComparisonTail (ParseComparisonItem {parseComparisonItemOp = GteOperator, parseComparisonItemExpr = parseResultValue rightResult, parseComparisonItemPos = pos} : acc) (parseResultRemaining rightResult)
+    parseComparisonTail acc (Token InToken _ pos : rest) = do
       rightResult <- parseComparisonOperand rest
-      let right = parseResultValue rightResult
-          afterRight = parseResultRemaining rightResult
-      parseComparisonTail (BinaryExpr {binaryExprOp = InOperator, binaryExprLeft = left, binaryExprRight = right, binaryExprPos = pos}) afterRight
-    parseComparisonTail left (Token NotToken _ pos : Token InToken _ _ : rest) = do
+      parseComparisonTail (ParseComparisonItem {parseComparisonItemOp = InOperator, parseComparisonItemExpr = parseResultValue rightResult, parseComparisonItemPos = pos} : acc) (parseResultRemaining rightResult)
+    parseComparisonTail acc (Token NotToken _ pos : Token InToken _ _ : rest) = do
       rightResult <- parseComparisonOperand rest
-      let right = parseResultValue rightResult
-          afterRight = parseResultRemaining rightResult
-      parseComparisonTail (BinaryExpr {binaryExprOp = NotInOperator, binaryExprLeft = left, binaryExprRight = right, binaryExprPos = pos}) afterRight
-    parseComparisonTail left (Token IsToken _ pos : Token NotToken _ _ : rest) = do
+      parseComparisonTail (ParseComparisonItem {parseComparisonItemOp = NotInOperator, parseComparisonItemExpr = parseResultValue rightResult, parseComparisonItemPos = pos} : acc) (parseResultRemaining rightResult)
+    parseComparisonTail acc (Token IsToken _ pos : Token NotToken _ _ : rest) = do
       rightResult <- parseComparisonOperand rest
-      let right = parseResultValue rightResult
-          afterRight = parseResultRemaining rightResult
-      parseComparisonTail (BinaryExpr {binaryExprOp = IsNotOperator, binaryExprLeft = left, binaryExprRight = right, binaryExprPos = pos}) afterRight
-    parseComparisonTail left (Token IsToken _ pos : rest) = do
+      parseComparisonTail (ParseComparisonItem {parseComparisonItemOp = IsNotOperator, parseComparisonItemExpr = parseResultValue rightResult, parseComparisonItemPos = pos} : acc) (parseResultRemaining rightResult)
+    parseComparisonTail acc (Token IsToken _ pos : rest) = do
       rightResult <- parseComparisonOperand rest
-      let right = parseResultValue rightResult
-          afterRight = parseResultRemaining rightResult
-      parseComparisonTail (BinaryExpr {binaryExprOp = IsOperator, binaryExprLeft = left, binaryExprRight = right, binaryExprPos = pos}) afterRight
-    parseComparisonTail left remaining = Right (ParseResult {parseResultValue = left, parseResultRemaining = remaining})
+      parseComparisonTail (ParseComparisonItem {parseComparisonItemOp = IsOperator, parseComparisonItemExpr = parseResultValue rightResult, parseComparisonItemPos = pos} : acc) (parseResultRemaining rightResult)
+    parseComparisonTail acc remaining = Right (ParseResult {parseResultValue = reverse acc, parseResultRemaining = remaining})
 
     parseAdd tokenStream = do
       mulResult <- parseMul tokenStream

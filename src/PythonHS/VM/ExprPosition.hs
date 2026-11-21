@@ -27,6 +27,7 @@ exprPosition expr =
     UnaryMinusExpr {unaryMinusExprPos} -> unaryMinusExprPos
     NotExpr {notExprPos} -> notExprPos
     BitwiseNotExpr {bitwiseNotExprPos} -> bitwiseNotExprPos
+    ComparisonChainExpr {comparisonChainPos} -> comparisonChainPos
     BinaryExpr {binaryExprPos} -> binaryExprPos
     CallExpr {callExprPos} -> callExprPos
     CallValueExpr {callValueExprPos} -> callValueExprPos

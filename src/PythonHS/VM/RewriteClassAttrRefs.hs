@@ -19,6 +19,8 @@ rewriteClassAttrRefs config = case rewriteClassAttrRefsConfigExpr config of
     NotExpr {notExprValue = rewrite value, notExprPos = pos}
   BitwiseNotExpr {bitwiseNotExprValue = value, bitwiseNotExprPos = pos} ->
     BitwiseNotExpr {bitwiseNotExprValue = rewrite value, bitwiseNotExprPos = pos}
+  ComparisonChainExpr {comparisonChainLeft = left, comparisonChainOps = ops, comparisonChainRights = rights, comparisonChainPos = pos} ->
+    ComparisonChainExpr {comparisonChainLeft = rewrite left, comparisonChainOps = ops, comparisonChainRights = map rewrite rights, comparisonChainPos = pos}
   CallExpr {callExprName = name, callExprArgs = args, callExprPos = pos} ->
     CallExpr {callExprName = name, callExprArgs = map rewrite args, callExprPos = pos}
   CallValueExpr {callValueExprCallee = callee, callValueExprArgs = args, callValueExprPos = pos} ->

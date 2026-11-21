@@ -6,6 +6,8 @@ import PythonHS.Evaluator.ShowPos (showPos)
 import PythonHS.Evaluator.Value (Value (..))
 import PythonHS.VM.CompileCallArgsAt (compileCallArgsAt)
 import PythonHS.VM.CompileCallArgsAtConfig (CompileCallArgsAtConfig (..))
+import PythonHS.VM.CompileComparisonChain (compileComparisonChain)
+import PythonHS.VM.CompileComparisonChainConfig (CompileComparisonChainConfig (..))
 import PythonHS.VM.CompileComprehensionClauses (compileComprehensionClauses)
 import PythonHS.VM.CompileComprehensionClausesConfig (CompileComprehensionClausesConfig (..))
 import PythonHS.VM.CompileDefaults (compileDefaults)
@@ -63,6 +65,8 @@ compileExprAt config =
         BitwiseNotExpr {bitwiseNotExprValue = bitwiseNotExpr, bitwiseNotExprPos = pos} -> do
           bitwiseNotResult <- compileExprAt' baseIndex bitwiseNotExpr
           pure (CompileExprResult {compileExprResultCode = compileExprResultCode bitwiseNotResult ++ [ApplyBitwiseNot {applyBitwiseNotPos = pos}], compileExprResultEndIndex = compileExprResultEndIndex bitwiseNotResult + 1})
+        ComparisonChainExpr {comparisonChainLeft = left, comparisonChainOps = ops, comparisonChainRights = rights, comparisonChainPos = pos} ->
+          compileComparisonChain CompileComparisonChainConfig {compileComparisonChainCompileExpr = compileExprAt', compileComparisonChainBaseIndex = baseIndex, compileComparisonChainLeft = left, compileComparisonChainOps = ops, compileComparisonChainRights = rights, compileComparisonChainPos = pos}
         WalrusExpr {walrusExprName = name, walrusExprValue = valueExpr} -> do
           valueResult <- compileExprAt' baseIndex valueExpr
           pure (CompileExprResult {compileExprResultCode = compileExprResultCode valueResult ++ [DupTop, StoreName {storeNameName = name}], compileExprResultEndIndex = compileExprResultEndIndex valueResult + 2})

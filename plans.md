@@ -587,6 +587,17 @@
 - [x] P92-12: 全テスト PASS（977 examples, 0 failures）
 - [x] P92-13: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
 
+## 現在のスコープ（P93: 比較演算子の連鎖 `1 < x < 10`）
+- [x] P93 開始: 比較演算子の連鎖を VM / AST 各経路で実装する
+- [x] P93-1: 失敗テストを `RunSourceVmPart6Spec` / `ParseProgramPart15Spec` に追加
+- [x] P93-2: `Expr` に `ComparisonChainExpr` を追加
+- [x] P93-3: `ParseExpr` で連鎖比較を解析し `ComparisonChainExpr` を生成
+- [x] P93-4: AST 評価: `EvalExpr` で `ComparisonChainExpr` を短絡評価
+- [x] P93-5: VM 評価: `CompileExprAt` で一時変数を用いて連鎖比較をバイトコード化
+- [x] P93-6: その他の Expr 処理（`ExprPos` / `TransformImportAliases` / `RewriteClassAttrRefs`）を更新
+- [x] P93-7: 全テスト PASS（983 examples, 0 failures）
+- [x] P93-8: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
+
 ## detect-positional-args プロジェクト全体分析結果（2026-07-03）
 
 ### 分析概要
@@ -814,6 +825,14 @@
   - [x] P92 構造対応: `ParseExprWithConfig` / `ParseExprConfig` / `ParseBitwiseExpr` / `ParseBitwiseExprConfig` / `EvalBinaryOpBitwise` / `EvalBinaryOpBitwiseConfig` / `EvalExprBinaryBitwise` / `EvalExprBinaryBitwiseConfig` を分離し 200 行制限と positional-args を遵守
   - [x] P92 テスト: `RunSourceVmPart6Spec` / `ParseProgramPart14Spec` にビット演算子のケースを追加
   - [x] P92 品質ゲート: `cabal run quality-gate` が全項目 PASS（977 examples, 0 failures）
+  - [x] P93 完了: 比較演算子の連鎖 `1 < x < 10`
+  - [x] P93 実装: `Expr` に `ComparisonChainExpr` を追加
+  - [x] P93 実装: `ParseExpr` で連鎖比較を解析し、単一比較は `BinaryExpr`、連鎖は `ComparisonChainExpr` を生成
+  - [x] P93 実装: AST 評価で各オペランドを一度だけ評価し短絡評価
+  - [x] P93 実装: VM 評価で一時変数を用いたバイトコード生成
+  - [x] P93 構造対応: `ParseComparisonItem` / `CompileComparisonChain` / `CompileComparisonChainConfig` / `CompileComparisonChainBodyResult` を分離し 200 行制限と positional-args を遵守
+  - [x] P93 テスト: `RunSourceVmPart6Spec` / `ParseProgramPart15Spec` に連鎖比較のケースを追加
+  - [x] P93 品質ゲート: `cabal run quality-gate` が全項目 PASS（983 examples, 0 failures）
 - 2026-11-03
   - [x] P88 完了: `**` 累乗演算子
   - [x] P88 実装: `BinaryOperator` に `PowerOperator` を追加し、字句・構文・評価・VM 各経路で対応
