@@ -113,6 +113,11 @@ MIT License — 詳細は [LICENSE](LICENSE) を参照してください。
 - [x] `dict(x)`（dict のコピー、または list/tuple の 2 要素組から作成）
 - [x] `enumerate(iterable[, start])`（index と要素のタプル列。list/tuple/string/dict キー対応）
 - [x] `zip(*iterables)`（最短の iterable に合わせてタプル列を作成。引数なしは空）
+- [x] `split(s)` / `split(s, sep)`（空白または指定区切りで分割。`s.split(',')` も可）
+- [x] `join(sep, list/tuple)`（文字列要素を連結。`sep.join(xs)` も可）
+- [x] `lower(s)` / `upper(s)`
+- [x] `strip(s)` / `strip(s, chars)`（前後の空白または指定文字を除去）
+- [x] `replace(s, old, new)`（全出現を置換。空の old は各文字の前後に挿入）
 - [x] `math`: `sqrt`, `sin`, `cos`, `tan`, `log`, `exp`, `pi`, `e`
 - [x] `json`: `dumps`, `loads`
 - [x] `pathlib`: `Path`

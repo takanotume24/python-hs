@@ -279,6 +279,8 @@ library
     , PythonHS.VM.CallConversionBuiltinConfig
     , PythonHS.VM.CallIterableBuiltin
     , PythonHS.VM.CallIterableBuiltinConfig
+    , PythonHS.VM.CallStringBuiltin
+    , PythonHS.VM.CallStringBuiltinConfig
     , PythonHS.VM.GetitemValue
     , PythonHS.VM.SliceValue
     , PythonHS.VM.CallMathBuiltin
@@ -558,6 +560,7 @@ test-suite python-hs-test
     , Test.VM.RunSourceVmPart8Spec
     , Test.VM.RunSourceVmPart9Spec
     , Test.VM.RunSourceVmPart10Spec
+    , Test.VM.RunSourceVmPart11Spec
     , Test.VM.RunInstructionsSpec
     , Test.Structure.CheckStructureSpec
     , Test.Structure.DetectPositionalArgsSpec

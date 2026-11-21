@@ -19,6 +19,8 @@ import PythonHS.VM.CallNumericBuiltin (callNumericBuiltin)
 import PythonHS.VM.CallNumericBuiltinConfig (CallNumericBuiltinConfig (..))
 import PythonHS.VM.CallStdlibBuiltin (callStdlibBuiltin)
 import PythonHS.VM.CallStdlibBuiltinConfig (CallStdlibBuiltinConfig (..))
+import PythonHS.VM.CallStringBuiltin (callStringBuiltin)
+import PythonHS.VM.CallStringBuiltinConfig (CallStringBuiltinConfig (..))
 
 callBuiltin :: CallBuiltinConfig -> Maybe (Either String Value)
 callBuiltin config =
@@ -44,6 +46,7 @@ callBuiltin config =
             [ callConstructorBuiltin CallConstructorBuiltinConfig {callConstructorBuiltinName = name, callConstructorBuiltinArgs = args, callConstructorBuiltinPos = pos},
               callConversionBuiltin CallConversionBuiltinConfig {callConversionBuiltinName = name, callConversionBuiltinArgs = args, callConversionBuiltinPos = pos},
               callIterableBuiltin CallIterableBuiltinConfig {callIterableBuiltinName = name, callIterableBuiltinArgs = args, callIterableBuiltinPos = pos},
+              callStringBuiltin CallStringBuiltinConfig {callStringBuiltinName = name, callStringBuiltinArgs = args, callStringBuiltinPos = pos},
               callNumericBuiltin CallNumericBuiltinConfig {callNumericBuiltinName = name, callNumericBuiltinArgs = args, callNumericBuiltinPos = pos},
               callMathBuiltin CallMathBuiltinConfig {callMathBuiltinName = name, callMathBuiltinArgs = args, callMathBuiltinPos = pos},
               callStdlibBuiltin CallStdlibBuiltinConfig {callStdlibBuiltinName = name, callStdlibBuiltinArgs = args, callStdlibBuiltinPos = pos},
