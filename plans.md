@@ -641,11 +641,22 @@
   - 全テスト PASS（1296 examples, 0 failures）、品質ゲート全項目 PASS
 
 ### P114: 高階関数 map/filter の実装（要設計）
-- [ ] builtin 呼び出しに VM 実行文脈（関数呼び出し）を渡す方法を設計する
-- [ ] `map(fn, iterable)` / `filter(fn, iterable)` を失敗テスト先行で追加
-- [ ] list/tuple/string/dict キーへの対応範囲を固定
-- [ ] 既存 `callBuiltin` の呼び出し契約への影響を最小化する
-- 注意: pure な `callBuiltin` の signature 拡張が必要になる可能性が高い
+- [x] builtin 呼び出しに VM 実行文脈（関数呼び出し）を渡す方法を設計する
+  - `callBuiltin` は pure なまま維持し、`ExecuteCallFunction` の引数評価後に `CallMapFilterBuiltin` を先に試す
+  - `CallMapFilterBuiltinConfig` に `execute` / 環境 / 出力 / 呼び出し位置を渡し、`map`・`filter` だけが VM 実行文脈を使う
+  - 各要素の呼び出しは `executeCallValueFunction` に `PushConst` の引数を合成して委譲する
+  - 組み込みフォールバック時のみ処理するため、ユーザー定義関数・クラスメソッド・モジュールメンバーの `map`/`filter` が優先される
+- [x] `map(fn, iterable)` / `filter(fn, iterable)` を失敗テスト先行で追加
+  - `RunSourceVmPart19Spec`: map/filter の正常系・ネスト・クロージャ・truthiness・エラー・名前解決（23 tests）
+- [x] list/tuple/string/dict キーへの対応範囲を固定
+  - `iterableItems` を再利用し、list/tuple/string（1文字）/dict キーに対応
+  - int やその他の非 iterable は `Type error: map/filter expects iterable` を返す
+  - 戻り値は常に `ListValue`（空 iterable は空リスト）
+- [x] 既存 `callBuiltin` の呼び出し契約への影響を最小化する
+  - `CallBuiltinConfig` / `callBuiltin` の signature は変更しない
+  - `map` / `filter` は `callBuiltin` に到達する前に VM 層で処理する
+  - ユーザー定義関数で `map` / `filter` を shadow した場合は既存どおり関数が優先される
+- [x] 全テスト PASS（1316 examples, 0 failures）、品質ゲート全項目 PASS
 
 ### P116: for ループのタプルアンパック（要構文確認）
 - [ ] `for a, b in zip(xs, ys): ...` の parser/AST 対応状況を確認

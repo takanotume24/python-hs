@@ -125,6 +125,10 @@ MIT License — 詳細は [LICENSE](LICENSE) を参照してください。
 - [x] `dict(x)`（dict のコピー、または list/tuple の 2 要素組から作成）
 - [x] `enumerate(iterable[, start])`（index と要素のタプル列。list/tuple/string/dict キー対応）
 - [x] `zip(*iterables)`（最短の iterable に合わせてタプル列を作成。引数なしは空）
+- [x] `map(fn, iterable)`（list/tuple/string/dict キーに適用し、結果をリストで返す）
+- [x] `filter(fn, iterable)`（predicate の truthiness で絞り込み、結果をリストで返す）
+  - `fn` はユーザー定義関数・lambda・クロージャを指定可能
+  - 非 callable は `Type error: callable expected`、非 iterable は `Type error: map/filter expects iterable`
 - [x] `split(s)` / `split(s, sep)`（空白または指定区切りで分割。`s.split(',')` も可）
 - [x] `join(sep, list/tuple)`（文字列要素を連結。`sep.join(xs)` も可）
 - [x] `lower(s)` / `upper(s)`
