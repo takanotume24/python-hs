@@ -587,6 +587,16 @@
 - [x] P92-12: 全テスト PASS（977 examples, 0 failures）
 - [x] P92-13: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
 
+## 現在のスコープ（P110: VM round/chr/ord 組み込み関数の追加）
+- [x] P110 開始: `round` / `chr` / `ord` を VM 組み込みとして追加
+- [x] P110-1: 失敗テストを `RunSourceVmPart14Spec` に追加（正常系・型エラー・値エラー・引数個数エラー）
+- [x] P110-2: `round` を `CallNumericBuiltin` に追加
+- [x] P110-3: `round(x)` は最近接整数へ丸め、同距離は偶数へ丸める
+- [x] P110-4: `round(x, ndigits)` は ndigits 指定時 float を返し、負の ndigits にも対応
+- [x] P110-5: `chr` / `ord` を `CallConversionBuiltin` に追加し、Unicode 範囲外は Value error
+- [x] P110-6: 全テスト PASS（1234 examples, 0 failures）
+- [x] P110-7: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
+
 ## 現在のスコープ（P109: VM any/all 組み込み関数の追加）
 - [x] P109 開始: `any` / `all` を VM 組み込みとして追加
 - [x] P109-1: 失敗テストを `RunSourceVmPart13Spec` に追加（正常系・型エラー・引数個数エラー）
@@ -1093,6 +1103,12 @@
   - [x] P109-3: list/tuple/string/dict キーを受理し、空列の仕様を固定
   - [x] P109-4: 全テスト PASS（1207 examples, 0 failures）
   - [x] P109-5: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
+  - [x] P110 完了: VM round/chr/ord 組み込み関数の追加
+  - [x] P110-1: `RunSourceVmPart14Spec` に round / chr / ord の正常系・エラー系テストを追加
+  - [x] P110-2: `round` は banker's rounding（偶数への丸め）と負の ndigits に対応
+  - [x] P110-3: `chr` / `ord` は Unicode コードポイント変換として実装
+  - [x] P110-4: 全テスト PASS（1234 examples, 0 failures）
+  - [x] P110-5: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
 - 2026-11-03
   - [x] P85 完了: `try/finally` 構文と finally 節での例外置き換え
   - [x] P85 実装: `ParseCompoundStmt` で `except` 節なしの `try/finally` を解析可能に
