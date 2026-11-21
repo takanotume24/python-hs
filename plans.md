@@ -587,6 +587,17 @@
 - [x] P92-12: 全テスト PASS（977 examples, 0 failures）
 - [x] P92-13: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
 
+## 現在のスコープ（P106: VM iterable 組み込み関数の追加）
+- [x] P106 開始: `enumerate` / `zip` を VM 組み込みとして追加
+- [x] P106-1: 失敗テストを `RunSourceVmPart10Spec` に追加（正常系・型エラー・引数個数エラー）
+- [x] P106-2: 共通の iterable 変換を `IterableItems` に切り出し、`CallConstructorBuiltin` からも再利用
+- [x] P106-3: `CallIterableBuiltin` / `CallIterableBuiltinConfig` を新規追加
+- [x] P106-4: `CallBuiltin` のディスパッチを `firstJust` で平坦化し、組み込み追加を容易にした
+- [x] P106-5: `enumerate` は list/tuple/string/dict キーを受理し、任意の開始 index に対応
+- [x] P106-6: `zip` は複数 iterable を最短長でまとめ、引数なしは空、単一引数は 1 要素タプル
+- [x] P106-7: 全テスト PASS（1127 examples, 0 failures）
+- [x] P106-8: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
+
 ## 現在のスコープ（P105: VM コンストラクタ組み込み関数の追加）
 - [x] P105 開始: `list` / `tuple` / `dict` を VM 組み込みとして追加
 - [x] P105-1: 失敗テストを `RunSourceVmPart9Spec` に追加（正常系・型エラー・値エラー・引数個数エラー）
@@ -1025,6 +1036,14 @@
   - [x] P105-4: `dict` は重複キーを後勝ちで更新、不正な要素は Value/Type error
   - [x] P105-5: 全テスト PASS（1107 examples, 0 failures）
   - [x] P105-6: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
+  - [x] P106 完了: VM iterable 組み込み関数の追加
+  - [x] P106-1: `RunSourceVmPart10Spec` に enumerate / zip の正常系・エラー系テストを追加
+  - [x] P106-2: `IterableItems` を共通化し `CallConstructorBuiltin` からも再利用
+  - [x] P106-3: `CallIterableBuiltin` / `CallIterableBuiltinConfig` を新規追加
+  - [x] P106-4: `CallBuiltin` のディスパッチを `firstJust` で平坦化
+  - [x] P106-5: `enumerate` / `zip` を VM-only 組み込みとして実装
+  - [x] P106-6: 全テスト PASS（1127 examples, 0 failures）
+  - [x] P106-7: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
 - 2026-11-03
   - [x] P85 完了: `try/finally` 構文と finally 節での例外置き換え
   - [x] P85 実装: `ParseCompoundStmt` で `except` 節なしの `try/finally` を解析可能に
