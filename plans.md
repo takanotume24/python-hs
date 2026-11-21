@@ -599,10 +599,10 @@
 - [x] P113-8: 全テスト PASS（1272 examples, 0 failures）
 - [x] P113-9: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
 
-## 中期計画（P112〜P116: VM組み込みライブラリの完成度向上）
+## 中期計画（P112〜P120: VM組み込みライブラリ・言語コアの完成度向上）
 
 ### 目的
-- `AST はもう改善しなくていい` 方針のもと、VM 側の組み込み関数・メソッドの互換性を段階的に高める。
+- `AST はもう改善しなくていい` 方針のもと、VM 側の組み込み関数・メソッド・言語コアの互換性を段階的に高める。
 - 各マイルストーンは「失敗テスト先行 → 実装 → `cabal run quality-gate` → コミット」で進める。
 - 完了条件は、全テスト PASS、コンパイラ警告 0、品質ゲート全項目 PASS とする。
 
@@ -614,13 +614,31 @@
 - [ ] start/end の範囲外・負数の扱いをテストで固定
 - [ ] `CallStringBuiltin` の範囲計算を共通化し、既存の文字列関数と整合させる
 
-### P113: リスト・辞書メソッドの追加
+### P113: リスト・辞書メソッドの追加（完了）
 - [x] リスト: `index(list, value)` / `count(list, value)` / `copy(list)` を追加
 - [x] 辞書: `copy(dict)` / `fromkeys(seq, value)` / `popitem(dict)` を追加
 - [x] メソッド構文（`xs.index(1)` / `d.copy()`）の動作をテストで固定
 - [x] 空リスト・空辞書・キー不在時のエラー規約を固定
 
-### P115: VM 例外処理の網羅強化
+### P114: 高階関数 map/filter の実装（完了）
+- [x] builtin 呼び出しに VM 実行文脈（関数呼び出し）を渡す方法を設計する
+  - `callBuiltin` は pure なまま維持し、`ExecuteCallFunction` の引数評価後に `CallMapFilterBuiltin` を先に試す
+  - `CallMapFilterBuiltinConfig` に `execute` / 環境 / 出力 / 呼び出し位置を渡し、`map`・`filter` だけが VM 実行文脈を使う
+  - 各要素の呼び出しは `executeCallValueFunction` に `PushConst` の引数を合成して委譲する
+  - 組み込みフォールバック時のみ処理するため、ユーザー定義関数・クラスメソッド・モジュールメンバーの `map`/`filter` が優先される
+- [x] `map(fn, iterable)` / `filter(fn, iterable)` を失敗テスト先行で追加
+  - `RunSourceVmPart19Spec`: map/filter の正常系・ネスト・クロージャ・truthiness・エラー・名前解決（23 tests）
+- [x] list/tuple/string/dict キーへの対応範囲を固定
+  - `iterableItems` を再利用し、list/tuple/string（1文字）/dict キーに対応
+  - int やその他の非 iterable は `Type error: map/filter expects iterable` を返す
+  - 戻り値は常に `ListValue`（空 iterable は空リスト）
+- [x] 既存 `callBuiltin` の呼び出し契約への影響を最小化する
+  - `CallBuiltinConfig` / `callBuiltin` の signature は変更しない
+  - `map` / `filter` は `callBuiltin` に到達する前に VM 層で処理する
+  - ユーザー定義関数で `map` / `filter` を shadow した場合は既存どおり関数が優先される
+- [x] 全テスト PASS（1316 examples, 0 failures）、品質ゲート全項目 PASS
+
+### P115: VM 例外処理の網羅強化（完了）
 - [x] `RunnerVmParity` / `check-runner-case-coverage` の未カバー箇所を洗い出す
   - Part ファイル連結版で確認: `MISSING IN VM = 0`、`MISSING IN PARITY = 5`（関数アノテーション・`*args`/`**kwargs` 系で例外処理とは無関係）
 - [x] `try/except/else/finally` / `raise` / bare `raise` の VM テストを追加
@@ -640,34 +658,44 @@
   - 関数内 bare `raise` は VM の保留例外スコープに依存する
   - 全テスト PASS（1296 examples, 0 failures）、品質ゲート全項目 PASS
 
-### P114: 高階関数 map/filter の実装（要設計）
-- [x] builtin 呼び出しに VM 実行文脈（関数呼び出し）を渡す方法を設計する
-  - `callBuiltin` は pure なまま維持し、`ExecuteCallFunction` の引数評価後に `CallMapFilterBuiltin` を先に試す
-  - `CallMapFilterBuiltinConfig` に `execute` / 環境 / 出力 / 呼び出し位置を渡し、`map`・`filter` だけが VM 実行文脈を使う
-  - 各要素の呼び出しは `executeCallValueFunction` に `PushConst` の引数を合成して委譲する
-  - 組み込みフォールバック時のみ処理するため、ユーザー定義関数・クラスメソッド・モジュールメンバーの `map`/`filter` が優先される
-- [x] `map(fn, iterable)` / `filter(fn, iterable)` を失敗テスト先行で追加
-  - `RunSourceVmPart19Spec`: map/filter の正常系・ネスト・クロージャ・truthiness・エラー・名前解決（23 tests）
-- [x] list/tuple/string/dict キーへの対応範囲を固定
-  - `iterableItems` を再利用し、list/tuple/string（1文字）/dict キーに対応
-  - int やその他の非 iterable は `Type error: map/filter expects iterable` を返す
-  - 戻り値は常に `ListValue`（空 iterable は空リスト）
-- [x] 既存 `callBuiltin` の呼び出し契約への影響を最小化する
-  - `CallBuiltinConfig` / `callBuiltin` の signature は変更しない
-  - `map` / `filter` は `callBuiltin` に到達する前に VM 層で処理する
-  - ユーザー定義関数で `map` / `filter` を shadow した場合は既存どおり関数が優先される
-- [x] 全テスト PASS（1316 examples, 0 failures）、品質ゲート全項目 PASS
-
-### P116: for ループのタプルアンパック（要構文確認）
+### P116: for ループのタプルアンパック
 - [ ] `for a, b in zip(xs, ys): ...` の parser/AST 対応状況を確認
 - [ ] parser が未対応なら共有構文拡張の要否を判断
 - [ ] VM 実行で target へのタプル分解束縛を実装し、テストで固定
 
+### P117: 追加組み込み関数（pow / divmod / reversed / input）
+- [ ] `pow(base, exp[, mod])` を追加（整数累乗、mod 指定時は剰余累乗）
+- [ ] `divmod(a, b)` を追加（商と剰余のタプルを返す）
+- [ ] `reversed(iterable)` を追加（list/tuple/string に対応）
+- [ ] `input([prompt])` を追加（標準入力から1行読み込み、末尾改行を除く）
+- [ ] 引数個数・型エラー・空入力の扱いをテストで固定
+- [ ] 既存 `CallBuiltin` ディスパッチに組み込み追加し、可能な範囲で `CallNumericBuiltin` / `CallIterableBuiltin` を再利用
+
+### P118: クラス特殊メソッドの最小対応
+- [ ] `__str__` / `__repr__` を定義したクラスインスタンスの `str()` / `print` 表現で呼び出されるようにする
+- [ ] dataclass 自動生成の `__repr__` との整合を確認
+- [ ] 特殊メソッドが未定義の場合は既存の表示規約を維持
+- [ ] `RunSourceVmSpec` にユーザー定義 `__str__` / `__repr__` のケースを追加
+
+### P119: 反射型組み込み関数（type / isinstance / hasattr）
+- [ ] `type(obj)` を追加（組み込み型は型名文字列、ユーザー定義クラスはクラス名文字列を返す）
+- [ ] `isinstance(obj, classinfo)` を追加（単一クラス名の文字列に対応）
+- [ ] `hasattr(obj, name)` を追加（属性参照の成否を 1/0 で返す）
+- [ ] 組み込み型・ユーザー定義クラス・モジュールオブジェクトの各ケースをテストで固定
+- [ ] `type` / `isinstance` の引数がクラス名文字列でない場合のエラー規約を固定
+
+### P120: 組み込みメソッド構文の拡張
+- [ ] `s.split()` / `s.join(...)` 等、既存の文字列組み込みをメソッド構文でも呼び出せるようにする
+- [ ] `xs.sort()` / `xs.reverse()` / `xs.append(...)` 等、リスト組み込みメソッドの完全なメソッド構文対応
+- [ ] `d.keys()` / `d.values()` / `d.items()` 等、辞書組み込みメソッドの完全なメソッド構文対応
+- [ ] メソッド構文と関数呼び出しの結果が一致することを parity テストで固定
+
 ### 優先順位とリスク
-- 優先順: P112 → P113 → P115 → P114 → P116
-- P112 / P113 / P115 は既存パターンの延長で低リスク
-- P114 は `callBuiltin` の契約変更を伴うため、設計レビューを先行する
-- P116 は共有 parser/AST に依存するため、着手前に構文サポートを確認する
+- 優先順: P112 → P116 → P117 → P118 → P119 → P120
+- P112 / P116 / P117 は既存パターンの延長で低リスク
+- P118 はクラス属性解決・メソッド束縛との相互作用があり、中リスク
+- P119 は `type` / `isinstance` が今後のクラスシステム拡張と密接なため、段階的な仕様固定とする
+- P120 は既存メソッド構文の拡張だが、影響範囲が広いため回帰テストを充実させる
 
 ## 現在のスコープ（P111: VM sort/sorted の文字列対応）
 - [x] P111 開始: `sorted` / `sort` を文字列リストにも対応
