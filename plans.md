@@ -587,6 +587,17 @@
 - [x] P92-12: 全テスト PASS（977 examples, 0 failures）
 - [x] P92-13: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
 
+## 現在のスコープ（P108: VM 文字列検索・判定組み込み関数の追加）
+- [x] P108 開始: `startswith` / `endswith` / `find` / `count` を VM 組み込みとして追加
+- [x] P108-1: 失敗テストを `RunSourceVmPart12Spec` に追加（正常系・型エラー・引数個数エラー）
+- [x] P108-2: `CallStringBuiltin` に4関数を追加（新規モジュール不要）
+- [x] P108-3: `startswith` / `endswith` は判定結果を 1/0 の IntValue で返す
+- [x] P108-4: `find` は最初の出現位置、見つからなければ -1、空文字列は 0
+- [x] P108-5: `count` は重複しない出現回数、空文字列は length + 1
+- [x] P108-6: 2引数文字列関数の型エラー処理を `evalStringPair` に共通化
+- [x] P108-7: 全テスト PASS（1189 examples, 0 failures）
+- [x] P108-8: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
+
 ## 現在のスコープ（P107: VM 文字列組み込み関数の追加）
 - [x] P107 開始: `split` / `join` / `lower` / `upper` / `strip` / `replace` を VM 組み込みとして追加
 - [x] P107-1: 失敗テストを `RunSourceVmPart11Spec` に追加（正常系・型エラー・値エラー・引数個数エラー）
@@ -1062,6 +1073,11 @@
   - [x] P107-3: メソッド構文（`s.split(',')` / `sep.join(xs)`）も関数呼び出しへデシュガーされて動作
   - [x] P107-4: 全テスト PASS（1163 examples, 0 failures）
   - [x] P107-5: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
+  - [x] P108 完了: VM 文字列検索・判定組み込み関数の追加
+  - [x] P108-1: `RunSourceVmPart12Spec` に startswith / endswith / find / count のテストを追加
+  - [x] P108-2: `CallStringBuiltin` に4関数を追加し、2引数文字列関数のエラー処理を共通化
+  - [x] P108-3: 全テスト PASS（1189 examples, 0 failures）
+  - [x] P108-4: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
 - 2026-11-03
   - [x] P85 完了: `try/finally` 構文と finally 節での例外置き換え
   - [x] P85 実装: `ParseCompoundStmt` で `except` 節なしの `try/finally` を解析可能に
