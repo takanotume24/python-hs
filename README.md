@@ -122,6 +122,8 @@ MIT License — 詳細は [LICENSE](LICENSE) を参照してください。
 - [x] `find(s, sub)`（最初の出現位置、見つからなければ -1）
 - [x] `count(s, sub)`（重複しない出現回数、空の sub は length + 1）
 - [x] `any(iterable)` / `all(iterable)`（要素の truthiness を判定し 1/0 を返す）
+- [x] `round(x)` / `round(x, ndigits)`（最近接整数。同距離は偶数へ丸め、ndigits 指定時は float）
+- [x] `chr(i)` / `ord(c)`（Unicode コードポイントと1文字の相互変換）
 - [x] `math`: `sqrt`, `sin`, `cos`, `tan`, `log`, `exp`, `pi`, `e`
 - [x] `json`: `dumps`, `loads`
 - [x] `pathlib`: `Path`

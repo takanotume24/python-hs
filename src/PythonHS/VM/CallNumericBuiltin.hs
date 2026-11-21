@@ -16,6 +16,7 @@ callNumericBuiltin config =
     "max" -> Just (evalMinMax name False args)
     "sum" -> Just (evalSum name args)
     "sorted" -> Just (evalSorted name args)
+    "round" -> Just (evalRound args)
     _ -> Nothing
   where
     name = callNumericBuiltinName config
@@ -92,6 +93,41 @@ callNumericBuiltin config =
       case numberPairs items of
         Nothing -> Left ("Type error: " ++ fname ++ " expects list of number at " ++ showPos pos)
         Just pairs -> Right (ListValue {listValueItems = map numberSortPairValue (sortOn numberSortPairSortKey pairs)})
+
+    evalRound values =
+      case values of
+        [IntValue {intValue = n}] -> Right (IntValue {intValue = n})
+        [FloatValue {floatValue = n}]
+          | isNaN n || isInfinite n -> Left ("Value error: cannot round float at " ++ showPos pos)
+          | otherwise -> Right (IntValue {intValue = round n})
+        [IntValue {intValue = n}, IntValue {intValue = digits}] -> Right (IntValue {intValue = roundIntegerAt digits n})
+        [FloatValue {floatValue = n}, IntValue {intValue = digits}]
+          | isNaN n || isInfinite n -> Left ("Value error: cannot round float at " ++ showPos pos)
+          | otherwise -> Right (FloatValue {floatValue = roundFloatAt digits n})
+        [IntValue {}, _] -> Left ("Type error: round expects int as second argument at " ++ showPos pos)
+        [FloatValue {}, _] -> Left ("Type error: round expects int as second argument at " ++ showPos pos)
+        [_] -> Left ("Type error: round expects int or float at " ++ showPos pos)
+        _ -> Left (countMismatch "round")
+
+    roundIntegerAt digits n
+      | digits >= 0 = n
+      | otherwise = roundIntegerStep (10 ^ negate digits) n
+
+    roundIntegerStep factor n =
+      let (quotient, remainder) = n `quotRem` factor
+          twiceRemainder = 2 * abs remainder
+          direction = if n < 0 then -1 else 1
+       in case compare twiceRemainder factor of
+            LT -> quotient * factor
+            GT -> (quotient + direction) * factor
+            EQ -> if even quotient then quotient * factor else (quotient + direction) * factor
+
+    roundFloatAt digits n =
+      let factor = 10 ** fromIntegral digits
+          scaled = n * factor
+       in if isNaN factor || isInfinite factor || factor == 0 || isNaN scaled || isInfinite scaled
+            then n
+            else fromIntegral (round scaled :: Integer) / factor
 
     numberValue value =
       case value of

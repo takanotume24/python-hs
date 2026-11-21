@@ -1,6 +1,6 @@
 module PythonHS.VM.CallConversionBuiltin (callConversionBuiltin) where
 
-import Data.Char (isDigit, isSpace)
+import Data.Char (chr, isDigit, isSpace, ord)
 import PythonHS.Evaluator.ShowPos (showPos)
 import PythonHS.Evaluator.Value (Value (..))
 import PythonHS.Evaluator.ValueToOutput (valueToOutput)
@@ -12,6 +12,8 @@ callConversionBuiltin config =
     "str" -> Just (evalStr name args)
     "int" -> Just (evalInt name args)
     "float" -> Just (evalFloat name args)
+    "chr" -> Just (evalChr name args)
+    "ord" -> Just (evalOrd name args)
     _ -> Nothing
   where
     name = callConversionBuiltinName config
@@ -63,6 +65,21 @@ callConversionBuiltin config =
       case reads (trimSpace text) of
         [(n, "")] -> Just n
         _ -> Nothing
+
+    evalChr fname values =
+      case values of
+        [IntValue {intValue = n}]
+          | n < 0 || n > 0x10FFFF -> Left ("Value error: chr() arg not in range at " ++ showPos pos)
+          | otherwise -> Right (StringValue {stringValue = [chr (fromIntegral n)]})
+        [_] -> Left ("Type error: chr expects int at " ++ showPos pos)
+        _ -> Left (countMismatch fname)
+
+    evalOrd fname values =
+      case values of
+        [StringValue {stringValue = [character]}] -> Right (IntValue {intValue = fromIntegral (ord character)})
+        [StringValue {}] -> Left ("Type error: ord() expected a character at " ++ showPos pos)
+        [_] -> Left ("Type error: ord() expected a character at " ++ showPos pos)
+        _ -> Left (countMismatch fname)
 
     trimSpace = reverse . dropWhile isSpace . reverse . dropWhile isSpace
 
