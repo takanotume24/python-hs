@@ -1,11 +1,13 @@
 module PythonHS.Parser.ParseCompoundStmt (parseCompoundStmt) where
 
+import PythonHS.AST.Expr (Expr (..))
 import PythonHS.AST.Stmt (Stmt (..))
 import PythonHS.Lexer.Position (Position (..))
 import PythonHS.Lexer.Token (Token (..))
 import PythonHS.Lexer.TokenType
   ( TokenType
       ( ColonToken,
+        CommaToken,
         DefToken,
         ElseToken,
         ExceptToken,
@@ -80,16 +82,23 @@ parseCompoundStmt config =
               Right (ParseResult {parseResultValue = WhileStmt {whileStmtCond = cond, whileStmtBody = bodySuite, whileStmtPos = pos}, parseResultRemaining = finalRest})
             Token {position = pos'} : _ -> Left (ExpectedExpression {parseErrorPosition = pos'})
             _ -> Left (ExpectedExpression {parseErrorPosition = Position {line = 0, column = 0}})
-        Token {tokenType = ForToken, position = pos} : Token {tokenType = IdentifierToken, lexeme = name} : Token {tokenType = InToken} : rest -> do
-          iterResult <- parseExpr rest
-          let iterExpr = parseResultValue iterResult
-              afterIter = parseResultRemaining iterResult
-          case afterIter of
-            Token {tokenType = ColonToken} : afterColon -> do
-              suiteResult <- parseSuiteWithStatements afterColon
-              let bodySuite = parseResultValue suiteResult
-                  finalRest = parseResultRemaining suiteResult
-              Right (ParseResult {parseResultValue = ForStmt {forStmtVar = name, forStmtIter = iterExpr, forStmtBody = bodySuite, forStmtPos = pos}, parseResultRemaining = finalRest})
+        Token {tokenType = ForToken, position = pos} : Token {tokenType = IdentifierToken, lexeme = firstName} : afterFirstTarget -> do
+          let targetsResult = collectForTargets [firstName] afterFirstTarget
+              targets = parseResultValue targetsResult
+              afterTargets = parseResultRemaining targetsResult
+          case afterTargets of
+            Token {tokenType = InToken} : rest -> do
+              iterResult <- parseExpr rest
+              let iterExpr = parseResultValue iterResult
+                  afterIter = parseResultRemaining iterResult
+              case afterIter of
+                Token {tokenType = ColonToken} : afterColon -> do
+                  suiteResult <- parseSuiteWithStatements afterColon
+                  let bodySuite = desugarForTargets pos targets (parseResultValue suiteResult)
+                      finalRest = parseResultRemaining suiteResult
+                  Right (ParseResult {parseResultValue = ForStmt {forStmtVar = forLoopVariable targets, forStmtIter = iterExpr, forStmtBody = bodySuite, forStmtPos = pos}, parseResultRemaining = finalRest})
+                Token {position = pos'} : _ -> Left (ExpectedExpression {parseErrorPosition = pos'})
+                _ -> Left (ExpectedExpression {parseErrorPosition = Position {line = 0, column = 0}})
             Token {position = pos'} : _ -> Left (ExpectedExpression {parseErrorPosition = pos'})
             _ -> Left (ExpectedExpression {parseErrorPosition = Position {line = 0, column = 0}})
         Token {tokenType = DefToken, position = posDef} : Token {tokenType = IdentifierToken, lexeme = name} : Token {tokenType = LParenToken} : rest -> do
@@ -123,6 +132,30 @@ parseCompoundStmt config =
         _ -> Left (ExpectedExpression {parseErrorPosition = Position {line = 0, column = 0}})
   where
     parseSuiteWithStatements tokens = parseSuite (ParseSuiteConfig {parseSuiteStatement = parseCompoundStmtStatement config, parseSuiteTokenStream = tokens})
+
+    forTargetTemporaryName = "__python_hs_for_target__"
+
+    collectForTargets names tokens =
+      case tokens of
+        Token {tokenType = CommaToken} : Token {tokenType = IdentifierToken, lexeme = nextName} : rest ->
+          collectForTargets (names ++ [nextName]) rest
+        _ -> ParseResult {parseResultValue = names, parseResultRemaining = tokens}
+
+    forLoopVariable targets =
+      case targets of
+        [singleName] -> singleName
+        _ -> forTargetTemporaryName
+
+    desugarForTargets pos targets body =
+      case targets of
+        [_] -> body
+        _ ->
+          AssignUnpackStmt
+            { assignUnpackStmtNames = targets,
+              assignUnpackStmtValue = IdentifierExpr {identifierExprName = forTargetTemporaryName, identifierExprPos = pos},
+              assignUnpackStmtPos = pos
+            }
+            : body
 
     parseOptionalExceptSuites tokens =
       case tokens of

@@ -46,7 +46,7 @@ MIT License — 詳細は [LICENSE](LICENSE) を参照してください。
 - [x] 文: class フィールド型注釈（`name: type` / `name: type = expr`）対応
 - [x] 文: `with`（Context Manager・複数節・変数束縛対応）
 - [x] 文: `yield` / `yield from`
-- [x] 制御構文: `if/elif/else`, `while`, `for`
+- [x] 制御構文: `if/elif/else`, `while`, `for`（target のタプルアンパック `for a, b in ...` を含む）
 - [x] 関数定義: `def name(args): ...`（デフォルト引数・` *args`/` **kwargs`・型注釈）
 - [x] 式: 四則演算・累乗（`+ - * / % // **`）, 比較, `not`, 関数呼び出し, `lambda`
 - [x] 式: tuple（literal, index/slice, unpack, 比較, for反復）

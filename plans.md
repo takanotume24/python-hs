@@ -658,10 +658,10 @@
   - 関数内 bare `raise` は VM の保留例外スコープに依存する
   - 全テスト PASS（1296 examples, 0 failures）、品質ゲート全項目 PASS
 
-### P116: for ループのタプルアンパック
-- [ ] `for a, b in zip(xs, ys): ...` の parser/AST 対応状況を確認
-- [ ] parser が未対応なら共有構文拡張の要否を判断
-- [ ] VM 実行で target へのタプル分解束縛を実装し、テストで固定
+### P116: for ループのタプルアンパック（完了）
+- [x] `for a, b in zip(xs, ys): ...` の parser/AST 対応状況を確認
+- [x] parser が未対応なら共有構文拡張の要否を判断
+- [x] VM 実行で target へのタプル分解束縛を実装し、テストで固定
 
 ### P117: 追加組み込み関数（pow / divmod / reversed / input）
 - [ ] `pow(base, exp[, mod])` を追加（整数累乗、mod 指定時は剰余累乗）
@@ -696,6 +696,16 @@
 - P118 はクラス属性解決・メソッド束縛との相互作用があり、中リスク
 - P119 は `type` / `isinstance` が今後のクラスシステム拡張と密接なため、段階的な仕様固定とする
 - P120 は既存メソッド構文の拡張だが、影響範囲が広いため回帰テストを充実させる
+
+## 現在のスコープ（P116: for ループのタプルアンパック）
+- [x] P116 開始: `for a, b in iterable:` の target タプルアンパックを VM で実現
+- [x] P116-1: 失敗テストを `RunSourceVmPart21Spec` に追加（zip・list 要素・3変数・関数内・エラー系）
+- [x] P116-2: parser の for-target をカンマ区切り名リストとして受理
+- [x] P116-3: 複数 target は予約変数 + `AssignUnpackStmt` へ脱糖し、既存の `UnpackToNames` を再利用
+- [x] P116-4: 単一 target は従来どおり `forStmtVar` に直接束縛
+- [x] P116-5: 要素数不一致・非反復要素は `Value error: unpack mismatch` で固定
+- [x] P116-6: 全テスト PASS（1365 examples, 0 failures）
+- [x] P116-7: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
 
 ## 現在のスコープ（P112: 文字列メソッドの引数拡張）
 - [x] P112 開始: `startswith` / `endswith` / `find` / `rfind` / `index` / `rindex` / `count` の start/end 対応
@@ -1110,6 +1120,11 @@
 ## メンテナンス記録（要約）
 - 注記: 以下は時系列ログ。古い日付の「未対応」項目は、その後のエントリで仕様更新済みの場合がある。
 - 2026-11-21
+  - [x] P116 完了: for ループのタプルアンパック
+  - [x] P116 実装: parser の for-target をカンマ区切り名リストとして受理
+  - [x] P116 実装: 複数 target を予約変数 + `AssignUnpackStmt` へ脱糖
+  - [x] P116 テスト: `RunSourceVmPart21Spec` に 9 ケースを追加
+  - [x] P116 品質ゲート: `cabal run quality-gate` が全項目 PASS（1365 examples, 0 failures）
   - [x] P112 完了: 文字列メソッドの引数拡張
   - [x] P112 実装: `startswith` / `endswith` / `find` / `rfind` / `index` / `rindex` / `count` の start/end 対応
   - [x] P112 実装: `CallStringSearchBuiltin` を新設し、`CallStringBuiltin` は分割・変換系に整理
