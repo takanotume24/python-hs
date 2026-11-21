@@ -4,6 +4,7 @@ import PythonHS.Evaluator.DictPair (DictPair (..))
 import PythonHS.Evaluator.ShowPos (showPos)
 import PythonHS.Evaluator.Value (Value (..))
 import PythonHS.VM.CallConstructorBuiltinConfig (CallConstructorBuiltinConfig (..))
+import PythonHS.VM.IterableItems (iterableItems)
 
 callConstructorBuiltin :: CallConstructorBuiltinConfig -> Maybe (Either String Value)
 callConstructorBuiltin config =
@@ -20,24 +21,24 @@ callConstructorBuiltin config =
     evalList fname values =
       case values of
         [] -> Right (ListValue {listValueItems = []})
-        [value] -> fmap (\items -> ListValue {listValueItems = items}) (iterableItems fname value)
+        [value] -> toList fname value
         _ -> Left (countMismatch fname)
+
+    toList fname value =
+      case iterableItems value of
+        Nothing -> Left ("Type error: " ++ fname ++ " expects iterable at " ++ showPos pos)
+        Just items -> Right (ListValue {listValueItems = items})
 
     evalTuple fname values =
       case values of
         [] -> Right (TupleValue {tupleValueItems = []})
-        [value] -> fmap (\items -> TupleValue {tupleValueItems = items}) (iterableItems fname value)
+        [value] -> toTuple fname value
         _ -> Left (countMismatch fname)
 
-    iterableItems fname value =
-      case value of
-        ListValue {listValueItems = items} -> Right items
-        TupleValue {tupleValueItems = items} -> Right items
-        StringValue {stringValue = text} -> Right (map charValue text)
-        DictValue {dictValuePairs = pairs} -> Right (map dictPairKey pairs)
-        _ -> Left ("Type error: " ++ fname ++ " expects iterable at " ++ showPos pos)
-
-    charValue character = StringValue {stringValue = [character]}
+    toTuple fname value =
+      case iterableItems value of
+        Nothing -> Left ("Type error: " ++ fname ++ " expects iterable at " ++ showPos pos)
+        Just items -> Right (TupleValue {tupleValueItems = items})
 
     evalDict fname values =
       case values of

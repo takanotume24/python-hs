@@ -111,6 +111,8 @@ MIT License — 詳細は [LICENSE](LICENSE) を参照してください。
 - [x] `float(x)`（int/float/文字列から浮動小数へ）
 - [x] `list(x)` / `tuple(x)`（list/tuple/string/dict から変換、引数なしで空を作成）
 - [x] `dict(x)`（dict のコピー、または list/tuple の 2 要素組から作成）
+- [x] `enumerate(iterable[, start])`（index と要素のタプル列。list/tuple/string/dict キー対応）
+- [x] `zip(*iterables)`（最短の iterable に合わせてタプル列を作成。引数なしは空）
 - [x] `math`: `sqrt`, `sin`, `cos`, `tan`, `log`, `exp`, `pi`, `e`
 - [x] `json`: `dumps`, `loads`
 - [x] `pathlib`: `Path`
