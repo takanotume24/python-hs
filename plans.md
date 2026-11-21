@@ -587,6 +587,50 @@
 - [x] P92-12: 全テスト PASS（977 examples, 0 failures）
 - [x] P92-13: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
 
+## 中期計画（P112〜P116: VM組み込みライブラリの完成度向上）
+
+### 目的
+- `AST はもう改善しなくていい` 方針のもと、VM 側の組み込み関数・メソッドの互換性を段階的に高める。
+- 各マイルストーンは「失敗テスト先行 → 実装 → `cabal run quality-gate` → コミット」で進める。
+- 完了条件は、全テスト PASS、コンパイラ警告 0、品質ゲート全項目 PASS とする。
+
+### P112: 文字列メソッドの引数拡張
+- [ ] `startswith(s, prefix, start, end)` / `endswith(s, suffix, start, end)` を追加
+- [ ] `find(s, sub, start, end)` / `rfind(s, sub, start, end)` を追加
+- [ ] `count(s, sub, start, end)` を追加
+- [ ] `index(s, sub)` / `rindex(s, sub)` を追加（見つからない場合は `Value error`）
+- [ ] start/end の範囲外・負数の扱いをテストで固定
+- [ ] `CallStringBuiltin` の範囲計算を共通化し、既存の文字列関数と整合させる
+
+### P113: リスト・辞書メソッドの追加
+- [ ] リスト: `index(list, value)` / `count(list, value)` / `copy(list)` を追加
+- [ ] 辞書: `copy(dict)` / `fromkeys(seq, value)` / `popitem(dict)` を追加
+- [ ] メソッド構文（`xs.index(1)` / `d.copy()`）の動作をテストで固定
+- [ ] 空リスト・空辞書・キー不在時のエラー規約を固定
+
+### P115: VM 例外処理の網羅強化
+- [ ] `RunnerVmParity` / `check-runner-case-coverage` の未カバー箇所を洗い出す
+- [ ] `try/except/else/finally` / `raise` / bare `raise` の VM テストを追加
+- [ ] AST と VM で意図的に差分がある箇所は plans / README に明記する
+
+### P114: 高階関数 map/filter の実装（要設計）
+- [ ] builtin 呼び出しに VM 実行文脈（関数呼び出し）を渡す方法を設計する
+- [ ] `map(fn, iterable)` / `filter(fn, iterable)` を失敗テスト先行で追加
+- [ ] list/tuple/string/dict キーへの対応範囲を固定
+- [ ] 既存 `callBuiltin` の呼び出し契約への影響を最小化する
+- 注意: pure な `callBuiltin` の signature 拡張が必要になる可能性が高い
+
+### P116: for ループのタプルアンパック（要構文確認）
+- [ ] `for a, b in zip(xs, ys): ...` の parser/AST 対応状況を確認
+- [ ] parser が未対応なら共有構文拡張の要否を判断
+- [ ] VM 実行で target へのタプル分解束縛を実装し、テストで固定
+
+### 優先順位とリスク
+- 優先順: P112 → P113 → P115 → P114 → P116
+- P112 / P113 / P115 は既存パターンの延長で低リスク
+- P114 は `callBuiltin` の契約変更を伴うため、設計レビューを先行する
+- P116 は共有 parser/AST に依存するため、着手前に構文サポートを確認する
+
 ## 現在のスコープ（P111: VM sort/sorted の文字列対応）
 - [x] P111 開始: `sorted` / `sort` を文字列リストにも対応
 - [x] P111-1: 失敗テストを `RunSourceVmPart15Spec` に追加（文字列ソート・混合型エラー）
