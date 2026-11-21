@@ -3,8 +3,9 @@ module PythonHS.Evaluator.EvalCallExpr (evalCallExpr) where
 import Data.List (nub)
 import Data.Map.Strict qualified as Map
 import PythonHS.AST.Expr (Expr (..))
-import PythonHS.AST.FunctionDefault (FunctionDefault (..))
 import PythonHS.AST.Stmt (Stmt (..))
+import PythonHS.Evaluator.BindCallArgs (bindCallArgs)
+import PythonHS.Evaluator.BindCallArgsInput (BindCallArgsInput (..))
 import PythonHS.Evaluator.DictPair (DictPair (..))
 import PythonHS.Evaluator.EvalBuiltinExpr (evalBuiltinExpr)
 import PythonHS.Evaluator.EvalBuiltinExprInput (EvalBuiltinExprInput (..))
@@ -20,9 +21,21 @@ evalCallExpr input =
   case Map.lookup fname fenv of
     Just (params, defaults, body) -> do
       (posVals, kwVals, kwPosByName, kwOrder, argOuts, envAfterArgs) <- evalCallArgs env fenv Map.empty Map.empty [] False [] args
-      boundByName <- bindByName params kwVals kwPosByName kwOrder
-      baseBindings <- bindPositional params posVals boundByName kwPosByName kwOrder
-      (bindingsWithDefaults, defaultOuts, envAfterDefaults) <- fillMissingDefaults envAfterArgs fenv params defaults baseBindings
+      (bindingsWithDefaults, defaultOuts, envAfterDefaults) <-
+        bindCallArgs
+          BindCallArgsInput
+            { bindCallArgsInputEvalExpr = evalExprFn,
+              bindCallArgsInputEnv = envAfterArgs,
+              bindCallArgsInputFuncEnv = fenv,
+              bindCallArgsInputParams = params,
+              bindCallArgsInputDefaults = defaults,
+              bindCallArgsInputPosVals = posVals,
+              bindCallArgsInputKwVals = kwVals,
+              bindCallArgsInputKwPosByName = kwPosByName,
+              bindCallArgsInputKwOrder = kwOrder,
+              bindCallArgsInputFunctionName = fname,
+              bindCallArgsInputPos = pos
+            }
       let globalNames = collectGlobalNames body
       let localEnv = Map.union bindingsWithDefaults envAfterDefaults
       EvalStmtResult {evalStmtResultEnv = finalEnv, evalStmtResultOutputs = bodyOuts, evalStmtResultRet = ret} <- evalStatementsFn localEnv fenv [] body
@@ -95,44 +108,6 @@ evalCallExpr input =
                 evalCallArgs envAfterExpr currentFenv seenKw seenKwPos seenKwOrder False (positionalVals ++ [value]) restArgs
               Right (nextPosVals, nextKwVals, nextKwPosVals, nextKwOrder, exprOuts ++ restOuts, finalEnv)
 
-    bindByName params keywordVals kwPosByName kwOrder =
-      case filter (`notElem` params) kwOrder of
-        unexpectedName : _ ->
-          case Map.lookup unexpectedName kwPosByName of
-            Just argPos -> Left $ "Argument error: unexpected keyword argument " ++ unexpectedName ++ " at " ++ showPos argPos
-            Nothing -> Left $ "Argument count mismatch when calling " ++ fname ++ " at " ++ showPos pos
-        [] ->
-          case filter (`notElem` params) (Map.keys keywordVals) of
-            unexpectedName : _ ->
-              case Map.lookup unexpectedName kwPosByName of
-                Just argPos -> Left $ "Argument error: unexpected keyword argument " ++ unexpectedName ++ " at " ++ showPos argPos
-                Nothing -> Left $ "Argument count mismatch when calling " ++ fname ++ " at " ++ showPos pos
-            [] -> Right keywordVals
-
-    bindPositional params positionalVals bound kwPosByName kwOrder =
-      case firstCollisionName of
-        Just paramName ->
-          case Map.lookup paramName kwPosByName of
-            Just argPos -> Left $ "Argument error: multiple values for parameter " ++ paramName ++ " at " ++ showPos argPos
-            Nothing -> Left $ "Argument count mismatch when calling " ++ fname ++ " at " ++ showPos pos
-        Nothing ->
-          if length positionalVals > length params
-            then Left $ "Argument count mismatch when calling " ++ fname ++ " at " ++ showPos pos
-            else Right $ foldl insertPositional bound (zip positionalParamNames positionalVals)
-      where
-        positionalParamNames = take (min (length positionalVals) (length params)) params
-        firstCollisionName = firstMatch kwOrder positionalParamNames
-
-        insertPositional acc (paramName, value) =
-          case Map.lookup paramName acc of
-            Just _ -> acc
-            Nothing -> Map.insert paramName value acc
-
-    firstMatch [] _ = Nothing
-    firstMatch (name : rest) candidates
-      | name `elem` candidates = Just name
-      | otherwise = firstMatch rest candidates
-
     collectGlobalNames stmts = nub (concatMap goStmt stmts)
       where
         goStmt GlobalStmt {globalStmtName} = [globalStmtName]
@@ -150,24 +125,6 @@ evalCallExpr input =
           case Map.lookup name finalLocalEnv of
             Just value -> Map.insert name value accEnv
             Nothing -> accEnv
-
-    fillMissingDefaults currentEnv currentFenv params defaults boundVals =
-      fill currentEnv params boundVals
-      where
-        defaultsMap = Map.fromList (map (\FunctionDefault {functionDefaultParam = p, functionDefaultExpr = e} -> (p, e)) defaults)
-
-        fill envNow [] acc = Right (acc, [], envNow)
-        fill envNow (paramName : remaining) acc =
-          case Map.lookup paramName acc of
-            Just _ -> fill envNow remaining acc
-            Nothing ->
-              case Map.lookup paramName defaultsMap of
-                Nothing -> Left $ "Argument count mismatch when calling " ++ fname ++ " at " ++ showPos pos
-                Just defaultExpr -> do
-                  let defaultEnv = Map.union acc envNow
-                  EvalExprResult v exprOuts envAfterExpr <- evalExprFn defaultEnv currentFenv defaultExpr
-                  (nextAcc, otherOuts, finalEnv) <- fill envAfterExpr remaining (Map.insert paramName v acc)
-                  Right (nextAcc, exprOuts ++ otherOuts, finalEnv)
 
     expandStarArg value argPos =
       case value of

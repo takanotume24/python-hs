@@ -238,6 +238,8 @@ library
     , PythonHS.Evaluator.ExpectTruthy
     , PythonHS.Evaluator.ExpectTruthyInput
     , PythonHS.Evaluator.EvalExpr
+    , PythonHS.Evaluator.BindCallArgsInput
+    , PythonHS.Evaluator.BindCallArgs
     , PythonHS.Evaluator.EvalCallExpr
     , PythonHS.Evaluator.EvalCallExprInput
     , PythonHS.Evaluator.EvalBuiltinExpr

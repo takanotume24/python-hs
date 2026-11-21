@@ -143,10 +143,10 @@ spec = describe "runSource (integration edge/error) - part 2" $ do
     runSource "def f(a, b):\n  return a + b\nprint f(**{\"a\":1,\"b\":2})\n" `shouldBe` Right ["3"]
 
   it "supports *args in function definition" $ do
-    runSource "def f(*args):\n  return len(args)\nprint f(1,2,3)\n" `shouldBe` Left "Argument count mismatch when calling f at 3:7"
+    runSource "def f(*args):\n  return len(args)\nprint f(1,2,3)\n" `shouldBe` Right ["3"]
 
   it "supports **kwargs in function definition" $ do
-    runSource "def f(**kwargs):\n  return get(kwargs, \"x\", 0)\nprint f(x=7)\n" `shouldBe` Left "Argument error: unexpected keyword argument x at 3:9"
+    runSource "def f(**kwargs):\n  return get(kwargs, \"x\", 0)\nprint f(x=7)\n" `shouldBe` Right ["7"]
 
   it "returns parse error for unsupported keyword-only separator in function definition" $ do
     runSource "def f(*, a):\n  pass\n" `shouldBe` Left "ExpectedExpression (Position {line = 1, column = 7})"

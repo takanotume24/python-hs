@@ -50,5 +50,14 @@ spec = describe "runSource (integration core) - part 3" $ do
   it "evaluates mixed star and double-star expansion" $ do
     runSource "def f(a, b):\n  return a + b\nprint f(*[1], **{\"b\": 2})\n" `shouldBe` Right ["3"]
 
+  it "evaluates *args in function definition" $ do
+    runSource "def f(*args):\n  return len(args)\nprint f(1, 2, 3)\n" `shouldBe` Right ["3"]
+
+  it "evaluates **kwargs in function definition" $ do
+    runSource "def f(**kwargs):\n  return get(kwargs, \"x\", 0)\nprint f(x=7)\n" `shouldBe` Right ["7"]
+
+  it "evaluates mixed *args and **kwargs in function definition" $ do
+    runSource "def f(*args, **kwargs):\n  return len(args) + get(kwargs, \"x\", 0)\nprint f(1, 2, x=3)\n" `shouldBe` Right ["5"]
+
   it "reports index out of range" $ do
     runSource "print [1, 2][5]\n" `shouldBe` Left "Value error: tuple/list index out of range at 1:13"

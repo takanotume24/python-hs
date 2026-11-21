@@ -587,6 +587,14 @@
 - [x] P92-12: 全テスト PASS（977 examples, 0 failures）
 - [x] P92-13: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
 
+## 現在のスコープ（P99: AST 評価器での関数定義 `*args` / `**kwargs` 対応）
+- [x] P99 開始: 関数定義での `*args` / `**kwargs` を AST 評価器でサポート
+- [x] P99-1: 失敗テストを `RunnerEdgePart2Spec` / `RunnerCorePart3Spec` に追加・更新
+- [x] P99-2: `EvalCallExpr` の引数束縛で可変長引数を処理
+- [x] P99-3: `BindCallArgs` モジュールに切り出し、200行制約を遵守
+- [x] P99-4: 全テスト PASS（1006 examples, 0 failures）
+- [x] P99-5: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
+
 ## 現在のスコープ（P98: AST 評価器での呼び出し引数展開 (`*args` / `**kwargs`) 対応）
 - [x] P98 開始: 関数呼び出しでの `*iterable` / `**mapping` 展開を AST 評価器でサポート
 - [x] P98-1: 失敗テストを `RunnerEdgePart2Spec` / `RunnerCorePart3Spec` に追加・更新
