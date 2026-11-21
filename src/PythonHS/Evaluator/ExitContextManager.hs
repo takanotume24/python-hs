@@ -3,10 +3,8 @@ module PythonHS.Evaluator.ExitContextManager (exitContextManager) where
 import PythonHS.AST.ContextManager (ContextManager (..))
 import PythonHS.AST.Expr (Expr (..))
 import PythonHS.AST.WithExit (WithExit (..))
-import PythonHS.Evaluator.Env (Env)
 import PythonHS.Evaluator.EvalExprResult (EvalExprResult)
 import PythonHS.Evaluator.ExitContextManagerInput (ExitContextManagerInput (..))
-import PythonHS.Evaluator.FuncEnv (FuncEnv)
 import PythonHS.VM.Instruction (Instruction (..))
 
 exitContextManager :: ExitContextManagerInput -> Either String EvalExprResult

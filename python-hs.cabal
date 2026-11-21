@@ -199,6 +199,12 @@ library
     , PythonHS.Evaluator.EvalExprBinary
     , PythonHS.Evaluator.EvalExprBinaryPower
     , PythonHS.Evaluator.EvalExprBinaryPowerConfig
+    , PythonHS.Evaluator.EvalExprBinaryMembership
+    , PythonHS.Evaluator.EvalExprBinaryMembershipConfig
+    , PythonHS.Evaluator.ExpectNumber
+    , PythonHS.Evaluator.ExpectNumberInput
+    , PythonHS.Evaluator.ExpectTruthy
+    , PythonHS.Evaluator.ExpectTruthyInput
     , PythonHS.Evaluator.EvalExpr
     , PythonHS.Evaluator.EvalCallExpr
     , PythonHS.Evaluator.EvalBuiltinExpr
@@ -265,6 +271,8 @@ library
     , PythonHS.VM.EvalBinaryOpDivideConfig
     , PythonHS.VM.EvalBinaryOpPower
     , PythonHS.VM.EvalBinaryOpPowerConfig
+    , PythonHS.VM.EvalBinaryOpMembership
+    , PythonHS.VM.EvalBinaryOpMembershipConfig
     , PythonHS.VM.FindModuleFile
     , PythonHS.VM.CollectExports
     , PythonHS.VM.IsBuiltinImportModule

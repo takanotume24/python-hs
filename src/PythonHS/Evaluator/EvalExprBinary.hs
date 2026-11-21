@@ -1,8 +1,9 @@
 module PythonHS.Evaluator.EvalExprBinary (evalExprBinary) where
 
 import PythonHS.AST.BinaryOperator (BinaryOperator (..))
-import PythonHS.AST.Expr (Expr)
 import PythonHS.Evaluator.EvalExprBinaryInput (EvalExprBinaryInput (..))
+import PythonHS.Evaluator.EvalExprBinaryMembership (evalExprBinaryMembership)
+import PythonHS.Evaluator.EvalExprBinaryMembershipConfig (EvalExprBinaryMembershipConfig (..))
 import PythonHS.Evaluator.EvalExprBinaryPower (evalExprBinaryPower)
 import PythonHS.Evaluator.EvalExprBinaryPowerConfig (EvalExprBinaryPowerConfig (..))
 import PythonHS.Evaluator.EvalExprResult (EvalExprResult (..))
@@ -63,6 +64,8 @@ evalExprBinary input = case op of
         EvalExprResult {evalExprResultValue = rightVal, evalExprResultOutputs = rightOuts, evalExprResultEnv = envAfterRight} <- evalExprFn envAfterLeft fenv rightExpr
         rightTruthy <- expectTruthy "or" pos rightVal
         Right (EvalExprResult {evalExprResultValue = IntValue {intValue = if rightTruthy /= 0 then 1 else 0}, evalExprResultOutputs = leftOuts ++ rightOuts, evalExprResultEnv = envAfterRight})
+  InOperator -> evalExprBinaryMembership EvalExprBinaryMembershipConfig {evalExprBinaryMembershipConfigEvalExprFn = evalExprFn, evalExprBinaryMembershipConfigEnv = env, evalExprBinaryMembershipConfigFuncEnv = fenv, evalExprBinaryMembershipConfigLeftExpr = leftExpr, evalExprBinaryMembershipConfigRightExpr = rightExpr, evalExprBinaryMembershipConfigPos = pos, evalExprBinaryMembershipConfigNegate = False}
+  NotInOperator -> evalExprBinaryMembership EvalExprBinaryMembershipConfig {evalExprBinaryMembershipConfigEvalExprFn = evalExprFn, evalExprBinaryMembershipConfigEnv = env, evalExprBinaryMembershipConfigFuncEnv = fenv, evalExprBinaryMembershipConfigLeftExpr = leftExpr, evalExprBinaryMembershipConfigRightExpr = rightExpr, evalExprBinaryMembershipConfigPos = pos, evalExprBinaryMembershipConfigNegate = True}
   where
     evalExprFn = evalExprBinaryEvalExprFn input
     env = evalExprBinaryEnv input
@@ -130,7 +133,7 @@ evalExprBinary input = case op of
                     _ -> Right (EvalExprResult {evalExprResultValue = FloatValue {floatValue = remainder}, evalExprResultOutputs = leftOuts ++ rightOuts, evalExprResultEnv = envAfterRight})
                 _ -> Right (EvalExprResult {evalExprResultValue = FloatValue {floatValue = remainder}, evalExprResultOutputs = leftOuts ++ rightOuts, evalExprResultEnv = envAfterRight})
 
-    evalEqComparison currentEnv currentFenv le re pos' = do
+    evalEqComparison currentEnv currentFenv le re _pos' = do
       EvalExprResult {evalExprResultValue = leftVal, evalExprResultOutputs = leftOuts, evalExprResultEnv = envAfterLeft} <- evalExprFn currentEnv currentFenv le
       EvalExprResult {evalExprResultValue = rightVal, evalExprResultOutputs = rightOuts, evalExprResultEnv = envAfterRight} <- evalExprFn envAfterLeft currentFenv re
       let fallback = Right (EvalExprResult {evalExprResultValue = IntValue {intValue = if leftVal == rightVal then 1 else 0}, evalExprResultOutputs = leftOuts ++ rightOuts, evalExprResultEnv = envAfterRight})
@@ -145,7 +148,7 @@ evalExprBinary input = case op of
                 _ -> fallback
             _ -> fallback
 
-    evalNotEqComparison currentEnv currentFenv le re pos' = do
+    evalNotEqComparison currentEnv currentFenv le re _pos' = do
       EvalExprResult {evalExprResultValue = leftVal, evalExprResultOutputs = leftOuts, evalExprResultEnv = envAfterLeft} <- evalExprFn currentEnv currentFenv le
       EvalExprResult {evalExprResultValue = rightVal, evalExprResultOutputs = rightOuts, evalExprResultEnv = envAfterRight} <- evalExprFn envAfterLeft currentFenv re
       let fallback = Right (EvalExprResult {evalExprResultValue = IntValue {intValue = if leftVal /= rightVal then 1 else 0}, evalExprResultOutputs = leftOuts ++ rightOuts, evalExprResultEnv = envAfterRight})

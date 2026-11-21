@@ -4,9 +4,7 @@ import PythonHS.AST.ContextManager (ContextManager (..))
 import PythonHS.AST.Expr (Expr (..))
 import PythonHS.AST.WithEntry (WithEntry (..))
 import PythonHS.Evaluator.EnterContextManagerInput (EnterContextManagerInput (..))
-import PythonHS.Evaluator.Env (Env)
 import PythonHS.Evaluator.EvalExprResult (EvalExprResult)
-import PythonHS.Evaluator.FuncEnv (FuncEnv)
 import PythonHS.VM.Instruction (Instruction (..))
 
 enterContextManager :: EnterContextManagerInput -> Either String EvalExprResult

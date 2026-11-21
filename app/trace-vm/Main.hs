@@ -34,7 +34,7 @@ main = do
     printTraceRun :: [Instruction] -> IO ()
     printTraceRun instructions = do
       putStrLn "== instructions =="
-      mapM_ (\indexedInstruction -> putStrLn (show (fst indexedInstruction) ++ ": " ++ show (snd indexedInstruction))) (zip [0 ..] instructions)
+      mapM_ (\indexedInstruction -> putStrLn (show (fst indexedInstruction) ++ ": " ++ show (snd indexedInstruction))) (zip ([0 ..] :: [Int]) instructions)
       putStrLn ""
       putStrLn "== trace =="
       let traceRun = runInstructionsTrace instructions

@@ -1,6 +1,6 @@
 module PythonHS.Parser.ParseExpr (parseExpr) where
 
-import PythonHS.AST.BinaryOperator (BinaryOperator (AddOperator, AndOperator, DivideOperator, EqOperator, FloorDivideOperator, GtOperator, GteOperator, LtOperator, LteOperator, ModuloOperator, MultiplyOperator, NotEqOperator, OrOperator, PowerOperator, SubtractOperator))
+import PythonHS.AST.BinaryOperator (BinaryOperator (AddOperator, AndOperator, DivideOperator, EqOperator, FloorDivideOperator, GtOperator, GteOperator, InOperator, LtOperator, LteOperator, ModuloOperator, MultiplyOperator, NotEqOperator, NotInOperator, OrOperator, PowerOperator, SubtractOperator))
 import PythonHS.AST.Expr (Expr (..))
 import PythonHS.Lexer.Token (Token (Token))
 import PythonHS.Lexer.TokenType
@@ -11,6 +11,7 @@ import PythonHS.Lexer.TokenType
         EqToken,
         GtToken,
         GteToken,
+        InToken,
         LtToken,
         LteToken,
         MinusToken,
@@ -104,6 +105,16 @@ parseExpr tokens = parseLambdaExpr (ParseLambdaExprConfig {lambdaExprFallback = 
       let right = parseResultValue rightResult
           afterRight = parseResultRemaining rightResult
       parseComparisonTail (BinaryExpr {binaryExprOp = GteOperator, binaryExprLeft = left, binaryExprRight = right, binaryExprPos = pos}) afterRight
+    parseComparisonTail left (Token InToken _ pos : rest) = do
+      rightResult <- parseAdd rest
+      let right = parseResultValue rightResult
+          afterRight = parseResultRemaining rightResult
+      parseComparisonTail (BinaryExpr {binaryExprOp = InOperator, binaryExprLeft = left, binaryExprRight = right, binaryExprPos = pos}) afterRight
+    parseComparisonTail left (Token NotToken _ pos : Token InToken _ _ : rest) = do
+      rightResult <- parseAdd rest
+      let right = parseResultValue rightResult
+          afterRight = parseResultRemaining rightResult
+      parseComparisonTail (BinaryExpr {binaryExprOp = NotInOperator, binaryExprLeft = left, binaryExprRight = right, binaryExprPos = pos}) afterRight
     parseComparisonTail left remaining = Right (ParseResult {parseResultValue = left, parseResultRemaining = remaining})
 
     parseAdd tokenStream = do

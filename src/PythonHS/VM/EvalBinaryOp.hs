@@ -7,6 +7,8 @@ import PythonHS.Lexer.Position (Position)
 import PythonHS.VM.EvalBinaryOpConfig (EvalBinaryOpConfig (..))
 import PythonHS.VM.EvalBinaryOpDivide (evalBinaryOpDivide)
 import PythonHS.VM.EvalBinaryOpDivideConfig (EvalBinaryOpDivideConfig (..))
+import PythonHS.VM.EvalBinaryOpMembership (evalBinaryOpMembership)
+import PythonHS.VM.EvalBinaryOpMembershipConfig (EvalBinaryOpMembershipConfig (..))
 import PythonHS.VM.EvalBinaryOpPower (evalBinaryOpPower)
 import PythonHS.VM.EvalBinaryOpPowerConfig (EvalBinaryOpPowerConfig (..))
 
@@ -54,6 +56,8 @@ evalBinaryOp config =
           leftTruthy <- expectTruthy "or" pos left
           rightTruthy <- expectTruthy "or" pos right
           Right (IntValue {intValue = if leftTruthy /= 0 || rightTruthy /= 0 then 1 else 0})
+        InOperator -> evalBinaryOpMembership EvalBinaryOpMembershipConfig {evalBinaryOpMembershipConfigLeft = left, evalBinaryOpMembershipConfigRight = right, evalBinaryOpMembershipConfigPos = pos, evalBinaryOpMembershipConfigNegate = False}
+        NotInOperator -> evalBinaryOpMembership EvalBinaryOpMembershipConfig {evalBinaryOpMembershipConfigLeft = left, evalBinaryOpMembershipConfigRight = right, evalBinaryOpMembershipConfigPos = pos, evalBinaryOpMembershipConfigNegate = True}
   where
     evalNumericBinary context pos' left' right' opFn = do
       leftNumber <- expectNumber context pos' left'

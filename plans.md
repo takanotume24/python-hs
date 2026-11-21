@@ -541,6 +541,16 @@
 - [x] P88-8: 全テスト PASS（953 examples, 0 failures）
 - [x] P88-9: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
 
+## 現在のスコープ（P89: `in` / `not in` 演算子）
+- [x] P89 開始: `in` / `not in` 演算子を VM でサポートする
+- [x] P89-1: 失敗テストを `RunSourceVmSpec` / `ParseProgramSpec` に追加（リスト・辞書・タプル・文字列のメンバシップ判定）
+- [x] P89-2: `BinaryOperator` に `InOperator` / `NotInOperator` を追加
+- [x] P89-3: `ParseExpr` で `in` / `not in` を比較演算子レベルで解析
+- [x] P89-4: `EvalBinaryOp` / `EvalExprBinary` で `in` / `not in` を評価（リスト・辞書・タプル・文字列）
+- [x] P89-5: 200 行制限対応: `EvalBinaryOp` / `EvalExprBinary` / `EvalStatements` の関連処理を別ファイルに分離
+- [x] P89-6: 全テスト PASS（961 examples, 0 failures）
+- [x] P89-7: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
+
 ## detect-positional-args プロジェクト全体分析結果（2026-07-03）
 
 ### 分析概要
@@ -739,6 +749,14 @@
 
 ## メンテナンス記録（要約）
 - 注記: 以下は時系列ログ。古い日付の「未対応」項目は、その後のエントリで仕様更新済みの場合がある。
+- 2026-11-21
+  - [x] P89 完了: `in` / `not in` 演算子
+  - [x] P89 実装: `BinaryOperator` に `InOperator` / `NotInOperator` を追加
+  - [x] P89 実装: `ParseExpr` で `in` / `not in` を比較演算子レベルで解析
+  - [x] P89 実装: `EvalBinaryOp` / `EvalExprBinary` でリスト・辞書・タプル・文字列のメンバシップ判定を評価
+  - [x] P89 構造対応: `EvalBinaryOpMembership` / `EvalExprBinaryMembership` / `ExpectNumber` / `ExpectTruthy` を分離し 200 行制限を遵守
+  - [x] P89 テスト: `RunSourceVmSpec` / `ParseProgramSpec` に `in` / `not in` のケースを追加
+  - [x] P89 品質ゲート: `cabal run quality-gate` が全項目 PASS（961 examples, 0 failures）
 - 2026-11-03
   - [x] P88 完了: `**` 累乗演算子
   - [x] P88 実装: `BinaryOperator` に `PowerOperator` を追加し、字句・構文・評価・VM 各経路で対応

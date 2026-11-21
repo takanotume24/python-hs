@@ -16,11 +16,14 @@ import PythonHS.Evaluator.EvalWhileStmtInput (EvalWhileStmtInput (..))
 import PythonHS.Evaluator.EvalWithStmt (evalWithStmt)
 import PythonHS.Evaluator.EvalWithStmtConfig (EvalWithStmtConfig (..))
 import PythonHS.Evaluator.EvalWithStmtInput (EvalWithStmtInput (..))
+import PythonHS.Evaluator.ExpectNumber (expectNumber)
+import PythonHS.Evaluator.ExpectNumberInput (ExpectNumberInput (..))
+import PythonHS.Evaluator.ExpectTruthy (expectTruthy)
+import PythonHS.Evaluator.ExpectTruthyInput (ExpectTruthyInput (..))
 import PythonHS.Evaluator.FuncEnv (FuncEnv)
 import PythonHS.Evaluator.ShowPos (showPos)
 import PythonHS.Evaluator.Value (Value (..))
 import PythonHS.Evaluator.ValueToOutput (valueToOutput)
-import PythonHS.Lexer.Position (Position)
 import PythonHS.Parser.ExprPos (exprPos)
 
 evalStatements :: Env -> FuncEnv -> [String] -> [Stmt] -> Either String EvalStmtResult
@@ -88,11 +91,21 @@ evalStatements env fenv outputs (stmt : rest) =
           (val, _, _) <- extractResult <$> evalExpr evalStatements env fenv expr
           Left $ "Runtime error: " ++ valueToOutput val ++ " at " ++ showPos raiseStmtPos
     PassStmt {} -> evalStatements env fenv outputs rest
+    AssertStmt {assertStmtCond, assertStmtPos} -> do
+      (condVal, condOuts, envAfterCond) <- extractResult <$> evalExpr evalStatements env fenv assertStmtCond
+      condNum <- expectTruthy ExpectTruthyInput {expectTruthyInputContext = "assert", expectTruthyInputPos = assertStmtPos, expectTruthyInputValue = condVal}
+      if condNum /= 0
+        then evalStatements envAfterCond fenv (outputs ++ condOuts) rest
+        else Left $ "AssertionError: assertion failed at " ++ showPos assertStmtPos
+    DeleteStmt {deleteStmtPos} -> Left $ "Runtime error: del is only supported in vm engine at " ++ showPos deleteStmtPos
+    ExprStmt {exprStmtValue} -> do
+      (_, exprOuts, envAfterExpr) <- extractResult <$> evalExpr evalStatements env fenv exprStmtValue
+      evalStatements envAfterExpr fenv (outputs ++ exprOuts) rest
     WithStmt {withStmtContextManager, withStmtVarName, withStmtBody, withStmtPos} ->
       evalWithStmt (EvalWithStmtInput (EvalWithStmtConfig evalStatements (evalExpr evalStatements)) env fenv outputs withStmtContextManager withStmtVarName withStmtBody withStmtPos rest)
     IfStmt {ifStmtCond, ifStmtThen, ifStmtElse} -> do
       (condVal, condOuts, envAfterCond) <- extractResult <$> evalExpr evalStatements env fenv ifStmtCond
-      condNum <- expectTruthy "if condition" (exprPos ifStmtCond) condVal
+      condNum <- expectTruthy ExpectTruthyInput {expectTruthyInputContext = "if condition", expectTruthyInputPos = exprPos ifStmtCond, expectTruthyInputValue = condVal}
       if condNum /= 0
         then do
           EvalStmtResult {evalStmtResultEnv = envThen, evalStmtResultFuncEnv = fenvThen, evalStmtResultOutputs = outputsThen, evalStmtResultRet = ret} <- evalStatements envAfterCond fenv [] ifStmtThen
@@ -128,8 +141,8 @@ evalStatements env fenv outputs (stmt : rest) =
     evalAssignNumeric name expr pos context opFn = do
       current <- lookupName env name pos
       (rhs, exprOuts, envAfterExpr) <- extractResult <$> evalExpr evalStatements env fenv expr
-      leftNumber <- expectNumber context pos current
-      rightNumber <- expectNumber context pos rhs
+      leftNumber <- expectNumber ExpectNumberInput {expectNumberInputContext = context, expectNumberInputPos = pos, expectNumberInputValue = current}
+      rightNumber <- expectNumber ExpectNumberInput {expectNumberInputContext = context, expectNumberInputPos = pos, expectNumberInputValue = rhs}
       let newValue =
             case (current, rhs) of
               (IntValue _, IntValue _) -> IntValue (round (opFn leftNumber rightNumber))
@@ -139,8 +152,8 @@ evalStatements env fenv outputs (stmt : rest) =
     evalAssignDivide name expr pos = do
       current <- lookupName env name pos
       (rhs, exprOuts, envAfterExpr) <- extractResult <$> evalExpr evalStatements env fenv expr
-      leftNumber <- expectNumber "/=" pos current
-      rightNumber <- expectNumber "/=" pos rhs
+      leftNumber <- expectNumber ExpectNumberInput {expectNumberInputContext = "/=", expectNumberInputPos = pos, expectNumberInputValue = current}
+      rightNumber <- expectNumber ExpectNumberInput {expectNumberInputContext = "/=", expectNumberInputPos = pos, expectNumberInputValue = rhs}
       if rightNumber == 0
         then Left $ "Value error: division by zero at " ++ showPos pos
         else do
@@ -150,8 +163,8 @@ evalStatements env fenv outputs (stmt : rest) =
     evalAssignFloorDivide name expr pos = do
       current <- lookupName env name pos
       (rhs, exprOuts, envAfterExpr) <- extractResult <$> evalExpr evalStatements env fenv expr
-      leftNumber <- expectNumber "//=" pos current
-      rightNumber <- expectNumber "//=" pos rhs
+      leftNumber <- expectNumber ExpectNumberInput {expectNumberInputContext = "//=", expectNumberInputPos = pos, expectNumberInputValue = current}
+      rightNumber <- expectNumber ExpectNumberInput {expectNumberInputContext = "//=", expectNumberInputPos = pos, expectNumberInputValue = rhs}
       if rightNumber == 0
         then Left $ "Value error: division by zero at " ++ showPos pos
         else do
@@ -165,8 +178,8 @@ evalStatements env fenv outputs (stmt : rest) =
     evalAssignModulo name expr pos = do
       current <- lookupName env name pos
       (rhs, exprOuts, envAfterExpr) <- extractResult <$> evalExpr evalStatements env fenv expr
-      leftNumber <- expectNumber "%=" pos current
-      rightNumber <- expectNumber "%=" pos rhs
+      leftNumber <- expectNumber ExpectNumberInput {expectNumberInputContext = "%=", expectNumberInputPos = pos, expectNumberInputValue = current}
+      rightNumber <- expectNumber ExpectNumberInput {expectNumberInputContext = "%=", expectNumberInputPos = pos, expectNumberInputValue = rhs}
       if rightNumber == 0
         then Left $ "Value error: modulo by zero at " ++ showPos pos
         else do
@@ -178,18 +191,3 @@ evalStatements env fenv outputs (stmt : rest) =
                   (IntValue li, IntValue ri) -> IntValue (li `mod` ri)
                   _ -> FloatValue remainder
           evalStatements (Map.insert name newValue envAfterExpr) fenv (outputs ++ exprOuts) rest
-
-    expectNumber _ _ IntValue {intValue = n} = Right (fromIntegral n)
-    expectNumber _ _ FloatValue {floatValue = n} = Right n
-    expectNumber _ _ NoneValue = Right 0
-    expectNumber context pos _ = Left $ "Type error: expected int in " ++ context ++ " at " ++ showPos pos
-
-    expectTruthy :: String -> Position -> Value -> Either String Int
-    expectTruthy _ _ IntValue {intValue = n} = Right (if n == 0 then 0 else 1)
-    expectTruthy _ _ FloatValue {floatValue = n} = Right (if n == 0 then 0 else 1)
-    expectTruthy _ _ NoneValue = Right 0
-    expectTruthy _ _ StringValue {stringValue = s} = Right (if null s then 0 else 1)
-    expectTruthy _ _ ListValue {listValueItems = vals} = Right (if null vals then 0 else 1)
-    expectTruthy _ _ TupleValue {tupleValueItems = vals} = Right (if null vals then 0 else 1)
-    expectTruthy _ _ DictValue {dictValuePairs = pairs} = Right (if null pairs then 0 else 1)
-    expectTruthy context pos _ = Left $ "Type error: expected int in " ++ context ++ " at " ++ showPos pos

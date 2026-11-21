@@ -11,6 +11,7 @@ stmtPosition stmt =
     AssignStmt {assignStmtPos} -> assignStmtPos
     AssignUnpackStmt {assignUnpackStmtPos} -> assignUnpackStmtPos
     AnnAssignStmt {annAssignStmtPos} -> annAssignStmtPos
+    AssertStmt {assertStmtPos} -> assertStmtPos
     DecoratedStmt {decoratedStmtPos} -> decoratedStmtPos
     YieldStmt {yieldStmtPos} -> yieldStmtPos
     YieldFromStmt {yieldFromStmtPos} -> yieldFromStmtPos

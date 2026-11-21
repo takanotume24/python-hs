@@ -862,3 +862,22 @@ spec = describe "runSourceVm (vm mvp)" $ do
 
     it "handles simplest with statement" $ do
       runSourceVm "with None:\n  pass" `shouldSatisfy` isLeft
+
+  describe "in / not in operators" $ do
+    it "evaluates membership in list" $ do
+      runSourceVm "print 1 in [1, 2, 3]\nprint 4 in [1, 2, 3]\n" `shouldBe` Right ["1", "0"]
+
+    it "evaluates membership in dict keys" $ do
+      runSourceVm "print 1 in {1: 10, 2: 20}\nprint 3 in {1: 10}\n" `shouldBe` Right ["1", "0"]
+
+    it "evaluates membership in tuple" $ do
+      runSourceVm "print 2 in (1, 2, 3)\nprint 5 in (1, 2)\n" `shouldBe` Right ["1", "0"]
+
+    it "evaluates membership in string" $ do
+      runSourceVm "print 'a' in 'abc'\nprint 'x' in 'abc'\n" `shouldBe` Right ["1", "0"]
+
+    it "evaluates not in membership" $ do
+      runSourceVm "print 1 not in [1, 2]\nprint 3 not in [1, 2]\n" `shouldBe` Right ["0", "1"]
+
+    it "evaluates nested in expression" $ do
+      runSourceVm "x = 1\nprint x in [1, 2]\n" `shouldBe` Right ["1"]

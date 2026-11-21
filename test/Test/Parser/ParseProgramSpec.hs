@@ -4,7 +4,7 @@ import Data.Either (isRight)
 import PythonHS.AST.BinaryOperator (BinaryOperator (..))
 import PythonHS.AST.DictEntry (DictEntry (..))
 import PythonHS.AST.ExceptSuite (ExceptSuite (..))
-import PythonHS.AST.Expr (Expr (BinaryExpr, CallExpr, DictExpr, FloatExpr, IdentifierExpr, IntegerExpr, KeywordArgExpr, KwStarArgExpr, LambdaExpr, ListComprehensionClausesExpr, ListComprehensionExpr, ListExpr, NoneExpr, NotExpr, StarArgExpr, StringExpr, UnaryMinusExpr, WalrusExpr))
+import PythonHS.AST.Expr (Expr (..))
 import PythonHS.AST.FromImportEntry (FromImportEntry (..))
 import PythonHS.AST.FunctionDefault (FunctionDefault (..))
 import PythonHS.AST.ImportEntry (ImportEntry (..))
@@ -2239,3 +2239,34 @@ spec = describe "parseProgram" $ do
           Token EOFToken "" (Position 4 1)
         ]
         `shouldBe` Right (Program [WithStmt (CallExpr "open" [StringExpr "'file.txt'" (Position 1 11)] (Position 1 6)) Nothing [PrintStmt (IntegerExpr 1 (Position 2 9)) (Position 2 3), PrintStmt (IntegerExpr 2 (Position 3 9)) (Position 3 3)] (Position 1 1)])
+
+    it "parses in operator expression" $
+      parseProgram
+        [ Token PrintToken "print" (Position 1 1),
+          Token IntegerToken "1" (Position 1 7),
+          Token InToken "in" (Position 1 9),
+          Token LBracketToken "[" (Position 1 12),
+          Token IntegerToken "1" (Position 1 13),
+          Token CommaToken "," (Position 1 14),
+          Token IntegerToken "2" (Position 1 16),
+          Token RBracketToken "]" (Position 1 17),
+          Token NewlineToken "\n" (Position 1 18),
+          Token EOFToken "" (Position 2 1)
+        ]
+        `shouldBe` Right (Program [PrintStmt (BinaryExpr {binaryExprOp = InOperator, binaryExprLeft = IntegerExpr 1 (Position 1 7), binaryExprRight = ListExpr [IntegerExpr 1 (Position 1 13), IntegerExpr 2 (Position 1 16)] (Position 1 12), binaryExprPos = Position 1 9}) (Position 1 1)])
+
+    it "parses not in operator expression" $
+      parseProgram
+        [ Token PrintToken "print" (Position 1 1),
+          Token IntegerToken "1" (Position 1 7),
+          Token NotToken "not" (Position 1 9),
+          Token InToken "in" (Position 1 13),
+          Token LBracketToken "[" (Position 1 16),
+          Token IntegerToken "1" (Position 1 17),
+          Token CommaToken "," (Position 1 18),
+          Token IntegerToken "2" (Position 1 20),
+          Token RBracketToken "]" (Position 1 21),
+          Token NewlineToken "\n" (Position 1 22),
+          Token EOFToken "" (Position 2 1)
+        ]
+        `shouldBe` Right (Program [PrintStmt (BinaryExpr {binaryExprOp = NotInOperator, binaryExprLeft = IntegerExpr 1 (Position 1 7), binaryExprRight = ListExpr [IntegerExpr 1 (Position 1 17), IntegerExpr 2 (Position 1 20)] (Position 1 16), binaryExprPos = Position 1 9}) (Position 1 1)])

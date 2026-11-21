@@ -16,4 +16,6 @@ data BinaryOperator
   | GteOperator
   | AndOperator
   | OrOperator
+  | InOperator
+  | NotInOperator
   deriving (Eq, Show)
