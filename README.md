@@ -118,6 +118,9 @@ MIT License — 詳細は [LICENSE](LICENSE) を参照してください。
 - [x] `lower(s)` / `upper(s)`
 - [x] `strip(s)` / `strip(s, chars)`（前後の空白または指定文字を除去）
 - [x] `replace(s, old, new)`（全出現を置換。空の old は各文字の前後に挿入）
+- [x] `startswith(s, prefix)` / `endswith(s, suffix)`（判定結果は 1/0）
+- [x] `find(s, sub)`（最初の出現位置、見つからなければ -1）
+- [x] `count(s, sub)`（重複しない出現回数、空の sub は length + 1）
 - [x] `math`: `sqrt`, `sin`, `cos`, `tan`, `log`, `exp`, `pi`, `e`
 - [x] `json`: `dumps`, `loads`
 - [x] `pathlib`: `Path`
