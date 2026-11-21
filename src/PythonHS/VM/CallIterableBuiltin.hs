@@ -1,5 +1,7 @@
 module PythonHS.VM.CallIterableBuiltin (callIterableBuiltin) where
 
+import PythonHS.Evaluator.ExpectTruthy (expectTruthy)
+import PythonHS.Evaluator.ExpectTruthyInput (ExpectTruthyInput (..))
 import PythonHS.Evaluator.ShowPos (showPos)
 import PythonHS.Evaluator.Value (Value (..))
 import PythonHS.VM.CallIterableBuiltinConfig (CallIterableBuiltinConfig (..))
@@ -10,6 +12,8 @@ callIterableBuiltin config =
   case name of
     "enumerate" -> Just (evalEnumerate args)
     "zip" -> Just (evalZip args)
+    "any" -> Just (evalQuantifier "any" or args)
+    "all" -> Just (evalQuantifier "all" and args)
     _ -> Nothing
   where
     name = callIterableBuiltinName config
@@ -59,5 +63,23 @@ callIterableBuiltin config =
 
     tailOrEmpty [] = []
     tailOrEmpty (_ : restItems) = restItems
+
+    evalQuantifier fname combine values =
+      case values of
+        [value] ->
+          case iterableItems value of
+            Nothing -> Left ("Type error: " ++ fname ++ " expects iterable at " ++ showPos pos)
+            Just items -> fmap (boolValue . combine . map (== 1)) (mapM truthiness items)
+        _ -> Left (countMismatch fname)
+      where
+        truthiness item =
+          expectTruthy
+            ExpectTruthyInput
+              { expectTruthyInputContext = fname,
+                expectTruthyInputPos = pos,
+                expectTruthyInputValue = item
+              }
+
+    boolValue condition = IntValue {intValue = if condition then 1 else 0}
 
     countMismatch fname = "Argument count mismatch when calling " ++ fname ++ " at " ++ showPos pos

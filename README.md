@@ -121,6 +121,7 @@ MIT License — 詳細は [LICENSE](LICENSE) を参照してください。
 - [x] `startswith(s, prefix)` / `endswith(s, suffix)`（判定結果は 1/0）
 - [x] `find(s, sub)`（最初の出現位置、見つからなければ -1）
 - [x] `count(s, sub)`（重複しない出現回数、空の sub は length + 1）
+- [x] `any(iterable)` / `all(iterable)`（要素の truthiness を判定し 1/0 を返す）
 - [x] `math`: `sqrt`, `sin`, `cos`, `tan`, `log`, `exp`, `pi`, `e`
 - [x] `json`: `dumps`, `loads`
 - [x] `pathlib`: `Path`
