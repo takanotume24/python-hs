@@ -84,7 +84,11 @@ callStringBuiltin config =
       evalStringPair "find" values (\text needle -> IntValue {intValue = fromIntegral (indexOf needle text)})
 
     evalCount values =
-      evalStringPair "count" values (\text needle -> IntValue {intValue = fromIntegral (countOccurrences needle text)})
+      case values of
+        [ListValue {listValueItems = items}, targetValue] ->
+          Right (IntValue {intValue = fromIntegral (length (filter (== targetValue) items))})
+        (ListValue {} : _) -> Left (countMismatch "count")
+        _ -> evalStringPair "count" values (\text needle -> IntValue {intValue = fromIntegral (countOccurrences needle text)})
 
     evalStringPair fname values onMatch =
       case values of

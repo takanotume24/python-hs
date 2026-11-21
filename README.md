@@ -98,11 +98,16 @@ MIT License — 詳細は [LICENSE](LICENSE) を参照してください。
 - [x] `range(stop)` / `range(start, stop)` / `range(start, stop, step)`
 - [x] `append(list, value)` / `remove(list, value)` / `sort(list)` / `reverse(list)` / `insert(list, index, value)` / `pop(list)` / `clear(list)`
   - `sort` は数値リストまたは文字列リストを昇順に並べ替え
+- [x] `index(list, value)`（最初の出現位置、見つからなければ Value error）
+- [x] `count(list, value)`（一致する要素数。`count(s, sub)` は文字列の出現回数）
+- [x] `copy(list)` / `copy(dict)`（浅いコピー）
 - [x] `keys(dict)` / `values(dict)` / `items(dict)`（挿入順維持）
 - [x] `get(dict, key)` / `get(dict, key, default)`
 - [x] `update(dict, key, value)` / `update(dict, otherDict)`
 - [x] `setdefault(dict, key)` / `setdefault(dict, key, default)`
 - [x] `pop(dict, key)` / `pop(dict, key, default)`
+- [x] `fromkeys(seq[, value])`（キー列から辞書を作成。重複キーは1つにまとめる）
+- [x] `popitem(dict)`（最後に挿入された (key, value) を返す。空辞書は Value error）
 - [x] `abs(x)`（int/float）
 - [x] `min(...)` / `max(...)`（位置引数・list/tuple、int/float/string）
 - [x] `sum(list[, start])` / `sum(tuple[, start])`

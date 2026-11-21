@@ -273,6 +273,8 @@ library
     , PythonHS.VM.CallBuiltin
     , PythonHS.VM.BindDefaults
     , PythonHS.VM.CallCollectionBuiltin
+    , PythonHS.VM.CallCollectionMethodBuiltin
+    , PythonHS.VM.CallCollectionMethodBuiltinConfig
     , PythonHS.VM.CallConstructorBuiltin
     , PythonHS.VM.CallConstructorBuiltinConfig
     , PythonHS.VM.CallConversionBuiltin
@@ -566,6 +568,7 @@ test-suite python-hs-test
     , Test.VM.RunSourceVmPart13Spec
     , Test.VM.RunSourceVmPart14Spec
     , Test.VM.RunSourceVmPart15Spec
+    , Test.VM.RunSourceVmPart16Spec
     , Test.VM.RunInstructionsSpec
     , Test.Structure.CheckStructureSpec
     , Test.Structure.DetectPositionalArgsSpec
