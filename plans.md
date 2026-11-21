@@ -606,13 +606,13 @@
 - 各マイルストーンは「失敗テスト先行 → 実装 → `cabal run quality-gate` → コミット」で進める。
 - 完了条件は、全テスト PASS、コンパイラ警告 0、品質ゲート全項目 PASS とする。
 
-### P112: 文字列メソッドの引数拡張
-- [ ] `startswith(s, prefix, start, end)` / `endswith(s, suffix, start, end)` を追加
-- [ ] `find(s, sub, start, end)` / `rfind(s, sub, start, end)` を追加
-- [ ] `count(s, sub, start, end)` を追加
-- [ ] `index(s, sub)` / `rindex(s, sub)` を追加（見つからない場合は `Value error`）
-- [ ] start/end の範囲外・負数の扱いをテストで固定
-- [ ] `CallStringBuiltin` の範囲計算を共通化し、既存の文字列関数と整合させる
+### P112: 文字列メソッドの引数拡張（完了）
+- [x] `startswith(s, prefix, start, end)` / `endswith(s, suffix, start, end)` を追加
+- [x] `find(s, sub, start, end)` / `rfind(s, sub, start, end)` を追加
+- [x] `count(s, sub, start, end)` を追加
+- [x] `index(s, sub)` / `rindex(s, sub)` を追加（見つからない場合は `Value error`）
+- [x] start/end の範囲外・負数の扱いをテストで固定
+- [x] `CallStringBuiltin` の範囲計算を共通化し、既存の文字列関数と整合させる
 
 ### P113: リスト・辞書メソッドの追加（完了）
 - [x] リスト: `index(list, value)` / `count(list, value)` / `copy(list)` を追加
@@ -696,6 +696,16 @@
 - P118 はクラス属性解決・メソッド束縛との相互作用があり、中リスク
 - P119 は `type` / `isinstance` が今後のクラスシステム拡張と密接なため、段階的な仕様固定とする
 - P120 は既存メソッド構文の拡張だが、影響範囲が広いため回帰テストを充実させる
+
+## 現在のスコープ（P112: 文字列メソッドの引数拡張）
+- [x] P112 開始: `startswith` / `endswith` / `find` / `rfind` / `index` / `rindex` / `count` の start/end 対応
+- [x] P112-1: 失敗テストを `RunSourceVmPart20Spec` に追加（負数・範囲外・空文字列・型エラー）
+- [x] P112-2: `CallStringSearchBuiltin` を新設し、検索系文字列組み込みを分離
+- [x] P112-3: start/end の正規化を `rangeBounds` に共通化（負数加算・end の 0..len クランプ）
+- [x] P112-4: `index` / `rindex` は未発見時に `Value error: substring not found` を返す
+- [x] P112-5: `count` はリスト要素数カウントと文字列範囲カウントを両立
+- [x] P112-6: 全テスト PASS（1356 examples, 0 failures）
+- [x] P112-7: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
 
 ## 現在のスコープ（P111: VM sort/sorted の文字列対応）
 - [x] P111 開始: `sorted` / `sort` を文字列リストにも対応
@@ -1100,6 +1110,12 @@
 ## メンテナンス記録（要約）
 - 注記: 以下は時系列ログ。古い日付の「未対応」項目は、その後のエントリで仕様更新済みの場合がある。
 - 2026-11-21
+  - [x] P112 完了: 文字列メソッドの引数拡張
+  - [x] P112 実装: `startswith` / `endswith` / `find` / `rfind` / `index` / `rindex` / `count` の start/end 対応
+  - [x] P112 実装: `CallStringSearchBuiltin` を新設し、`CallStringBuiltin` は分割・変換系に整理
+  - [x] P112 実装: start/end の正規化を `rangeBounds` に共通化
+  - [x] P112 テスト: `RunSourceVmPart20Spec` に 37 ケースを追加
+  - [x] P112 品質ゲート: `cabal run quality-gate` が全項目 PASS（1356 examples, 0 failures）
   - [x] P89 完了: `in` / `not in` 演算子
   - [x] P89 実装: `BinaryOperator` に `InOperator` / `NotInOperator` を追加
   - [x] P89 実装: `ParseExpr` で `in` / `not in` を比較演算子レベルで解析

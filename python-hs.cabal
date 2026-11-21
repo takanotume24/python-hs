@@ -302,6 +302,7 @@ library
     , PythonHS.VM.CallMapFilterBuiltin
     , PythonHS.VM.CallStringBuiltin
     , PythonHS.VM.CallStringBuiltinConfig
+    , PythonHS.VM.CallStringSearchBuiltin
     , PythonHS.VM.GetitemValue
     , PythonHS.VM.SliceValue
     , PythonHS.VM.CallMathBuiltin
@@ -593,6 +594,7 @@ test-suite python-hs-test
     , Test.VM.RunSourceVmPart17Spec
     , Test.VM.RunSourceVmPart18Spec
     , Test.VM.RunSourceVmPart19Spec
+    , Test.VM.RunSourceVmPart20Spec
     , Test.VM.RunInstructionsSpec
     , Test.Structure.CheckStructureSpec
     , Test.Structure.DetectPositionalArgsSpec

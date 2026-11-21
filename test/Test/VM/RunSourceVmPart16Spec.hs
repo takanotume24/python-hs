@@ -18,8 +18,8 @@ spec = describe "runSourceVm (vm mvp) - part 16" $ do
     it "reports value error when the value is absent" $ do
       runSourceVm "print index([1, 2], 5)\n" `shouldBe` Left "Value error: index value not found at 1:7"
 
-    it "reports type error for a non-list receiver" $ do
-      runSourceVm "print index('abc', 'a')\n" `shouldBe` Left "Type error: index expects list as first argument at 1:7"
+    it "reports type error for an invalid receiver" $ do
+      runSourceVm "print index(5, 'a')\n" `shouldBe` Left "Type error: index expects list as first argument at 1:7"
 
     it "reports argument count mismatch" $ do
       runSourceVm "print index([1])\n" `shouldBe` Left "Argument count mismatch when calling index at 1:7"

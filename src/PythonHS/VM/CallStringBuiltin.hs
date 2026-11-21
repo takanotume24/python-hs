@@ -1,7 +1,7 @@
 module PythonHS.VM.CallStringBuiltin (callStringBuiltin) where
 
 import Data.Char (isSpace, toLower, toUpper)
-import Data.List (intercalate, isPrefixOf, isSuffixOf, stripPrefix, tails)
+import Data.List (intercalate, isPrefixOf, stripPrefix, tails)
 import PythonHS.Evaluator.ShowPos (showPos)
 import PythonHS.Evaluator.Value (Value (..))
 import PythonHS.VM.CallStringBuiltinConfig (CallStringBuiltinConfig (..))
@@ -16,10 +16,7 @@ callStringBuiltin config =
     "upper" -> Just (evalCase toUpper "upper" args)
     "strip" -> Just (evalStrip args)
     "replace" -> Just (evalReplace args)
-    "startswith" -> Just (evalAffix isPrefixOf "startswith" args)
-    "endswith" -> Just (evalAffix isSuffixOf "endswith" args)
-    "find" -> Just (evalFind args)
-    "count" -> Just (evalCount args)
+    "count" -> evalListCount args
     _ -> Nothing
   where
     name = callStringBuiltinName config
@@ -75,59 +72,12 @@ callStringBuiltin config =
         [_, _, _] -> Left ("Type error: replace expects string arguments at " ++ showPos pos)
         _ -> Left (countMismatch "replace")
 
-    evalAffix matches fname values =
-      evalStringPair fname values (\text affix -> boolValue (matches affix text))
-
-    boolValue condition = IntValue {intValue = if condition then 1 else 0}
-
-    evalFind values =
-      evalStringPair "find" values (\text needle -> IntValue {intValue = fromIntegral (indexOf needle text)})
-
-    evalCount values =
+    evalListCount values =
       case values of
         [ListValue {listValueItems = items}, targetValue] ->
-          Right (IntValue {intValue = fromIntegral (length (filter (== targetValue) items))})
-        (ListValue {} : _) -> Left (countMismatch "count")
-        _ -> evalStringPair "count" values (\text needle -> IntValue {intValue = fromIntegral (countOccurrences needle text)})
-
-    evalStringPair fname values onMatch =
-      case values of
-        [StringValue {stringValue = firstText}, StringValue {stringValue = secondText}] ->
-          Right (onMatch firstText secondText)
-        [_, StringValue {}] -> Left (receiverError fname)
-        [StringValue {}, _] -> Left (argumentsError fname)
-        [StringValue {}] -> Left (countMismatch fname)
-        [_, _] -> Left (receiverError fname)
-        [_] -> Left (receiverError fname)
-        _ -> Left (countMismatch fname)
-      where
-        receiverError errorName = "Type error: " ++ errorName ++ " expects string at " ++ showPos pos
-        argumentsError errorName = "Type error: " ++ errorName ++ " expects string arguments at " ++ showPos pos
-
-    indexOf :: String -> String -> Int
-    indexOf needle text
-      | null needle = 0
-      | otherwise = go 0 text
-      where
-        go index remaining
-          | needle `isPrefixOf` remaining = index
-          | otherwise =
-              case remaining of
-                [] -> -1
-                (_ : restCharacters) -> go (index + 1) restCharacters
-
-    countOccurrences :: String -> String -> Int
-    countOccurrences needle text
-      | null needle = length text + 1
-      | otherwise = go 0 text
-      where
-        go total remaining =
-          case stripPrefix needle remaining of
-            Just after -> go (total + 1) after
-            Nothing ->
-              case remaining of
-                [] -> total
-                (_ : restCharacters) -> go total restCharacters
+          Just (Right (IntValue {intValue = fromIntegral (length (filter (== targetValue) items))}))
+        (ListValue {} : _) -> Just (Left (countMismatch "count"))
+        _ -> Nothing
 
     replaceAll oldValue newValue text
       | null oldValue = concatMap (\character -> newValue ++ [character]) text ++ newValue
