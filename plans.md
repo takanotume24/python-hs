@@ -587,6 +587,18 @@
 - [x] P92-12: 全テスト PASS（977 examples, 0 failures）
 - [x] P92-13: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
 
+## 現在のスコープ（P113: VM リスト・辞書メソッドの追加）
+- [x] P113 開始: `index` / `count` / `copy` / `fromkeys` / `popitem` を VM 組み込みとして追加
+- [x] P113-1: 失敗テストを `RunSourceVmPart16Spec` に追加（正常系・型エラー・値エラー・引数個数エラー）
+- [x] P113-2: `CallCollectionMethodBuiltin` / `CallCollectionMethodBuiltinConfig` を新規追加し `CallBuiltin` からディスパッチ
+- [x] P113-3: `index` は最初の出現位置を返し、未発見は Value error
+- [x] P113-4: `count` はリスト要素の一致数を返し、既存の文字列 `count` と共存
+- [x] P113-5: `copy` は list/dict の浅いコピー、`fromkeys` はキー列から辞書を作成
+- [x] P113-6: `popitem` は最後に挿入された (key, value) を返し、空辞書は Value error
+- [x] P113-7: メソッド構文（`xs.index(1)` / `d.copy()`）の動作をテストで固定
+- [x] P113-8: 全テスト PASS（1272 examples, 0 failures）
+- [x] P113-9: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
+
 ## 中期計画（P112〜P116: VM組み込みライブラリの完成度向上）
 
 ### 目的
@@ -603,10 +615,10 @@
 - [ ] `CallStringBuiltin` の範囲計算を共通化し、既存の文字列関数と整合させる
 
 ### P113: リスト・辞書メソッドの追加
-- [ ] リスト: `index(list, value)` / `count(list, value)` / `copy(list)` を追加
-- [ ] 辞書: `copy(dict)` / `fromkeys(seq, value)` / `popitem(dict)` を追加
-- [ ] メソッド構文（`xs.index(1)` / `d.copy()`）の動作をテストで固定
-- [ ] 空リスト・空辞書・キー不在時のエラー規約を固定
+- [x] リスト: `index(list, value)` / `count(list, value)` / `copy(list)` を追加
+- [x] 辞書: `copy(dict)` / `fromkeys(seq, value)` / `popitem(dict)` を追加
+- [x] メソッド構文（`xs.index(1)` / `d.copy()`）の動作をテストで固定
+- [x] 空リスト・空辞書・キー不在時のエラー規約を固定
 
 ### P115: VM 例外処理の網羅強化
 - [ ] `RunnerVmParity` / `check-runner-case-coverage` の未カバー箇所を洗い出す
@@ -1169,6 +1181,13 @@
   - [x] P111-3: `sorted` / `sort` は文字列リストを辞書順でソート
   - [x] P111-4: 全テスト PASS（1241 examples, 0 failures）
   - [x] P111-5: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
+  - [x] P113 完了: VM リスト・辞書メソッドの追加
+  - [x] P113-1: `RunSourceVmPart16Spec` に index / count / copy / fromkeys / popitem のテストを追加
+  - [x] P113-2: `CallCollectionMethodBuiltin` を追加し、`CallBuiltin` からディスパッチ
+  - [x] P113-3: `count` はリストと文字列の両方を受け付ける
+  - [x] P113-4: メソッド構文（`xs.index(1)` / `d.copy()`）の動作を固定
+  - [x] P113-5: 全テスト PASS（1272 examples, 0 failures）
+  - [x] P113-6: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
 - 2026-11-03
   - [x] P85 完了: `try/finally` 構文と finally 節での例外置き換え
   - [x] P85 実装: `ParseCompoundStmt` で `except` 節なしの `try/finally` を解析可能に
