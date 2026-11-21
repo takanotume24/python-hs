@@ -7,6 +7,10 @@ import PythonHS.Evaluator.Value (Value (..))
 import PythonHS.VM.CallBuiltinConfig (CallBuiltinConfig (..))
 import PythonHS.VM.CallCollectionBuiltin (callCollectionBuiltin)
 import PythonHS.VM.CallCollectionBuiltinConfig (CallCollectionBuiltinConfig (..))
+import PythonHS.VM.CallConstructorBuiltin (callConstructorBuiltin)
+import PythonHS.VM.CallConstructorBuiltinConfig (CallConstructorBuiltinConfig (..))
+import PythonHS.VM.CallConversionBuiltin (callConversionBuiltin)
+import PythonHS.VM.CallConversionBuiltinConfig (CallConversionBuiltinConfig (..))
 import PythonHS.VM.CallMathBuiltin (callMathBuiltin)
 import PythonHS.VM.CallMathBuiltinConfig (CallMathBuiltinConfig (..))
 import PythonHS.VM.CallNumericBuiltin (callNumericBuiltin)
@@ -34,15 +38,21 @@ callBuiltin config =
           [_, _, _] -> Left ("Type error: range expects int arguments at " ++ showPos pos)
           _ -> Left ("Argument count mismatch when calling range at " ++ showPos pos)
         _ ->
-          case callNumericBuiltin CallNumericBuiltinConfig {callNumericBuiltinName = name, callNumericBuiltinArgs = args, callNumericBuiltinPos = pos} of
+          case callConstructorBuiltin CallConstructorBuiltinConfig {callConstructorBuiltinName = name, callConstructorBuiltinArgs = args, callConstructorBuiltinPos = pos} of
             Just result -> Just result
             Nothing ->
-              case callMathBuiltin CallMathBuiltinConfig {callMathBuiltinName = name, callMathBuiltinArgs = args, callMathBuiltinPos = pos} of
+              case callConversionBuiltin CallConversionBuiltinConfig {callConversionBuiltinName = name, callConversionBuiltinArgs = args, callConversionBuiltinPos = pos} of
                 Just result -> Just result
                 Nothing ->
-                  case callStdlibBuiltin CallStdlibBuiltinConfig {callStdlibBuiltinName = name, callStdlibBuiltinArgs = args, callStdlibBuiltinPos = pos} of
+                  case callNumericBuiltin CallNumericBuiltinConfig {callNumericBuiltinName = name, callNumericBuiltinArgs = args, callNumericBuiltinPos = pos} of
                     Just result -> Just result
-                    Nothing -> callCollectionBuiltin CallCollectionBuiltinConfig {callCollectionBuiltinName = name, callCollectionBuiltinArgs = args, callCollectionBuiltinPos = pos}
+                    Nothing ->
+                      case callMathBuiltin CallMathBuiltinConfig {callMathBuiltinName = name, callMathBuiltinArgs = args, callMathBuiltinPos = pos} of
+                        Just result -> Just result
+                        Nothing ->
+                          case callStdlibBuiltin CallStdlibBuiltinConfig {callStdlibBuiltinName = name, callStdlibBuiltinArgs = args, callStdlibBuiltinPos = pos} of
+                            Just result -> Just result
+                            Nothing -> callCollectionBuiltin CallCollectionBuiltinConfig {callCollectionBuiltinName = name, callCollectionBuiltinArgs = args, callCollectionBuiltinPos = pos}
   where
     rangeOne n
       | n <= 0 = []

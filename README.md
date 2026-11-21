@@ -106,6 +106,11 @@ MIT License — 詳細は [LICENSE](LICENSE) を参照してください。
 - [x] `min(...)` / `max(...)`（位置引数・list/tuple、int/float/string）
 - [x] `sum(list[, start])` / `sum(tuple[, start])`
 - [x] `sorted(list)` / `sorted(tuple)`（数値リスト、元のリストは変更しない）
+- [x] `str(x)`（出力表現への変換）
+- [x] `int(x)`（int/float/文字列から整数へ。float は 0 方向へ切り捨て）
+- [x] `float(x)`（int/float/文字列から浮動小数へ）
+- [x] `list(x)` / `tuple(x)`（list/tuple/string/dict から変換、引数なしで空を作成）
+- [x] `dict(x)`（dict のコピー、または list/tuple の 2 要素組から作成）
 - [x] `math`: `sqrt`, `sin`, `cos`, `tan`, `log`, `exp`, `pi`, `e`
 - [x] `json`: `dumps`, `loads`
 - [x] `pathlib`: `Path`

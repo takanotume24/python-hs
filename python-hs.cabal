@@ -273,6 +273,10 @@ library
     , PythonHS.VM.CallBuiltin
     , PythonHS.VM.BindDefaults
     , PythonHS.VM.CallCollectionBuiltin
+    , PythonHS.VM.CallConstructorBuiltin
+    , PythonHS.VM.CallConstructorBuiltinConfig
+    , PythonHS.VM.CallConversionBuiltin
+    , PythonHS.VM.CallConversionBuiltinConfig
     , PythonHS.VM.GetitemValue
     , PythonHS.VM.SliceValue
     , PythonHS.VM.CallMathBuiltin
@@ -548,6 +552,8 @@ test-suite python-hs-test
     , Test.VM.RunSourceVmPart5Spec
     , Test.VM.RunSourceVmPart6Spec
     , Test.VM.RunSourceVmPart7Spec
+    , Test.VM.RunSourceVmPart8Spec
+    , Test.VM.RunSourceVmPart9Spec
     , Test.VM.RunInstructionsSpec
     , Test.Structure.CheckStructureSpec
     , Test.Structure.DetectPositionalArgsSpec
