@@ -299,6 +299,7 @@ library
     , PythonHS.VM.CallConversionBuiltinConfig
     , PythonHS.VM.CallIterableBuiltin
     , PythonHS.VM.CallIterableBuiltinConfig
+    , PythonHS.VM.CallMapFilterBuiltin
     , PythonHS.VM.CallStringBuiltin
     , PythonHS.VM.CallStringBuiltinConfig
     , PythonHS.VM.GetitemValue
@@ -414,6 +415,8 @@ library
     , PythonHS.VM.VMScopeContext
     , PythonHS.VM.CallBuiltinConfig
     , PythonHS.VM.CallCollectionBuiltinConfig
+    , PythonHS.VM.CallMapFilterBuiltinConfig
+    , PythonHS.VM.CallMapFilterBuiltinResult
     , PythonHS.VM.CallMathBuiltinConfig
     , PythonHS.VM.CallStdlibBuiltinConfig
     , PythonHS.VM.CompileCallArgsAtConfig
@@ -589,6 +592,7 @@ test-suite python-hs-test
     , Test.VM.RunSourceVmPart16Spec
     , Test.VM.RunSourceVmPart17Spec
     , Test.VM.RunSourceVmPart18Spec
+    , Test.VM.RunSourceVmPart19Spec
     , Test.VM.RunInstructionsSpec
     , Test.Structure.CheckStructureSpec
     , Test.Structure.DetectPositionalArgsSpec
