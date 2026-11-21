@@ -56,6 +56,11 @@ library
     , PythonHS.Evaluator.FuncEnv
     , PythonHS.Evaluator.EvalContextManager
     , PythonHS.Evaluator.EvalExprResult
+    , PythonHS.Evaluator.EvalArgsInput
+    , PythonHS.Evaluator.EvalArgsGoInput
+    , PythonHS.Evaluator.EvalComparisonChainInput
+    , PythonHS.Evaluator.EvalComparisonItemsInput
+    , PythonHS.Evaluator.EvalDictEntriesInput
     , PythonHS.Structure.CheckStructure
     , PythonHS.Structure.CheckStructureViolations
     , PythonHS.Structure.PositionalArgViolation

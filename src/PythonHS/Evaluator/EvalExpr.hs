@@ -7,16 +7,23 @@ import PythonHS.AST.Expr (Expr (..))
 import PythonHS.AST.Stmt (Stmt)
 import PythonHS.Evaluator.DictPair (DictPair (..))
 import PythonHS.Evaluator.Env (Env)
+import PythonHS.Evaluator.EvalArgsGoInput (EvalArgsGoInput (..))
+import PythonHS.Evaluator.EvalArgsInput (EvalArgsInput (..))
 import PythonHS.Evaluator.EvalCallExpr (evalCallExpr)
+import PythonHS.Evaluator.EvalComparisonChainInput (EvalComparisonChainInput (..))
+import PythonHS.Evaluator.EvalComparisonItemsInput (EvalComparisonItemsInput (..))
+import PythonHS.Evaluator.EvalDictEntriesInput (EvalDictEntriesInput (..))
 import PythonHS.Evaluator.EvalExprBinary (evalExprBinary)
 import PythonHS.Evaluator.EvalExprBinaryInput (EvalExprBinaryInput (..))
 import PythonHS.Evaluator.EvalExprResult (EvalExprResult (..))
 import PythonHS.Evaluator.EvalStmtResult (EvalStmtResult)
 import PythonHS.Evaluator.EvaluatedArgsResult (EvaluatedArgsResult (..))
+import PythonHS.Evaluator.ExpectTruthy (expectTruthy)
+import PythonHS.Evaluator.ExpectTruthyInput (ExpectTruthyInput (..))
 import PythonHS.Evaluator.FuncEnv (FuncEnv)
 import PythonHS.Evaluator.ShowPos (showPos)
 import PythonHS.Evaluator.Value (Value (..))
-import PythonHS.Lexer.Position (Position)
+import PythonHS.Parser.ExprPos (exprPos)
 import PythonHS.VM.EvalBinaryOp (evalBinaryOp)
 import PythonHS.VM.EvalBinaryOpConfig (EvalBinaryOpConfig (..))
 
@@ -33,13 +40,13 @@ evalExpr evalStatementsFn env fenv expr =
     StringExpr {stringExprValue} -> Right (EvalExprResult (StringValue stringExprValue) [] env)
     NoneExpr {} -> Right (EvalExprResult NoneValue [] env)
     ListExpr {listExprItems} -> do
-      argsResult <- evalArgs env fenv listExprItems
+      argsResult <- evalArgs EvalArgsInput {evalArgsInputEvalExpr = evalExpr evalStatementsFn, evalArgsInputEnv = env, evalArgsInputFuncEnv = fenv, evalArgsInputExprs = listExprItems}
       Right (EvalExprResult (ListValue (evaluatedArgsResultValues argsResult)) (evaluatedArgsResultOutputs argsResult) (evaluatedArgsResultEnv argsResult))
     TupleExpr {tupleExprItems} -> do
-      argsResult <- evalArgs env fenv tupleExprItems
+      argsResult <- evalArgs EvalArgsInput {evalArgsInputEvalExpr = evalExpr evalStatementsFn, evalArgsInputEnv = env, evalArgsInputFuncEnv = fenv, evalArgsInputExprs = tupleExprItems}
       Right (EvalExprResult (TupleValue (evaluatedArgsResultValues argsResult)) (evaluatedArgsResultOutputs argsResult) (evaluatedArgsResultEnv argsResult))
     DictExpr {dictExprEntries} -> do
-      entriesResult <- evalDictEntries env fenv dictExprEntries
+      entriesResult <- evalDictEntries EvalDictEntriesInput {evalDictEntriesInputEnv = env, evalDictEntriesInputFuncEnv = fenv, evalDictEntriesInputEntries = dictExprEntries}
       Right (EvalExprResult (DictValue (evaluatedArgsResultValues entriesResult)) (evaluatedArgsResultOutputs entriesResult) (evaluatedArgsResultEnv entriesResult))
     ListComprehensionExpr {listComprehensionExprPos} ->
       Left $ "Runtime error: list comprehension is only supported in vm engine at " ++ showPos listComprehensionExprPos
@@ -69,7 +76,7 @@ evalExpr evalStatementsFn env fenv expr =
         _ -> Left $ "Type error: unary - expects int at " ++ showPos unaryMinusExprPos
     NotExpr {notExprValue} -> do
       EvalExprResult v outs envAfterExpr <- evalExpr evalStatementsFn env fenv notExprValue
-      nv <- expectTruthy "not" (exprPos expr) v
+      nv <- expectTruthy ExpectTruthyInput {expectTruthyInputContext = "not", expectTruthyInputPos = exprPos expr, expectTruthyInputValue = v}
       Right (EvalExprResult (IntValue (if nv == 0 then 1 else 0)) outs envAfterExpr)
     BitwiseNotExpr {bitwiseNotExprValue, bitwiseNotExprPos} -> do
       EvalExprResult v outs envAfterExpr <- evalExpr evalStatementsFn env fenv bitwiseNotExprValue
@@ -77,7 +84,16 @@ evalExpr evalStatementsFn env fenv expr =
         IntValue {intValue = n} -> Right (EvalExprResult (IntValue (complement n)) outs envAfterExpr)
         _ -> Left $ "Type error: ~ expects int at " ++ showPos bitwiseNotExprPos
     ComparisonChainExpr {comparisonChainLeft = leftExpr, comparisonChainOps = ops, comparisonChainRights = rights, comparisonChainPos = pos} ->
-      evalComparisonChain evalStatementsFn env fenv leftExpr ops rights pos
+      evalComparisonChain
+        EvalComparisonChainInput
+          { evalComparisonChainInputEvalStatementsFn = evalStatementsFn,
+            evalComparisonChainInputEnv = env,
+            evalComparisonChainInputFuncEnv = fenv,
+            evalComparisonChainInputLeft = leftExpr,
+            evalComparisonChainInputOps = ops,
+            evalComparisonChainInputRights = rights,
+            evalComparisonChainInputPos = pos
+          }
     BinaryExpr {binaryExprOp, binaryExprLeft, binaryExprRight, binaryExprPos} ->
       evalExprBinary (EvalExprBinaryInput (evalExpr evalStatementsFn) env fenv binaryExprOp binaryExprLeft binaryExprRight binaryExprPos)
     CallExpr {callExprName, callExprArgs, callExprPos} ->
@@ -89,66 +105,72 @@ evalExpr evalStatementsFn env fenv expr =
     SliceExpr {} ->
       Left $ "Runtime error: slicing is only supported in vm engine at " ++ showPos (exprPos expr)
   where
-    evalArgs currentEnv currentFenv = foldl go (Right EvaluatedArgsResult {evaluatedArgsResultValues = [], evaluatedArgsResultOutputs = [], evaluatedArgsResultEnv = currentEnv})
+    evalArgs input = go EvalArgsGoInput {evalArgsGoInputEvalExpr = evalArgsInputEvalExpr input, evalArgsGoInputFuncEnv = evalArgsInputFuncEnv input, evalArgsGoInputAcc = Right EvaluatedArgsResult {evaluatedArgsResultValues = [], evaluatedArgsResultOutputs = [], evaluatedArgsResultEnv = evalArgsInputEnv input}, evalArgsGoInputExprs = evalArgsInputExprs input}
       where
-        go acc argExpr = do
-          result <- acc
-          EvalExprResult value exprOuts envNext <- evalExpr evalStatementsFn (evaluatedArgsResultEnv result) currentFenv argExpr
-          Right EvaluatedArgsResult {evaluatedArgsResultValues = evaluatedArgsResultValues result ++ [value], evaluatedArgsResultOutputs = evaluatedArgsResultOutputs result ++ exprOuts, evaluatedArgsResultEnv = envNext}
+        go EvalArgsGoInput {evalArgsGoInputAcc = acc, evalArgsGoInputExprs = []} = acc
+        go goInput = do
+          result <- evalArgsGoInputAcc goInput
+          case evalArgsGoInputExprs goInput of
+            [] -> Right result
+            (argExpr : restExprs) -> do
+              EvalExprResult value exprOuts envNext <- evalArgsGoInputEvalExpr goInput (evaluatedArgsResultEnv result) (evalArgsGoInputFuncEnv goInput) argExpr
+              go EvalArgsGoInput {evalArgsGoInputEvalExpr = evalArgsGoInputEvalExpr goInput, evalArgsGoInputFuncEnv = evalArgsGoInputFuncEnv goInput, evalArgsGoInputAcc = Right EvaluatedArgsResult {evaluatedArgsResultValues = evaluatedArgsResultValues result ++ [value], evaluatedArgsResultOutputs = evaluatedArgsResultOutputs result ++ exprOuts, evaluatedArgsResultEnv = envNext}, evalArgsGoInputExprs = restExprs}
 
-    evalDictEntries currentEnv _ [] = Right EvaluatedArgsResult {evaluatedArgsResultValues = [], evaluatedArgsResultOutputs = [], evaluatedArgsResultEnv = currentEnv}
-    evalDictEntries currentEnv currentFenv (DictEntry {dictEntryKey = keyExpr, dictEntryValue = valueExpr} : restEntries) = do
-      EvalExprResult keyVal keyOuts envAfterKey <- evalExpr evalStatementsFn currentEnv currentFenv keyExpr
-      EvalExprResult valueVal valueOuts envAfterValue <- evalExpr evalStatementsFn envAfterKey currentFenv valueExpr
-      restResult <- evalDictEntries envAfterValue currentFenv restEntries
-      Right EvaluatedArgsResult {evaluatedArgsResultValues = DictPair {dictPairKey = keyVal, dictPairValue = valueVal} : evaluatedArgsResultValues restResult, evaluatedArgsResultOutputs = keyOuts ++ valueOuts ++ evaluatedArgsResultOutputs restResult, evaluatedArgsResultEnv = evaluatedArgsResultEnv restResult}
+    evalDictEntries input =
+      case evalDictEntriesInputEntries input of
+        [] -> Right EvaluatedArgsResult {evaluatedArgsResultValues = [], evaluatedArgsResultOutputs = [], evaluatedArgsResultEnv = evalDictEntriesInputEnv input}
+        (DictEntry {dictEntryKey = keyExpr, dictEntryValue = valueExpr} : restEntries) -> do
+          let currentEnv = evalDictEntriesInputEnv input
+              currentFenv = evalDictEntriesInputFuncEnv input
+          EvalExprResult keyVal keyOuts envAfterKey <- evalExpr evalStatementsFn currentEnv currentFenv keyExpr
+          EvalExprResult valueVal valueOuts envAfterValue <- evalExpr evalStatementsFn envAfterKey currentFenv valueExpr
+          restResult <- evalDictEntries input {evalDictEntriesInputEnv = envAfterValue, evalDictEntriesInputEntries = restEntries}
+          Right EvaluatedArgsResult {evaluatedArgsResultValues = DictPair {dictPairKey = keyVal, dictPairValue = valueVal} : evaluatedArgsResultValues restResult, evaluatedArgsResultOutputs = keyOuts ++ valueOuts ++ evaluatedArgsResultOutputs restResult, evaluatedArgsResultEnv = evaluatedArgsResultEnv restResult}
 
-    exprPos (IntegerExpr _ pos) = pos
-    exprPos (FloatExpr _ pos) = pos
-    exprPos (StringExpr _ pos) = pos
-    exprPos (NoneExpr pos) = pos
-    exprPos (ListExpr _ pos) = pos
-    exprPos (TupleExpr _ pos) = pos
-    exprPos (ListComprehensionExpr _ _ _ pos) = pos
-    exprPos (ListComprehensionClausesExpr _ _ pos) = pos
-    exprPos (DictExpr _ pos) = pos
-    exprPos (IdentifierExpr _ pos) = pos
-    exprPos (KeywordArgExpr _ _ pos) = pos
-    exprPos (StarArgExpr _ pos) = pos
-    exprPos (KwStarArgExpr _ pos) = pos
-    exprPos (WalrusExpr _ _ pos) = pos
-    exprPos (LambdaExpr _ _ pos) = pos
-    exprPos (LambdaDefaultsExpr _ _ _ pos) = pos
-    exprPos (UnaryMinusExpr _ pos) = pos
-    exprPos (NotExpr _ pos) = pos
-    exprPos (BitwiseNotExpr _ pos) = pos
-    exprPos (ComparisonChainExpr _ _ _ pos) = pos
-    exprPos (BinaryExpr _ _ _ pos) = pos
-    exprPos (CallExpr _ _ pos) = pos
-    exprPos (CallValueExpr _ _ pos) = pos
-    exprPos (IndexExpr _ _ pos) = pos
-    exprPos (SliceExpr _ _ _ pos) = pos
-
-    evalComparisonChain evalStatementsFn' currentEnv currentFenv leftExpr ops rights pos' = do
+    evalComparisonChain input = do
+      let evalStatementsFn' = evalComparisonChainInputEvalStatementsFn input
+          currentEnv = evalComparisonChainInputEnv input
+          currentFenv = evalComparisonChainInputFuncEnv input
+          leftExpr = evalComparisonChainInputLeft input
+          pos' = evalComparisonChainInputPos input
       EvalExprResult leftVal leftOuts envAfterLeft <- evalExpr evalStatementsFn' currentEnv currentFenv leftExpr
-      evalComparisonItems evalStatementsFn' currentFenv leftVal leftOuts envAfterLeft ops rights pos'
+      evalComparisonItems
+        EvalComparisonItemsInput
+          { evalComparisonItemsInputEvalStatementsFn = evalStatementsFn',
+            evalComparisonItemsInputFuncEnv = currentFenv,
+            evalComparisonItemsInputLeftValue = leftVal,
+            evalComparisonItemsInputAccOutputs = leftOuts,
+            evalComparisonItemsInputEnv = envAfterLeft,
+            evalComparisonItemsInputRemainingOps = evalComparisonChainInputOps input,
+            evalComparisonItemsInputRemainingRights = evalComparisonChainInputRights input,
+            evalComparisonItemsInputPos = pos'
+          }
 
-    evalComparisonItems _ _ _ accOuts envAfter [] [] _ = Right (EvalExprResult (IntValue 1) accOuts envAfter)
-    evalComparisonItems evalStatementsFn' currentFenv leftVal accOuts envAfter (op : restOps) (rightExpr : restRights) pos' = do
-      EvalExprResult rightVal rightOuts envAfterRight <- evalExpr evalStatementsFn' envAfter currentFenv rightExpr
-      case evalBinaryOp EvalBinaryOpConfig {evalBinaryOpOp = op, evalBinaryOpLeft = leftVal, evalBinaryOpRight = rightVal, evalBinaryOpPos = pos'} of
-        Left err -> Left err
-        Right resultVal ->
-          case resultVal of
-            IntValue {intValue = 0} -> Right (EvalExprResult (IntValue 0) (accOuts ++ rightOuts) envAfterRight)
-            _ -> evalComparisonItems evalStatementsFn' currentFenv rightVal (accOuts ++ rightOuts) envAfterRight restOps restRights pos'
-
-    expectTruthy :: String -> Position -> Value -> Either String Int
-    expectTruthy _ _ IntValue {intValue = n} = Right (if n == 0 then 0 else 1)
-    expectTruthy _ _ FloatValue {floatValue = n} = Right (if n == 0 then 0 else 1)
-    expectTruthy _ _ NoneValue = Right 0
-    expectTruthy _ _ StringValue {stringValue = s} = Right (if null s then 0 else 1)
-    expectTruthy _ _ ListValue {listValueItems = vals} = Right (if null vals then 0 else 1)
-    expectTruthy _ _ TupleValue {tupleValueItems = vals} = Right (if null vals then 0 else 1)
-    expectTruthy _ _ DictValue {dictValuePairs = pairs} = Right (if null pairs then 0 else 1)
-    expectTruthy context pos _ = Left $ "Type error: expected int in " ++ context ++ " at " ++ showPos pos
+    evalComparisonItems input =
+      case evalComparisonItemsInputRemainingOps input of
+        [] -> Right (EvalExprResult (IntValue 1) (evalComparisonItemsInputAccOutputs input) (evalComparisonItemsInputEnv input))
+        (op : restOps) ->
+          case evalComparisonItemsInputRemainingRights input of
+            [] -> Right (EvalExprResult (IntValue 1) (evalComparisonItemsInputAccOutputs input) (evalComparisonItemsInputEnv input))
+            (rightExpr : restRights) -> do
+              let evalStatementsFn' = evalComparisonItemsInputEvalStatementsFn input
+                  currentFenv = evalComparisonItemsInputFuncEnv input
+                  leftVal = evalComparisonItemsInputLeftValue input
+                  accOuts = evalComparisonItemsInputAccOutputs input
+                  envAfter = evalComparisonItemsInputEnv input
+                  pos' = evalComparisonItemsInputPos input
+              EvalExprResult rightVal rightOuts envAfterRight <- evalExpr evalStatementsFn' envAfter currentFenv rightExpr
+              case evalBinaryOp EvalBinaryOpConfig {evalBinaryOpOp = op, evalBinaryOpLeft = leftVal, evalBinaryOpRight = rightVal, evalBinaryOpPos = pos'} of
+                Left err -> Left err
+                Right resultVal ->
+                  case resultVal of
+                    IntValue {intValue = 0} -> Right (EvalExprResult (IntValue 0) (accOuts ++ rightOuts) envAfterRight)
+                    _ ->
+                      evalComparisonItems
+                        input
+                          { evalComparisonItemsInputLeftValue = rightVal,
+                            evalComparisonItemsInputAccOutputs = accOuts ++ rightOuts,
+                            evalComparisonItemsInputEnv = envAfterRight,
+                            evalComparisonItemsInputRemainingOps = restOps,
+                            evalComparisonItemsInputRemainingRights = restRights
+                          }

@@ -587,6 +587,18 @@
 - [x] P92-12: 全テスト PASS（977 examples, 0 failures）
 - [x] P92-13: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
 
+## 現在のスコープ（P94: detect-positional-args 精度向上と EvalExpr ローカル関数レコード化）
+- [x] P94 開始: `detect-positional-args` が GHC2024 拡張を正しく解釈できるよう整備
+- [x] P94-1: `haskell-src-exts` の `ParseMode` に GHC2024 相当の拡張リストを追加
+- [x] P94-2: 検出ルールを調整（3引数以上のトップレベル関数のみ検出、単純な再帰パターンは除外）
+- [x] P94-3: `EvalExpr.hs` のローカル関数をレコード入力型に変更
+  - [x] `EvalArgsInput` / `EvalArgsGoInput` / `EvalDictEntriesInput` / `EvalComparisonChainInput` / `EvalComparisonItemsInput` を新規作成
+- [x] P94-4: `EvalExpr.hs` から重複していた `expectTruthy` を削除し、`ExpectTruthy` モジュールを再利用
+- [x] P94-5: `EvalExpr.hs` の `exprPos` を `PythonHS.Parser.ExprPos` に移譲し 200 行制約を遵守
+- [x] P94-6: `DetectPositionalArgsFromSource` の `ghc2024LikeExtensions` を `where` 節に移動し構造制約を遵守
+- [x] P94-7: 全テスト PASS（984 examples, 0 failures）
+- [x] P94-8: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
+
 ## 現在のスコープ（P93: 比較演算子の連鎖 `1 < x < 10`）
 - [x] P93 開始: 比較演算子の連鎖を VM / AST 各経路で実装する
 - [x] P93-1: 失敗テストを `RunSourceVmPart6Spec` / `ParseProgramPart15Spec` に追加
@@ -620,6 +632,26 @@
 - VM コンパイラ戻り値 `(code, endIndex)` — 数十箇所
 - VM 実行時の環境更新 `(newStack, newGlobals, newLocals)` — 数十箇所
 - `CLI/*` の env/output タプル — 数箇所
+
+## detect-positional-args プロジェクト全体分析結果（2026-11-21 最新）
+
+### 分析概要
+`cabal run detect-positional-args -- src` でプロジェクト全体を分析した結果:
+
+| カテゴリ | 件数 | 備考 |
+|---|---|---|
+| `function_declaration` | **0件** | 3引数以上のトップレベル関数のみ検出対象とし、単純な再帰パターンを除外後 0件 |
+| `positional_record_con` | **0件** | レコード構文化完了 ✅ |
+| `tuple` | **0件** | 品質ゲート対象の `src` 内では 0件（`app` 内は未対象） |
+| **合計** | **0件** | `src` ディレクトリ対象 |
+
+### ルール調整の経緯
+- 2026-11-21: `haskell-src-exts` の `ParseMode` に GHC2024 相当の拡張リストを追加し、`ImportQualifiedPost` 等を正しく解釈できるように修正
+- 2026-11-21: 検出ルールを調整
+  - 3引数以上のトップレベル関数のみを検出対象とする
+  - 単純な再帰パターン（`go [] target = ...` / `go (x : xs) target = ...` 等）を除外
+  - ローカル関数（`where`/`let` 内）は対象外
+- 2026-11-21: `EvalExpr.hs` のローカル関数をレコード入力型に変更し、重複 `expectTruthy` / `exprPos` を整理
 
 ## 今後のリファクタリング計画（レコード構文統一）
 

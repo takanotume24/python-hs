@@ -40,16 +40,39 @@ detectFromModule fromConfig =
       goC (InfixConDecl l n1 _ n2)
         | isSrcSpanInfo l = [mkViolation path l DataConCategory (prettyPrint n1 ++ " " ++ prettyPrint n2)]
         | otherwise = []
-      goC (RecDecl _ _ _) = []
+      goC RecDecl {} = []
 
       goM (Match l _ ps _ _)
-        | length ps >= 2 && isSrcSpanInfo l = [mkViolation path l FunDeclCategory (unwords (map prettyPrint (take 3 ps)))]
+        | length ps >= 3,
+          not (isSimpleRecursivePattern ps),
+          isSrcSpanInfo l =
+            [mkViolation path l FunDeclCategory (unwords (map prettyPrint (take 3 ps)))]
         | otherwise = []
       goM (InfixMatch l p _ ps _ _)
-        | length allPats >= 2 && isSrcSpanInfo l = [mkViolation path l FunDeclCategory (unwords (map prettyPrint (take 3 allPats)))]
+        | length allPats >= 3,
+          not (isSimpleRecursivePattern allPats),
+          isSrcSpanInfo l =
+            [mkViolation path l FunDeclCategory (unwords (map prettyPrint (take 3 allPats)))]
         | otherwise = []
         where
           allPats = p : ps
+
+      isSimpleRecursivePattern :: [Pat SrcSpanInfo] -> Bool
+      isSimpleRecursivePattern ps
+        | any isListOrConsPattern ps = all isSimplePattern (filter (not . isListOrConsPattern) ps)
+        | otherwise = False
+
+      isListOrConsPattern :: Pat SrcSpanInfo -> Bool
+      isListOrConsPattern (PList _ []) = True
+      isListOrConsPattern (PInfixApp _ _ op _) = prettyPrint op == "(:)"
+      isListOrConsPattern (PParen _ p) = isListOrConsPattern p
+      isListOrConsPattern _ = False
+
+      isSimplePattern :: Pat SrcSpanInfo -> Bool
+      isSimplePattern (PVar _ _) = True
+      isSimplePattern (PWildCard _) = True
+      isSimplePattern (PParen _ p) = isSimplePattern p
+      isSimplePattern _ = False
 
       goTupleExp (Tuple l _ es)
         | length es >= 2 && isSrcSpanInfo l = [mkViolation path l TupleCategory ("(" ++ unwords (map prettyPrint (take 3 es)) ++ ")")]

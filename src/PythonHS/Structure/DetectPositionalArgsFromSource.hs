@@ -1,7 +1,10 @@
 module PythonHS.Structure.DetectPositionalArgsFromSource (detectPositionalArgsFromSource) where
 
 import Language.Haskell.Exts
-  ( ParseResult (..),
+  ( Extension (..),
+    KnownExtension (..),
+    ParseMode (..),
+    ParseResult (..),
     defaultParseMode,
     parseFilename,
     parseModuleWithMode,
@@ -17,8 +20,46 @@ detectPositionalArgsFromSource :: DetectSourceConfig -> IO [PositionalArgViolati
 detectPositionalArgsFromSource config =
   let path = sourceFilePath config
       src = sourceContent config
-   in case parseModuleWithMode defaultParseMode {parseFilename = path} src of
+      parseMode = defaultParseMode {parseFilename = path, extensions = map EnableExtension ghc2024LikeExtensions}
+   in case parseModuleWithMode parseMode src of
         ParseOk m ->
           let recordConNames = collectRecordConNames m
            in return (detectFromModule (DetectFromModuleConfig {detectFromModuleRecordConNames = recordConNames, detectFromModuleModuleConfig = DetectModuleConfig {moduleFilePath = path, moduleAst = m}}))
         ParseFailed _ _ -> return []
+  where
+    ghc2024LikeExtensions :: [KnownExtension]
+    ghc2024LikeExtensions =
+      [ ImportQualifiedPost,
+        NamedFieldPuns,
+        OverloadedStrings,
+        RecordWildCards,
+        LambdaCase,
+        TupleSections,
+        BinaryLiterals,
+        MultiWayIf,
+        GADTs,
+        RankNTypes,
+        ScopedTypeVariables,
+        TypeApplications,
+        FlexibleContexts,
+        FlexibleInstances,
+        MultiParamTypeClasses,
+        TypeOperators,
+        ExistentialQuantification,
+        DataKinds,
+        PolyKinds,
+        KindSignatures,
+        DefaultSignatures,
+        DeriveFunctor,
+        DeriveGeneric,
+        GeneralizedNewtypeDeriving,
+        StandaloneDeriving,
+        InstanceSigs,
+        ConstraintKinds,
+        TypeFamilies,
+        BangPatterns,
+        PostfixOperators,
+        PatternGuards,
+        TypeSynonymInstances,
+        MonoLocalBinds
+      ]
