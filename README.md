@@ -102,6 +102,10 @@ MIT License — 詳細は [LICENSE](LICENSE) を参照してください。
 - [x] `update(dict, key, value)` / `update(dict, otherDict)`
 - [x] `setdefault(dict, key)` / `setdefault(dict, key, default)`
 - [x] `pop(dict, key)` / `pop(dict, key, default)`
+- [x] `abs(x)`（int/float）
+- [x] `min(...)` / `max(...)`（位置引数・list/tuple、int/float/string）
+- [x] `sum(list[, start])` / `sum(tuple[, start])`
+- [x] `sorted(list)` / `sorted(tuple)`（数値リスト、元のリストは変更しない）
 - [x] `math`: `sqrt`, `sin`, `cos`, `tan`, `log`, `exp`, `pi`, `e`
 - [x] `json`: `dumps`, `loads`
 - [x] `pathlib`: `Path`

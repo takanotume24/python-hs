@@ -7,10 +7,10 @@ import PythonHS.Evaluator.PairToList (pairToList)
 import PythonHS.Evaluator.ShowPos (showPos)
 import PythonHS.Evaluator.Value (Value (..))
 import PythonHS.Evaluator.ValueToReplOutput (valueToReplOutput)
-import PythonHS.Lexer.Position (Position)
 import PythonHS.VM.CallCollectionBuiltinConfig (CallCollectionBuiltinConfig (..))
 import PythonHS.VM.GetitemValue (getitemValue)
 import PythonHS.VM.GetitemValueConfig (GetitemValueConfig (..))
+import PythonHS.VM.NumberPairs (numberPairs)
 import PythonHS.VM.SliceValue (sliceValue)
 import PythonHS.VM.SliceValueConfig (SliceValueConfig (..))
 
@@ -141,11 +141,6 @@ callCollectionBuiltin config =
           _ -> Left ("Argument count mismatch when calling __python_hs_repl_repr__ at " ++ showPos pos)
         _ -> Nothing
   where
-    numberPairs [] = Just []
-    numberPairs (IntValue {intValue = n} : restVals) = fmap (NumberSortPair {numberSortPairSortKey = fromIntegral n, numberSortPairValue = IntValue {intValue = n}} :) (numberPairs restVals)
-    numberPairs (FloatValue {floatValue = n} : restVals) = fmap (NumberSortPair {numberSortPairSortKey = n, numberSortPairValue = FloatValue {floatValue = n}} :) (numberPairs restVals)
-    numberPairs (_ : _) = Nothing
-
     lookupDictValue [] _ = Nothing
     lookupDictValue (entry : restPairs) target
       | dictPairKey entry == target = Just (dictPairValue entry)

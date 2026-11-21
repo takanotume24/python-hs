@@ -276,6 +276,8 @@ library
     , PythonHS.VM.GetitemValue
     , PythonHS.VM.SliceValue
     , PythonHS.VM.CallMathBuiltin
+    , PythonHS.VM.CallNumericBuiltin
+    , PythonHS.VM.CallNumericBuiltinConfig
     , PythonHS.VM.CallStdlibBuiltin
     , PythonHS.VM.CallExceptionClassBuiltin
     , PythonHS.VM.CallExceptionClassBuiltinConfig
@@ -322,6 +324,7 @@ library
     , PythonHS.VM.IsBuiltinImportModule
     , PythonHS.VM.ModuleKeyFor
     , PythonHS.VM.ModulePrefixFor
+    , PythonHS.VM.NumberPairs
     , PythonHS.VM.ResolveTargetModulePath
     , PythonHS.VM.ResolveStarExportNames
     , PythonHS.VM.ResolveLocalImports
@@ -544,6 +547,7 @@ test-suite python-hs-test
     , Test.VM.RunSourceVmPart4Spec
     , Test.VM.RunSourceVmPart5Spec
     , Test.VM.RunSourceVmPart6Spec
+    , Test.VM.RunSourceVmPart7Spec
     , Test.VM.RunInstructionsSpec
     , Test.Structure.CheckStructureSpec
     , Test.Structure.DetectPositionalArgsSpec

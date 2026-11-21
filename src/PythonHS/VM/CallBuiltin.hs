@@ -9,6 +9,8 @@ import PythonHS.VM.CallCollectionBuiltin (callCollectionBuiltin)
 import PythonHS.VM.CallCollectionBuiltinConfig (CallCollectionBuiltinConfig (..))
 import PythonHS.VM.CallMathBuiltin (callMathBuiltin)
 import PythonHS.VM.CallMathBuiltinConfig (CallMathBuiltinConfig (..))
+import PythonHS.VM.CallNumericBuiltin (callNumericBuiltin)
+import PythonHS.VM.CallNumericBuiltinConfig (CallNumericBuiltinConfig (..))
 import PythonHS.VM.CallStdlibBuiltin (callStdlibBuiltin)
 import PythonHS.VM.CallStdlibBuiltinConfig (CallStdlibBuiltinConfig (..))
 
@@ -32,12 +34,15 @@ callBuiltin config =
           [_, _, _] -> Left ("Type error: range expects int arguments at " ++ showPos pos)
           _ -> Left ("Argument count mismatch when calling range at " ++ showPos pos)
         _ ->
-          case callMathBuiltin CallMathBuiltinConfig {callMathBuiltinName = name, callMathBuiltinArgs = args, callMathBuiltinPos = pos} of
+          case callNumericBuiltin CallNumericBuiltinConfig {callNumericBuiltinName = name, callNumericBuiltinArgs = args, callNumericBuiltinPos = pos} of
             Just result -> Just result
             Nothing ->
-              case callStdlibBuiltin CallStdlibBuiltinConfig {callStdlibBuiltinName = name, callStdlibBuiltinArgs = args, callStdlibBuiltinPos = pos} of
+              case callMathBuiltin CallMathBuiltinConfig {callMathBuiltinName = name, callMathBuiltinArgs = args, callMathBuiltinPos = pos} of
                 Just result -> Just result
-                Nothing -> callCollectionBuiltin CallCollectionBuiltinConfig {callCollectionBuiltinName = name, callCollectionBuiltinArgs = args, callCollectionBuiltinPos = pos}
+                Nothing ->
+                  case callStdlibBuiltin CallStdlibBuiltinConfig {callStdlibBuiltinName = name, callStdlibBuiltinArgs = args, callStdlibBuiltinPos = pos} of
+                    Just result -> Just result
+                    Nothing -> callCollectionBuiltin CallCollectionBuiltinConfig {callCollectionBuiltinName = name, callCollectionBuiltinArgs = args, callCollectionBuiltinPos = pos}
   where
     rangeOne n
       | n <= 0 = []
