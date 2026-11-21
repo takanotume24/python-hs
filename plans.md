@@ -587,6 +587,15 @@
 - [x] P92-12: 全テスト PASS（977 examples, 0 failures）
 - [x] P92-13: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
 
+## 現在のスコープ（P109: VM any/all 組み込み関数の追加）
+- [x] P109 開始: `any` / `all` を VM 組み込みとして追加
+- [x] P109-1: 失敗テストを `RunSourceVmPart13Spec` に追加（正常系・型エラー・引数個数エラー）
+- [x] P109-2: 既存の `expectTruthy` を再利用して要素の truthiness を判定
+- [x] P109-3: `CallIterableBuiltin` に追加（list/tuple/string/dict キーを受理）
+- [x] P109-4: `any([])` は 0、`all([])` は 1 という空列の仕様を固定
+- [x] P109-5: 全テスト PASS（1207 examples, 0 failures）
+- [x] P109-6: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
+
 ## 現在のスコープ（P108: VM 文字列検索・判定組み込み関数の追加）
 - [x] P108 開始: `startswith` / `endswith` / `find` / `count` を VM 組み込みとして追加
 - [x] P108-1: 失敗テストを `RunSourceVmPart12Spec` に追加（正常系・型エラー・引数個数エラー）
@@ -1078,6 +1087,12 @@
   - [x] P108-2: `CallStringBuiltin` に4関数を追加し、2引数文字列関数のエラー処理を共通化
   - [x] P108-3: 全テスト PASS（1189 examples, 0 failures）
   - [x] P108-4: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
+  - [x] P109 完了: VM any/all 組み込み関数の追加
+  - [x] P109-1: `RunSourceVmPart13Spec` に any / all の正常系・エラー系テストを追加
+  - [x] P109-2: `CallIterableBuiltin` に any / all を追加し、`expectTruthy` を再利用
+  - [x] P109-3: list/tuple/string/dict キーを受理し、空列の仕様を固定
+  - [x] P109-4: 全テスト PASS（1207 examples, 0 failures）
+  - [x] P109-5: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
 - 2026-11-03
   - [x] P85 完了: `try/finally` 構文と finally 節での例外置き換え
   - [x] P85 実装: `ParseCompoundStmt` で `except` 節なしの `try/finally` を解析可能に
