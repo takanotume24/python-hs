@@ -587,6 +587,26 @@
 - [x] P92-12: 全テスト PASS（977 examples, 0 failures）
 - [x] P92-13: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
 
+## 現在のスコープ（P105: VM コンストラクタ組み込み関数の追加）
+- [x] P105 開始: `list` / `tuple` / `dict` を VM 組み込みとして追加
+- [x] P105-1: 失敗テストを `RunSourceVmPart9Spec` に追加（正常系・型エラー・値エラー・引数個数エラー）
+- [x] P105-2: `CallConstructorBuiltin` / `CallConstructorBuiltinConfig` を新規追加し、`CallBuiltin` からディスパッチ
+- [x] P105-3: `list` / `tuple` は list/tuple/string/dict を受理し、引数なしで空の値を作成
+- [x] P105-4: `dict` は dict のコピー、または list/tuple の 2 要素組から作成。重複キーは後勝ち
+- [x] P105-5: 要素数が 2 でない組は Value error、組でない要素は Type error
+- [x] P105-6: 全テスト PASS（1107 examples, 0 failures）
+- [x] P105-7: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
+
+## 現在のスコープ（P104: VM 変換組み込み関数の追加）
+- [x] P104 開始: `str` / `int` / `float` を VM 組み込みとして追加
+- [x] P104-1: 失敗テストを `RunSourceVmPart8Spec` に追加（正常系・型エラー・値エラー・引数個数エラー）
+- [x] P104-2: `CallConversionBuiltin` / `CallConversionBuiltinConfig` を新規追加し、`CallBuiltin` からディスパッチ
+- [x] P104-3: `str` は既存 `valueToOutput` を再利用して出力表現へ変換
+- [x] P104-4: `int` は int/float/文字列を受理し、float は 0 方向へ切り捨て。NaN/Infinity は値エラー
+- [x] P104-5: `float` は int/float/文字列を受理し、指数表記も解析
+- [x] P104-6: 全テスト PASS（1082 examples, 0 failures）
+- [x] P104-7: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
+
 ## 現在のスコープ（P103: VM 数値組み込み関数の追加）
 - [x] P103 開始: `abs` / `min` / `max` / `sum` / `sorted` を VM 組み込みとして追加
 - [x] P103-1: 失敗テストを `RunSourceVmPart7Spec` に追加（各関数の正常系・型エラー・引数個数エラー）
@@ -992,6 +1012,19 @@
   - [x] P103-4: `abs` / `min` / `max` / `sum` / `sorted` を VM-only 組み込みとして実装
   - [x] P103-5: 全テスト PASS（1060 examples, 0 failures）
   - [x] P103-6: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
+  - [x] P104 完了: VM 変換組み込み関数の追加
+  - [x] P104-1: `RunSourceVmPart8Spec` に正常系・型エラー・値エラー・引数個数エラーのテストを追加
+  - [x] P104-2: `CallConversionBuiltin` / `CallConversionBuiltinConfig` を新規追加し `CallBuiltin` からディスパッチ
+  - [x] P104-3: `str` / `int` / `float` を VM-only 組み込みとして実装
+  - [x] P104-4: 全テスト PASS
+  - [x] P104-5: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
+  - [x] P105 完了: VM コンストラクタ組み込み関数の追加
+  - [x] P105-1: `RunSourceVmPart9Spec` に正常系・型エラー・値エラー・引数個数エラーのテストを追加
+  - [x] P105-2: `CallConstructorBuiltin` / `CallConstructorBuiltinConfig` を新規追加し `CallBuiltin` からディスパッチ
+  - [x] P105-3: `list` / `tuple` / `dict` を VM-only 組み込みとして実装
+  - [x] P105-4: `dict` は重複キーを後勝ちで更新、不正な要素は Value/Type error
+  - [x] P105-5: 全テスト PASS（1107 examples, 0 failures）
+  - [x] P105-6: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
 - 2026-11-03
   - [x] P85 完了: `try/finally` 構文と finally 節での例外置き換え
   - [x] P85 実装: `ParseCompoundStmt` で `except` 節なしの `try/finally` を解析可能に
