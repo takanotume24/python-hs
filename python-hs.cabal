@@ -61,6 +61,8 @@ library
     , PythonHS.Evaluator.EvalComparisonChainInput
     , PythonHS.Evaluator.EvalComparisonItemsInput
     , PythonHS.Evaluator.EvalDictEntriesInput
+    , PythonHS.Evaluator.EvalListComprehensionInput
+    , PythonHS.Evaluator.EvalListComprehension
     , PythonHS.Structure.CheckStructure
     , PythonHS.Structure.CheckStructureViolations
     , PythonHS.Structure.PositionalArgViolation

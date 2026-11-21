@@ -4,6 +4,7 @@ import Data.Bits (complement)
 import Data.Map.Strict qualified as Map
 import PythonHS.AST.DictEntry (DictEntry (..))
 import PythonHS.AST.Expr (Expr (..))
+import PythonHS.AST.ListComprehensionClause (ListComprehensionClause (..))
 import PythonHS.AST.Stmt (Stmt)
 import PythonHS.Evaluator.DictPair (DictPair (..))
 import PythonHS.Evaluator.Env (Env)
@@ -16,6 +17,8 @@ import PythonHS.Evaluator.EvalDictEntriesInput (EvalDictEntriesInput (..))
 import PythonHS.Evaluator.EvalExprBinary (evalExprBinary)
 import PythonHS.Evaluator.EvalExprBinaryInput (EvalExprBinaryInput (..))
 import PythonHS.Evaluator.EvalExprResult (EvalExprResult (..))
+import PythonHS.Evaluator.EvalListComprehension (evalListComprehension)
+import PythonHS.Evaluator.EvalListComprehensionInput (EvalListComprehensionInput (..))
 import PythonHS.Evaluator.EvalStmtResult (EvalStmtResult)
 import PythonHS.Evaluator.EvaluatedArgsResult (EvaluatedArgsResult (..))
 import PythonHS.Evaluator.ExpectTruthy (expectTruthy)
@@ -48,10 +51,26 @@ evalExpr evalStatementsFn env fenv expr =
     DictExpr {dictExprEntries} -> do
       entriesResult <- evalDictEntries EvalDictEntriesInput {evalDictEntriesInputEnv = env, evalDictEntriesInputFuncEnv = fenv, evalDictEntriesInputEntries = dictExprEntries}
       Right (EvalExprResult (DictValue (evaluatedArgsResultValues entriesResult)) (evaluatedArgsResultOutputs entriesResult) (evaluatedArgsResultEnv entriesResult))
-    ListComprehensionExpr {listComprehensionExprPos} ->
-      Left $ "Runtime error: list comprehension is only supported in vm engine at " ++ showPos listComprehensionExprPos
-    ListComprehensionClausesExpr {listComprehensionClausesExprPos} ->
-      Left $ "Runtime error: list comprehension is only supported in vm engine at " ++ showPos listComprehensionClausesExprPos
+    ListComprehensionExpr {listComprehensionExprValue = valueExpr, listComprehensionExprLoopName = loopName, listComprehensionExprIter = iterExpr, listComprehensionExprPos = pos} ->
+      evalListComprehension
+        EvalListComprehensionInput
+          { evalListComprehensionInputEvalExpr = evalExpr evalStatementsFn,
+            evalListComprehensionInputEnv = env,
+            evalListComprehensionInputFuncEnv = fenv,
+            evalListComprehensionInputValueExpr = valueExpr,
+            evalListComprehensionInputClauses = [ListComprehensionClause {listComprehensionClauseTargets = [loopName], listComprehensionClauseIter = iterExpr, listComprehensionClauseConds = []}],
+            evalListComprehensionInputPos = pos
+          }
+    ListComprehensionClausesExpr {listComprehensionClausesExprValue = valueExpr, listComprehensionClausesExprClauses = clauses, listComprehensionClausesExprPos = pos} ->
+      evalListComprehension
+        EvalListComprehensionInput
+          { evalListComprehensionInputEvalExpr = evalExpr evalStatementsFn,
+            evalListComprehensionInputEnv = env,
+            evalListComprehensionInputFuncEnv = fenv,
+            evalListComprehensionInputValueExpr = valueExpr,
+            evalListComprehensionInputClauses = clauses,
+            evalListComprehensionInputPos = pos
+          }
     IdentifierExpr {identifierExprName, identifierExprPos} ->
       case Map.lookup identifierExprName env of
         Just v -> Right (EvalExprResult v [] env)

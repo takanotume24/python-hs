@@ -587,6 +587,14 @@
 - [x] P92-12: 全テスト PASS（977 examples, 0 failures）
 - [x] P92-13: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
 
+## 現在のスコープ（P95: リスト内包表記の AST 評価器対応）
+- [x] P95 開始: リスト内包表記 `[x for x in xs]` を AST 評価器でサポート
+- [x] P95-1: 失敗テストを `RunnerCorePart2Spec` に追加
+- [x] P95-2: `ListComprehensionExpr` / `ListComprehensionClausesExpr` の AST 評価を `EvalListComprehension` に実装
+- [x] P95-3: `EvalListComprehensionInput` レコード型を新規作成
+- [x] P95-4: 全テスト PASS（988 examples, 0 failures）
+- [x] P95-5: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
+
 ## 現在のスコープ（P94: detect-positional-args 精度向上と EvalExpr ローカル関数レコード化）
 - [x] P94 開始: `detect-positional-args` が GHC2024 拡張を正しく解釈できるよう整備
 - [x] P94-1: `haskell-src-exts` の `ParseMode` に GHC2024 相当の拡張リストを追加

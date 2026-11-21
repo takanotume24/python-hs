@@ -149,3 +149,15 @@ spec = describe "runSource (integration core) - part 2" $ do
   it "evaluates range builtin with start/stop and step" $ do
     runSource "print range(2, 5)\n" `shouldBe` Right ["[2, 3, 4]"]
     runSource "print range(5, 0, -2)\n" `shouldBe` Right ["[5, 3, 1]"]
+
+  it "evaluates simple list comprehension" $ do
+    runSource "print [x for x in [1, 2, 3]]\n" `shouldBe` Right ["[1, 2, 3]"]
+
+  it "evaluates list comprehension with transformation" $ do
+    runSource "print [x * 2 for x in [1, 2, 3]]\n" `shouldBe` Right ["[2, 4, 6]"]
+
+  it "evaluates list comprehension with condition" $ do
+    runSource "print [x for x in [1, 2, 3, 4] if x > 2]\n" `shouldBe` Right ["[3, 4]"]
+
+  it "evaluates list comprehension with nested clauses" $ do
+    runSource "print [x + y for x in [1, 2] for y in [10, 20]]\n" `shouldBe` Right ["[11, 21, 12, 22]"]
