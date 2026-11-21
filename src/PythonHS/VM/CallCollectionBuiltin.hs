@@ -1,6 +1,6 @@
 module PythonHS.VM.CallCollectionBuiltin (callCollectionBuiltin) where
 
-import Data.List (sortOn)
+import Data.List (sort, sortOn)
 import PythonHS.Evaluator.DictPair (DictPair (..))
 import PythonHS.Evaluator.NumberSortPair (NumberSortPair (..))
 import PythonHS.Evaluator.PairToList (pairToList)
@@ -13,6 +13,7 @@ import PythonHS.VM.GetitemValueConfig (GetitemValueConfig (..))
 import PythonHS.VM.NumberPairs (numberPairs)
 import PythonHS.VM.SliceValue (sliceValue)
 import PythonHS.VM.SliceValueConfig (SliceValueConfig (..))
+import PythonHS.VM.StringItems (stringItems)
 
 callCollectionBuiltin :: CallCollectionBuiltinConfig -> Maybe (Either String Value)
 callCollectionBuiltin config =
@@ -53,12 +54,7 @@ callCollectionBuiltin config =
           [_, _] -> Left ("Type error: extend expects list as first argument at " ++ showPos pos)
           _ -> Left ("Argument count mismatch when calling extend at " ++ showPos pos)
         "sort" -> Just $ case args of
-          [ListValue {listValueItems = vals}] ->
-            case numberPairs vals of
-              Just pairs ->
-                let sortedVals = map numberSortPairValue (sortOn numberSortPairSortKey pairs)
-                 in Right (ListValue {listValueItems = sortedVals})
-              Nothing -> Left ("Type error: sort expects list of number at " ++ showPos pos)
+          [ListValue {listValueItems = vals}] -> sortValues pos vals
           [_] -> Left ("Type error: sort expects list as first argument at " ++ showPos pos)
           _ -> Left ("Argument count mismatch when calling sort at " ++ showPos pos)
         "reverse" -> Just $ case args of
@@ -141,6 +137,16 @@ callCollectionBuiltin config =
           _ -> Left ("Argument count mismatch when calling __python_hs_repl_repr__ at " ++ showPos pos)
         _ -> Nothing
   where
+    sortValues pos vals =
+      case numberPairs vals of
+        Just pairs -> Right (ListValue {listValueItems = map numberSortPairValue (sortOn numberSortPairSortKey pairs)})
+        Nothing ->
+          case stringItems vals of
+            Just texts -> Right (ListValue {listValueItems = map textValue (sort texts)})
+            Nothing -> Left ("Type error: sort expects list of number or string at " ++ showPos pos)
+
+    textValue text = StringValue {stringValue = text}
+
     lookupDictValue [] _ = Nothing
     lookupDictValue (entry : restPairs) target
       | dictPairKey entry == target = Just (dictPairValue entry)

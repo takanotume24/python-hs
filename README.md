@@ -97,6 +97,7 @@ MIT License — 詳細は [LICENSE](LICENSE) を参照してください。
 - [x] `bool(x)`（int/float/None/string/list/dict/tupleのtruthiness）
 - [x] `range(stop)` / `range(start, stop)` / `range(start, stop, step)`
 - [x] `append(list, value)` / `remove(list, value)` / `sort(list)` / `reverse(list)` / `insert(list, index, value)` / `pop(list)` / `clear(list)`
+  - `sort` は数値リストまたは文字列リストを昇順に並べ替え
 - [x] `keys(dict)` / `values(dict)` / `items(dict)`（挿入順維持）
 - [x] `get(dict, key)` / `get(dict, key, default)`
 - [x] `update(dict, key, value)` / `update(dict, otherDict)`
@@ -105,7 +106,7 @@ MIT License — 詳細は [LICENSE](LICENSE) を参照してください。
 - [x] `abs(x)`（int/float）
 - [x] `min(...)` / `max(...)`（位置引数・list/tuple、int/float/string）
 - [x] `sum(list[, start])` / `sum(tuple[, start])`
-- [x] `sorted(list)` / `sorted(tuple)`（数値リスト、元のリストは変更しない）
+- [x] `sorted(list)` / `sorted(tuple)`（数値または文字列のリスト、元のリストは変更しない）
 - [x] `str(x)`（出力表現への変換）
 - [x] `int(x)`（int/float/文字列から整数へ。float は 0 方向へ切り捨て）
 - [x] `float(x)`（int/float/文字列から浮動小数へ）

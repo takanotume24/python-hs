@@ -5,6 +5,7 @@ import Data.List (intercalate, isPrefixOf, isSuffixOf, stripPrefix, tails)
 import PythonHS.Evaluator.ShowPos (showPos)
 import PythonHS.Evaluator.Value (Value (..))
 import PythonHS.VM.CallStringBuiltinConfig (CallStringBuiltinConfig (..))
+import PythonHS.VM.StringItems (stringItems)
 
 callStringBuiltin :: CallStringBuiltinConfig -> Maybe (Either String Value)
 callStringBuiltin config =
@@ -44,13 +45,9 @@ callStringBuiltin config =
         _ -> Left (countMismatch "join")
 
     joinItems separator items =
-      case collectStrings items of
+      case stringItems items of
         Nothing -> Left ("Type error: join expects list of string at " ++ showPos pos)
         Just texts -> Right (StringValue {stringValue = intercalate separator texts})
-
-    collectStrings [] = Just []
-    collectStrings (StringValue {stringValue = text} : restItems) = fmap (text :) (collectStrings restItems)
-    collectStrings (_ : _) = Nothing
 
     evalCase convert fname values =
       case values of

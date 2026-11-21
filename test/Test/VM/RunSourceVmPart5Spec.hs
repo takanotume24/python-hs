@@ -148,7 +148,7 @@ spec = describe "runSourceVm (vm mvp) - part 5" $ do
   it "reports append sort and reverse builtin errors" $ do
     runSourceVm "print append(1, 2)\n" `shouldBe` Left "Type error: append expects list as first argument at 1:7"
     runSourceVm "print append([1])\n" `shouldBe` Left "Argument count mismatch when calling append at 1:7"
-    runSourceVm "print sort([1, \"x\"])\n" `shouldBe` Left "Type error: sort expects list of number at 1:7"
+    runSourceVm "print sort([1, \"x\"])\n" `shouldBe` Left "Type error: sort expects list of number or string at 1:7"
     runSourceVm "print reverse(1)\n" `shouldBe` Left "Type error: reverse expects list as first argument at 1:7"
 
   it "evaluates remove insert and pop builtins" $ do

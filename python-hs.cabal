@@ -287,6 +287,7 @@ library
     , PythonHS.VM.CallNumericBuiltin
     , PythonHS.VM.CallNumericBuiltinConfig
     , PythonHS.VM.CallStdlibBuiltin
+    , PythonHS.VM.StringItems
     , PythonHS.VM.CallExceptionClassBuiltin
     , PythonHS.VM.CallExceptionClassBuiltinConfig
     , PythonHS.VM.BindCallArguments
@@ -564,6 +565,7 @@ test-suite python-hs-test
     , Test.VM.RunSourceVmPart12Spec
     , Test.VM.RunSourceVmPart13Spec
     , Test.VM.RunSourceVmPart14Spec
+    , Test.VM.RunSourceVmPart15Spec
     , Test.VM.RunInstructionsSpec
     , Test.Structure.CheckStructureSpec
     , Test.Structure.DetectPositionalArgsSpec

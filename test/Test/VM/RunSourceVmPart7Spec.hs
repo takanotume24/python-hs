@@ -101,4 +101,4 @@ spec = describe "runSourceVm (vm mvp) - part 7" $ do
       runSourceVm "print sorted('abc')\n" `shouldBe` Left "Type error: sorted expects list or tuple at 1:7"
 
     it "reports type error for non-number element" $ do
-      runSourceVm "print sorted([1, 'a'])\n" `shouldBe` Left "Type error: sorted expects list of number at 1:7"
+      runSourceVm "print sorted([1, 'a'])\n" `shouldBe` Left "Type error: sorted expects list of number or string at 1:7"

@@ -1,12 +1,13 @@
 module PythonHS.VM.CallNumericBuiltin (callNumericBuiltin) where
 
 import Control.Monad (foldM)
-import Data.List (sortOn)
+import Data.List (sort, sortOn)
 import PythonHS.Evaluator.NumberSortPair (NumberSortPair (..))
 import PythonHS.Evaluator.ShowPos (showPos)
 import PythonHS.Evaluator.Value (Value (..))
 import PythonHS.VM.CallNumericBuiltinConfig (CallNumericBuiltinConfig (..))
 import PythonHS.VM.NumberPairs (numberPairs)
+import PythonHS.VM.StringItems (stringItems)
 
 callNumericBuiltin :: CallNumericBuiltinConfig -> Maybe (Either String Value)
 callNumericBuiltin config =
@@ -45,7 +46,7 @@ callNumericBuiltin config =
           case numberPairs items of
             Just pairs -> Right (numberSortPairValue (foldr1 (chooseNumber isMin) pairs))
             Nothing ->
-              case collectStrings items of
+              case stringItems items of
                 Just texts -> Right (StringValue {stringValue = foldr1 (chooseString isMin) texts})
                 Nothing -> Left ("Type error: " ++ fname ++ " expects int, float, or string at " ++ showPos pos)
 
@@ -56,10 +57,6 @@ callNumericBuiltin config =
     chooseString isMin left right
       | isMin = if left <= right then left else right
       | otherwise = if left >= right then left else right
-
-    collectStrings [] = Just []
-    collectStrings (StringValue {stringValue = text} : restTexts) = fmap (text :) (collectStrings restTexts)
-    collectStrings (_ : _) = Nothing
 
     evalSum fname values =
       case values of
@@ -91,8 +88,13 @@ callNumericBuiltin config =
 
     sortItems fname items =
       case numberPairs items of
-        Nothing -> Left ("Type error: " ++ fname ++ " expects list of number at " ++ showPos pos)
         Just pairs -> Right (ListValue {listValueItems = map numberSortPairValue (sortOn numberSortPairSortKey pairs)})
+        Nothing ->
+          case stringItems items of
+            Just texts -> Right (ListValue {listValueItems = map textValue (sort texts)})
+            Nothing -> Left ("Type error: " ++ fname ++ " expects list of number or string at " ++ showPos pos)
+
+    textValue text = StringValue {stringValue = text}
 
     evalRound values =
       case values of
