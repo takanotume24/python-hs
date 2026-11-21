@@ -85,8 +85,9 @@ evalExpr input =
           Left $ "Runtime error: argument expansion is only supported in vm engine at " ++ showPos starArgExprPos
         KwStarArgExpr {kwStarArgExprPos} ->
           Left $ "Runtime error: argument expansion is only supported in vm engine at " ++ showPos kwStarArgExprPos
-        WalrusExpr {} ->
-          Left $ "Runtime error: walrus is only supported in vm engine at " ++ showPos (exprPos (evalExprInputExpr input))
+        WalrusExpr {walrusExprName = name, walrusExprValue = valueExpr} -> do
+          EvalExprResult {evalExprResultValue = value, evalExprResultOutputs = outs, evalExprResultEnv = envAfterValue} <- evalSub env fenv valueExpr
+          Right (EvalExprResult {evalExprResultValue = value, evalExprResultOutputs = outs, evalExprResultEnv = Map.insert name value envAfterValue})
         LambdaExpr {} ->
           Left $ "Runtime error: lambda is only supported in vm engine at " ++ showPos (exprPos (evalExprInputExpr input))
         LambdaDefaultsExpr {} ->

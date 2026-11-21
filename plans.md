@@ -587,6 +587,14 @@
 - [x] P92-12: 全テスト PASS（977 examples, 0 failures）
 - [x] P92-13: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
 
+## 現在のスコープ（P97: AST 評価器での walrus 演算子 (`:=`) 対応）
+- [x] P97 開始: walrus 演算子 `x := expr` を AST 評価器でサポート
+- [x] P97-1: 失敗テストを `RunnerCorePart3Spec` に追加
+- [x] P97-2: `WalrusExpr` の AST 評価を `EvalExpr` に実装
+- [x] P97-3: walrus の値と env への束縛を適切に返す
+- [x] P97-4: 全テスト PASS（1000 examples, 0 failures）
+- [x] P97-5: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
+
 ## 現在のスコープ（P96: インデクシングとスライシングの AST 評価器対応）
 - [x] P96 開始: `[]` インデクシングと `[::]` スライシングを AST 評価器でサポート
 - [x] P96-1: 失敗テストを `RunnerCorePart3Spec` に追加

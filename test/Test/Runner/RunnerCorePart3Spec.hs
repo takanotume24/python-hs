@@ -32,5 +32,14 @@ spec = describe "runSource (integration core) - part 3" $ do
   it "evaluates negative start slice" $ do
     runSource "print [10, 20, 30][-2:]\n" `shouldBe` Right ["[20, 30]"]
 
+  it "evaluates walrus operator in print" $ do
+    runSource "print (x := 5)\nprint x\n" `shouldBe` Right ["5", "5"]
+
+  it "evaluates walrus operator in if condition" $ do
+    runSource "if (n := 1):\n  print n\n" `shouldBe` Right ["1"]
+
+  it "evaluates walrus operator in list comprehension condition" $ do
+    runSource "print [x for x in [1, 2, 3, 4] if (y := x % 2) == 0]\n" `shouldBe` Right ["[2, 4]"]
+
   it "reports index out of range" $ do
     runSource "print [1, 2][5]\n" `shouldBe` Left "Value error: tuple/list index out of range at 1:13"
