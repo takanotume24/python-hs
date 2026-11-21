@@ -100,6 +100,24 @@ spec = describe "runSourceVm (vm mvp) - part 3" $ do
   it "does not leak comprehension variable to outer scope" $ do
     runSourceVm "x = 100\nprint [x for x in [1, 2]]\nprint x\n" `shouldBe` Right ["[1, 2]", "100"]
 
+  it "runs list comprehension over dict keys" $ do
+    runSourceVm "print [k for k in {1: 10, 2: 20}]\n" `shouldBe` Right ["[1, 2]"]
+
+  it "runs list comprehension over tuple" $ do
+    runSourceVm "print [x for x in (1, 2)]\n" `shouldBe` Right ["[1, 2]"]
+
+  it "treats int as range in list comprehension" $ do
+    runSourceVm "print [x for x in 5]\n" `shouldBe` Right ["[0, 1, 2, 3, 4]"]
+
+  it "reports type error for string iteration in list comprehension" $ do
+    runSourceVm "print [x for x in 'abc']\n" `shouldBe` Left "Type error: for expects iterable (int range, list, or dict) at 1:7"
+
+  it "runs list comprehension inside function body" $ do
+    runSourceVm "def f():\n  return [x * 2 for x in [1, 2]]\nprint f()\n" `shouldBe` Right ["[2, 4]"]
+
+  it "runs nested list comprehension" $ do
+    runSourceVm "print [[y for y in [x, x + 1]] for x in [1, 2]]\n" `shouldBe` Right ["[[1, 2], [2, 3]]"]
+
   it "runs function definition and call with default parameters" $ do
     runSourceVm "def add(a, b = 2):\n  return a + b\nprint add(1)\nprint add(1, 3)\n" `shouldBe` Right ["3", "4"]
 

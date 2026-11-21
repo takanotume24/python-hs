@@ -109,7 +109,7 @@ bindCallArgs input = do
     buildKwDict kwOrder normalParams keywordVals =
       DictValue
         [ DictPair {dictPairKey = StringValue name, dictPairValue = value}
-          | name <- kwOrder,
-            name `notElem` normalParams,
-            Just value <- [Map.lookup name keywordVals]
+        | name <- kwOrder,
+          name `notElem` normalParams,
+          Just value <- [Map.lookup name keywordVals]
         ]

@@ -139,3 +139,47 @@ spec = describe "runSourceVm (vm mvp) - part 6" $ do
 
     it "short-circuits chained comparison on first false" $ do
       runSourceVm "def f():\n    print 'evaluated'\n    return 5\nprint 3 < 2 < f()\n" `shouldBe` Right ["0"]
+
+  describe "function definition varargs" $ do
+    it "prints *args directly" $ do
+      runSourceVm "def f(*args):\n  print args\nf(1, 2, 3)\n" `shouldBe` Right ["[1, 2, 3]"]
+
+    it "prints **kwargs directly" $ do
+      runSourceVm "def f(**kwargs):\n  print kwargs\nf(x=7, y=8)\n" `shouldBe` Right ["{x: 7, y: 8}"]
+
+    it "combines *args and **kwargs in function definition" $ do
+      runSourceVm "def f(*args, **kwargs):\n  return len(args) + get(kwargs, \"x\", 0)\nprint f(1, 2, x=3)\n" `shouldBe` Right ["5"]
+
+    it "prints *args after a positional parameter" $ do
+      runSourceVm "def f(a, *args):\n  print args\nf(1, 2, 3)\n" `shouldBe` Right ["[2, 3]"]
+
+    it "prints **kwargs after a positional parameter" $ do
+      runSourceVm "def f(a, **kwargs):\n  print kwargs\nf(1, x=7)\n" `shouldBe` Right ["{x: 7}"]
+
+    it "rejects positional argument for **kwargs-only function" $ do
+      runSourceVm "def f(**kwargs):\n  pass\nf(1)\n" `shouldBe` Left "Argument count mismatch when calling f at 3:1"
+
+    it "rejects keyword argument for *args-only function" $ do
+      runSourceVm "def f(*args):\n  pass\nf(a=1)\n" `shouldBe` Left "Argument error: unexpected keyword argument a at 3:3"
+
+    it "rejects keyword-only arguments after *args as unsupported" $ do
+      runSourceVm "def f(*args, b):\n  pass\n" `shouldBe` Left "ExpectedExpression (Position {line = 1, column = 14})"
+
+  describe "walrus operator" $ do
+    it "evaluates walrus operator in print" $ do
+      runSourceVm "print (x := 5)\nprint x\n" `shouldBe` Right ["5", "5"]
+
+    it "evaluates walrus operator in if condition" $ do
+      runSourceVm "if (n := 1):\n  print n\n" `shouldBe` Right ["1"]
+
+    it "evaluates walrus operator in list comprehension condition" $ do
+      runSourceVm "print [x for x in [1, 2, 3, 4] if (y := x % 2) == 0]\n" `shouldBe` Right ["[2, 4]"]
+
+    it "evaluates walrus operator in while condition" $ do
+      runSourceVm "i = 0\nwhile (n := i) < 3:\n  print n\n  i = i + 1\n" `shouldBe` Right ["0", "1", "2"]
+
+    it "evaluates walrus operator inside arithmetic expression" $ do
+      runSourceVm "print (x := 2) + 1\nprint x\n" `shouldBe` Right ["3", "2"]
+
+    it "keeps walrus binding local to list comprehension" $ do
+      runSourceVm "print [x for x in [1, 2] if (y := x) == 1]\nprint y\n" `shouldBe` Left "Name error: undefined identifier y at 2:7"

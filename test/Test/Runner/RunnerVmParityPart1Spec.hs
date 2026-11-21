@@ -119,6 +119,29 @@ spec = describe "runSource and runSourceVm parity (mvp subset) - core" $ do
     shouldMatchVm "def f(a: int):\n  pass\n"
     shouldMatchVm "def f() -> int:\n  pass\n"
 
+  it "matches for varargs function execution" $ do
+    shouldMatchVm "def f(*args):\n  return len(args)\nprint f(1, 2, 3)\n"
+    shouldMatchVm "def f(**kwargs):\n  return get(kwargs, \"x\", 0)\nprint f(x=7)\n"
+    shouldMatchVm "def f(*args, **kwargs):\n  return len(args) + get(kwargs, \"x\", 0)\nprint f(1, 2, x=3)\n"
+    shouldMatchVm "def f(*args):\n  print args\nf(1, 2, 3)\n"
+    shouldMatchVm "def f(**kwargs):\n  print kwargs\nf(x=7)\n"
+
+  it "matches for walrus operator execution" $ do
+    shouldMatchVm "print (x := 5)\nprint x\n"
+    shouldMatchVm "if (n := 1):\n  print n\n"
+    shouldMatchVm "print [x for x in [1, 2, 3, 4] if (y := x % 2) == 0]\n"
+    shouldMatchVm "i = 0\nwhile (n := i) < 3:\n  print n\n  i = i + 1\n"
+    shouldMatchVm "print (x := 2) + 1\nprint x\n"
+    shouldMatchVm "print [x for x in [1, 2] if (y := x) == 1]\nprint y\n"
+
+  it "matches for list comprehension execution" $ do
+    shouldMatchVm "print [k for k in {1: 10, 2: 20}]\n"
+    shouldMatchVm "print [x for x in (1, 2)]\n"
+    shouldMatchVm "print [x for x in 5]\n"
+    shouldMatchVm "print [x for x in 'abc']\n"
+    shouldMatchVm "def f():\n  return [x * 2 for x in [1, 2]]\nprint f()\n"
+    shouldMatchVm "print [[y for y in [x, x + 1]] for x in [1, 2]]\n"
+
   it "matches for non-keyword parse boundary errors" $ do
     shouldMatchVm "print\n"
     shouldMatchVm "global\n"
