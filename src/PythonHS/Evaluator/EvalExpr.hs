@@ -1,5 +1,6 @@
 module PythonHS.Evaluator.EvalExpr (evalExpr) where
 
+import Data.Bits (complement)
 import Data.Map.Strict qualified as Map
 import PythonHS.AST.DictEntry (DictEntry (..))
 import PythonHS.AST.Expr (Expr (..))
@@ -68,6 +69,11 @@ evalExpr evalStatementsFn env fenv expr =
       EvalExprResult v outs envAfterExpr <- evalExpr evalStatementsFn env fenv notExprValue
       nv <- expectTruthy "not" (exprPos expr) v
       Right (EvalExprResult (IntValue (if nv == 0 then 1 else 0)) outs envAfterExpr)
+    BitwiseNotExpr {bitwiseNotExprValue, bitwiseNotExprPos} -> do
+      EvalExprResult v outs envAfterExpr <- evalExpr evalStatementsFn env fenv bitwiseNotExprValue
+      case v of
+        IntValue {intValue = n} -> Right (EvalExprResult (IntValue (complement n)) outs envAfterExpr)
+        _ -> Left $ "Type error: ~ expects int at " ++ showPos bitwiseNotExprPos
     BinaryExpr {binaryExprOp, binaryExprLeft, binaryExprRight, binaryExprPos} ->
       evalExprBinary (EvalExprBinaryInput (evalExpr evalStatementsFn) env fenv binaryExprOp binaryExprLeft binaryExprRight binaryExprPos)
     CallExpr {callExprName, callExprArgs, callExprPos} ->

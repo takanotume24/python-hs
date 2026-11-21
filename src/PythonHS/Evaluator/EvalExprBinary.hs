@@ -1,6 +1,8 @@
 module PythonHS.Evaluator.EvalExprBinary (evalExprBinary) where
 
 import PythonHS.AST.BinaryOperator (BinaryOperator (..))
+import PythonHS.Evaluator.EvalExprBinaryBitwise (evalExprBinaryBitwise)
+import PythonHS.Evaluator.EvalExprBinaryBitwiseConfig (EvalExprBinaryBitwiseConfig (..))
 import PythonHS.Evaluator.EvalExprBinaryIdentity (evalExprBinaryIdentity)
 import PythonHS.Evaluator.EvalExprBinaryIdentityConfig (EvalExprBinaryIdentityConfig (..))
 import PythonHS.Evaluator.EvalExprBinaryInput (EvalExprBinaryInput (..))
@@ -70,6 +72,11 @@ evalExprBinary input = case op of
   NotInOperator -> evalExprBinaryMembership EvalExprBinaryMembershipConfig {evalExprBinaryMembershipConfigEvalExprFn = evalExprFn, evalExprBinaryMembershipConfigEnv = env, evalExprBinaryMembershipConfigFuncEnv = fenv, evalExprBinaryMembershipConfigLeftExpr = leftExpr, evalExprBinaryMembershipConfigRightExpr = rightExpr, evalExprBinaryMembershipConfigPos = pos, evalExprBinaryMembershipConfigNegate = True}
   IsOperator -> evalExprBinaryIdentity EvalExprBinaryIdentityConfig {evalExprBinaryIdentityConfigEvalExprFn = evalExprFn, evalExprBinaryIdentityConfigEnv = env, evalExprBinaryIdentityConfigFuncEnv = fenv, evalExprBinaryIdentityConfigLeftExpr = leftExpr, evalExprBinaryIdentityConfigRightExpr = rightExpr, evalExprBinaryIdentityConfigPos = pos, evalExprBinaryIdentityConfigNegate = False}
   IsNotOperator -> evalExprBinaryIdentity EvalExprBinaryIdentityConfig {evalExprBinaryIdentityConfigEvalExprFn = evalExprFn, evalExprBinaryIdentityConfigEnv = env, evalExprBinaryIdentityConfigFuncEnv = fenv, evalExprBinaryIdentityConfigLeftExpr = leftExpr, evalExprBinaryIdentityConfigRightExpr = rightExpr, evalExprBinaryIdentityConfigPos = pos, evalExprBinaryIdentityConfigNegate = True}
+  BitwiseAndOperator -> evalExprBinaryBitwise EvalExprBinaryBitwiseConfig {evalExprBinaryBitwiseConfigEvalExprFn = evalExprFn, evalExprBinaryBitwiseConfigEnv = env, evalExprBinaryBitwiseConfigFuncEnv = fenv, evalExprBinaryBitwiseConfigLeftExpr = leftExpr, evalExprBinaryBitwiseConfigRightExpr = rightExpr, evalExprBinaryBitwiseConfigOp = op, evalExprBinaryBitwiseConfigPos = pos}
+  BitwiseOrOperator -> evalExprBinaryBitwise EvalExprBinaryBitwiseConfig {evalExprBinaryBitwiseConfigEvalExprFn = evalExprFn, evalExprBinaryBitwiseConfigEnv = env, evalExprBinaryBitwiseConfigFuncEnv = fenv, evalExprBinaryBitwiseConfigLeftExpr = leftExpr, evalExprBinaryBitwiseConfigRightExpr = rightExpr, evalExprBinaryBitwiseConfigOp = op, evalExprBinaryBitwiseConfigPos = pos}
+  BitwiseXorOperator -> evalExprBinaryBitwise EvalExprBinaryBitwiseConfig {evalExprBinaryBitwiseConfigEvalExprFn = evalExprFn, evalExprBinaryBitwiseConfigEnv = env, evalExprBinaryBitwiseConfigFuncEnv = fenv, evalExprBinaryBitwiseConfigLeftExpr = leftExpr, evalExprBinaryBitwiseConfigRightExpr = rightExpr, evalExprBinaryBitwiseConfigOp = op, evalExprBinaryBitwiseConfigPos = pos}
+  LeftShiftOperator -> evalExprBinaryBitwise EvalExprBinaryBitwiseConfig {evalExprBinaryBitwiseConfigEvalExprFn = evalExprFn, evalExprBinaryBitwiseConfigEnv = env, evalExprBinaryBitwiseConfigFuncEnv = fenv, evalExprBinaryBitwiseConfigLeftExpr = leftExpr, evalExprBinaryBitwiseConfigRightExpr = rightExpr, evalExprBinaryBitwiseConfigOp = op, evalExprBinaryBitwiseConfigPos = pos}
+  RightShiftOperator -> evalExprBinaryBitwise EvalExprBinaryBitwiseConfig {evalExprBinaryBitwiseConfigEvalExprFn = evalExprFn, evalExprBinaryBitwiseConfigEnv = env, evalExprBinaryBitwiseConfigFuncEnv = fenv, evalExprBinaryBitwiseConfigLeftExpr = leftExpr, evalExprBinaryBitwiseConfigRightExpr = rightExpr, evalExprBinaryBitwiseConfigOp = op, evalExprBinaryBitwiseConfigPos = pos}
   where
     evalExprFn = evalExprBinaryEvalExprFn input
     env = evalExprBinaryEnv input

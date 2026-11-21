@@ -571,6 +571,22 @@
 - [x] P91-4: 分割したパートファイルを `python-hs.cabal` の test-suite `other-modules` に登録
 - [x] P91-5: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
 
+## 現在のスコープ（P92: ビット演算子 `&`, `|`, `^`, `~`, `<<`, `>>`）
+- [x] P92 開始: ビット演算子を VM / AST 各経路で実装する
+- [x] P92-1: 失敗テストを `RunSourceVmPart6Spec` / `ParseProgramPart14Spec` に追加
+- [x] P92-2: `BinaryOperator` に `BitwiseAndOperator` / `BitwiseOrOperator` / `BitwiseXorOperator` / `LeftShiftOperator` / `RightShiftOperator` を追加
+- [x] P92-3: `Expr` に `BitwiseNotExpr` を追加
+- [x] P92-4: `TokenType` に `AmpersandToken` / `CaretToken` / `TildeToken` / `LeftShiftToken` / `RightShiftToken` を追加し、スキャナで字句解析
+- [x] P92-5: `ParseExpr` でビット演算子の優先度を追加（`|` > `^` > `&` > `<<`/`>>` > `+`/`-`）
+- [x] P92-6: `ParsePrimary` で `~` 単項演算子を解析
+- [x] P92-7: VM 評価: `EvalBinaryOpBitwise` / `EvalBinaryOpBitwiseConfig` を追加し `EvalBinaryOp` から呼び出し
+- [x] P92-8: VM 評価: `ApplyBitwiseNot` 命令を追加し `~` を実行
+- [x] P92-9: AST 評価: `EvalExprBinaryBitwise` / `EvalExprBinaryBitwiseConfig` を追加し `EvalExprBinary` から呼び出し
+- [x] P92-10: AST 評価: `EvalExpr` で `BitwiseNotExpr` を評価
+- [x] P92-11: その他の Expr 処理（`ExprPos` / `TransformImportAliases` / `RewriteClassAttrRefs` / `CompileExprAt`）を更新
+- [x] P92-12: 全テスト PASS（977 examples, 0 failures）
+- [x] P92-13: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
+
 ## detect-positional-args プロジェクト全体分析結果（2026-07-03）
 
 ### 分析概要
@@ -789,6 +805,15 @@
   - [x] P91 実装: `CheckStructureViolations` の `lineCountViolations` から `not isTestFile` 条件を削除
   - [x] P91 実装: 超過していた 11 テストファイルをパート単位に機械分割
   - [x] P91 品質ゲート: `cabal run quality-gate` が全項目 PASS
+  - [x] P92 完了: ビット演算子 `&`, `|`, `^`, `~`, `<<`, `>>`
+  - [x] P92 実装: `BinaryOperator` に 5 つのビット演算子を追加
+  - [x] P92 実装: `Expr` に `BitwiseNotExpr` を追加
+  - [x] P92 実装: `TokenType` / スキャナにビット演算子トークンを追加
+  - [x] P92 実装: `ParseExpr` にビット演算子優先度を追加し、パターン文脈では `|` を OR パターン区切りとして扱う `parseExprNoBitwiseOr` を追加
+  - [x] P92 実装: VM / AST 各経路でビット演算子を整数演算として評価
+  - [x] P92 構造対応: `ParseExprWithConfig` / `ParseExprConfig` / `ParseBitwiseExpr` / `ParseBitwiseExprConfig` / `EvalBinaryOpBitwise` / `EvalBinaryOpBitwiseConfig` / `EvalExprBinaryBitwise` / `EvalExprBinaryBitwiseConfig` を分離し 200 行制限と positional-args を遵守
+  - [x] P92 テスト: `RunSourceVmPart6Spec` / `ParseProgramPart14Spec` にビット演算子のケースを追加
+  - [x] P92 品質ゲート: `cabal run quality-gate` が全項目 PASS（977 examples, 0 failures）
 - 2026-11-03
   - [x] P88 完了: `**` 累乗演算子
   - [x] P88 実装: `BinaryOperator` に `PowerOperator` を追加し、字句・構文・評価・VM 各経路で対応

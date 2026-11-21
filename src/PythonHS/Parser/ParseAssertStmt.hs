@@ -1,6 +1,5 @@
 module PythonHS.Parser.ParseAssertStmt (parseAssertStmt) where
 
-import PythonHS.AST.Expr (Expr)
 import PythonHS.AST.Stmt (Stmt (..))
 import PythonHS.Lexer.Position (Position (..))
 import PythonHS.Lexer.Token (Token (..))

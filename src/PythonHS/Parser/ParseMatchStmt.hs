@@ -6,6 +6,7 @@ import PythonHS.Lexer.Position (Position (Position))
 import PythonHS.Lexer.Token (Token (..))
 import PythonHS.Lexer.TokenType (TokenType (CaseToken, ColonToken, DedentToken, IfToken, IndentToken, NewlineToken))
 import PythonHS.Parser.ParseError (ParseError (..))
+import PythonHS.Parser.ParseExprNoBitwiseOr (parseExprNoBitwiseOr)
 import PythonHS.Parser.ParseMatchStmtConfig (ParseMatchStmtConfig (..))
 import PythonHS.Parser.ParsePattern (parsePattern)
 import PythonHS.Parser.ParsePatternConfig (ParsePatternConfig (..))
@@ -54,7 +55,7 @@ parseMatchStmt config = do
           parseCaseTail parseExprFn parseSuiteFn (nextCase : acc) afterNext
 
     parseCaseClause parseExprFn parseSuiteFn (Token CaseToken _ casePos : ts) = do
-      patternResult <- parsePattern (ParsePatternConfig {parsePatternExpr = parseExprFn, parsePatternTokenStream = ts})
+      patternResult <- parsePattern (ParsePatternConfig {parsePatternExpr = parseExprNoBitwiseOr, parsePatternTokenStream = ts})
       let patternExpr = parseResultValue patternResult
           afterPattern = parseResultRemaining patternResult
       guardResult <-

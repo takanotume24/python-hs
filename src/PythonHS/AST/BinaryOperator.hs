@@ -20,4 +20,9 @@ data BinaryOperator
   | NotInOperator
   | IsOperator
   | IsNotOperator
+  | BitwiseAndOperator
+  | BitwiseOrOperator
+  | BitwiseXorOperator
+  | LeftShiftOperator
+  | RightShiftOperator
   deriving (Eq, Show)

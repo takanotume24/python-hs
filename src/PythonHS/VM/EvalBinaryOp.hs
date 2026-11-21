@@ -4,6 +4,8 @@ import PythonHS.AST.BinaryOperator (BinaryOperator (..))
 import PythonHS.Evaluator.ShowPos (showPos)
 import PythonHS.Evaluator.Value (Value (..))
 import PythonHS.Lexer.Position (Position)
+import PythonHS.VM.EvalBinaryOpBitwise (evalBinaryOpBitwise)
+import PythonHS.VM.EvalBinaryOpBitwiseConfig (EvalBinaryOpBitwiseConfig (..))
 import PythonHS.VM.EvalBinaryOpConfig (EvalBinaryOpConfig (..))
 import PythonHS.VM.EvalBinaryOpDivide (evalBinaryOpDivide)
 import PythonHS.VM.EvalBinaryOpDivideConfig (EvalBinaryOpDivideConfig (..))
@@ -64,6 +66,11 @@ evalBinaryOp config =
         NotInOperator -> evalBinaryOpMembership EvalBinaryOpMembershipConfig {evalBinaryOpMembershipConfigLeft = left, evalBinaryOpMembershipConfigRight = right, evalBinaryOpMembershipConfigPos = pos, evalBinaryOpMembershipConfigNegate = True}
         IsOperator -> evalBinaryOpIdentity EvalBinaryOpIdentityConfig {evalBinaryOpIdentityConfigLeft = left, evalBinaryOpIdentityConfigRight = right, evalBinaryOpIdentityConfigPos = pos, evalBinaryOpIdentityConfigNegate = False}
         IsNotOperator -> evalBinaryOpIdentity EvalBinaryOpIdentityConfig {evalBinaryOpIdentityConfigLeft = left, evalBinaryOpIdentityConfigRight = right, evalBinaryOpIdentityConfigPos = pos, evalBinaryOpIdentityConfigNegate = True}
+        BitwiseAndOperator -> evalBinaryOpBitwise EvalBinaryOpBitwiseConfig {evalBinaryOpBitwiseConfigLeft = left, evalBinaryOpBitwiseConfigRight = right, evalBinaryOpBitwiseConfigOp = op, evalBinaryOpBitwiseConfigPos = pos}
+        BitwiseOrOperator -> evalBinaryOpBitwise EvalBinaryOpBitwiseConfig {evalBinaryOpBitwiseConfigLeft = left, evalBinaryOpBitwiseConfigRight = right, evalBinaryOpBitwiseConfigOp = op, evalBinaryOpBitwiseConfigPos = pos}
+        BitwiseXorOperator -> evalBinaryOpBitwise EvalBinaryOpBitwiseConfig {evalBinaryOpBitwiseConfigLeft = left, evalBinaryOpBitwiseConfigRight = right, evalBinaryOpBitwiseConfigOp = op, evalBinaryOpBitwiseConfigPos = pos}
+        LeftShiftOperator -> evalBinaryOpBitwise EvalBinaryOpBitwiseConfig {evalBinaryOpBitwiseConfigLeft = left, evalBinaryOpBitwiseConfigRight = right, evalBinaryOpBitwiseConfigOp = op, evalBinaryOpBitwiseConfigPos = pos}
+        RightShiftOperator -> evalBinaryOpBitwise EvalBinaryOpBitwiseConfig {evalBinaryOpBitwiseConfigLeft = left, evalBinaryOpBitwiseConfigRight = right, evalBinaryOpBitwiseConfigOp = op, evalBinaryOpBitwiseConfigPos = pos}
   where
     evalNumericBinary context pos' left' right' opFn = do
       leftNumber <- expectNumber context pos' left'

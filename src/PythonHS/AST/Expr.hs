@@ -85,6 +85,10 @@ data Expr
       { notExprValue :: Expr,
         notExprPos :: Position
       }
+  | BitwiseNotExpr
+      { bitwiseNotExprValue :: Expr,
+        bitwiseNotExprPos :: Position
+      }
   | BinaryExpr
       { binaryExprOp :: BinaryOperator,
         binaryExprLeft :: Expr,

@@ -60,6 +60,9 @@ compileExprAt config =
         NotExpr {notExprValue = notExpr, notExprPos = pos} -> do
           notResult <- compileExprAt' baseIndex notExpr
           pure (CompileExprResult {compileExprResultCode = compileExprResultCode notResult ++ [ApplyNot {applyNotPos = pos}], compileExprResultEndIndex = compileExprResultEndIndex notResult + 1})
+        BitwiseNotExpr {bitwiseNotExprValue = bitwiseNotExpr, bitwiseNotExprPos = pos} -> do
+          bitwiseNotResult <- compileExprAt' baseIndex bitwiseNotExpr
+          pure (CompileExprResult {compileExprResultCode = compileExprResultCode bitwiseNotResult ++ [ApplyBitwiseNot {applyBitwiseNotPos = pos}], compileExprResultEndIndex = compileExprResultEndIndex bitwiseNotResult + 1})
         WalrusExpr {walrusExprName = name, walrusExprValue = valueExpr} -> do
           valueResult <- compileExprAt' baseIndex valueExpr
           pure (CompileExprResult {compileExprResultCode = compileExprResultCode valueResult ++ [DupTop, StoreName {storeNameName = name}], compileExprResultEndIndex = compileExprResultEndIndex valueResult + 2})

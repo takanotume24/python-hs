@@ -111,6 +111,11 @@ library
     , PythonHS.Lexer.ScanTokenStepResult
     , PythonHS.Lexer.SpanDigits
       , PythonHS.Parser.ParseExpr
+    , PythonHS.Parser.ParseExprConfig
+    , PythonHS.Parser.ParseExprNoBitwiseOr
+    , PythonHS.Parser.ParseExprWithConfig
+    , PythonHS.Parser.ParseBitwiseExpr
+    , PythonHS.Parser.ParseBitwiseExprConfig
     , PythonHS.Parser.ParsePrimary
     , PythonHS.Parser.ParsePrimaryConfig
     , PythonHS.Parser.ParseAnnAssignStmt
@@ -199,6 +204,8 @@ library
     , PythonHS.Evaluator.EvalExprBinary
     , PythonHS.Evaluator.EvalExprBinaryIdentity
     , PythonHS.Evaluator.EvalExprBinaryIdentityConfig
+    , PythonHS.Evaluator.EvalExprBinaryBitwise
+    , PythonHS.Evaluator.EvalExprBinaryBitwiseConfig
     , PythonHS.Evaluator.EvalExprBinaryPower
     , PythonHS.Evaluator.EvalExprBinaryPowerConfig
     , PythonHS.Evaluator.EvalExprBinaryMembership
@@ -271,6 +278,8 @@ library
     , PythonHS.VM.EvalBinaryOp
     , PythonHS.VM.EvalBinaryOpIdentity
     , PythonHS.VM.EvalBinaryOpIdentityConfig
+    , PythonHS.VM.EvalBinaryOpBitwise
+    , PythonHS.VM.EvalBinaryOpBitwiseConfig
     , PythonHS.VM.EvalBinaryOpEquality
     , PythonHS.VM.EvalBinaryOpEqualityConfig
     , PythonHS.VM.EvalBinaryOpDivide

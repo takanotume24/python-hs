@@ -10,8 +10,10 @@ import PythonHS.Lexer.ScanTokenStepResult (ScanTokenStepResult (..))
 import PythonHS.Lexer.Token (Token (Token))
 import PythonHS.Lexer.TokenType
   ( TokenType
-      ( AssignToken,
+      ( AmpersandToken,
+        AssignToken,
         AtToken,
+        CaretToken,
         ColonAssignToken,
         ColonToken,
         CommaToken,
@@ -27,6 +29,7 @@ import PythonHS.Lexer.TokenType
         LBraceToken,
         LBracketToken,
         LParenToken,
+        LeftShiftToken,
         LtToken,
         LteToken,
         MinusAssignToken,
@@ -40,11 +43,13 @@ import PythonHS.Lexer.TokenType
         RBraceToken,
         RBracketToken,
         RParenToken,
+        RightShiftToken,
         SlashAssignToken,
         SlashToken,
         StarAssignToken,
         StarToken,
-        StringToken
+        StringToken,
+        TildeToken
       ),
   )
 
@@ -65,12 +70,17 @@ scanTokenStep config =
                 _ -> Left (UnexpectedCharacter {unexpectedChar = '!'})
           | c == '<' ->
               case rest of
+                ('<' : rest') -> Right (ScanTokenStepResult (Token LeftShiftToken "<<" (Position ln col)) rest' (Position ln (col + 2)))
                 ('=' : rest') -> Right (ScanTokenStepResult (Token LteToken "<=" (Position ln col)) rest' (Position ln (col + 2)))
                 _ -> Right (ScanTokenStepResult (Token LtToken "<" (Position ln col)) rest (Position ln (col + 1)))
           | c == '>' ->
               case rest of
+                ('>' : rest') -> Right (ScanTokenStepResult (Token RightShiftToken ">>" (Position ln col)) rest' (Position ln (col + 2)))
                 ('=' : rest') -> Right (ScanTokenStepResult (Token GteToken ">=" (Position ln col)) rest' (Position ln (col + 2)))
                 _ -> Right (ScanTokenStepResult (Token GtToken ">" (Position ln col)) rest (Position ln (col + 1)))
+          | c == '&' -> Right (ScanTokenStepResult (Token AmpersandToken "&" (Position ln col)) rest (Position ln (col + 1)))
+          | c == '^' -> Right (ScanTokenStepResult (Token CaretToken "^" (Position ln col)) rest (Position ln (col + 1)))
+          | c == '~' -> Right (ScanTokenStepResult (Token TildeToken "~" (Position ln col)) rest (Position ln (col + 1)))
           | c == '+' ->
               case rest of
                 ('=' : rest') -> Right (ScanTokenStepResult (Token PlusAssignToken "+=" (Position ln col)) rest' (Position ln (col + 2)))

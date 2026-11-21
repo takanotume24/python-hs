@@ -101,3 +101,28 @@ spec = describe "runSourceVm (vm mvp) - part 6" $ do
 
     it "evaluates is with strings" $ do
       runSourceVm "print 'a' is 'a'\nprint 'a' is 'b'\n" `shouldBe` Right ["1", "0"]
+
+  describe "bitwise operators" $ do
+    it "evaluates bitwise and" $ do
+      runSourceVm "print 5 & 3\n" `shouldBe` Right ["1"]
+
+    it "evaluates bitwise or" $ do
+      runSourceVm "print 5 | 3\n" `shouldBe` Right ["7"]
+
+    it "evaluates bitwise xor" $ do
+      runSourceVm "print 5 ^ 3\n" `shouldBe` Right ["6"]
+
+    it "evaluates bitwise not" $ do
+      runSourceVm "print ~5\nprint ~0\n" `shouldBe` Right ["-6", "-1"]
+
+    it "evaluates left shift" $ do
+      runSourceVm "print 1 << 3\n" `shouldBe` Right ["8"]
+
+    it "evaluates right shift" $ do
+      runSourceVm "print 8 >> 2\n" `shouldBe` Right ["2"]
+
+    it "evaluates combined bitwise expression" $ do
+      runSourceVm "print 1 | 2 & 2\nprint (1 | 2) & 2\n" `shouldBe` Right ["3", "2"]
+
+    it "reports type error for float operand" $ do
+      runSourceVm "print 1.0 & 2\n" `shouldBe` Left "Type error: & expects int at 1:11"

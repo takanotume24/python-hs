@@ -1,5 +1,6 @@
 module PythonHS.VM.ExecuteArithmeticInstruction (executeArithmeticInstruction) where
 
+import Data.Bits (complement)
 import PythonHS.Evaluator.ShowPos (showPos)
 import PythonHS.Evaluator.Value (Value (..))
 import PythonHS.VM.EvalBinaryOp (evalBinaryOp)
@@ -33,4 +34,11 @@ executeArithmeticInstruction config =
           case vmStack state of
             value : rest -> Just (Right state {vmIp = vmIp state + 1, vmStack = IntValue {intValue = if isTruthy value then 0 else 1} : rest})
             _ -> Just (Left "VM runtime error: not requires one value on stack")
+        ApplyBitwiseNot pos ->
+          case vmStack state of
+            value : rest ->
+              case value of
+                IntValue {intValue = n} -> Just (Right state {vmIp = vmIp state + 1, vmStack = IntValue {intValue = complement n} : rest})
+                _ -> Just (Left ("Type error: ~ expects int at " ++ showPos pos))
+            _ -> Just (Left "VM runtime error: ~ requires one value on stack")
         _ -> Nothing

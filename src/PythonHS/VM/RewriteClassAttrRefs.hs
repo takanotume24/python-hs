@@ -17,6 +17,8 @@ rewriteClassAttrRefs config = case rewriteClassAttrRefsConfigExpr config of
     UnaryMinusExpr {unaryMinusExprValue = rewrite value, unaryMinusExprPos = pos}
   NotExpr {notExprValue = value, notExprPos = pos} ->
     NotExpr {notExprValue = rewrite value, notExprPos = pos}
+  BitwiseNotExpr {bitwiseNotExprValue = value, bitwiseNotExprPos = pos} ->
+    BitwiseNotExpr {bitwiseNotExprValue = rewrite value, bitwiseNotExprPos = pos}
   CallExpr {callExprName = name, callExprArgs = args, callExprPos = pos} ->
     CallExpr {callExprName = name, callExprArgs = map rewrite args, callExprPos = pos}
   CallValueExpr {callValueExprCallee = callee, callValueExprArgs = args, callValueExprPos = pos} ->

@@ -73,6 +73,11 @@ data TokenType
   | OrToken
   | NotToken
   | PipeToken
+  | AmpersandToken
+  | CaretToken
+  | TildeToken
+  | LeftShiftToken
+  | RightShiftToken
   | AtToken
   | WithToken
   | EOFToken

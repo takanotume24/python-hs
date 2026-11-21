@@ -42,6 +42,7 @@ data Instruction
   | DupTop
   | ApplyUnaryMinus {applyUnaryMinusPos :: Position}
   | ApplyNot {applyNotPos :: Position}
+  | ApplyBitwiseNot {applyBitwiseNotPos :: Position}
   | ApplyBinary
       { applyBinaryOp :: BinaryOperator,
         applyBinaryPos :: Position

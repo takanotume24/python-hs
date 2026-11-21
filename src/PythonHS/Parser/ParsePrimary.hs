@@ -23,6 +23,7 @@ import PythonHS.Lexer.TokenType
         RBracketToken,
         RParenToken,
         StringToken,
+        TildeToken,
         TrueToken
       ),
   )
@@ -60,6 +61,11 @@ parsePrimary config = do
       let expr = parseResultValue primaryResult
           remaining = parseResultRemaining primaryResult
       Right (ParseResult {parseResultValue = UnaryMinusExpr {unaryMinusExprValue = expr, unaryMinusExprPos = pos}, parseResultRemaining = remaining})
+    parseAtom (Token TildeToken _ pos : rest) = do
+      primaryResult <- parsePrimary (config {parsePrimaryTokenStream = rest})
+      let expr = parseResultValue primaryResult
+          remaining = parseResultRemaining primaryResult
+      Right (ParseResult {parseResultValue = BitwiseNotExpr {bitwiseNotExprValue = expr, bitwiseNotExprPos = pos}, parseResultRemaining = remaining})
     parseAtom (Token StringToken value pos : rest) = Right (ParseResult {parseResultValue = StringExpr {stringExprValue = value, stringExprPos = pos}, parseResultRemaining = rest})
     parseAtom (Token LBracketToken _ pos : rest) = parseListElements pos rest
     parseAtom (Token LBraceToken _ pos : rest) = parseDictEntries pos rest

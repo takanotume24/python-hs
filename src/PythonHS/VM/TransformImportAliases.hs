@@ -91,6 +91,7 @@ transformImportAliases renameDefNames moduleAlias callAlias identAlias stmt =
           LambdaDefaultsExpr params (fmap (\FunctionDefault {functionDefaultParam = paramName, functionDefaultExpr = defaultExpr} -> FunctionDefault {functionDefaultParam = paramName, functionDefaultExpr = transformExpr moduleAliases callAliases identAliases defaultExpr}) defaults) (transformExpr moduleAliases callAliases identAliases valueExpr) pos
         UnaryMinusExpr {unaryMinusExprValue = value, unaryMinusExprPos = pos} -> UnaryMinusExpr (transformExpr moduleAliases callAliases identAliases value) pos
         NotExpr {notExprValue = value, notExprPos = pos} -> NotExpr (transformExpr moduleAliases callAliases identAliases value) pos
+        BitwiseNotExpr {bitwiseNotExprValue = value, bitwiseNotExprPos = pos} -> BitwiseNotExpr (transformExpr moduleAliases callAliases identAliases value) pos
         BinaryExpr {binaryExprOp = op, binaryExprLeft = left, binaryExprRight = right, binaryExprPos = pos} ->
           BinaryExpr op (transformExpr moduleAliases callAliases identAliases left) (transformExpr moduleAliases callAliases identAliases right) pos
         CallExpr {callExprName = fname, callExprArgs = args, callExprPos = pos} ->

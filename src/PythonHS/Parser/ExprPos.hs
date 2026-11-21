@@ -26,6 +26,7 @@ exprPos expr =
     LambdaDefaultsExpr {lambdaDefaultsExprPos} -> lambdaDefaultsExprPos
     UnaryMinusExpr {unaryMinusExprPos} -> unaryMinusExprPos
     NotExpr {notExprPos} -> notExprPos
+    BitwiseNotExpr {bitwiseNotExprPos} -> bitwiseNotExprPos
     BinaryExpr {binaryExprPos} -> binaryExprPos
     CallExpr {callExprPos} -> callExprPos
     CallValueExpr {callValueExprPos} -> callValueExprPos

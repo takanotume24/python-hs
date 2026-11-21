@@ -176,3 +176,24 @@ spec = describe "parseProgram - part 14" $ do
           Token EOFToken "" (Position 2 1)
         ]
         `shouldBe` Right (Program [PrintStmt (BinaryExpr {binaryExprOp = IsNotOperator, binaryExprLeft = IntegerExpr 1 (Position 1 7), binaryExprRight = IntegerExpr 2 (Position 1 16), binaryExprPos = Position 1 9}) (Position 1 1)])
+
+    it "parses bitwise and expression" $
+      parseProgram
+        [ Token PrintToken "print" (Position 1 1),
+          Token IntegerToken "5" (Position 1 7),
+          Token AmpersandToken "&" (Position 1 9),
+          Token IntegerToken "3" (Position 1 11),
+          Token NewlineToken "\n" (Position 1 12),
+          Token EOFToken "" (Position 2 1)
+        ]
+        `shouldBe` Right (Program [PrintStmt (BinaryExpr {binaryExprOp = BitwiseAndOperator, binaryExprLeft = IntegerExpr 5 (Position 1 7), binaryExprRight = IntegerExpr 3 (Position 1 11), binaryExprPos = Position 1 9}) (Position 1 1)])
+
+    it "parses bitwise not expression" $
+      parseProgram
+        [ Token PrintToken "print" (Position 1 1),
+          Token TildeToken "~" (Position 1 7),
+          Token IntegerToken "5" (Position 1 8),
+          Token NewlineToken "\n" (Position 1 9),
+          Token EOFToken "" (Position 2 1)
+        ]
+        `shouldBe` Right (Program [PrintStmt (BitwiseNotExpr {bitwiseNotExprValue = IntegerExpr 5 (Position 1 8), bitwiseNotExprPos = Position 1 7}) (Position 1 1)])
