@@ -43,6 +43,7 @@ data TokenType
   | WhileToken
   | ForToken
   | InToken
+  | IsToken
   | DefToken
   | DelToken
   | ClassToken

@@ -197,6 +197,8 @@ library
     , PythonHS.Evaluator.EvalWithStmt
     , PythonHS.Evaluator.EvalWithStmtConfig
     , PythonHS.Evaluator.EvalExprBinary
+    , PythonHS.Evaluator.EvalExprBinaryIdentity
+    , PythonHS.Evaluator.EvalExprBinaryIdentityConfig
     , PythonHS.Evaluator.EvalExprBinaryPower
     , PythonHS.Evaluator.EvalExprBinaryPowerConfig
     , PythonHS.Evaluator.EvalExprBinaryMembership
@@ -267,6 +269,10 @@ library
     , PythonHS.VM.CompileTryExcept
     , PythonHS.VM.TryExceptDispatchPlan
     , PythonHS.VM.EvalBinaryOp
+    , PythonHS.VM.EvalBinaryOpIdentity
+    , PythonHS.VM.EvalBinaryOpIdentityConfig
+    , PythonHS.VM.EvalBinaryOpEquality
+    , PythonHS.VM.EvalBinaryOpEqualityConfig
     , PythonHS.VM.EvalBinaryOpDivide
     , PythonHS.VM.EvalBinaryOpDivideConfig
     , PythonHS.VM.EvalBinaryOpPower
@@ -441,20 +447,63 @@ test-suite python-hs-test
   other-modules:
       Test.Acceptance.MvpScenarioSpec
     , Paths_python_hs
-    , Test.Lexer.ScanTokensCoreSpec
+    , Test.CLI.CLIPart1Spec
+    , Test.CLI.CLIPart2Spec
+    , Test.CLI.CLIPart3Spec
+    , Test.CLI.CLIPart4Spec
+    , Test.CLI.CLIPart5Spec
+    , Test.CLI.CLIPart6Spec
+    , Test.Eval.EvalPart1Spec
+    , Test.Eval.EvalPart2Spec
+    , Test.Eval.EvalPart3Spec
+    , Test.Eval.FunctionEvalPart1Spec
+    , Test.Eval.FunctionEvalPart2Spec
+    , Test.Eval.FunctionEvalPart3Spec
+    , Test.Eval.FunctionEvalPart4Spec
+    , Test.Eval.RuntimeErrorPart1Spec
+    , Test.Eval.RuntimeErrorPart2Spec
+    , Test.Eval.RuntimeErrorPart3Spec
+    , Test.Eval.RuntimeErrorPart4Spec
+    , Test.Eval.RuntimeErrorPart5Spec
+    , Test.Eval.RuntimeErrorPart6Spec
+    , Test.Eval.RuntimeErrorPart7Spec
+    , Test.Eval.RuntimeErrorPart8Spec
+    , Test.Eval.RuntimeErrorPart9Spec
+    , Test.Lexer.ScanTokensCorePart1Spec
+    , Test.Lexer.ScanTokensCorePart2Spec
     , Test.Lexer.ScanTokensIndentSpec
-    , Test.Parser.ParseProgramSpec
-    , Test.Parser.ParserErrorSpec
-    , Test.Eval.EvalSpec
-    , Test.Eval.FunctionEvalSpec
-    , Test.Eval.RuntimeErrorSpec
-    , Test.Runner.RunnerCoreSpec
-    , Test.Runner.RunnerEdgeSpec
+    , Test.Parser.ParseProgramPart1Spec
+    , Test.Parser.ParseProgramPart2Spec
+    , Test.Parser.ParseProgramPart3Spec
+    , Test.Parser.ParseProgramPart4Spec
+    , Test.Parser.ParseProgramPart5Spec
+    , Test.Parser.ParseProgramPart6Spec
+    , Test.Parser.ParseProgramPart7Spec
+    , Test.Parser.ParseProgramPart8Spec
+    , Test.Parser.ParseProgramPart9Spec
+    , Test.Parser.ParseProgramPart10Spec
+    , Test.Parser.ParseProgramPart11Spec
+    , Test.Parser.ParseProgramPart12Spec
+    , Test.Parser.ParseProgramPart13Spec
+    , Test.Parser.ParseProgramPart14Spec
+    , Test.Parser.ParserErrorPart1Spec
+    , Test.Parser.ParserErrorPart2Spec
+    , Test.Parser.ParserErrorPart3Spec
+    , Test.Runner.RunnerCorePart1Spec
+    , Test.Runner.RunnerCorePart2Spec
+    , Test.Runner.RunnerEdgePart1Spec
+    , Test.Runner.RunnerEdgePart2Spec
+    , Test.Runner.RunnerEdgePart3Spec
     , Test.Runner.RunnerCaseCoverageReportSpec
     , Test.Runner.RunnerCaseCoverageHasMissingSpec
-    , Test.Runner.RunnerVmParitySpec
-    , Test.CLI.CLISpec
-    , Test.VM.RunSourceVmSpec
+    , Test.Runner.RunnerVmParityPart1Spec
+    , Test.Runner.RunnerVmParityPart2Spec
+    , Test.VM.RunSourceVmPart1Spec
+    , Test.VM.RunSourceVmPart2Spec
+    , Test.VM.RunSourceVmPart3Spec
+    , Test.VM.RunSourceVmPart4Spec
+    , Test.VM.RunSourceVmPart5Spec
+    , Test.VM.RunSourceVmPart6Spec
     , Test.VM.RunInstructionsSpec
     , Test.Structure.CheckStructureSpec
     , Test.Structure.DetectPositionalArgsSpec

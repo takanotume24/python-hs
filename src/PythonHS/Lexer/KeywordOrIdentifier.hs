@@ -23,6 +23,7 @@ import PythonHS.Lexer.TokenType
         IfToken,
         ImportToken,
         InToken,
+        IsToken,
         LambdaToken,
         MatchToken,
         NoneToken,
@@ -53,6 +54,7 @@ keywordOrIdentifier value
   | value == "while" = WhileToken
   | value == "for" = ForToken
   | value == "in" = InToken
+  | value == "is" = IsToken
   | value == "def" = DefToken
   | value == "del" = DelToken
   | value == "class" = ClassToken

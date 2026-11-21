@@ -551,6 +551,26 @@
 - [x] P89-6: 全テスト PASS（961 examples, 0 failures）
 - [x] P89-7: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
 
+## 現在のスコープ（P90: `is` / `is not` 演算子）
+- [x] P90 開始: `is` / `is not` 演算子を VM / AST 各経路で実装する
+- [x] P90-1: 失敗テストを `RunSourceVmPart6Spec` / `ParseProgramPart14Spec` に追加
+- [x] P90-2: `BinaryOperator` に `IsOperator` / `IsNotOperator` を追加
+- [x] P90-3: `TokenType` に `IsToken` を追加し、`KeywordOrIdentifier` で `is` をキーワードとして認識
+- [x] P90-4: `ParseExpr` で `is` / `is not` を比較演算子レベルで解析
+- [x] P90-5: VM 評価: `EvalBinaryOpIdentity` / `EvalBinaryOpIdentityConfig` を追加し `EvalBinaryOp` から呼び出し
+- [x] P90-6: AST 評価: `EvalExprBinaryIdentity` / `EvalExprBinaryIdentityConfig` を追加し `EvalExprBinary` から呼び出し
+- [x] P90-7: 200 行制限対応: `EvalBinaryOpEquality` / `EvalBinaryOpEqualityConfig` を分離し `EvalBinaryOp` の行数制限を維持
+- [x] P90-8: 全テスト PASS（967 examples, 0 failures）
+- [x] P90-9: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
+
+## 現在のスコープ（P91: テストファイルの 200 行制限適用）
+- [x] P91 開始: `check-structure` でテストファイルも 200 行制限の対象にする
+- [x] P91-1: `CheckStructureViolations` の `lineCountViolations` から `not isTestFile` 条件を削除
+- [x] P91-2: `CheckStructureSpec` のテストを「テストファイルも制限対象」に更新
+- [x] P91-3: 超過していたテストファイルを機械的に分割（`RunnerVmParity` / `RunnerCore` / `RunnerEdge` / `ScanTokensCore` / `ParserError` / `Eval` / `FunctionEval` / `CLI` / `RunSourceVm` / `RuntimeError` / `ParseProgram`）
+- [x] P91-4: 分割したパートファイルを `python-hs.cabal` の test-suite `other-modules` に登録
+- [x] P91-5: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
+
 ## detect-positional-args プロジェクト全体分析結果（2026-07-03）
 
 ### 分析概要
@@ -757,6 +777,18 @@
   - [x] P89 構造対応: `EvalBinaryOpMembership` / `EvalExprBinaryMembership` / `ExpectNumber` / `ExpectTruthy` を分離し 200 行制限を遵守
   - [x] P89 テスト: `RunSourceVmSpec` / `ParseProgramSpec` に `in` / `not in` のケースを追加
   - [x] P89 品質ゲート: `cabal run quality-gate` が全項目 PASS（961 examples, 0 failures）
+  - [x] P90 完了: `is` / `is not` 演算子
+  - [x] P90 実装: `BinaryOperator` に `IsOperator` / `IsNotOperator` を追加
+  - [x] P90 実装: `TokenType` に `IsToken` を追加し `KeywordOrIdentifier` で `is` をキーワードとして認識
+  - [x] P90 実装: `ParseExpr` で `is` / `is not` を比較演算子レベルで解析
+  - [x] P90 実装: VM / AST 各経路で `is` / `is not` を構造等価で評価
+  - [x] P90 構造対応: `EvalBinaryOpIdentity` / `EvalBinaryOpIdentityConfig` / `EvalExprBinaryIdentity` / `EvalExprBinaryIdentityConfig` / `EvalBinaryOpEquality` / `EvalBinaryOpEqualityConfig` を分離し 200 行制限を遵守
+  - [x] P90 テスト: `RunSourceVmPart6Spec` / `ParseProgramPart14Spec` に `is` / `is not` のケースを追加
+  - [x] P90 品質ゲート: `cabal run quality-gate` が全項目 PASS（967 examples, 0 failures）
+  - [x] P91 完了: テストファイルの 200 行制限適用
+  - [x] P91 実装: `CheckStructureViolations` の `lineCountViolations` から `not isTestFile` 条件を削除
+  - [x] P91 実装: 超過していた 11 テストファイルをパート単位に機械分割
+  - [x] P91 品質ゲート: `cabal run quality-gate` が全項目 PASS
 - 2026-11-03
   - [x] P88 完了: `**` 累乗演算子
   - [x] P88 実装: `BinaryOperator` に `PowerOperator` を追加し、字句・構文・評価・VM 各経路で対応

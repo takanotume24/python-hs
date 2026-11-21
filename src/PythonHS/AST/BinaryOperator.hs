@@ -18,4 +18,6 @@ data BinaryOperator
   | OrOperator
   | InOperator
   | NotInOperator
+  | IsOperator
+  | IsNotOperator
   deriving (Eq, Show)

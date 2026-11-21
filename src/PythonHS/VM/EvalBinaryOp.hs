@@ -7,6 +7,10 @@ import PythonHS.Lexer.Position (Position)
 import PythonHS.VM.EvalBinaryOpConfig (EvalBinaryOpConfig (..))
 import PythonHS.VM.EvalBinaryOpDivide (evalBinaryOpDivide)
 import PythonHS.VM.EvalBinaryOpDivideConfig (EvalBinaryOpDivideConfig (..))
+import PythonHS.VM.EvalBinaryOpEquality (evalBinaryOpEquality)
+import PythonHS.VM.EvalBinaryOpEqualityConfig (EvalBinaryOpEqualityConfig (..))
+import PythonHS.VM.EvalBinaryOpIdentity (evalBinaryOpIdentity)
+import PythonHS.VM.EvalBinaryOpIdentityConfig (EvalBinaryOpIdentityConfig (..))
 import PythonHS.VM.EvalBinaryOpMembership (evalBinaryOpMembership)
 import PythonHS.VM.EvalBinaryOpMembershipConfig (EvalBinaryOpMembershipConfig (..))
 import PythonHS.VM.EvalBinaryOpPower (evalBinaryOpPower)
@@ -42,8 +46,8 @@ evalBinaryOp config =
         FloorDivideOperator -> evalFloorDivide pos left right
         ModuloOperator -> evalModulo pos left right
         PowerOperator -> evalBinaryOpPower EvalBinaryOpPowerConfig {evalBinaryOpPowerConfigLeft = left, evalBinaryOpPowerConfigRight = right, evalBinaryOpPowerConfigPos = pos, evalBinaryOpPowerConfigExpectNumber = expectNumber "**"}
-        EqOperator -> evalEqComparison left right
-        NotEqOperator -> evalNotEqComparison left right
+        EqOperator -> evalBinaryOpEquality EvalBinaryOpEqualityConfig {evalBinaryOpEqualityConfigLeft = left, evalBinaryOpEqualityConfigRight = right, evalBinaryOpEqualityConfigNegate = False}
+        NotEqOperator -> evalBinaryOpEquality EvalBinaryOpEqualityConfig {evalBinaryOpEqualityConfigLeft = left, evalBinaryOpEqualityConfigRight = right, evalBinaryOpEqualityConfigNegate = True}
         LtOperator -> evalOrderComparison "<" pos left right (\ordResult -> ordResult == LT)
         GtOperator -> evalOrderComparison ">" pos left right (\ordResult -> ordResult == GT)
         LteOperator -> evalOrderComparison "<=" pos left right (\ordResult -> ordResult /= GT)
@@ -58,6 +62,8 @@ evalBinaryOp config =
           Right (IntValue {intValue = if leftTruthy /= 0 || rightTruthy /= 0 then 1 else 0})
         InOperator -> evalBinaryOpMembership EvalBinaryOpMembershipConfig {evalBinaryOpMembershipConfigLeft = left, evalBinaryOpMembershipConfigRight = right, evalBinaryOpMembershipConfigPos = pos, evalBinaryOpMembershipConfigNegate = False}
         NotInOperator -> evalBinaryOpMembership EvalBinaryOpMembershipConfig {evalBinaryOpMembershipConfigLeft = left, evalBinaryOpMembershipConfigRight = right, evalBinaryOpMembershipConfigPos = pos, evalBinaryOpMembershipConfigNegate = True}
+        IsOperator -> evalBinaryOpIdentity EvalBinaryOpIdentityConfig {evalBinaryOpIdentityConfigLeft = left, evalBinaryOpIdentityConfigRight = right, evalBinaryOpIdentityConfigPos = pos, evalBinaryOpIdentityConfigNegate = False}
+        IsNotOperator -> evalBinaryOpIdentity EvalBinaryOpIdentityConfig {evalBinaryOpIdentityConfigLeft = left, evalBinaryOpIdentityConfigRight = right, evalBinaryOpIdentityConfigPos = pos, evalBinaryOpIdentityConfigNegate = True}
   where
     evalNumericBinary context pos' left' right' opFn = do
       leftNumber <- expectNumber context pos' left'
@@ -99,40 +105,6 @@ evalBinaryOp config =
                     IntValue {intValue = rightInt} -> Right (IntValue {intValue = leftInt `mod` rightInt})
                     _ -> Right (FloatValue {floatValue = remainder})
                 _ -> Right (FloatValue {floatValue = remainder})
-
-    evalEqComparison left' right' =
-      let fallback = Right (IntValue {intValue = if left' == right' then 1 else 0})
-       in case left' of
-            IntValue {intValue = leftInt} ->
-              case right' of
-                FloatValue {floatValue = rightFloat} -> Right (IntValue {intValue = if (fromIntegral leftInt :: Double) == rightFloat then 1 else 0})
-                _ -> fallback
-            FloatValue {floatValue = leftFloat} ->
-              case right' of
-                IntValue {intValue = rightInt} -> Right (IntValue {intValue = if leftFloat == (fromIntegral rightInt :: Double) then 1 else 0})
-                _ -> fallback
-            TupleValue {tupleValueItems = leftVals} ->
-              case right' of
-                TupleValue {tupleValueItems = rightVals} -> Right (IntValue {intValue = if leftVals == rightVals then 1 else 0})
-                _ -> fallback
-            _ -> fallback
-
-    evalNotEqComparison left' right' =
-      let fallback = Right (IntValue {intValue = if left' /= right' then 1 else 0})
-       in case left' of
-            IntValue {intValue = leftInt} ->
-              case right' of
-                FloatValue {floatValue = rightFloat} -> Right (IntValue {intValue = if (fromIntegral leftInt :: Double) /= rightFloat then 1 else 0})
-                _ -> fallback
-            FloatValue {floatValue = leftFloat} ->
-              case right' of
-                IntValue {intValue = rightInt} -> Right (IntValue {intValue = if leftFloat /= (fromIntegral rightInt :: Double) then 1 else 0})
-                _ -> fallback
-            TupleValue {tupleValueItems = leftVals} ->
-              case right' of
-                TupleValue {tupleValueItems = rightVals} -> Right (IntValue {intValue = if leftVals /= rightVals then 1 else 0})
-                _ -> fallback
-            _ -> fallback
 
     evalNumericComparison context pos' left' right' cmp = do
       leftNumber <- expectNumber context pos' left'

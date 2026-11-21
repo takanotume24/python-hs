@@ -1,6 +1,8 @@
 module PythonHS.Evaluator.EvalExprBinary (evalExprBinary) where
 
 import PythonHS.AST.BinaryOperator (BinaryOperator (..))
+import PythonHS.Evaluator.EvalExprBinaryIdentity (evalExprBinaryIdentity)
+import PythonHS.Evaluator.EvalExprBinaryIdentityConfig (EvalExprBinaryIdentityConfig (..))
 import PythonHS.Evaluator.EvalExprBinaryInput (EvalExprBinaryInput (..))
 import PythonHS.Evaluator.EvalExprBinaryMembership (evalExprBinaryMembership)
 import PythonHS.Evaluator.EvalExprBinaryMembershipConfig (EvalExprBinaryMembershipConfig (..))
@@ -66,6 +68,8 @@ evalExprBinary input = case op of
         Right (EvalExprResult {evalExprResultValue = IntValue {intValue = if rightTruthy /= 0 then 1 else 0}, evalExprResultOutputs = leftOuts ++ rightOuts, evalExprResultEnv = envAfterRight})
   InOperator -> evalExprBinaryMembership EvalExprBinaryMembershipConfig {evalExprBinaryMembershipConfigEvalExprFn = evalExprFn, evalExprBinaryMembershipConfigEnv = env, evalExprBinaryMembershipConfigFuncEnv = fenv, evalExprBinaryMembershipConfigLeftExpr = leftExpr, evalExprBinaryMembershipConfigRightExpr = rightExpr, evalExprBinaryMembershipConfigPos = pos, evalExprBinaryMembershipConfigNegate = False}
   NotInOperator -> evalExprBinaryMembership EvalExprBinaryMembershipConfig {evalExprBinaryMembershipConfigEvalExprFn = evalExprFn, evalExprBinaryMembershipConfigEnv = env, evalExprBinaryMembershipConfigFuncEnv = fenv, evalExprBinaryMembershipConfigLeftExpr = leftExpr, evalExprBinaryMembershipConfigRightExpr = rightExpr, evalExprBinaryMembershipConfigPos = pos, evalExprBinaryMembershipConfigNegate = True}
+  IsOperator -> evalExprBinaryIdentity EvalExprBinaryIdentityConfig {evalExprBinaryIdentityConfigEvalExprFn = evalExprFn, evalExprBinaryIdentityConfigEnv = env, evalExprBinaryIdentityConfigFuncEnv = fenv, evalExprBinaryIdentityConfigLeftExpr = leftExpr, evalExprBinaryIdentityConfigRightExpr = rightExpr, evalExprBinaryIdentityConfigPos = pos, evalExprBinaryIdentityConfigNegate = False}
+  IsNotOperator -> evalExprBinaryIdentity EvalExprBinaryIdentityConfig {evalExprBinaryIdentityConfigEvalExprFn = evalExprFn, evalExprBinaryIdentityConfigEnv = env, evalExprBinaryIdentityConfigFuncEnv = fenv, evalExprBinaryIdentityConfigLeftExpr = leftExpr, evalExprBinaryIdentityConfigRightExpr = rightExpr, evalExprBinaryIdentityConfigPos = pos, evalExprBinaryIdentityConfigNegate = True}
   where
     evalExprFn = evalExprBinaryEvalExprFn input
     env = evalExprBinaryEnv input

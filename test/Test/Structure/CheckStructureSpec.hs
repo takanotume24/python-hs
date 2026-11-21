@@ -65,7 +65,7 @@ spec = describe "checkStructureViolations" $ do
       violations <- checkStructureViolations root
       violations `shouldSatisfy` any (isInfixOf "file exceeds 200 lines")
 
-  it "does not apply line-limit checks to test files" $
+  it "applies line-limit checks to test files" $
     withSystemTempDirectory "check-structure-test-lines" $ \root -> do
       createDirectoryIfMissing True (root ++ "/test/Test/Parser")
       let bodyLines = replicate 250 ""
@@ -74,7 +74,7 @@ spec = describe "checkStructureViolations" $ do
         (root ++ "/test/Test/Parser/ParseProgramSpec.hs")
         content
       violations <- checkStructureViolations root
-      violations `shouldBe` []
+      violations `shouldSatisfy` any (isInfixOf "file exceeds 200 lines")
 
   it "does not skip line-limit checks for legacy files anymore" $
     withSystemTempDirectory "check-structure-lines-exempt" $ \root -> do

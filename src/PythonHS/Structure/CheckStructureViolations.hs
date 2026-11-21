@@ -79,7 +79,7 @@ checkStructureViolations root = do
               then []
               else [relPath ++ ": file name mismatch (expected one of " ++ intercalate ", " expectedNames ++ ", got " ++ baseName ++ ")"]
           lineCountViolations =
-            [relPath ++ ": file exceeds 200 lines (" ++ show (length linesInFile) ++ ")" | not isTestFile, length linesInFile > 200, relPath `notElem` legacyLineCountExemptions]
+            [relPath ++ ": file exceeds 200 lines (" ++ show (length linesInFile) ++ ")" | length linesInFile > 200, relPath `notElem` legacyLineCountExemptions]
       return (moduleViolations ++ testNamingViolations ++ functionViolations ++ functionNameViolations ++ typeViolations ++ typeNameViolations ++ fileNameViolations ++ lineCountViolations)
 
     isSignificantTopLevel line =
