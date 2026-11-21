@@ -621,9 +621,24 @@
 - [x] 空リスト・空辞書・キー不在時のエラー規約を固定
 
 ### P115: VM 例外処理の網羅強化
-- [ ] `RunnerVmParity` / `check-runner-case-coverage` の未カバー箇所を洗い出す
-- [ ] `try/except/else/finally` / `raise` / bare `raise` の VM テストを追加
-- [ ] AST と VM で意図的に差分がある箇所は plans / README に明記する
+- [x] `RunnerVmParity` / `check-runner-case-coverage` の未カバー箇所を洗い出す
+  - Part ファイル連結版で確認: `MISSING IN VM = 0`、`MISSING IN PARITY = 5`（関数アノテーション・`*args`/`**kwargs` 系で例外処理とは無関係）
+- [x] `try/except/else/finally` / `raise` / bare `raise` の VM テストを追加
+  - `RunSourceVmPart17Spec`: raise/finally、bare raise、組み込み例外クラス（11 tests）
+  - `RunSourceVmPart18Spec`: return/break/continue と finally（13 tests）
+- [x] finally の制御フロー不具合を修正
+  - `return` / `break` / `continue` / `else` 内例外で finally を必ず実行する
+  - finally 内の `raise` が元の例外・return を上書きする
+  - ネストした finally は所有 IP が一致するものだけが保留制御を再開する
+- [x] 例外ハンドラスタックにループ境界マーカー `-1` を導入
+  - finally ハンドラは `negate (ip + 2)` でエンコードし、負値空間を finally 専用に予約
+  - `break`/`continue` はループ境界を越えて外側の finally を実行しない
+- [x] `raise ValueError`（呼び出しなしの組み込み例外クラス）に対応
+- [x] bare `raise` のハンドラ外エラーを `Runtime error: No active exception to re-raise` に統一
+- [x] AST と VM で意図的に差分がある箇所は plans / README に明記する
+  - AST 評価器は `try` 文を未サポート（VM のみ）
+  - 関数内 bare `raise` は VM の保留例外スコープに依存する
+  - 全テスト PASS（1296 examples, 0 failures）、品質ゲート全項目 PASS
 
 ### P114: 高階関数 map/filter の実装（要設計）
 - [ ] builtin 呼び出しに VM 実行文脈（関数呼び出し）を渡す方法を設計する

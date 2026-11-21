@@ -84,6 +84,12 @@ MIT License — 詳細は [LICENSE](LICENSE) を参照してください。
 - [x] 組み込み関数（`len`, `bool`, `range`, list/dict系）
 - [x] `import`解決（math/dataclasses/local package/submodule/relative/star）
 - [x] 例外処理（`try/except/else`、`try/finally`、`try/except/finally`、`raise`、bare `raise`、`except ... as`、ユーザー定義例外クラスとその継承、コンテキストマネージャへの例外情報渡し、`ValueError`/`TypeError` 等の組み込み例外クラス）
+  - `finally` は `return` / `break` / `continue` / `else` 経由でも必ず実行される
+  - `finally` 内の `raise` / `return` は元の制御フローを上書きする
+  - ネストした `finally` は内側から順に実行され、ループ境界を越えて外側へ漏れない
+  - 呼び出しなしの `raise ValueError` は、そのクラスの例外として送出される
+  - ハンドラ外の bare `raise` は `Runtime error: No active exception to re-raise` を返す
+  - 注: AST 評価器は `try` 文を未サポートであり、例外処理は VM 実行経路のみで提供する
 - [x] `match/case`（パターンマッチ実行）
 - [x] `class`（インスタンス生成・メソッド呼び出し・継承・属性解決）
 - [x] `dataclass`（`__init__`/`__repr__`/`__eq__`/`order`/`frozen`自動生成）
