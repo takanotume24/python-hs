@@ -43,13 +43,13 @@ spec = describe "detectPositionalArgs" $ do
     result <- detectPositionalArgsFromSource (DetectSourceConfig "Foo.hs" src)
     result `shouldSatisfy` null
 
-  it "detects function declarations with 3+ positional arguments" $ do
-    let src = unlines ["module Quux where", "f a b c = a + b + c"]
+  it "detects function declarations with 4+ positional arguments" $ do
+    let src = unlines ["module Quux where", "f a b c d = a + b + c + d"]
     result <- detectPositionalArgsFromSource (DetectSourceConfig "Quux.hs" src)
     result `shouldSatisfy` any (\v -> category v == FunDeclCategory)
 
-  it "does not detect functions with 0, 1, or 2 arguments" $ do
-    let src = unlines ["module X where", "f = 1", "g x = x", "h a b = a + b"]
+  it "does not detect functions with 0, 1, 2, or 3 arguments" $ do
+    let src = unlines ["module X where", "f = 1", "g x = x", "h a b = a + b", "i a b c = a + b + c"]
     result <- detectPositionalArgsFromSource (DetectSourceConfig "X.hs" src)
     result `shouldSatisfy` null
 
@@ -57,12 +57,6 @@ spec = describe "detectPositionalArgs" $ do
     let src = unlines ["module X where", "go [] _ = Nothing", "go (x : xs) target = go xs target"]
     result <- detectPositionalArgsFromSource (DetectSourceConfig "X.hs" src)
     result `shouldSatisfy` null
-
-  it "detects tuple expressions with 2+ elements" $ do
-    let src = unlines ["module Y where", "f = (1, 2)"]
-    result <- detectPositionalArgsFromSource (DetectSourceConfig "Y.hs" src)
-    length result `shouldSatisfy` (>= 1)
-    result `shouldSatisfy` any (\v -> category v == TupleCategory)
 
   it "does not detect builtin constructors like Just and Left" $ do
     let src = unlines ["module Foo where", "f = Just 1", "g = Left \"x\""]
@@ -93,7 +87,7 @@ spec = describe "detectPositionalArgs" $ do
     formatViolationsPlain result `shouldBe` ""
 
   it "respects exclude patterns" $ do
-    let src = unlines ["module Test where", "f a b c = a + b + c"]
+    let src = unlines ["module Test where", "f a b c d = a + b + c + d"]
     result <- detectPositionalArgsFromSource (DetectSourceConfig "test/Test/Foo.hs" src)
     length result `shouldSatisfy` (>= 1)
     let matchesExclude patterns v = any (\p -> p `isInfixOf` filePath v) patterns

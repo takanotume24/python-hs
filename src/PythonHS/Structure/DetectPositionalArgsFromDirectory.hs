@@ -2,7 +2,9 @@ module PythonHS.Structure.DetectPositionalArgsFromDirectory (detectPositionalArg
 
 import Data.List (isInfixOf)
 import Language.Haskell.Exts
-  ( ParseResult (..),
+  ( Extension (..),
+    ParseMode (..),
+    ParseResult (..),
     defaultParseMode,
     parseFilename,
     parseModuleWithMode,
@@ -13,6 +15,7 @@ import PythonHS.Structure.DetectFromModule (detectFromModule)
 import PythonHS.Structure.DetectFromModuleConfig (DetectFromModuleConfig (..))
 import PythonHS.Structure.DetectModuleConfig (DetectModuleConfig (..))
 import PythonHS.Structure.DetectPositionalArgsFromDirectoryConfig (DetectPositionalArgsFromDirectoryConfig (..))
+import PythonHS.Structure.Ghc2024LikeExtensions (ghc2024LikeExtensions)
 import PythonHS.Structure.PositionalArgViolation (PositionalArgViolation)
 
 detectPositionalArgsFromDirectory :: DetectPositionalArgsFromDirectoryConfig -> IO [PositionalArgViolation]
@@ -24,15 +27,17 @@ detectPositionalArgsFromDirectory config = do
   allRecordConNames <- fmap concat $ mapM collectNamesFromFile filteredFiles
   fmap concat $ mapM (goFile allRecordConNames) filteredFiles
   where
+    parseModeFor path = defaultParseMode {parseFilename = path, extensions = map EnableExtension ghc2024LikeExtensions}
+
     collectNamesFromFile path = do
       src <- readFile path
-      case parseModuleWithMode defaultParseMode {parseFilename = path} src of
+      case parseModuleWithMode (parseModeFor path) src of
         ParseOk m -> pure (collectRecordConNames m)
         ParseFailed _ _ -> pure []
 
     goFile allRecordConNames path = do
       src <- readFile path
-      case parseModuleWithMode defaultParseMode {parseFilename = path} src of
+      case parseModuleWithMode (parseModeFor path) src of
         ParseOk m -> pure (detectFromModule (DetectFromModuleConfig {detectFromModuleRecordConNames = allRecordConNames, detectFromModuleModuleConfig = DetectModuleConfig {moduleFilePath = path, moduleAst = m}}))
         ParseFailed _ _ -> pure []
 

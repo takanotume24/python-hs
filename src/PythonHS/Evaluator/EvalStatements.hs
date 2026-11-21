@@ -3,11 +3,16 @@ module PythonHS.Evaluator.EvalStatements (evalStatements) where
 import Data.Map.Strict qualified as Map
 import PythonHS.AST.Expr (Expr (..))
 import PythonHS.AST.Stmt (Stmt (..))
+import PythonHS.Evaluator.ComputeAssign (computeAssign)
 import PythonHS.Evaluator.Env (Env)
+import PythonHS.Evaluator.EvalAssignStmt (evalAssignStmt)
+import PythonHS.Evaluator.EvalAssignStmtInput (EvalAssignStmtInput (..))
 import PythonHS.Evaluator.EvalExpr (evalExpr)
+import PythonHS.Evaluator.EvalExprInput (EvalExprInput (..))
 import PythonHS.Evaluator.EvalExprResult (EvalExprResult (..))
 import PythonHS.Evaluator.EvalForStmt (evalForStmt)
 import PythonHS.Evaluator.EvalForStmtConfig (EvalForStmtConfig (..))
+import PythonHS.Evaluator.EvalForStmtInput (EvalForStmtInput (..))
 import PythonHS.Evaluator.EvalStmtResult (EvalStmtResult (..))
 import PythonHS.Evaluator.EvalStmtRet (EvalStmtRet (..))
 import PythonHS.Evaluator.EvalWhileStmt (evalWhileStmt)
@@ -16,8 +21,6 @@ import PythonHS.Evaluator.EvalWhileStmtInput (EvalWhileStmtInput (..))
 import PythonHS.Evaluator.EvalWithStmt (evalWithStmt)
 import PythonHS.Evaluator.EvalWithStmtConfig (EvalWithStmtConfig (..))
 import PythonHS.Evaluator.EvalWithStmtInput (EvalWithStmtInput (..))
-import PythonHS.Evaluator.ExpectNumber (expectNumber)
-import PythonHS.Evaluator.ExpectNumberInput (ExpectNumberInput (..))
 import PythonHS.Evaluator.ExpectTruthy (expectTruthy)
 import PythonHS.Evaluator.ExpectTruthyInput (ExpectTruthyInput (..))
 import PythonHS.Evaluator.FuncEnv (FuncEnv)
@@ -38,7 +41,7 @@ evalStatements env fenv outputs [] =
 evalStatements env fenv outputs (stmt : rest) =
   case stmt of
     AssignStmt {assignStmtName, assignStmtValue} -> do
-      (val, exprOuts, envAfterExpr) <- extractResult <$> evalExpr evalStatements env fenv assignStmtValue
+      (val, exprOuts, envAfterExpr) <- extractResult <$> evalExpr' assignStmtValue
       evalStatements (Map.insert assignStmtName val envAfterExpr) fenv (outputs ++ exprOuts) rest
     AssignUnpackStmt {assignUnpackStmtPos} ->
       Left $ "Runtime error: tuple unpack assignment is only supported in vm engine at " ++ showPos assignUnpackStmtPos
@@ -46,34 +49,29 @@ evalStatements env fenv outputs (stmt : rest) =
       case annAssignStmtValue of
         Nothing -> evalStatements env fenv outputs rest
         Just expr -> do
-          (val, exprOuts, envAfterExpr) <- extractResult <$> evalExpr evalStatements env fenv expr
+          (val, exprOuts, envAfterExpr) <- extractResult <$> evalExpr' expr
           evalStatements (Map.insert annAssignStmtName val envAfterExpr) fenv (outputs ++ exprOuts) rest
     DecoratedStmt {decoratedStmtPos} -> Left $ "Runtime error: decorator is only supported in vm engine at " ++ showPos decoratedStmtPos
-    AddAssignStmt {addAssignStmtName, addAssignStmtValue, addAssignStmtPos} -> do
-      current <- lookupName env addAssignStmtName addAssignStmtPos
-      (rhs, exprOuts, envAfterExpr) <- extractResult <$> evalExpr evalStatements env fenv addAssignStmtValue
-      newValue <-
-        case (current, rhs) of
-          (IntValue {intValue = li}, IntValue {intValue = ri}) -> Right (IntValue (li + ri))
-          (FloatValue {floatValue = li}, FloatValue {floatValue = ri}) -> Right (FloatValue (li + ri))
-          (IntValue {intValue = li}, FloatValue {floatValue = ri}) -> Right (FloatValue (fromIntegral li + ri))
-          (FloatValue {floatValue = li}, IntValue {intValue = ri}) -> Right (FloatValue (li + fromIntegral ri))
-          (StringValue {stringValue = ls}, StringValue {stringValue = rs}) -> Right (StringValue (ls ++ rs))
-          _ -> Left $ "Type error: + expects int+int or string+string at " ++ showPos addAssignStmtPos
-      evalStatements (Map.insert addAssignStmtName newValue envAfterExpr) fenv (outputs ++ exprOuts) rest
-    SubAssignStmt {subAssignStmtName, subAssignStmtValue, subAssignStmtPos} -> evalAssignNumeric subAssignStmtName subAssignStmtValue subAssignStmtPos "-=" (\li ri -> li - ri)
-    MulAssignStmt {mulAssignStmtName, mulAssignStmtValue, mulAssignStmtPos} -> evalAssignNumeric mulAssignStmtName mulAssignStmtValue mulAssignStmtPos "*=" (\li ri -> li * ri)
-    DivAssignStmt {divAssignStmtName, divAssignStmtValue, divAssignStmtPos} -> evalAssignDivide divAssignStmtName divAssignStmtValue divAssignStmtPos
-    ModAssignStmt {modAssignStmtName, modAssignStmtValue, modAssignStmtPos} -> evalAssignModulo modAssignStmtName modAssignStmtValue modAssignStmtPos
-    FloorDivAssignStmt {floorDivAssignStmtName, floorDivAssignStmtValue, floorDivAssignStmtPos} -> evalAssignFloorDivide floorDivAssignStmtName floorDivAssignStmtValue floorDivAssignStmtPos
+    AddAssignStmt {addAssignStmtName, addAssignStmtValue, addAssignStmtPos} ->
+      evalAssignStmt (assignInput addAssignStmtName addAssignStmtValue addAssignStmtPos "+=")
+    SubAssignStmt {subAssignStmtName, subAssignStmtValue, subAssignStmtPos} ->
+      evalAssignStmt (assignInput subAssignStmtName subAssignStmtValue subAssignStmtPos "-=")
+    MulAssignStmt {mulAssignStmtName, mulAssignStmtValue, mulAssignStmtPos} ->
+      evalAssignStmt (assignInput mulAssignStmtName mulAssignStmtValue mulAssignStmtPos "*=")
+    DivAssignStmt {divAssignStmtName, divAssignStmtValue, divAssignStmtPos} ->
+      evalAssignStmt (assignInput divAssignStmtName divAssignStmtValue divAssignStmtPos "/=")
+    ModAssignStmt {modAssignStmtName, modAssignStmtValue, modAssignStmtPos} ->
+      evalAssignStmt (assignInput modAssignStmtName modAssignStmtValue modAssignStmtPos "%=")
+    FloorDivAssignStmt {floorDivAssignStmtName, floorDivAssignStmtValue, floorDivAssignStmtPos} ->
+      evalAssignStmt (assignInput floorDivAssignStmtName floorDivAssignStmtValue floorDivAssignStmtPos "//=")
     PrintStmt {printStmtValue} ->
       case printStmtValue of
         StringExpr {stringExprValue = s} -> evalStatements env fenv (outputs ++ [s]) rest
         _ -> do
-          (val, exprOuts, envAfterExpr) <- extractResult <$> evalExpr evalStatements env fenv printStmtValue
+          (val, exprOuts, envAfterExpr) <- extractResult <$> evalExpr' printStmtValue
           evalStatements envAfterExpr fenv (outputs ++ exprOuts ++ [valueToOutput val]) rest
     ReturnStmt {returnStmtValue, returnStmtPos} -> do
-      (val, exprOuts, envAfterExpr) <- extractResult <$> evalExpr evalStatements env fenv returnStmtValue
+      (val, exprOuts, envAfterExpr) <- extractResult <$> evalExpr' returnStmtValue
       Right baseResult {evalStmtResultEnv = envAfterExpr, evalStmtResultOutputs = outputs ++ exprOuts, evalStmtResultRet = Just EvalStmtRet {evalStmtRetValue = val, evalStmtRetPos = returnStmtPos}}
     YieldStmt {yieldStmtPos} -> Left $ "Runtime error: yield is only supported in vm engine at " ++ showPos yieldStmtPos
     YieldFromStmt {yieldFromStmtPos} -> Left $ "Runtime error: yield from is only supported in vm engine at " ++ showPos yieldFromStmtPos
@@ -88,23 +86,23 @@ evalStatements env fenv outputs (stmt : rest) =
       case raiseStmtExpr of
         Nothing -> Left $ "Runtime error: bare raise is only supported in vm engine at " ++ showPos raiseStmtPos
         Just expr -> do
-          (val, _, _) <- extractResult <$> evalExpr evalStatements env fenv expr
+          (val, _, _) <- extractResult <$> evalExpr' expr
           Left $ "Runtime error: " ++ valueToOutput val ++ " at " ++ showPos raiseStmtPos
     PassStmt {} -> evalStatements env fenv outputs rest
     AssertStmt {assertStmtCond, assertStmtPos} -> do
-      (condVal, condOuts, envAfterCond) <- extractResult <$> evalExpr evalStatements env fenv assertStmtCond
+      (condVal, condOuts, envAfterCond) <- extractResult <$> evalExpr' assertStmtCond
       condNum <- expectTruthy ExpectTruthyInput {expectTruthyInputContext = "assert", expectTruthyInputPos = assertStmtPos, expectTruthyInputValue = condVal}
       if condNum /= 0
         then evalStatements envAfterCond fenv (outputs ++ condOuts) rest
         else Left $ "AssertionError: assertion failed at " ++ showPos assertStmtPos
     DeleteStmt {deleteStmtPos} -> Left $ "Runtime error: del is only supported in vm engine at " ++ showPos deleteStmtPos
     ExprStmt {exprStmtValue} -> do
-      (_, exprOuts, envAfterExpr) <- extractResult <$> evalExpr evalStatements env fenv exprStmtValue
+      (_, exprOuts, envAfterExpr) <- extractResult <$> evalExpr' exprStmtValue
       evalStatements envAfterExpr fenv (outputs ++ exprOuts) rest
     WithStmt {withStmtContextManager, withStmtVarName, withStmtBody, withStmtPos} ->
-      evalWithStmt (EvalWithStmtInput (EvalWithStmtConfig evalStatements (evalExpr evalStatements)) env fenv outputs withStmtContextManager withStmtVarName withStmtBody withStmtPos rest)
+      evalWithStmt (EvalWithStmtInput (EvalWithStmtConfig evalStatements evalExprForConfig) env fenv outputs withStmtContextManager withStmtVarName withStmtBody withStmtPos rest)
     IfStmt {ifStmtCond, ifStmtThen, ifStmtElse} -> do
-      (condVal, condOuts, envAfterCond) <- extractResult <$> evalExpr evalStatements env fenv ifStmtCond
+      (condVal, condOuts, envAfterCond) <- extractResult <$> evalExpr' ifStmtCond
       condNum <- expectTruthy ExpectTruthyInput {expectTruthyInputContext = "if condition", expectTruthyInputPos = exprPos ifStmtCond, expectTruthyInputValue = condVal}
       if condNum /= 0
         then do
@@ -120,9 +118,20 @@ evalStatements env fenv outputs (stmt : rest) =
               Nothing -> evalStatements envElse fenvElse (outputs ++ condOuts ++ outputsElse) rest
           Nothing -> evalStatements envAfterCond fenv (outputs ++ condOuts) rest
     WhileStmt {whileStmtCond, whileStmtBody, whileStmtPos} ->
-      evalWhileStmt (EvalWhileStmtInput (EvalWhileStmtConfig evalStatements (evalExpr evalStatements)) env fenv outputs whileStmtCond whileStmtBody whileStmtPos rest)
+      evalWhileStmt (EvalWhileStmtInput (EvalWhileStmtConfig evalStatements evalExprForConfig) env fenv outputs whileStmtCond whileStmtBody whileStmtPos rest)
     ForStmt {forStmtVar, forStmtIter, forStmtBody, forStmtPos} ->
-      evalForStmt (EvalForStmtConfig evalStatements (evalExpr evalStatements)) env fenv outputs forStmtVar forStmtIter forStmtBody forStmtPos rest
+      evalForStmt
+        EvalForStmtInput
+          { evalForStmtInputConfig = EvalForStmtConfig evalStatements evalExprForConfig,
+            evalForStmtInputEnv = env,
+            evalForStmtInputFuncEnv = fenv,
+            evalForStmtInputOutputs = outputs,
+            evalForStmtInputName = forStmtVar,
+            evalForStmtInputIterExpr = forStmtIter,
+            evalForStmtInputBody = forStmtBody,
+            evalForStmtInputPos = forStmtPos,
+            evalForStmtInputRest = rest
+          }
     ClassDefStmt {classDefStmtPos} -> Left $ "Runtime error: class is only supported in vm engine at " ++ showPos classDefStmtPos
     FunctionDefStmt {functionDefStmtName, functionDefStmtParams, functionDefStmtBody} ->
       evalStatements env (Map.insert functionDefStmtName (functionDefStmtParams, [], functionDefStmtBody) fenv) outputs rest
@@ -133,61 +142,35 @@ evalStatements env fenv outputs (stmt : rest) =
 
     baseResult = EvalStmtResult {evalStmtResultEnv = env, evalStmtResultFuncEnv = fenv, evalStmtResultOutputs = outputs, evalStmtResultRet = Nothing}
 
-    lookupName env' name pos =
-      case Map.lookup name env' of
-        Just value -> Right value
-        Nothing -> Left $ "Name error: undefined identifier " ++ name ++ " at " ++ showPos pos
+    evalExpr' expr' =
+      evalExpr
+        EvalExprInput
+          { evalExprInputEvalStatementsFn = evalStatements,
+            evalExprInputEnv = env,
+            evalExprInputFuncEnv = fenv,
+            evalExprInputExpr = expr'
+          }
 
-    evalAssignNumeric name expr pos context opFn = do
-      current <- lookupName env name pos
-      (rhs, exprOuts, envAfterExpr) <- extractResult <$> evalExpr evalStatements env fenv expr
-      leftNumber <- expectNumber ExpectNumberInput {expectNumberInputContext = context, expectNumberInputPos = pos, expectNumberInputValue = current}
-      rightNumber <- expectNumber ExpectNumberInput {expectNumberInputContext = context, expectNumberInputPos = pos, expectNumberInputValue = rhs}
-      let newValue =
-            case (current, rhs) of
-              (IntValue _, IntValue _) -> IntValue (round (opFn leftNumber rightNumber))
-              _ -> FloatValue (opFn leftNumber rightNumber)
-      evalStatements (Map.insert name newValue envAfterExpr) fenv (outputs ++ exprOuts) rest
+    evalExprForConfig env' fenv' expr' =
+      evalExpr
+        EvalExprInput
+          { evalExprInputEvalStatementsFn = evalStatements,
+            evalExprInputEnv = env',
+            evalExprInputFuncEnv = fenv',
+            evalExprInputExpr = expr'
+          }
 
-    evalAssignDivide name expr pos = do
-      current <- lookupName env name pos
-      (rhs, exprOuts, envAfterExpr) <- extractResult <$> evalExpr evalStatements env fenv expr
-      leftNumber <- expectNumber ExpectNumberInput {expectNumberInputContext = "/=", expectNumberInputPos = pos, expectNumberInputValue = current}
-      rightNumber <- expectNumber ExpectNumberInput {expectNumberInputContext = "/=", expectNumberInputPos = pos, expectNumberInputValue = rhs}
-      if rightNumber == 0
-        then Left $ "Value error: division by zero at " ++ showPos pos
-        else do
-          let newValue = FloatValue (leftNumber / rightNumber)
-          evalStatements (Map.insert name newValue envAfterExpr) fenv (outputs ++ exprOuts) rest
-
-    evalAssignFloorDivide name expr pos = do
-      current <- lookupName env name pos
-      (rhs, exprOuts, envAfterExpr) <- extractResult <$> evalExpr evalStatements env fenv expr
-      leftNumber <- expectNumber ExpectNumberInput {expectNumberInputContext = "//=", expectNumberInputPos = pos, expectNumberInputValue = current}
-      rightNumber <- expectNumber ExpectNumberInput {expectNumberInputContext = "//=", expectNumberInputPos = pos, expectNumberInputValue = rhs}
-      if rightNumber == 0
-        then Left $ "Value error: division by zero at " ++ showPos pos
-        else do
-          let quotient = leftNumber / rightNumber
-              newValue =
-                case (current, rhs) of
-                  (IntValue _, IntValue _) -> IntValue (floor quotient)
-                  _ -> FloatValue (fromIntegral (floor quotient :: Int))
-          evalStatements (Map.insert name newValue envAfterExpr) fenv (outputs ++ exprOuts) rest
-
-    evalAssignModulo name expr pos = do
-      current <- lookupName env name pos
-      (rhs, exprOuts, envAfterExpr) <- extractResult <$> evalExpr evalStatements env fenv expr
-      leftNumber <- expectNumber ExpectNumberInput {expectNumberInputContext = "%=", expectNumberInputPos = pos, expectNumberInputValue = current}
-      rightNumber <- expectNumber ExpectNumberInput {expectNumberInputContext = "%=", expectNumberInputPos = pos, expectNumberInputValue = rhs}
-      if rightNumber == 0
-        then Left $ "Value error: modulo by zero at " ++ showPos pos
-        else do
-          let quotient = leftNumber / rightNumber
-              floored = fromIntegral (floor quotient :: Int)
-              remainder = leftNumber - rightNumber * floored
-              newValue =
-                case (current, rhs) of
-                  (IntValue li, IntValue ri) -> IntValue (li `mod` ri)
-                  _ -> FloatValue remainder
-          evalStatements (Map.insert name newValue envAfterExpr) fenv (outputs ++ exprOuts) rest
+    assignInput name expr pos op =
+      EvalAssignStmtInput
+        { evalAssignStmtInputEvalExpr = evalExpr',
+          evalAssignStmtInputEvalStatements = evalStatements,
+          evalAssignStmtInputEnv = env,
+          evalAssignStmtInputFuncEnv = fenv,
+          evalAssignStmtInputOutputs = outputs,
+          evalAssignStmtInputRest = rest,
+          evalAssignStmtInputName = name,
+          evalAssignStmtInputValueExpr = expr,
+          evalAssignStmtInputPos = pos,
+          evalAssignStmtInputOp = op,
+          evalAssignStmtInputCompute = computeAssign
+        }

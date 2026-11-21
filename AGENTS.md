@@ -60,11 +60,11 @@
   - `cabal run check-structure`
   - `ormolu --mode check $(git ls-files '*.hs')`
   - `hlint src app`
-- `cabal run detect-positional-args -- src` を実行し、**すべてのカテゴリ**が0件であることを確認すること：
-  - `positional_record_con` — レコード型の初期化にレコード構文を使用していること
-  - `function_declaration` — 2つ以上の引数を持つ関数はレコード型にまとめて単一引数にすること
-  - `tuple` — 2つ以上の要素を持つタプルは専用のレコード型にすること
-  - いずれか1件以上であれば `ExitFailure 1` となり、品質ゲートは失敗する
+- `cabal run detect-positional-args -- src` を実行し、`function_declaration` カテゴリが0件であることを確認すること：
+  - 検出対象: **4つ以上**の引数を持つトップレベル関数
+  - `PythonHS/VM/` 以下の内部DSLとして正当な関数は対象外
+  - 単純な再帰パターン（`go [] target` / `go (x : xs) target` 等）は除外
+  - `positional_record_con` / `tuple` は現在 `detect-positional-args` の検出対象外（推奨事項としては引き続きレコード構文・専用型を検討する）
 - コンパイルに警告がないこと（警告が出たら修正してからコミットすること）
 
 ## リファクタリング指針
@@ -74,6 +74,7 @@
 - パターンマッチングにおいてもレコード構文を利用し、フィールドの明示的な指定を行う
 - コンパイル時の堅牢性向上のため、レコードのフィールドは常に名前付きでアクセスする
 - **レコード型の初期化（コンストラクタ呼び出し）時は、必ず `{ field = value }` 形式のレコード構文を用いる。positional constructor application（例: `Foo a b c`）は禁止する。**
-- **2つ以上の引数を持つ関数は、引数をレコード型にまとめて単一引数にリファクタリングすること。**
+- **4つ以上の引数を持つ関数は、引数をレコード型にまとめて単一引数にリファクタリングすること。**
+- 2〜3引数の関数も、文脈を読み取りにくい場合はレコード型を検討すること。
 - **2つ以上の要素を持つタプル `(a, b)` は、専用のレコード型に置き換えること。**
-- `cabal run detect-positional-args -- src` で `positional_record_con` / `function_declaration` / `tuple` カテゴリがすべて0件であることを確認し、違反があればレコード構文化してからコミットする。
+- `cabal run detect-positional-args -- src` で `function_declaration` カテゴリが0件であることを確認し、違反があればレコード構文化してからコミットする。

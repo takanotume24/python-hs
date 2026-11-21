@@ -8,6 +8,7 @@ import PythonHS.AST.Stmt (Stmt (..))
 import PythonHS.Evaluator.Env (Env)
 import PythonHS.Evaluator.EvalBuiltinExpr (evalBuiltinExpr)
 import PythonHS.Evaluator.EvalBuiltinExprInput (EvalBuiltinExprInput (..))
+import PythonHS.Evaluator.EvalCallExprInput (EvalCallExprInput (..))
 import PythonHS.Evaluator.EvalExprResult (EvalExprResult (..))
 import PythonHS.Evaluator.EvalStmtResult (EvalStmtResult (..))
 import PythonHS.Evaluator.EvalStmtRet (EvalStmtRet (..))
@@ -16,16 +17,8 @@ import PythonHS.Evaluator.ShowPos (showPos)
 import PythonHS.Evaluator.Value (Value (IntValue))
 import PythonHS.Lexer.Position (Position)
 
-evalCallExpr ::
-  (Env -> FuncEnv -> [String] -> [Stmt] -> Either String EvalStmtResult) ->
-  (Env -> FuncEnv -> Expr -> Either String EvalExprResult) ->
-  Env ->
-  FuncEnv ->
-  String ->
-  [Expr] ->
-  Position ->
-  Either String EvalExprResult
-evalCallExpr evalStatementsFn evalExprFn env fenv fname args pos =
+evalCallExpr :: EvalCallExprInput -> Either String EvalExprResult
+evalCallExpr input =
   case Map.lookup fname fenv of
     Just (params, defaults, body) -> do
       (posVals, kwVals, kwPosByName, kwOrder, argOuts, envAfterArgs) <- evalCallArgs env fenv Map.empty Map.empty [] False [] args
@@ -48,6 +41,14 @@ evalCallExpr evalStatementsFn evalExprFn env fenv fname args pos =
             Nothing -> result
         Nothing -> Left $ "Name error: undefined function " ++ fname ++ " at " ++ showPos pos
   where
+    evalStatementsFn = evalCallExprInputEvalStatementsFn input
+    evalExprFn = evalCallExprInputEvalExpr input
+    env = evalCallExprInputEnv input
+    fenv = evalCallExprInputFuncEnv input
+    fname = evalCallExprInputName input
+    args = evalCallExprInputArgs input
+    pos = evalCallExprInputPos input
+
     firstKeywordArg [] = Nothing
     firstKeywordArg (KeywordArgExpr {keywordArgExprName = argName, keywordArgExprPos = kwPos} : _) = Just (argName, kwPos)
     firstKeywordArg (_ : restArgs) = firstKeywordArg restArgs

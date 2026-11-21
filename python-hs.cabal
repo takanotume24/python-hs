@@ -50,19 +50,32 @@ library
     , PythonHS.CLI
     , PythonHS.Evaluator
     , PythonHS.Evaluator.EvalStatements
+    , PythonHS.Evaluator.EvalAssignStmtInput
+    , PythonHS.Evaluator.ComputeAssignInput
+    , PythonHS.Evaluator.EvalAssignStmt
+    , PythonHS.Evaluator.ComputeAssign
     , PythonHS.Evaluator.ShowPos
     , PythonHS.Evaluator.Env
     , PythonHS.Evaluator.Value
     , PythonHS.Evaluator.FuncEnv
     , PythonHS.Evaluator.EvalContextManager
     , PythonHS.Evaluator.EvalExprResult
+    , PythonHS.Evaluator.EvalExprInput
     , PythonHS.Evaluator.EvalArgsInput
     , PythonHS.Evaluator.EvalArgsGoInput
     , PythonHS.Evaluator.EvalComparisonChainInput
+    , PythonHS.Evaluator.EvalComparisonChain
     , PythonHS.Evaluator.EvalComparisonItemsInput
+    , PythonHS.Evaluator.EvalComparisonItems
     , PythonHS.Evaluator.EvalDictEntriesInput
+    , PythonHS.Evaluator.EvalDictEntries
+    , PythonHS.Evaluator.EvalArgs
     , PythonHS.Evaluator.EvalListComprehensionInput
     , PythonHS.Evaluator.EvalListComprehension
+    , PythonHS.Evaluator.EvalIndexExprInput
+    , PythonHS.Evaluator.EvalIndexExpr
+    , PythonHS.Evaluator.EvalSliceExprInput
+    , PythonHS.Evaluator.EvalSliceExpr
     , PythonHS.Structure.CheckStructure
     , PythonHS.Structure.CheckStructureViolations
     , PythonHS.Structure.PositionalArgViolation
@@ -73,6 +86,7 @@ library
     , PythonHS.Structure.DetectModuleConfig
     , PythonHS.Structure.DetectPositionalArgsFromDirectory
     , PythonHS.Structure.DetectPositionalArgsFromDirectoryConfig
+    , PythonHS.Structure.Ghc2024LikeExtensions
     , PythonHS.Structure.CollectHsFiles
     , PythonHS.Structure.ExemptFileInfo
     , PythonHS.Structure.IsHaskellFile
@@ -207,6 +221,7 @@ library
     , PythonHS.Evaluator.EvalWhileStmtConfig
     , PythonHS.Evaluator.EvalForStmt
     , PythonHS.Evaluator.EvalForStmtConfig
+    , PythonHS.Evaluator.EvalForStmtInput
     , PythonHS.Evaluator.EvalWithStmt
     , PythonHS.Evaluator.EvalWithStmtConfig
     , PythonHS.Evaluator.EvalExprBinary
@@ -224,6 +239,7 @@ library
     , PythonHS.Evaluator.ExpectTruthyInput
     , PythonHS.Evaluator.EvalExpr
     , PythonHS.Evaluator.EvalCallExpr
+    , PythonHS.Evaluator.EvalCallExprInput
     , PythonHS.Evaluator.EvalBuiltinExpr
     , PythonHS.Evaluator.MaxLoopIterations
     , PythonHS.Evaluator.EnterContextManagerInput
@@ -512,6 +528,7 @@ test-suite python-hs-test
     , Test.Parser.ParserErrorPart3Spec
     , Test.Runner.RunnerCorePart1Spec
     , Test.Runner.RunnerCorePart2Spec
+    , Test.Runner.RunnerCorePart3Spec
     , Test.Runner.RunnerEdgePart1Spec
     , Test.Runner.RunnerEdgePart2Spec
     , Test.Runner.RunnerEdgePart3Spec

@@ -587,6 +587,17 @@
 - [x] P92-12: 全テスト PASS（977 examples, 0 failures）
 - [x] P92-13: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
 
+## 現在のスコープ（P96: インデクシングとスライシングの AST 評価器対応）
+- [x] P96 開始: `[]` インデクシングと `[::]` スライシングを AST 評価器でサポート
+- [x] P96-1: 失敗テストを `RunnerCorePart3Spec` に追加
+- [x] P96-2: `IndexExpr` の AST 評価を `EvalIndexExpr` に実装
+- [x] P96-3: `SliceExpr` の AST 評価を `EvalSliceExpr` に実装
+- [x] P96-4: 既存の `GetitemValue` / `SliceValue` を評価器から再利用
+- [x] P96-5: `EvalExpr` / `EvalCallExpr` / `EvalForStmt` をレコード入力型に変更
+- [x] P96-6: 増幅した `EvalExpr` / `EvalStatements` を複数モジュールに分割し 200 行制約を遵守
+- [x] P96-7: 全テスト PASS（997 examples, 0 failures）
+- [x] P96-8: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
+
 ## 現在のスコープ（P95: リスト内包表記の AST 評価器対応）
 - [x] P95 開始: リスト内包表記 `[x for x in xs]` を AST 評価器でサポート
 - [x] P95-1: 失敗テストを `RunnerCorePart2Spec` に追加

@@ -4,6 +4,7 @@ import PythonHS.AST.Program (Program (Program))
 import PythonHS.CLI.ProcessSubmissionConfig (ProcessSubmissionConfig (..))
 import PythonHS.CLI.SubmissionResult (SubmissionResult (..))
 import PythonHS.Evaluator.EvalExpr (evalExpr)
+import PythonHS.Evaluator.EvalExprInput (EvalExprInput (..))
 import PythonHS.Evaluator.EvalExprResult (EvalExprResult (..))
 import PythonHS.Evaluator.EvalStatements (evalStatements)
 import PythonHS.Evaluator.EvalStmtResult (EvalStmtResult (..))
@@ -30,7 +31,7 @@ processSubmission config =
             Left parseErr ->
               case parseReplExpr tokens of
                 Just expr ->
-                  case evalExpr evalStatements env fenv expr of
+                  case evalExpr EvalExprInput {evalExprInputEvalStatementsFn = evalStatements, evalExprInputEnv = env, evalExprInputFuncEnv = fenv, evalExprInputExpr = expr} of
                     Left err -> Left err
                     Right exprResult ->
                       let val = evalExprResultValue exprResult

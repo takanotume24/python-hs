@@ -7,6 +7,7 @@ import PythonHS.Evaluator.DictPair (DictPair (..))
 import PythonHS.Evaluator.Env (Env)
 import PythonHS.Evaluator.EvalExprResult (EvalExprResult (..))
 import PythonHS.Evaluator.EvalForStmtConfig (EvalForStmtConfig (..))
+import PythonHS.Evaluator.EvalForStmtInput (EvalForStmtInput (..))
 import PythonHS.Evaluator.EvalStmtResult (EvalStmtResult (..))
 import PythonHS.Evaluator.EvalStmtRet (EvalStmtRet (..))
 import PythonHS.Evaluator.FuncEnv (FuncEnv)
@@ -16,20 +17,8 @@ import PythonHS.Evaluator.Value (Value (..))
 import PythonHS.Lexer.Position (Position)
 import PythonHS.Parser.ExprPos (exprPos)
 
-evalForStmt ::
-  EvalForStmtConfig ->
-  Env ->
-  FuncEnv ->
-  [String] ->
-  String ->
-  Expr ->
-  [Stmt] ->
-  Position ->
-  [Stmt] ->
-  Either String EvalStmtResult
-evalForStmt config env fenv outputs name iterExpr body forPos rest = do
-  let evalStatementsFn = evalForStmtEvalStatements config
-      evalExprFn = evalForStmtEvalExpr config
+evalForStmt :: EvalForStmtInput -> Either String EvalStmtResult
+evalForStmt input = do
   iterResult <- evalExprFn env fenv iterExpr
   let iterVal = evalExprResultValue iterResult
       iterOuts = evalExprResultOutputs iterResult
@@ -46,6 +35,18 @@ evalForStmt config env fenv outputs name iterExpr body forPos rest = do
       loopList evalStatementsFn envAfterIter fenv (map dictPairKey pairs) ((outputs ++) . (iterOuts ++)) 0
     _ -> Left $ "Type error: for expects iterable (int range, list, or dict) at " ++ showPos (exprPos iterExpr)
   where
+    config = evalForStmtInputConfig input
+    evalStatementsFn = evalForStmtEvalStatements config
+    evalExprFn = evalForStmtEvalExpr config
+    env = evalForStmtInputEnv input
+    fenv = evalForStmtInputFuncEnv input
+    outputs = evalForStmtInputOutputs input
+    name = evalForStmtInputName input
+    iterExpr = evalForStmtInputIterExpr input
+    body = evalForStmtInputBody input
+    forPos = evalForStmtInputPos input
+    rest = evalForStmtInputRest input
+
     loopRange evalStatementsFn env' fenv' idx upper outputAcc iterations
       | idx >= upper = evalStatementsFn env' fenv' (outputAcc []) rest
       | iterations >= maxLoopIterations = Left $ "Value error: iteration limit exceeded at " ++ showPos forPos

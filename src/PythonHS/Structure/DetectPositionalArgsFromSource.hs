@@ -2,7 +2,6 @@ module PythonHS.Structure.DetectPositionalArgsFromSource (detectPositionalArgsFr
 
 import Language.Haskell.Exts
   ( Extension (..),
-    KnownExtension (..),
     ParseMode (..),
     ParseResult (..),
     defaultParseMode,
@@ -14,6 +13,7 @@ import PythonHS.Structure.DetectFromModule (detectFromModule)
 import PythonHS.Structure.DetectFromModuleConfig (DetectFromModuleConfig (..))
 import PythonHS.Structure.DetectModuleConfig (DetectModuleConfig (..))
 import PythonHS.Structure.DetectSourceConfig (DetectSourceConfig (..))
+import PythonHS.Structure.Ghc2024LikeExtensions (ghc2024LikeExtensions)
 import PythonHS.Structure.PositionalArgViolation (PositionalArgViolation)
 
 detectPositionalArgsFromSource :: DetectSourceConfig -> IO [PositionalArgViolation]
@@ -26,40 +26,3 @@ detectPositionalArgsFromSource config =
           let recordConNames = collectRecordConNames m
            in return (detectFromModule (DetectFromModuleConfig {detectFromModuleRecordConNames = recordConNames, detectFromModuleModuleConfig = DetectModuleConfig {moduleFilePath = path, moduleAst = m}}))
         ParseFailed _ _ -> return []
-  where
-    ghc2024LikeExtensions :: [KnownExtension]
-    ghc2024LikeExtensions =
-      [ ImportQualifiedPost,
-        NamedFieldPuns,
-        OverloadedStrings,
-        RecordWildCards,
-        LambdaCase,
-        TupleSections,
-        BinaryLiterals,
-        MultiWayIf,
-        GADTs,
-        RankNTypes,
-        ScopedTypeVariables,
-        TypeApplications,
-        FlexibleContexts,
-        FlexibleInstances,
-        MultiParamTypeClasses,
-        TypeOperators,
-        ExistentialQuantification,
-        DataKinds,
-        PolyKinds,
-        KindSignatures,
-        DefaultSignatures,
-        DeriveFunctor,
-        DeriveGeneric,
-        GeneralizedNewtypeDeriving,
-        StandaloneDeriving,
-        InstanceSigs,
-        ConstraintKinds,
-        TypeFamilies,
-        BangPatterns,
-        PostfixOperators,
-        PatternGuards,
-        TypeSynonymInstances,
-        MonoLocalBinds
-      ]
