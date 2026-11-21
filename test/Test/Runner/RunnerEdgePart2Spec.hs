@@ -137,10 +137,10 @@ spec = describe "runSource (integration edge/error) - part 2" $ do
     runSource "print f(a=1, 2)\n" `shouldBe` Left "ExpectedExpression (Position {line = 1, column = 14})"
 
   it "supports star expansion in call arguments" $ do
-    runSource "def f(a, b):\n  return a + b\nprint f(*[1,2])\n" `shouldBe` Left "Runtime error: argument expansion is only supported in vm engine at 3:9"
+    runSource "def f(a, b):\n  return a + b\nprint f(*[1,2])\n" `shouldBe` Right ["3"]
 
   it "supports double-star expansion in call arguments" $ do
-    runSource "def f(a, b):\n  return a + b\nprint f(**{\"a\":1,\"b\":2})\n" `shouldBe` Left "Runtime error: argument expansion is only supported in vm engine at 3:9"
+    runSource "def f(a, b):\n  return a + b\nprint f(**{\"a\":1,\"b\":2})\n" `shouldBe` Right ["3"]
 
   it "supports *args in function definition" $ do
     runSource "def f(*args):\n  return len(args)\nprint f(1,2,3)\n" `shouldBe` Left "Argument count mismatch when calling f at 3:7"

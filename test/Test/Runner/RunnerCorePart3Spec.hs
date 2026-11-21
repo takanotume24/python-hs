@@ -41,5 +41,14 @@ spec = describe "runSource (integration core) - part 3" $ do
   it "evaluates walrus operator in list comprehension condition" $ do
     runSource "print [x for x in [1, 2, 3, 4] if (y := x % 2) == 0]\n" `shouldBe` Right ["[2, 4]"]
 
+  it "evaluates star expansion in call arguments" $ do
+    runSource "def f(a, b):\n  return a + b\nprint f(*[1, 2])\n" `shouldBe` Right ["3"]
+
+  it "evaluates double-star expansion in call arguments" $ do
+    runSource "def f(a, b):\n  return a + b\nprint f(**{\"a\": 1, \"b\": 2})\n" `shouldBe` Right ["3"]
+
+  it "evaluates mixed star and double-star expansion" $ do
+    runSource "def f(a, b):\n  return a + b\nprint f(*[1], **{\"b\": 2})\n" `shouldBe` Right ["3"]
+
   it "reports index out of range" $ do
     runSource "print [1, 2][5]\n" `shouldBe` Left "Value error: tuple/list index out of range at 1:13"

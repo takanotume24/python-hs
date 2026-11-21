@@ -587,6 +587,13 @@
 - [x] P92-12: 全テスト PASS（977 examples, 0 failures）
 - [x] P92-13: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
 
+## 現在のスコープ（P98: AST 評価器での呼び出し引数展開 (`*args` / `**kwargs`) 対応）
+- [x] P98 開始: 関数呼び出しでの `*iterable` / `**mapping` 展開を AST 評価器でサポート
+- [x] P98-1: 失敗テストを `RunnerEdgePart2Spec` / `RunnerCorePart3Spec` に追加・更新
+- [x] P98-2: `EvalCallExpr` の引数評価で `StarArgExpr` / `KwStarArgExpr` を処理
+- [x] P98-3: 全テスト PASS（1003 examples, 0 failures）
+- [x] P98-4: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
+
 ## 現在のスコープ（P97: AST 評価器での walrus 演算子 (`:=`) 対応）
 - [x] P97 開始: walrus 演算子 `x := expr` を AST 評価器でサポート
 - [x] P97-1: 失敗テストを `RunnerCorePart3Spec` に追加

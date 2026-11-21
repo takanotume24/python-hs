@@ -5,17 +5,15 @@ import Data.Map.Strict qualified as Map
 import PythonHS.AST.Expr (Expr (..))
 import PythonHS.AST.FunctionDefault (FunctionDefault (..))
 import PythonHS.AST.Stmt (Stmt (..))
-import PythonHS.Evaluator.Env (Env)
+import PythonHS.Evaluator.DictPair (DictPair (..))
 import PythonHS.Evaluator.EvalBuiltinExpr (evalBuiltinExpr)
 import PythonHS.Evaluator.EvalBuiltinExprInput (EvalBuiltinExprInput (..))
 import PythonHS.Evaluator.EvalCallExprInput (EvalCallExprInput (..))
 import PythonHS.Evaluator.EvalExprResult (EvalExprResult (..))
 import PythonHS.Evaluator.EvalStmtResult (EvalStmtResult (..))
 import PythonHS.Evaluator.EvalStmtRet (EvalStmtRet (..))
-import PythonHS.Evaluator.FuncEnv (FuncEnv)
 import PythonHS.Evaluator.ShowPos (showPos)
-import PythonHS.Evaluator.Value (Value (IntValue))
-import PythonHS.Lexer.Position (Position)
+import PythonHS.Evaluator.Value (Value (..))
 
 evalCallExpr :: EvalCallExprInput -> Either String EvalExprResult
 evalCallExpr input =
@@ -73,6 +71,21 @@ evalCallExpr input =
                   positionalVals
                   restArgs
               Right (nextPosVals, nextKwVals, nextKwPosVals, nextKwOrder, exprOuts ++ restOuts, finalEnv)
+        StarArgExpr {starArgExprValue = valueExpr, starArgExprPos = argPos} ->
+          if seenKeywordArg
+            then Left $ "Argument error: positional argument follows keyword argument when calling " ++ fname ++ " at " ++ showPos argPos
+            else do
+              EvalExprResult value exprOuts envAfterExpr <- evalExprFn currentEnv currentFenv valueExpr
+              expanded <- expandStarArg value argPos
+              (nextPosVals, nextKwVals, nextKwPosVals, nextKwOrder, restOuts, finalEnv) <-
+                evalCallArgs envAfterExpr currentFenv seenKw seenKwPos seenKwOrder False (positionalVals ++ expanded) restArgs
+              Right (nextPosVals, nextKwVals, nextKwPosVals, nextKwOrder, exprOuts ++ restOuts, finalEnv)
+        KwStarArgExpr {kwStarArgExprValue = valueExpr, kwStarArgExprPos = argPos} -> do
+          EvalExprResult value exprOuts envAfterExpr <- evalExprFn currentEnv currentFenv valueExpr
+          (nextKwVals, nextKwPosVals, nextKwOrder, expandOuts) <- expandKwStarArg value seenKw seenKwPos seenKwOrder argPos
+          (nextPosVals, finalKwVals, finalKwPosVals, finalKwOrder, restOuts, finalEnv) <-
+            evalCallArgs envAfterExpr currentFenv nextKwVals nextKwPosVals nextKwOrder True positionalVals restArgs
+          Right (nextPosVals, finalKwVals, finalKwPosVals, finalKwOrder, exprOuts ++ expandOuts ++ restOuts, finalEnv)
         _ ->
           if seenKeywordArg
             then Left $ "Argument count mismatch when calling " ++ fname ++ " at " ++ showPos pos
@@ -155,3 +168,29 @@ evalCallExpr input =
                   EvalExprResult v exprOuts envAfterExpr <- evalExprFn defaultEnv currentFenv defaultExpr
                   (nextAcc, otherOuts, finalEnv) <- fill envAfterExpr remaining (Map.insert paramName v acc)
                   Right (nextAcc, exprOuts ++ otherOuts, finalEnv)
+
+    expandStarArg value argPos =
+      case value of
+        ListValue {listValueItems = items} -> Right items
+        TupleValue {tupleValueItems = items} -> Right items
+        _ -> Left $ "Type error: * argument must be list or tuple at " ++ showPos argPos
+
+    expandKwStarArg value seenKw seenKwPos seenKwOrder argPos =
+      case value of
+        DictValue {dictValuePairs = pairs} -> insertPairs pairs seenKw seenKwPos seenKwOrder []
+        _ -> Left $ "Type error: ** argument must be mapping at " ++ showPos argPos
+      where
+        insertPairs [] kwVals kwPosVals kwOrder outs = Right (kwVals, kwPosVals, kwOrder, outs)
+        insertPairs (DictPair {dictPairKey = keyValue, dictPairValue = value'} : rest) kwVals kwPosVals kwOrder outs =
+          case keyValue of
+            StringValue {stringValue = keyName} ->
+              case Map.lookup keyName kwVals of
+                Just _ -> Left $ "Argument error: duplicate keyword argument " ++ keyName ++ " at " ++ showPos argPos
+                Nothing ->
+                  insertPairs
+                    rest
+                    (Map.insert keyName value' kwVals)
+                    (Map.insert keyName argPos kwPosVals)
+                    (kwOrder ++ [keyName])
+                    outs
+            _ -> Left $ "Type error: ** argument keys must be strings at " ++ showPos argPos
