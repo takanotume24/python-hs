@@ -587,6 +587,16 @@
 - [x] P92-12: 全テスト PASS（977 examples, 0 failures）
 - [x] P92-13: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
 
+## 現在のスコープ（P111: VM sort/sorted の文字列対応）
+- [x] P111 開始: `sorted` / `sort` を文字列リストにも対応
+- [x] P111-1: 失敗テストを `RunSourceVmPart15Spec` に追加（文字列ソート・混合型エラー）
+- [x] P111-2: 共通の文字列リスト変換を `StringItems` に切り出し、`min` / `max` / `join` からも再利用
+- [x] P111-3: `sorted` は list/tuple の全要素が文字列なら辞書順でソート
+- [x] P111-4: `sort` は list の全要素が文字列なら辞書順でソート
+- [x] P111-5: 数値と文字列が混在する場合は Type error
+- [x] P111-6: 全テスト PASS（1241 examples, 0 failures）
+- [x] P111-7: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
+
 ## 現在のスコープ（P110: VM round/chr/ord 組み込み関数の追加）
 - [x] P110 開始: `round` / `chr` / `ord` を VM 組み込みとして追加
 - [x] P110-1: 失敗テストを `RunSourceVmPart14Spec` に追加（正常系・型エラー・値エラー・引数個数エラー）
@@ -1109,6 +1119,12 @@
   - [x] P110-3: `chr` / `ord` は Unicode コードポイント変換として実装
   - [x] P110-4: 全テスト PASS（1234 examples, 0 failures）
   - [x] P110-5: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
+  - [x] P111 完了: VM sort/sorted の文字列対応
+  - [x] P111-1: `RunSourceVmPart15Spec` に文字列ソートと混合型エラーのテストを追加
+  - [x] P111-2: `StringItems` を共通化し `min` / `max` / `join` からも再利用
+  - [x] P111-3: `sorted` / `sort` は文字列リストを辞書順でソート
+  - [x] P111-4: 全テスト PASS（1241 examples, 0 failures）
+  - [x] P111-5: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
 - 2026-11-03
   - [x] P85 完了: `try/finally` 構文と finally 節での例外置き換え
   - [x] P85 実装: `ParseCompoundStmt` で `except` 節なしの `try/finally` を解析可能に
