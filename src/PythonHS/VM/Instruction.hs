@@ -34,6 +34,10 @@ data Instruction
   | PushExceptionHandler {pushExceptionHandlerIp :: Int}
   | PushFinallyHandler {pushFinallyHandlerIp :: Int}
   | PushWithHandler {pushWithHandlerIp :: Int}
+  | PushLoopBoundary
+  | PopLoopBoundary
+  | BreakLoop {breakLoopTarget :: Int}
+  | ContinueLoop {continueLoopTarget :: Int}
   | PopExceptionHandler
   | LoadPendingException
   | LoadPendingExceptionClass
@@ -94,7 +98,7 @@ data Instruction
       }
   | RaiseTop {raiseTopPos :: Position}
   | RaisePendingException
-  | RaisePendingError
+  | RaisePendingError {raisePendingErrorFinallyStart :: Int}
   | ReturnTop
   | PrintTop
   | PopTop
@@ -115,5 +119,5 @@ isExceptionInstruction instruction =
     LoadPendingExceptionMessage -> True
     MatchExceptionType {} -> True
     RaisePendingException -> True
-    RaisePendingError -> True
+    RaisePendingError {} -> True
     _ -> False

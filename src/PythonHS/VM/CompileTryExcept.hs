@@ -60,7 +60,7 @@ compileTryExcept config =
                 let start = dispatchStart + 1
                  in pure
                       TryExceptDispatchPlan
-                        { tryExceptDispatchPlanResult = CompileExprResult {compileExprResultCode = [Jump {jumpTarget = start}], compileExprResultEndIndex = start},
+                        { tryExceptDispatchPlanResult = CompileExprResult {compileExprResultCode = [RaisePendingException], compileExprResultEndIndex = start},
                           tryExceptDispatchPlanFinallyStart = start,
                           tryExceptDispatchPlanFinallyTail = [PopExceptionHandler]
                         }
@@ -88,7 +88,7 @@ compileTryExcept config =
                   ++ compileExprResultCode (tryExceptDispatchPlanResult dispatchPlan)
                   ++ tryExceptDispatchPlanFinallyTail dispatchPlan
                   ++ compileExprResultCode finallyResult
-                  ++ [RaisePendingError]
+                  ++ [RaisePendingError {raisePendingErrorFinallyStart = finallyStartIndex}]
           pure (CompileExprResult {compileExprResultCode = code, compileExprResultEndIndex = compileExprResultEndIndex finallyResult + 1})
   where
     compileExceptDispatch dispatchStart clauses = do

@@ -1,9 +1,11 @@
 module PythonHS.VM.CompileProgram (compileProgram) where
 
 import PythonHS.AST.BinaryOperator (BinaryOperator (AddOperator, DivideOperator, FloorDivideOperator, ModuloOperator, MultiplyOperator, SubtractOperator))
+import PythonHS.AST.Expr (Expr (..))
 import PythonHS.AST.Program (Program (..))
 import PythonHS.AST.Stmt (Stmt (..))
 import PythonHS.Evaluator.ShowPos (showPos)
+import PythonHS.Evaluator.Value (Value (..))
 import PythonHS.VM.CollectFunctionGlobalStmtDecls (collectFunctionGlobalStmtDecls)
 import PythonHS.VM.CompileClassDefStmt (compileClassDefStmt)
 import PythonHS.VM.CompileClassDefStmtConfig (CompileClassDefStmtConfig (..))
@@ -31,6 +33,7 @@ import PythonHS.VM.CompileYieldCollectStmtConfig (CompileYieldCollectStmtConfig 
 import PythonHS.VM.ExprPosition (exprPosition)
 import PythonHS.VM.FunctionDefStmtResult (FunctionDefStmtResult (..))
 import PythonHS.VM.Instruction (Instruction (..))
+import PythonHS.VM.IsBuiltinExceptionClass (isBuiltinExceptionClass)
 import PythonHS.VM.LoopContext (LoopContext (..))
 import PythonHS.VM.StmtPosition (stmtPosition)
 
@@ -61,10 +64,15 @@ compileProgram Program {programStmts = stmts} = do
           case maybeExpr of
             Nothing ->
               pure (CompileExprResult {compileExprResultCode = [RaisePendingException], compileExprResultEndIndex = baseIndex + 1})
-            Just expr -> do
-              exprResult <- compileExprAt' baseIndex expr
-              let code = compileExprResultCode exprResult ++ [RaiseTop {raiseTopPos = pos}]
-              pure (CompileExprResult {compileExprResultCode = code, compileExprResultEndIndex = compileExprResultEndIndex exprResult + 1})
+            Just expr ->
+              case expr of
+                IdentifierExpr {identifierExprName = className}
+                  | isBuiltinExceptionClass className ->
+                      pure (CompileExprResult {compileExprResultCode = [PushConst {pushConstValue = ExceptionValue {exceptionValueClass = className, exceptionValueMessage = ""}}, RaiseTop {raiseTopPos = pos}], compileExprResultEndIndex = baseIndex + 2})
+                _ -> do
+                  exprResult <- compileExprAt' baseIndex expr
+                  let code = compileExprResultCode exprResult ++ [RaiseTop {raiseTopPos = pos}]
+                  pure (CompileExprResult {compileExprResultCode = code, compileExprResultEndIndex = compileExprResultEndIndex exprResult + 1})
         TryExceptStmt {tryExceptStmtTryBody = tryStmts, tryExceptStmtExceptSuites = exceptStmts, tryExceptStmtElseBody = maybeElse, tryExceptStmtFinallyBody = maybeFinally} -> compileTryExcept CompileTryExceptConfig {compileTryExceptCompileStatements = compileStatements, compileTryExceptBaseIndex = baseIndex, compileTryExceptInFunction = inFunction, compileTryExceptMaybeLoop = maybeLoop, compileTryExceptTryStmts = tryStmts, compileTryExceptExceptClauses = exceptStmts, compileTryExceptMaybeElse = maybeElse, compileTryExceptMaybeFinally = maybeFinally}
         MatchStmt {matchStmtSubject = subjectExpr, matchStmtCases = matchCases} -> compileMatch CompileMatchConfig {compileMatchCompileExpr = compileExprAt', compileMatchCompileStatements = compileStatements, compileMatchBaseIndex = baseIndex, compileMatchInFunction = inFunction, compileMatchMaybeLoop = maybeLoop, compileMatchSubjectExpr = subjectExpr, compileMatchCases = matchCases}
         ImportStmt {} -> compileImportStmt CompileImportStmtConfig {compileImportStmtBaseIndex = baseIndex, compileImportStmtStmt = stmt}
@@ -121,20 +129,23 @@ compileProgram Program {programStmts = stmts} = do
               let code = compileExprResultCode condResult ++ [JumpIfFalse {jumpIfFalseTarget = elseStartIndex}] ++ compileExprResultCode thenResult ++ [Jump {jumpTarget = compileExprResultEndIndex elseResult}] ++ compileExprResultCode elseResult
               pure (CompileExprResult {compileExprResultCode = code, compileExprResultEndIndex = compileExprResultEndIndex elseResult})
         WhileStmt {whileStmtCond = cond, whileStmtBody = body, whileStmtPos = whilePos} -> do
-          condResult <- compileExprAt' baseIndex cond
+          let loopStartIndex = baseIndex + 1
+          condResult <- compileExprAt' loopStartIndex cond
           let jumpIfFalseIndex = compileExprResultEndIndex condResult
               bodyStartIndex = jumpIfFalseIndex + 1
               guardIndex = bodyStartIndex
               firstBodyStmtIndex = guardIndex + 1
-              provisionalLoopContext = Just LoopContext {loopContextBreakTarget = 0, loopContextContinueTarget = baseIndex}
+              provisionalLoopContext = Just LoopContext {loopContextBreakTarget = 0, loopContextContinueTarget = loopStartIndex}
           provisionalBodyResult <- compileStatements firstBodyStmtIndex inFunction provisionalLoopContext body
           let loopEndIndex = compileExprResultEndIndex provisionalBodyResult + 1
-              loopContext = Just LoopContext {loopContextBreakTarget = loopEndIndex, loopContextContinueTarget = baseIndex}
+              breakTarget = loopEndIndex + 1
+              loopContext = Just LoopContext {loopContextBreakTarget = breakTarget, loopContextContinueTarget = loopStartIndex}
           bodyResult <- compileStatements firstBodyStmtIndex inFunction loopContext body
-          let code = compileExprResultCode condResult ++ [JumpIfFalse {jumpIfFalseTarget = loopEndIndex}, LoopGuard {loopGuardPos = whilePos}] ++ compileExprResultCode bodyResult ++ [Jump {jumpTarget = baseIndex}]
-          pure (CompileExprResult {compileExprResultCode = code, compileExprResultEndIndex = loopEndIndex})
+          let code = [PushLoopBoundary] ++ compileExprResultCode condResult ++ [JumpIfFalse {jumpIfFalseTarget = loopEndIndex}, LoopGuard {loopGuardPos = whilePos}] ++ compileExprResultCode bodyResult ++ [Jump {jumpTarget = loopStartIndex}, PopLoopBoundary]
+          pure (CompileExprResult {compileExprResultCode = code, compileExprResultEndIndex = breakTarget})
         ForStmt {forStmtVar = name, forStmtIter = iterExpr, forStmtBody = body, forStmtPos = forPos} -> do
-          iterResult <- compileExprAt' baseIndex iterExpr
+          let loopStartIndex = baseIndex + 1
+          iterResult <- compileExprAt' loopStartIndex iterExpr
           let setupIndex = compileExprResultEndIndex iterResult
               nextIndex = setupIndex + 1
               guardIndex = nextIndex + 1
@@ -142,11 +153,12 @@ compileProgram Program {programStmts = stmts} = do
               provisionalLoopContext = Just LoopContext {loopContextBreakTarget = 0, loopContextContinueTarget = nextIndex}
           provisionalBodyResult <- compileStatements bodyStartIndex inFunction provisionalLoopContext body
           let loopEndIndex = compileExprResultEndIndex provisionalBodyResult + 1
-              loopContext = Just LoopContext {loopContextBreakTarget = loopEndIndex, loopContextContinueTarget = nextIndex}
+              breakTarget = loopEndIndex + 1
+              loopContext = Just LoopContext {loopContextBreakTarget = breakTarget, loopContextContinueTarget = nextIndex}
           bodyResult <- compileStatements bodyStartIndex inFunction loopContext body
           let iterPos = exprPosition iterExpr
-              code = compileExprResultCode iterResult ++ [ForSetup {forSetupNextIndex = nextIndex, forSetupPos = iterPos}, ForNext {forNextName = name, forNextLoopEndIndex = loopEndIndex, forNextPos = iterPos}, LoopGuard {loopGuardPos = forPos}] ++ compileExprResultCode bodyResult ++ [Jump {jumpTarget = nextIndex}]
-          pure (CompileExprResult {compileExprResultCode = code, compileExprResultEndIndex = loopEndIndex})
+              code = [PushLoopBoundary] ++ compileExprResultCode iterResult ++ [ForSetup {forSetupNextIndex = nextIndex, forSetupPos = iterPos}, ForNext {forNextName = name, forNextLoopEndIndex = loopEndIndex, forNextPos = iterPos}, LoopGuard {loopGuardPos = forPos}] ++ compileExprResultCode bodyResult ++ [Jump {jumpTarget = nextIndex}, PopLoopBoundary]
+          pure (CompileExprResult {compileExprResultCode = code, compileExprResultEndIndex = breakTarget})
         ClassDefStmt {classDefStmtName = className, classDefStmtBase = maybeBase, classDefStmtBody = body} -> compileClassDefStmt CompileClassDefStmtConfig {compileClassDefStmtCompileDefaults = \ce ds -> compileDefaults CompileDefaultsConfig {compileDefaultsCompileExpr = ce, compileDefaultsDefaults = ds}, compileClassDefStmtCompileStatements = compileStatements, compileClassDefStmtCompileExpr = compileExprAt', compileClassDefStmtBaseIndex = baseIndex, compileClassDefStmtClassName = className, compileClassDefStmtMaybeBase = maybeBase, compileClassDefStmtBody = body, compileClassDefStmtMaybeDataclass = Nothing}
         FunctionDefStmt {functionDefStmtName = name, functionDefStmtParams = params, functionDefStmtBody = body, functionDefStmtPos = posDef} ->
           let functionGlobalDecls = collectFunctionGlobalStmtDecls body
@@ -178,9 +190,9 @@ compileProgram Program {programStmts = stmts} = do
               pure (CompileExprResult {compileExprResultCode = code, compileExprResultEndIndex = compileExprResultEndIndex exprResult + 1})
             else Left ("VM compile error: unsupported statement at " ++ showPos (stmtPosition stmt))
         BreakStmt {breakStmtPos = pos} -> case maybeLoop of
-          Just LoopContext {loopContextBreakTarget = breakTarget} -> Right (CompileExprResult {compileExprResultCode = [Jump {jumpTarget = breakTarget}], compileExprResultEndIndex = baseIndex + 1})
+          Just LoopContext {loopContextBreakTarget = breakTarget} -> Right (CompileExprResult {compileExprResultCode = [BreakLoop {breakLoopTarget = breakTarget}], compileExprResultEndIndex = baseIndex + 1})
           Nothing -> Left ("Break outside loop at " ++ showPos pos)
         ContinueStmt {continueStmtPos = pos} -> case maybeLoop of
-          Just LoopContext {loopContextContinueTarget = continueTarget} -> Right (CompileExprResult {compileExprResultCode = [Jump {jumpTarget = continueTarget}], compileExprResultEndIndex = baseIndex + 1})
+          Just LoopContext {loopContextContinueTarget = continueTarget} -> Right (CompileExprResult {compileExprResultCode = [ContinueLoop {continueLoopTarget = continueTarget}], compileExprResultEndIndex = baseIndex + 1})
           Nothing -> Left ("Continue outside loop at " ++ showPos pos)
         WithStmt {withStmtContextManager = contextManager, withStmtVarName = maybeVarName, withStmtBody = body, withStmtPos = withPos} -> compileWithStmt CompileWithStmtConfig {compileWithStmtBaseIndex = baseIndex, compileWithStmtInFunction = inFunction, compileWithStmtMaybeLoop = maybeLoop, compileWithStmtCmExpr = contextManager, compileWithStmtMaybeVarName = maybeVarName, compileWithStmtBody = body, compileWithStmtWithPos = withPos, compileWithStmtCompileStatements = compileStatements}

@@ -30,7 +30,7 @@ executePendingExceptionInstruction pendingExceptErrorName instruction stack loca
     RaisePendingException ->
       case Map.lookup pendingExceptErrorName localEnv of
         Just StringValue {stringValue = err} -> Right (Just err, stack)
-        _ -> Left "VM runtime error: pending exception is not set"
+        _ -> Left "Runtime error: No active exception to re-raise"
     _ -> Left "VM runtime error: executePendingExceptionInstruction called with non-pending-exception instruction"
   where
     pendingExceptValueName = "__python_hs_pending_except_value__"

@@ -26,9 +26,15 @@ handleExceptionInstruction config = case instruction of
           case exceptionApplyResultError applyResult of
             Just err -> Left err
             Nothing ->
-              Right
-                state
-                  { vmIp = exceptionApplyResultIp applyResult,
-                    vmStack = exceptionApplyResultStack applyResult,
-                    vmException = (vmException state) {exceptionHandlers = exceptionApplyResultHandlers applyResult}
-                  }
+              let newLocals = foldl applyLocalChange (envLocals (vmEnv state)) (exceptionApplyResultLocalChanges applyResult)
+               in Right
+                    state
+                      { vmIp = exceptionApplyResultIp applyResult,
+                        vmStack = exceptionApplyResultStack applyResult,
+                        vmEnv = (vmEnv state) {envLocals = newLocals},
+                        vmException = (vmException state) {exceptionHandlers = exceptionApplyResultHandlers applyResult}
+                      }
+    applyLocalChange locals (name, maybeValue) =
+      case maybeValue of
+        Nothing -> Map.delete name locals
+        Just value -> Map.insert name value locals

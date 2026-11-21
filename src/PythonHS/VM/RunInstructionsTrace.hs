@@ -30,7 +30,8 @@ runInstructionsTrace instructions = case vmExecute (initVMState instructions) of
                 instruction ->
                   case nextStepResult stepped instruction of
                     Right nextState
-                      | instruction == Halt || instruction == ReturnTop -> finishWithFailure stepped (Right nextState)
+                      | instruction == Halt -> finishWithFailure stepped (Right nextState)
+                      | instruction == ReturnTop && vmIp nextState == vmIp stepped -> finishWithFailure stepped (Right nextState)
                       | otherwise -> vmExecute nextState
                     Left err -> finishWithFailure stepped (handleRuntimeError vmExecute stepped (Left err))
     nextStepResult stepped _ = case vmCode stepped !! vmIp stepped of

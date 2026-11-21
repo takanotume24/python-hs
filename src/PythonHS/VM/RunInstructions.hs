@@ -18,6 +18,7 @@ runInstructions instructions = do
             instruction ->
               case executeOneInstruction execute state instruction of
                 Right nextState
-                  | instruction == Halt || instruction == ReturnTop -> Right nextState
+                  | instruction == Halt -> Right nextState
+                  | instruction == ReturnTop && vmIp nextState == vmIp state -> Right nextState
                   | otherwise -> execute nextState
                 Left err -> handleRuntimeError execute state (Left err)

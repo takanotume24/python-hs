@@ -6,6 +6,7 @@ data ExceptionApplyResult = ExceptionApplyResult
   { exceptionApplyResultError :: Maybe String,
     exceptionApplyResultIp :: Int,
     exceptionApplyResultStack :: [Value],
-    exceptionApplyResultHandlers :: [Int]
+    exceptionApplyResultHandlers :: [Int],
+    exceptionApplyResultLocalChanges :: [(String, Maybe Value)]
   }
   deriving (Eq, Show)

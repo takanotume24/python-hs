@@ -94,7 +94,25 @@ library
     , PythonHS.Structure.FormatViolationsPlain
     , PythonHS.VM.Instruction
     , PythonHS.VM.ApplyExceptionInstruction
+    , PythonHS.VM.DropToLoopBoundary
+    , PythonHS.VM.EncodeFinallyHandler
+    , PythonHS.VM.DecodeFinallyHandler
     , PythonHS.VM.ExceptionApplyResult
+    , PythonHS.VM.ExitKind
+    , PythonHS.VM.ExecuteControlFlowInstruction
+    , PythonHS.VM.ExecuteControlFlowInstructionConfig
+    , PythonHS.VM.ExecuteRaiseTopInstruction
+    , PythonHS.VM.ExecuteRaiseTopInstructionConfig
+    , PythonHS.VM.IsBuiltinExceptionClass
+    , PythonHS.VM.IsFinallyHandler
+    , PythonHS.VM.LoopBoundaryMarker
+    , PythonHS.VM.PendingControlKindName
+    , PythonHS.VM.PendingControlOwnerName
+    , PythonHS.VM.PendingControlTargetName
+    , PythonHS.VM.PendingFinallyErrorName
+    , PythonHS.VM.PendingFinallyOwnerName
+    , PythonHS.VM.PendingReturnValueName
+    , PythonHS.VM.TakeFinallyHandler
     , PythonHS.VM.HandleExceptionInstruction
     , PythonHS.VM.HandleExceptionInstructionConfig
     , PythonHS.VM.CompileProgram
@@ -569,6 +587,8 @@ test-suite python-hs-test
     , Test.VM.RunSourceVmPart14Spec
     , Test.VM.RunSourceVmPart15Spec
     , Test.VM.RunSourceVmPart16Spec
+    , Test.VM.RunSourceVmPart17Spec
+    , Test.VM.RunSourceVmPart18Spec
     , Test.VM.RunInstructionsSpec
     , Test.Structure.CheckStructureSpec
     , Test.Structure.DetectPositionalArgsSpec

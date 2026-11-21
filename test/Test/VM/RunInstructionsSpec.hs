@@ -64,7 +64,7 @@ spec = describe "runInstructions (pinned exception flows)" $ do
 
   it "applies PopExceptionHandler purely" $
     applyExceptionInstruction 1 PopExceptionHandler [] Map.empty [8]
-      `shouldBe` Right ExceptionApplyResult {exceptionApplyResultError = Nothing, exceptionApplyResultIp = 2, exceptionApplyResultStack = [], exceptionApplyResultHandlers = []}
+      `shouldBe` Right ExceptionApplyResult {exceptionApplyResultError = Nothing, exceptionApplyResultIp = 2, exceptionApplyResultStack = [], exceptionApplyResultHandlers = [], exceptionApplyResultLocalChanges = []}
 
   it "push handles exception before raise in stream" $
     runInstructions
