@@ -587,6 +587,42 @@
 - [x] P92-12: 全テスト PASS（977 examples, 0 failures）
 - [x] P92-13: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
 
+## 現在のスコープ（P103: VM 数値組み込み関数の追加）
+- [x] P103 開始: `abs` / `min` / `max` / `sum` / `sorted` を VM 組み込みとして追加
+- [x] P103-1: 失敗テストを `RunSourceVmPart7Spec` に追加（各関数の正常系・型エラー・引数個数エラー）
+- [x] P103-2: `CallNumericBuiltin` / `CallNumericBuiltinConfig` を新規追加し、`CallBuiltin` からディスパッチ
+- [x] P103-3: 数値リスト変換を `NumberPairs` に共通化し、`CallCollectionBuiltin` の `sort` からも再利用
+- [x] P103-4: `min` / `max` は位置引数・list・tuple を受け付け、int/float/string を比較
+- [x] P103-5: `sum` は list/tuple と開始値を受け付け、int+int は int、float 混在は float を返す
+- [x] P103-6: `sorted` は list/tuple を数値順に並べ替えた新しい list を返す
+- [x] P103-7: 全テスト PASS（1060 examples, 0 failures）
+- [x] P103-8: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
+
+## 現在のスコープ（P102: VM リスト内包表記の網羅化）
+- [x] P102 開始: リスト内包表記の VM 実行ケースを網羅的に固定
+- [x] P102-1: 失敗テストを `RunSourceVmPart3Spec` に追加（dict 反復 / tuple 反復 / int=range / 文字列反復の型エラー / 関数本体内 / ネスト内包）
+- [x] P102-2: `RunnerVmParityPart1Spec` にリスト内包表記の実行時 parity テストを追加
+- [x] P102-3: 実装確認: VM の `ExecuteListComprehension` / `ToForIterable` が dict・tuple・int を反復可能として受理
+- [x] P102-4: 全テスト PASS（1029 examples, 0 failures）
+- [x] P102-5: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
+
+## 現在のスコープ（P101: VM walrus 演算子 `:=` 対応）
+- [x] P101 開始: walrus 演算子 `x := expr` を VM 側で固定・網羅テスト化
+- [x] P101-1: 失敗テストを `RunSourceVmPart6Spec` に追加（print / if 条件 / リスト内包 / while 条件 / 算術式 / スコープ漏れ防止）
+- [x] P101-2: `RunnerVmParityPart1Spec` に walrus 実行時 parity テストを追加
+- [x] P101-3: 実装確認: VM の `CompileExprAt` が既に `WalrusExpr` を `値評価 + DupTop + StoreName` としてコンパイル
+- [x] P101-4: 全テスト PASS（1022 examples, 0 failures）
+- [x] P101-5: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
+
+## 現在のスコープ（P100: VM 関数定義 `*args` / `**kwargs` 対応）
+- [x] P100 開始: 関数定義での `*args` / `**kwargs` を VM 側で固定・網羅テスト化
+- [x] P100-1: 失敗テストを `RunSourceVmPart6Spec` に追加（`print args` / `print kwargs` / エラーケース）
+- [x] P100-2: `RunnerVmParityPart1Spec` に可変長引数関数の実行時 parity テストを追加
+- [x] P100-3: 実装確認: VM の `BindCallArguments` が既に `*args` / `**kwargs` を正しく束縛
+- [x] P100-4: keyword-only 引数（`def f(*args, b):`）は AST/VM 共通で parse error とし、未対応を固定
+- [x] P100-5: 全テスト PASS
+- [x] P100-6: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
+
 ## 現在のスコープ（P99: AST 評価器での関数定義 `*args` / `**kwargs` 対応）
 - [x] P99 開始: 関数定義での `*args` / `**kwargs` を AST 評価器でサポート
 - [x] P99-1: 失敗テストを `RunnerEdgePart2Spec` / `RunnerCorePart3Spec` に追加・更新
@@ -930,6 +966,32 @@
   - [x] P86 テスト: `RunSourceVmSpec` に `__exit__` が例外情報を受け取って出力するケースを追加
   - [x] P86 テスト: `RunSourceVmSpec` に `__exit__` 内で別の例外を raise して元の例外を置き換えるケースを追加
   - [x] P86 品質ゲート: `cabal run quality-gate` が全項目 PASS（950 examples, 0 failures）
+  - [x] P100 完了: VM 関数定義 `*args` / `**kwargs` 対応
+  - [x] P100-1: 失敗テストを `RunSourceVmPart6Spec` に追加（`print args` / `print kwargs` / エラーケース）
+  - [x] P100-2: `RunnerVmParityPart1Spec` に可変長引数関数の実行時 parity テストを追加
+  - [x] P100-3: 実装確認: VM の `BindCallArguments` が既に `*args` / `**kwargs` を正しく束縛
+  - [x] P100-4: keyword-only 引数（`def f(*args, b):`）は AST/VM 共通で parse error とし、未対応を固定
+  - [x] P100-5: 全テスト PASS
+  - [x] P100-6: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
+  - [x] P101 完了: VM walrus 演算子 `:=` 対応
+  - [x] P101-1: 失敗テストを `RunSourceVmPart6Spec` に追加（print / if 条件 / リスト内包 / while 条件 / 算術式 / スコープ漏れ防止）
+  - [x] P101-2: `RunnerVmParityPart1Spec` に walrus 実行時 parity テストを追加
+  - [x] P101-3: 実装確認: VM の `CompileExprAt` が既に `WalrusExpr` を `値評価 + DupTop + StoreName` としてコンパイル
+  - [x] P101-4: 全テスト PASS（1022 examples, 0 failures）
+  - [x] P101-5: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
+  - [x] P102 完了: VM リスト内包表記の網羅化
+  - [x] P102-1: 失敗テストを `RunSourceVmPart3Spec` に追加（dict 反復 / tuple 反復 / int=range / 文字列反復の型エラー / 関数本体内 / ネスト内包）
+  - [x] P102-2: `RunnerVmParityPart1Spec` にリスト内包表記の実行時 parity テストを追加
+  - [x] P102-3: 実装確認: VM の `ExecuteListComprehension` / `ToForIterable` が dict・tuple・int を反復可能として受理
+  - [x] P102-4: 全テスト PASS（1029 examples, 0 failures）
+  - [x] P102-5: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
+  - [x] P103 完了: VM 数値組み込み関数の追加
+  - [x] P103-1: 失敗テストを `RunSourceVmPart7Spec` に追加（各関数の正常系・型エラー・引数個数エラー）
+  - [x] P103-2: `CallNumericBuiltin` / `CallNumericBuiltinConfig` を新規追加し、`CallBuiltin` からディスパッチ
+  - [x] P103-3: 数値リスト変換を `NumberPairs` に共通化し、`CallCollectionBuiltin` の `sort` からも再利用
+  - [x] P103-4: `abs` / `min` / `max` / `sum` / `sorted` を VM-only 組み込みとして実装
+  - [x] P103-5: 全テスト PASS（1060 examples, 0 failures）
+  - [x] P103-6: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
 - 2026-11-03
   - [x] P85 完了: `try/finally` 構文と finally 節での例外置き換え
   - [x] P85 実装: `ParseCompoundStmt` で `except` 節なしの `try/finally` を解析可能に
