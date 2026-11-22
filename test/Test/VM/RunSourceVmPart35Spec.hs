@@ -14,7 +14,7 @@ spec = describe "runSourceVm (vm mvp) - part 35" $ do
               "print sys.platform"
             ]
         )
-        `shouldBe` Right ["[]", "python-hs"]
+        `shouldBe` Right ["[]", "linux"]
 
     it "exposes path and version markers" $ do
       runSourceVm
@@ -24,7 +24,7 @@ spec = describe "runSourceVm (vm mvp) - part 35" $ do
               "print sys.version"
             ]
         )
-        `shouldBe` Right ["[.]", "python-hs 0.1.0"]
+        `shouldBe` Right ["[.]", "3.12.16 (python-hs)"]
 
     it "supports from-import of sys attributes" $ do
       runSourceVm
@@ -34,7 +34,7 @@ spec = describe "runSourceVm (vm mvp) - part 35" $ do
               "print platform"
             ]
         )
-        `shouldBe` Right ["[]", "python-hs"]
+        `shouldBe` Right ["[]", "linux"]
 
     it "supports aliased import" $ do
       runSourceVm
@@ -43,7 +43,7 @@ spec = describe "runSourceVm (vm mvp) - part 35" $ do
               "print s.platform"
             ]
         )
-        `shouldBe` Right ["python-hs"]
+        `shouldBe` Right ["linux"]
 
     it "rejects an unsupported sys member" $ do
       runSourceVm "from sys import missing\n"

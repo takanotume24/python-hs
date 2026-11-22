@@ -459,6 +459,8 @@ library
     , PythonHS.VM.FindModuleFile
     , PythonHS.VM.CollectExports
     , PythonHS.VM.IsBuiltinImportModule
+    , PythonHS.VM.DropLast
+    , PythonHS.VM.IsStdlibFromImportModule
     , PythonHS.VM.IsBuiltinCallableName
     , PythonHS.VM.ParseFormatSpec
     , PythonHS.VM.PropagateInstanceMutation
@@ -757,6 +759,7 @@ test-suite python-hs-test
     , Test.VM.RunSourceVmPart33Spec
     , Test.VM.RunSourceVmPart34Spec
     , Test.VM.RunSourceVmPart35Spec
+    , Test.VM.RunSourceVmPart36Spec
     , Test.VM.RunInstructionsSpec
     , Test.VM.RunSourceVmAugAssignBitwiseSpec
     , Test.VM.RunSourceVmBlankLineSpec

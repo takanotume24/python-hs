@@ -14,9 +14,11 @@ import PythonHS.AST.Stmt
 import PythonHS.Lexer.ScanTokens (scanTokens)
 import PythonHS.Parser.ParseProgram (parseProgram)
 import PythonHS.VM.CollectExports (collectExports)
+import PythonHS.VM.DropLast (dropLast)
 import PythonHS.VM.FindModuleFile (findModuleFile)
 import PythonHS.VM.FindModuleFileConfig (FindModuleFileConfig (..))
 import PythonHS.VM.IsBuiltinImportModule (isBuiltinImportModule)
+import PythonHS.VM.IsStdlibFromImportModule (isStdlibFromImportModule)
 import PythonHS.VM.ModuleKeyFor (moduleKeyFor)
 import PythonHS.VM.ModulePrefixFor (modulePrefixFor)
 import PythonHS.VM.ResolveStarExportNames (resolveStarExportNames)
@@ -66,7 +68,7 @@ resolveLocalImports searchPaths (Program rootStmts) = do
                             Right (restStmts, cacheAfterRest, includedAfterRest) ->
                               pure (Right (moduleStmts ++ restStmts, cacheAfterRest, includedAfterRest))
                     else
-                      if resolvedModulePath == ["math"] || resolvedModulePath == ["dataclasses"]
+                      if isStdlibFromImportModule resolvedModulePath
                         then do
                           restResult <- resolveStmts cache visiting included currentPackage moduleAlias callAlias identAlias rest
                           case restResult of
@@ -182,12 +184,6 @@ resolveLocalImports searchPaths (Program rootStmts) = do
                       let aliasName = maybe memberName id maybeAlias
                           modulePrefix = modulePrefixFor submodulePath
                        in resolveFromImports updatedCache visiting updatedIncluded modulePath (Map.insert aliasName modulePrefix moduleAlias) callAlias identAlias (reverse submoduleStmts ++ collected) rest exportMap
-
-    dropLast segments =
-      case segments of
-        [] -> []
-        [_] -> []
-        x : xs -> x : dropLast xs
 
     resolveStarImport cache visiting included modulePath callAlias identAlias = do
       loadResult <- loadModule cache visiting included modulePath

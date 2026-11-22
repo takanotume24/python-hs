@@ -886,6 +886,50 @@
 - [x] P139-3: 不安定テストの除外ルールを明文化する
 - [x] P139-4: 品質ゲートを通す
 
+## 現在のスコープ（P140: 標準ライブラリ import 解決の統一）
+- [x] P140-1: `isBuiltinImportModule` に `sys` / `time` / `random` を追加する
+- [x] P140-2: from-import の標準モジュール判定を `isStdlibFromImportModule` へ統一する
+- [x] P140-3: `sys` のマーカー属性を拡張し、探索パス経由でも利用可能にする
+- [x] P140-4: `runSourceVmWithSearchPaths` 経由の import / from-import を回帰テストで固定する
+
+## 現在のスコープ（P141: test.support / 標準 shim の拡張）
+- [ ] P141-1: `cpython_only` と `ALWAYS_EQ` を test.support に追加する
+- [ ] P141-2: `gc` / `array` / `itertools` / `builtins` の最小 shim を追加する
+- [ ] P141-3: shim 解決順と未対応メンバーのエラーをテストで固定する
+
+## 現在のスコープ（P142: 字句・リテラル互換）
+- [ ] P142-1: raw string（`r"..."` / `r'...'`）を字句解析する
+- [ ] P142-2: 暗黙の文字列リテラル連結（`"a" "b"`）を解析する
+- [ ] P142-3: `;` による単純文の並置を解析する
+- [ ] P142-4: バックスラッシュによる行継続を解析する
+- [ ] P142-5: bytes リテラル `b"..."` を字句解析・評価する
+
+## 現在のスコープ（P143: 式・文のコア互換）
+- [ ] P143-1: 条件式 `a if cond else b` を実装する
+- [ ] P143-2: `for` / `while` の `else` 節を実装する
+- [ ] P143-3: starred display（`[*xs]` / `(*xs,)` / `{**d}`）を実装する
+- [ ] P143-4: `raise ... from ...` を実装する
+- [ ] P143-5: クラス本体の変数注釈とクラス属性参照を実装する
+- [ ] P143-6: `super()` の最小対応を実装する
+
+## 現在のスコープ（P144: set / frozenset）
+- [ ] P144-1: `SetValue` と集合リテラル・`set()` / `frozenset()` を追加する
+- [ ] P144-2: `len` / `in` / 反復 / repr / 等価比較を実装する
+- [ ] P144-3: `add` / `remove` / `discard` / `pop` / `clear` / `update` を実装する
+- [ ] P144-4: `union` / `intersection` / `difference` と集合演算子を実装する
+- [ ] P144-5: 集合内包表記を実装する
+
+## 現在のスコープ（P145: bytes / bytearray 最小）
+- [ ] P145-1: `BytesValue` と `bytes()` / `bytearray()` を追加する
+- [ ] P145-2: `len` / index / slice / concat / repeat / 反復を実装する
+- [ ] P145-3: `decode` / `encode` を実装する
+- [ ] P145-4: repr と `print` を実装する
+
+## 現在のスコープ（P146: allowlist 拡張と CI 安定化）
+- [ ] P146-1: allowlist を 52 件から 100 件以上へ拡大する
+- [ ] P146-2: 決定的なケースのみを採用し、除外ルールを維持する
+- [ ] P146-3: `cabal run quality-gate` と `cabal run -v0 run-cpython-test` を 0 failed で固定する
+
 ## 現在のスコープ（P126: f-string 完全化）
 - [x] P126-1: `!r` / `!s` 変換フラグをサポートする
 - [x] P126-2: 数値フォーマット（幅・揃え・ゼロ埋め・符号・桁区切り）を追加する

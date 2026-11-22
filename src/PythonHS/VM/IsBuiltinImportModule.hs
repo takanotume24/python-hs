@@ -8,3 +8,6 @@ isBuiltinImportModule modulePath =
     || modulePath == ["json"]
     || modulePath == ["pathlib"]
     || modulePath == ["unittest"]
+    || modulePath == ["sys"]
+    || modulePath == ["time"]
+    || modulePath == ["random"]

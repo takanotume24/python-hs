@@ -136,6 +136,20 @@ compileFromStdlibImport config =
         _ -> Nothing
 
     isSysMember memberName =
-      memberName `elem` ["argv", "path", "version", "platform"]
+      memberName
+        `elem` [ "argv",
+                 "path",
+                 "version",
+                 "version_info",
+                 "platform",
+                 "maxsize",
+                 "maxunicode",
+                 "byteorder",
+                 "hexversion",
+                 "executable",
+                 "prefix",
+                 "copyright",
+                 "dont_write_bytecode"
+               ]
 
     moduleAliasFor moduleName = "__python_hs_import_" ++ moduleName
