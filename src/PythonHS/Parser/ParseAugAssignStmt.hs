@@ -3,7 +3,6 @@ module PythonHS.Parser.ParseAugAssignStmt (parseAugAssignStmt) where
 import PythonHS.AST.BinaryOperator (BinaryOperator (..))
 import PythonHS.AST.Expr (Expr (..))
 import PythonHS.AST.Stmt (Stmt (..))
-import PythonHS.Lexer.Position (Position)
 import PythonHS.Lexer.Token (Token (..))
 import PythonHS.Lexer.TokenType
   ( TokenType

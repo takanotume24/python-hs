@@ -23,6 +23,7 @@ stmtPosition stmt =
     FloorDivAssignStmt {floorDivAssignStmtPos} -> floorDivAssignStmtPos
     SubscriptAssignStmt {subscriptAssignStmtPos} -> subscriptAssignStmtPos
     DeleteStmt {deleteStmtPos} -> deleteStmtPos
+    DeleteSubscriptStmt {deleteSubscriptStmtPos} -> deleteSubscriptStmtPos
     ExprStmt {exprStmtPos} -> exprStmtPos
     FunctionDefStmt {functionDefStmtPos} -> functionDefStmtPos
     FunctionDefDefaultsStmt {functionDefDefaultsStmtPos} -> functionDefDefaultsStmtPos

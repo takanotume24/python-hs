@@ -170,6 +170,8 @@ library
     , PythonHS.Parser.ParseExprStatement
     , PythonHS.Parser.ParseDecoratedStmt
     , PythonHS.Parser.ParseDecoratedStmtConfig
+    , PythonHS.Parser.ParseDelStmt
+    , PythonHS.Parser.ParseDelStmtConfig
     , PythonHS.Parser.ParseComprehensionTail
     , PythonHS.Parser.ParseComprehensionTailConfig
     , PythonHS.Parser.ParseParenTuple
@@ -325,6 +327,15 @@ library
     , PythonHS.VM.GetitemValue
     , PythonHS.VM.SetitemValue
     , PythonHS.VM.SetitemValueConfig
+    , PythonHS.VM.SetsliceValue
+    , PythonHS.VM.SetsliceValueConfig
+    , PythonHS.VM.DelitemValue
+    , PythonHS.VM.DelitemValueConfig
+    , PythonHS.VM.DelsliceValue
+    , PythonHS.VM.DelsliceValueConfig
+    , PythonHS.VM.SliceRange
+    , PythonHS.VM.SliceRangeConfig
+    , PythonHS.VM.SliceRangeResult
     , PythonHS.VM.SliceValue
     , PythonHS.VM.CallMathBuiltin
     , PythonHS.VM.CallNumericBuiltin
@@ -338,6 +349,8 @@ library
       , PythonHS.VM.CompileClassDefStmt
       , PythonHS.VM.CompileClassStmt
     , PythonHS.VM.CompileCompoundAssign
+    , PythonHS.VM.CompileDeleteSubscript
+    , PythonHS.VM.CompileDeleteSubscriptConfig
     , PythonHS.VM.CompileRaiseStmt
     , PythonHS.VM.CompileRaiseStmtConfig
     , PythonHS.VM.CompileSubscriptAssign
@@ -627,6 +640,7 @@ test-suite python-hs-test
     , Test.VM.RunSourceVmPart24Spec
     , Test.VM.RunSourceVmPart25Spec
     , Test.VM.RunSourceVmPart26Spec
+    , Test.VM.RunSourceVmPart27Spec
     , Test.VM.RunInstructionsSpec
     , Test.Structure.CheckStructureSpec
     , Test.Structure.DetectPositionalArgsSpec

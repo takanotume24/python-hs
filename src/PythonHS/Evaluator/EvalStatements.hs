@@ -98,6 +98,7 @@ evalStatements env fenv outputs (stmt : rest) =
         then evalStatements envAfterCond fenv (outputs ++ condOuts) rest
         else Left $ "AssertionError: assertion failed at " ++ showPos assertStmtPos
     DeleteStmt {deleteStmtPos} -> Left $ "Runtime error: del is only supported in vm engine at " ++ showPos deleteStmtPos
+    DeleteSubscriptStmt {deleteSubscriptStmtPos} -> Left $ "Runtime error: del is only supported in vm engine at " ++ showPos deleteSubscriptStmtPos
     ExprStmt {exprStmtValue} -> do
       (_, exprOuts, envAfterExpr) <- extractResult <$> evalExpr' exprStmtValue
       evalStatements envAfterExpr fenv (outputs ++ exprOuts) rest

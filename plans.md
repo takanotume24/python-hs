@@ -716,11 +716,12 @@
 - 完了: `RunSourceVmPart26Spec`（15 examples）。`**=` 用トークン追加、名前・属性・添字の拡張代入、添字代入 `xs[i] = v`、辞書の添字参照を実装。
 
 ### P122: スライス代入・`del` 文
-- [ ] リストのスライス代入 `xs[a:b] = ys` を VM で評価する
-- [ ] `del xs[index]` / `del xs[a:b]` を VM で評価する
-- [ ] 辞書の `del d[key]` を VM で評価する
-- [ ] 範囲外・キー不在・型エラーの規約をテストで固定する
-- [ ] スライス参照と代入の境界（負数・省略・空スライス）をテストで固定する
+- [x] リストのスライス代入 `xs[a:b] = ys` を VM で評価する
+- [x] `del xs[index]` / `del xs[a:b]` を VM で評価する
+- [x] 辞書の `del d[key]` を VM で評価する
+- [x] 範囲外・キー不在・型エラーの規約をテストで固定する
+- [x] スライス参照と代入の境界（負数・省略・空スライス）をテストで固定する
+- 完了: `RunSourceVmPart27Spec`（18 examples）。`sliceRange` で境界を共通化し、setitem/delitem/setslice/delslice を追加。
 
 ### P123: 可変長引数 `*args` / `**kwargs`
 - [ ] 関数定義の `*args` / `**kwargs` を VM で束縛する

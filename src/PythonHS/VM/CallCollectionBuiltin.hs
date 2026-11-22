@@ -8,11 +8,17 @@ import PythonHS.Evaluator.ShowPos (showPos)
 import PythonHS.Evaluator.Value (Value (..))
 import PythonHS.Evaluator.ValueToReplOutput (valueToReplOutput)
 import PythonHS.VM.CallCollectionBuiltinConfig (CallCollectionBuiltinConfig (..))
+import PythonHS.VM.DelitemValue (delitemValue)
+import PythonHS.VM.DelitemValueConfig (DelitemValueConfig (..))
+import PythonHS.VM.DelsliceValue (delsliceValue)
+import PythonHS.VM.DelsliceValueConfig (DelsliceValueConfig (..))
 import PythonHS.VM.GetitemValue (getitemValue)
 import PythonHS.VM.GetitemValueConfig (GetitemValueConfig (..))
 import PythonHS.VM.NumberPairs (numberPairs)
 import PythonHS.VM.SetitemValue (setitemValue)
 import PythonHS.VM.SetitemValueConfig (SetitemValueConfig (..))
+import PythonHS.VM.SetsliceValue (setsliceValue)
+import PythonHS.VM.SetsliceValueConfig (SetsliceValueConfig (..))
 import PythonHS.VM.SliceValue (sliceValue)
 import PythonHS.VM.SliceValueConfig (SliceValueConfig (..))
 import PythonHS.VM.StringItems (stringItems)
@@ -44,6 +50,15 @@ callCollectionBuiltin config =
         "__python_hs_setitem__" -> Just $ case args of
           [seqValue, indexValue, newValue] -> setitemValue SetitemValueConfig {setitemValuePos = pos, setitemValueSeqValue = seqValue, setitemValueIndexValue = indexValue, setitemValueNewValue = newValue}
           _ -> Left ("Argument count mismatch when calling __python_hs_setitem__ at " ++ showPos pos)
+        "__python_hs_setslice__" -> Just $ case args of
+          [seqValue, startVal, endVal, newItems] -> setsliceValue SetsliceValueConfig {setsliceValuePos = pos, setsliceValueSeqValue = seqValue, setsliceValueStartVal = startVal, setsliceValueEndVal = endVal, setsliceValueNewItems = newItems}
+          _ -> Left ("Argument count mismatch when calling __python_hs_setslice__ at " ++ showPos pos)
+        "__python_hs_delitem__" -> Just $ case args of
+          [seqValue, indexValue] -> delitemValue DelitemValueConfig {delitemValuePos = pos, delitemValueSeqValue = seqValue, delitemValueIndexValue = indexValue}
+          _ -> Left ("Argument count mismatch when calling __python_hs_delitem__ at " ++ showPos pos)
+        "__python_hs_delslice__" -> Just $ case args of
+          [seqValue, startVal, endVal] -> delsliceValue DelsliceValueConfig {delsliceValuePos = pos, delsliceValueSeqValue = seqValue, delsliceValueStartVal = startVal, delsliceValueEndVal = endVal}
+          _ -> Left ("Argument count mismatch when calling __python_hs_delslice__ at " ++ showPos pos)
         "__python_hs_slice__" -> Just $ case args of
           [seqValue, startVal, endVal] -> sliceValue SliceValueConfig {sliceValuePos = pos, sliceValueSeqValue = seqValue, sliceValueStartVal = startVal, sliceValueEndVal = endVal}
           _ -> Left ("Argument count mismatch when calling __python_hs_slice__ at " ++ showPos pos)

@@ -46,6 +46,8 @@ import PythonHS.Parser.ParseCompoundStmt (parseCompoundStmt)
 import PythonHS.Parser.ParseCompoundStmtConfig (ParseCompoundStmtConfig (..))
 import PythonHS.Parser.ParseDecoratedStmt (parseDecoratedStmt)
 import PythonHS.Parser.ParseDecoratedStmtConfig (ParseDecoratedStmtConfig (..))
+import PythonHS.Parser.ParseDelStmt (parseDelStmt)
+import PythonHS.Parser.ParseDelStmtConfig (ParseDelStmtConfig (..))
 import PythonHS.Parser.ParseError (ParseError (..))
 import PythonHS.Parser.ParseExpr (parseExpr)
 import PythonHS.Parser.ParseExprStatement (parseExprStatement)
@@ -97,10 +99,8 @@ parseStatement tokenStream =
         Token {tokenType = PassToken, position = pos} : rest -> Right (ParseResult {parseResultValue = PassStmt {passStmtPos = pos}, parseResultRemaining = rest})
         Token {tokenType = GlobalToken, position = pos} : Token {tokenType = IdentifierToken, lexeme = name} : rest ->
           Right (ParseResult {parseResultValue = GlobalStmt {globalStmtName = name, globalStmtPos = pos}, parseResultRemaining = rest})
-        Token {tokenType = DelToken, position = pos} : Token {tokenType = IdentifierToken, lexeme = obj} : Token {tokenType = DotToken} : Token {tokenType = IdentifierToken, lexeme = attr} : rest ->
-          Right (ParseResult {parseResultValue = DeleteStmt {deleteStmtTarget = obj ++ "." ++ attr, deleteStmtPos = pos}, parseResultRemaining = rest})
-        Token {tokenType = DelToken, position = pos} : Token {tokenType = IdentifierToken, lexeme = name} : rest ->
-          Right (ParseResult {parseResultValue = DeleteStmt {deleteStmtTarget = name, deleteStmtPos = pos}, parseResultRemaining = rest})
+        Token {tokenType = DelToken, position = pos} : rest ->
+          parseDelStmt (ParseDelStmtConfig {parseDelStmtExpr = parseExpr, parseDelStmtPos = pos, parseDelStmtTokenStream = rest})
         Token {tokenType = ImportToken} : _ -> parseImportStmt tokenStream
         Token {tokenType = FromToken} : _ -> parseImportStmt tokenStream
         Token {tokenType = IdentifierToken, lexeme = obj, position = pos} : Token {tokenType = DotToken} : Token {tokenType = IdentifierToken, lexeme = attr} : Token {tokenType = AssignToken} : rest -> do

@@ -13,6 +13,8 @@ import PythonHS.VM.CompileDecoratedStmt (compileDecoratedStmt)
 import PythonHS.VM.CompileDecoratedStmtConfig (CompileDecoratedStmtConfig (..))
 import PythonHS.VM.CompileDefaults (compileDefaults)
 import PythonHS.VM.CompileDefaultsConfig (CompileDefaultsConfig (..))
+import PythonHS.VM.CompileDeleteSubscript (compileDeleteSubscript)
+import PythonHS.VM.CompileDeleteSubscriptConfig (CompileDeleteSubscriptConfig (..))
 import PythonHS.VM.CompileExprAt (compileExprAt)
 import PythonHS.VM.CompileExprAtConfig (CompileExprAtConfig (..))
 import PythonHS.VM.CompileExprResult (CompileExprResult (..))
@@ -88,6 +90,7 @@ compileProgram Program {programStmts = stmts} = do
         FloorDivAssignStmt {floorDivAssignStmtName = name, floorDivAssignStmtValue = expr, floorDivAssignStmtPos = pos} -> compileCompoundAssign CompileCompoundAssignConfig {compileCompoundAssignCompileExpr = compileExprAt', compileCompoundAssignBaseIndex = baseIndex, compileCompoundAssignName = name, compileCompoundAssignExpr = expr, compileCompoundAssignPos = pos, compileCompoundAssignOp = FloorDivideOperator}
         SubscriptAssignStmt {subscriptAssignStmtTarget = target, subscriptAssignStmtValue = expr, subscriptAssignStmtPos = pos} -> compileSubscriptAssign CompileSubscriptAssignConfig {compileSubscriptAssignCompileExpr = compileExprAt', compileSubscriptAssignBaseIndex = baseIndex, compileSubscriptAssignTarget = target, compileSubscriptAssignValue = expr, compileSubscriptAssignPos = pos}
         DeleteStmt {deleteStmtTarget = target} -> Right (CompileExprResult {compileExprResultCode = [DeleteName {deleteNameTarget = target}], compileExprResultEndIndex = baseIndex + 1})
+        DeleteSubscriptStmt {deleteSubscriptStmtTarget = target, deleteSubscriptStmtPos = pos} -> compileDeleteSubscript CompileDeleteSubscriptConfig {compileDeleteSubscriptCompileExpr = compileExprAt', compileDeleteSubscriptBaseIndex = baseIndex, compileDeleteSubscriptTarget = target, compileDeleteSubscriptPos = pos}
         AssertStmt {assertStmtCond = condition, assertStmtPos = pos} -> do
           conditionResult <- compileExprAt' baseIndex condition
           let code = compileExprResultCode conditionResult ++ [AssertTop {assertTopPos = pos}]

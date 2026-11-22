@@ -80,6 +80,10 @@ data Stmt
       { deleteStmtTarget :: String,
         deleteStmtPos :: Position
       }
+  | DeleteSubscriptStmt
+      { deleteSubscriptStmtTarget :: Expr,
+        deleteSubscriptStmtPos :: Position
+      }
   | AssertStmt
       { assertStmtCond :: Expr,
         assertStmtPos :: Position
