@@ -11,6 +11,8 @@ import PythonHS.VM.CallCollectionBuiltinConfig (CallCollectionBuiltinConfig (..)
 import PythonHS.VM.GetitemValue (getitemValue)
 import PythonHS.VM.GetitemValueConfig (GetitemValueConfig (..))
 import PythonHS.VM.NumberPairs (numberPairs)
+import PythonHS.VM.SetitemValue (setitemValue)
+import PythonHS.VM.SetitemValueConfig (SetitemValueConfig (..))
 import PythonHS.VM.SliceValue (sliceValue)
 import PythonHS.VM.SliceValueConfig (SliceValueConfig (..))
 import PythonHS.VM.StringItems (stringItems)
@@ -39,6 +41,9 @@ callCollectionBuiltin config =
         "__python_hs_getitem__" -> Just $ case args of
           [seqValue, indexValue] -> getitemValue GetitemValueConfig {getitemValuePos = pos, getitemValueSeqValue = seqValue, getitemValueIndexValue = indexValue}
           _ -> Left ("Argument count mismatch when calling __python_hs_getitem__ at " ++ showPos pos)
+        "__python_hs_setitem__" -> Just $ case args of
+          [seqValue, indexValue, newValue] -> setitemValue SetitemValueConfig {setitemValuePos = pos, setitemValueSeqValue = seqValue, setitemValueIndexValue = indexValue, setitemValueNewValue = newValue}
+          _ -> Left ("Argument count mismatch when calling __python_hs_setitem__ at " ++ showPos pos)
         "__python_hs_slice__" -> Just $ case args of
           [seqValue, startVal, endVal] -> sliceValue SliceValueConfig {sliceValuePos = pos, sliceValueSeqValue = seqValue, sliceValueStartVal = startVal, sliceValueEndVal = endVal}
           _ -> Left ("Argument count mismatch when calling __python_hs_slice__ at " ++ showPos pos)

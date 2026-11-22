@@ -1,11 +1,9 @@
 module PythonHS.VM.CompileProgram (compileProgram) where
 
 import PythonHS.AST.BinaryOperator (BinaryOperator (AddOperator, DivideOperator, FloorDivideOperator, ModuloOperator, MultiplyOperator, SubtractOperator))
-import PythonHS.AST.Expr (Expr (..))
 import PythonHS.AST.Program (Program (..))
 import PythonHS.AST.Stmt (Stmt (..))
 import PythonHS.Evaluator.ShowPos (showPos)
-import PythonHS.Evaluator.Value (Value (..))
 import PythonHS.VM.CollectFunctionGlobalStmtDecls (collectFunctionGlobalStmtDecls)
 import PythonHS.VM.CompileClassDefStmt (compileClassDefStmt)
 import PythonHS.VM.CompileClassDefStmtConfig (CompileClassDefStmtConfig (..))
@@ -24,6 +22,10 @@ import PythonHS.VM.CompileImportStmt (compileImportStmt)
 import PythonHS.VM.CompileImportStmtConfig (CompileImportStmtConfig (..))
 import PythonHS.VM.CompileMatch (compileMatch)
 import PythonHS.VM.CompileMatchConfig (CompileMatchConfig (..))
+import PythonHS.VM.CompileRaiseStmt (compileRaiseStmt)
+import PythonHS.VM.CompileRaiseStmtConfig (CompileRaiseStmtConfig (..))
+import PythonHS.VM.CompileSubscriptAssign (compileSubscriptAssign)
+import PythonHS.VM.CompileSubscriptAssignConfig (CompileSubscriptAssignConfig (..))
 import PythonHS.VM.CompileTryExcept (compileTryExcept)
 import PythonHS.VM.CompileTryExceptConfig (CompileTryExceptConfig (..))
 import PythonHS.VM.CompileWithStmt (compileWithStmt)
@@ -33,7 +35,6 @@ import PythonHS.VM.CompileYieldCollectStmtConfig (CompileYieldCollectStmtConfig 
 import PythonHS.VM.ExprPosition (exprPosition)
 import PythonHS.VM.FunctionDefStmtResult (FunctionDefStmtResult (..))
 import PythonHS.VM.Instruction (Instruction (..))
-import PythonHS.VM.IsBuiltinExceptionClass (isBuiltinExceptionClass)
 import PythonHS.VM.LoopContext (LoopContext (..))
 import PythonHS.VM.StmtPosition (stmtPosition)
 
@@ -60,19 +61,7 @@ compileProgram Program {programStmts = stmts} = do
         PassStmt {} -> Right (CompileExprResult {compileExprResultCode = [], compileExprResultEndIndex = baseIndex})
         DecoratedStmt {decoratedStmtDecorators = decorators, decoratedStmtTarget = targetStmt} -> compileDecoratedStmt CompileDecoratedStmtConfig {compileDecoratedStmtCompileStmt = compileStmt, compileDecoratedStmtCompileDataclassClass = \b c m bd mc -> compileClassDefStmt CompileClassDefStmtConfig {compileClassDefStmtCompileDefaults = \ce ds -> compileDefaults CompileDefaultsConfig {compileDefaultsCompileExpr = ce, compileDefaultsDefaults = ds}, compileClassDefStmtCompileStatements = compileStatements, compileClassDefStmtCompileExpr = compileExprAt', compileClassDefStmtBaseIndex = b, compileClassDefStmtClassName = c, compileClassDefStmtMaybeBase = m, compileClassDefStmtBody = bd, compileClassDefStmtMaybeDataclass = mc}, compileDecoratedStmtCompileExpr = compileExprAt', compileDecoratedStmtBaseIndex = baseIndex, compileDecoratedStmtInFunction = inFunction, compileDecoratedStmtMaybeLoop = maybeLoop, compileDecoratedStmtDecorators = decorators, compileDecoratedStmtTargetStmt = targetStmt}
         GlobalStmt {globalStmtName = name} -> Right (CompileExprResult {compileExprResultCode = [DeclareGlobal {declareGlobalName = name}], compileExprResultEndIndex = baseIndex + 1})
-        RaiseStmt {raiseStmtExpr = maybeExpr, raiseStmtPos = pos} ->
-          case maybeExpr of
-            Nothing ->
-              pure (CompileExprResult {compileExprResultCode = [RaisePendingException], compileExprResultEndIndex = baseIndex + 1})
-            Just expr ->
-              case expr of
-                IdentifierExpr {identifierExprName = className}
-                  | isBuiltinExceptionClass className ->
-                      pure (CompileExprResult {compileExprResultCode = [PushConst {pushConstValue = ExceptionValue {exceptionValueClass = className, exceptionValueMessage = ""}}, RaiseTop {raiseTopPos = pos}], compileExprResultEndIndex = baseIndex + 2})
-                _ -> do
-                  exprResult <- compileExprAt' baseIndex expr
-                  let code = compileExprResultCode exprResult ++ [RaiseTop {raiseTopPos = pos}]
-                  pure (CompileExprResult {compileExprResultCode = code, compileExprResultEndIndex = compileExprResultEndIndex exprResult + 1})
+        RaiseStmt {raiseStmtExpr = maybeExpr, raiseStmtPos = pos} -> compileRaiseStmt CompileRaiseStmtConfig {compileRaiseStmtCompileExpr = compileExprAt', compileRaiseStmtBaseIndex = baseIndex, compileRaiseStmtMaybeExpr = maybeExpr, compileRaiseStmtPos = pos}
         TryExceptStmt {tryExceptStmtTryBody = tryStmts, tryExceptStmtExceptSuites = exceptStmts, tryExceptStmtElseBody = maybeElse, tryExceptStmtFinallyBody = maybeFinally} -> compileTryExcept CompileTryExceptConfig {compileTryExceptCompileStatements = compileStatements, compileTryExceptBaseIndex = baseIndex, compileTryExceptInFunction = inFunction, compileTryExceptMaybeLoop = maybeLoop, compileTryExceptTryStmts = tryStmts, compileTryExceptExceptClauses = exceptStmts, compileTryExceptMaybeElse = maybeElse, compileTryExceptMaybeFinally = maybeFinally}
         MatchStmt {matchStmtSubject = subjectExpr, matchStmtCases = matchCases} -> compileMatch CompileMatchConfig {compileMatchCompileExpr = compileExprAt', compileMatchCompileStatements = compileStatements, compileMatchBaseIndex = baseIndex, compileMatchInFunction = inFunction, compileMatchMaybeLoop = maybeLoop, compileMatchSubjectExpr = subjectExpr, compileMatchCases = matchCases}
         ImportStmt {} -> compileImportStmt CompileImportStmtConfig {compileImportStmtBaseIndex = baseIndex, compileImportStmtStmt = stmt}
@@ -97,6 +86,7 @@ compileProgram Program {programStmts = stmts} = do
         DivAssignStmt {divAssignStmtName = name, divAssignStmtValue = expr, divAssignStmtPos = pos} -> compileCompoundAssign CompileCompoundAssignConfig {compileCompoundAssignCompileExpr = compileExprAt', compileCompoundAssignBaseIndex = baseIndex, compileCompoundAssignName = name, compileCompoundAssignExpr = expr, compileCompoundAssignPos = pos, compileCompoundAssignOp = DivideOperator}
         ModAssignStmt {modAssignStmtName = name, modAssignStmtValue = expr, modAssignStmtPos = pos} -> compileCompoundAssign CompileCompoundAssignConfig {compileCompoundAssignCompileExpr = compileExprAt', compileCompoundAssignBaseIndex = baseIndex, compileCompoundAssignName = name, compileCompoundAssignExpr = expr, compileCompoundAssignPos = pos, compileCompoundAssignOp = ModuloOperator}
         FloorDivAssignStmt {floorDivAssignStmtName = name, floorDivAssignStmtValue = expr, floorDivAssignStmtPos = pos} -> compileCompoundAssign CompileCompoundAssignConfig {compileCompoundAssignCompileExpr = compileExprAt', compileCompoundAssignBaseIndex = baseIndex, compileCompoundAssignName = name, compileCompoundAssignExpr = expr, compileCompoundAssignPos = pos, compileCompoundAssignOp = FloorDivideOperator}
+        SubscriptAssignStmt {subscriptAssignStmtTarget = target, subscriptAssignStmtValue = expr, subscriptAssignStmtPos = pos} -> compileSubscriptAssign CompileSubscriptAssignConfig {compileSubscriptAssignCompileExpr = compileExprAt', compileSubscriptAssignBaseIndex = baseIndex, compileSubscriptAssignTarget = target, compileSubscriptAssignValue = expr, compileSubscriptAssignPos = pos}
         DeleteStmt {deleteStmtTarget = target} -> Right (CompileExprResult {compileExprResultCode = [DeleteName {deleteNameTarget = target}], compileExprResultEndIndex = baseIndex + 1})
         AssertStmt {assertStmtCond = condition, assertStmtPos = pos} -> do
           conditionResult <- compileExprAt' baseIndex condition

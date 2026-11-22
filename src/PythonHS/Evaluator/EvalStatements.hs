@@ -64,6 +64,8 @@ evalStatements env fenv outputs (stmt : rest) =
       evalAssignStmt (assignInput modAssignStmtName modAssignStmtValue modAssignStmtPos "%=")
     FloorDivAssignStmt {floorDivAssignStmtName, floorDivAssignStmtValue, floorDivAssignStmtPos} ->
       evalAssignStmt (assignInput floorDivAssignStmtName floorDivAssignStmtValue floorDivAssignStmtPos "//=")
+    SubscriptAssignStmt {subscriptAssignStmtPos} ->
+      Left $ "Runtime error: subscript assignment is only supported in vm engine at " ++ showPos subscriptAssignStmtPos
     PrintStmt {printStmtValue} ->
       case printStmtValue of
         StringExpr {stringExprValue = s} -> evalStatements env fenv (outputs ++ [s]) rest

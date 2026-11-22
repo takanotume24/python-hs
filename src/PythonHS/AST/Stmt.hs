@@ -71,6 +71,11 @@ data Stmt
         floorDivAssignStmtValue :: Expr,
         floorDivAssignStmtPos :: Position
       }
+  | SubscriptAssignStmt
+      { subscriptAssignStmtTarget :: Expr,
+        subscriptAssignStmtValue :: Expr,
+        subscriptAssignStmtPos :: Position
+      }
   | DeleteStmt
       { deleteStmtTarget :: String,
         deleteStmtPos :: Position

@@ -1,5 +1,6 @@
 module PythonHS.VM.GetitemValue (getitemValue) where
 
+import PythonHS.Evaluator.DictPair (DictPair (..))
 import PythonHS.Evaluator.ShowPos (showPos)
 import PythonHS.Evaluator.Value (Value (..))
 import PythonHS.Lexer.Position (Position)
@@ -13,6 +14,7 @@ getitemValue config = case seqValue of
     | IntValue {intValue = idx} <- indexValue -> getAtValues vals idx
   StringValue {stringValue = s}
     | IntValue {intValue = idx} <- indexValue -> getAtString s idx
+  DictValue {dictValuePairs = pairs} -> getAtDict pairs
   _
     | IntValue {} <- indexValue ->
         Left ("Type error: getitem expects list, tuple, or string as first argument at " ++ showPos pos)
@@ -36,3 +38,8 @@ getitemValue config = case seqValue of
       case normalizeIndex (length s) idx of
         Just i -> Right (StringValue {stringValue = [s !! i]})
         Nothing -> Left ("Value error: string index out of range at " ++ showPos pos)
+
+    getAtDict pairs =
+      case filter (\pair -> dictPairKey pair == indexValue) pairs of
+        DictPair {dictPairValue = value} : _ -> Right value
+        [] -> Left ("Key not found in getitem at " ++ showPos pos)

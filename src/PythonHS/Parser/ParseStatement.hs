@@ -17,7 +17,6 @@ import PythonHS.Lexer.TokenType
         DefToken,
         DelToken,
         DotToken,
-        DoubleSlashAssignToken,
         ForToken,
         FromToken,
         GlobalToken,
@@ -25,16 +24,11 @@ import PythonHS.Lexer.TokenType
         IfToken,
         ImportToken,
         MatchToken,
-        MinusAssignToken,
         NewlineToken,
         PassToken,
-        PercentAssignToken,
-        PlusAssignToken,
         PrintToken,
         RaiseToken,
         ReturnToken,
-        SlashAssignToken,
-        StarAssignToken,
         TryToken,
         WhileToken,
         WithToken,
@@ -44,6 +38,8 @@ import PythonHS.Lexer.TokenType
 import PythonHS.Parser.ParseAnnAssignStmt (parseAnnAssignStmt)
 import PythonHS.Parser.ParseAnnAssignStmtConfig (ParseAnnAssignStmtConfig (..))
 import PythonHS.Parser.ParseAssertStmt (parseAssertStmt)
+import PythonHS.Parser.ParseAugAssignStmt (parseAugAssignStmt)
+import PythonHS.Parser.ParseAugAssignStmtConfig (ParseAugAssignStmtConfig (..))
 import PythonHS.Parser.ParseClassStmt (parseClassStmt)
 import PythonHS.Parser.ParseClassStmtConfig (ParseClassStmtConfig (..))
 import PythonHS.Parser.ParseCompoundStmt (parseCompoundStmt)
@@ -59,6 +55,8 @@ import PythonHS.Parser.ParseMatchStmtConfig (ParseMatchStmtConfig (..))
 import PythonHS.Parser.ParseRaiseStmt (parseRaiseStmt)
 import PythonHS.Parser.ParseRaiseStmtConfig (ParseRaiseStmtConfig (..))
 import PythonHS.Parser.ParseResult (ParseResult (..))
+import PythonHS.Parser.ParseSubscriptAssignStmt (parseSubscriptAssignStmt)
+import PythonHS.Parser.ParseSubscriptAssignStmtConfig (ParseSubscriptAssignStmtConfig (..))
 import PythonHS.Parser.ParseSuite (parseSuite)
 import PythonHS.Parser.ParseSuiteConfig (ParseSuiteConfig (..))
 import PythonHS.Parser.ParseUnpackAssign (parseUnpackAssign)
@@ -72,6 +70,8 @@ parseStatement :: [Token] -> Either ParseError (ParseResult Stmt)
 parseStatement tokenStream =
   let parseSuiteWithStatements tokens = parseSuite (ParseSuiteConfig {parseSuiteStatement = parseStatement, parseSuiteTokenStream = tokens})
       compoundStmtConfig = ParseCompoundStmtConfig {parseCompoundStmtExpr = parseExpr, parseCompoundStmtStatement = parseStatement, parseCompoundStmtTokenStream = tokenStream}
+      augAssignConfig = ParseAugAssignStmtConfig {parseAugAssignStmtExpr = parseExpr, parseAugAssignStmtTokenStream = tokenStream}
+      subscriptAssignConfig = ParseSubscriptAssignStmtConfig {parseSubscriptAssignStmtExpr = parseExpr, parseSubscriptAssignStmtTokenStream = tokenStream}
    in case tokenStream of
         Token {tokenType = AtToken, position = pos} : _ ->
           parseDecoratedStmt (ParseDecoratedStmtConfig {parseDecoratedStmtExpr = parseExpr, parseDecoratedStmtStatement = parseStatement, parseDecoratedStmtPos = pos, parseDecoratedStmtTokenStream = tokenStream})
@@ -108,36 +108,6 @@ parseStatement tokenStream =
           let valueExpr = parseResultValue valueResult
               remaining = parseResultRemaining valueResult
           Right (ParseResult {parseResultValue = AssignStmt {assignStmtName = obj ++ "." ++ attr, assignStmtValue = valueExpr, assignStmtPos = pos}, parseResultRemaining = remaining})
-        Token {tokenType = IdentifierToken, lexeme = obj, position = pos} : Token {tokenType = DotToken} : Token {tokenType = IdentifierToken, lexeme = attr} : Token {tokenType = PlusAssignToken} : rest -> do
-          valueResult <- parseExpr rest
-          let valueExpr = parseResultValue valueResult
-              remaining = parseResultRemaining valueResult
-          Right (ParseResult {parseResultValue = AddAssignStmt {addAssignStmtName = obj ++ "." ++ attr, addAssignStmtValue = valueExpr, addAssignStmtPos = pos}, parseResultRemaining = remaining})
-        Token {tokenType = IdentifierToken, lexeme = obj, position = pos} : Token {tokenType = DotToken} : Token {tokenType = IdentifierToken, lexeme = attr} : Token {tokenType = MinusAssignToken} : rest -> do
-          valueResult <- parseExpr rest
-          let valueExpr = parseResultValue valueResult
-              remaining = parseResultRemaining valueResult
-          Right (ParseResult {parseResultValue = SubAssignStmt {subAssignStmtName = obj ++ "." ++ attr, subAssignStmtValue = valueExpr, subAssignStmtPos = pos}, parseResultRemaining = remaining})
-        Token {tokenType = IdentifierToken, lexeme = obj, position = pos} : Token {tokenType = DotToken} : Token {tokenType = IdentifierToken, lexeme = attr} : Token {tokenType = StarAssignToken} : rest -> do
-          valueResult <- parseExpr rest
-          let valueExpr = parseResultValue valueResult
-              remaining = parseResultRemaining valueResult
-          Right (ParseResult {parseResultValue = MulAssignStmt {mulAssignStmtName = obj ++ "." ++ attr, mulAssignStmtValue = valueExpr, mulAssignStmtPos = pos}, parseResultRemaining = remaining})
-        Token {tokenType = IdentifierToken, lexeme = obj, position = pos} : Token {tokenType = DotToken} : Token {tokenType = IdentifierToken, lexeme = attr} : Token {tokenType = SlashAssignToken} : rest -> do
-          valueResult <- parseExpr rest
-          let valueExpr = parseResultValue valueResult
-              remaining = parseResultRemaining valueResult
-          Right (ParseResult {parseResultValue = DivAssignStmt {divAssignStmtName = obj ++ "." ++ attr, divAssignStmtValue = valueExpr, divAssignStmtPos = pos}, parseResultRemaining = remaining})
-        Token {tokenType = IdentifierToken, lexeme = obj, position = pos} : Token {tokenType = DotToken} : Token {tokenType = IdentifierToken, lexeme = attr} : Token {tokenType = PercentAssignToken} : rest -> do
-          valueResult <- parseExpr rest
-          let valueExpr = parseResultValue valueResult
-              remaining = parseResultRemaining valueResult
-          Right (ParseResult {parseResultValue = ModAssignStmt {modAssignStmtName = obj ++ "." ++ attr, modAssignStmtValue = valueExpr, modAssignStmtPos = pos}, parseResultRemaining = remaining})
-        Token {tokenType = IdentifierToken, lexeme = obj, position = pos} : Token {tokenType = DotToken} : Token {tokenType = IdentifierToken, lexeme = attr} : Token {tokenType = DoubleSlashAssignToken} : rest -> do
-          valueResult <- parseExpr rest
-          let valueExpr = parseResultValue valueResult
-              remaining = parseResultRemaining valueResult
-          Right (ParseResult {parseResultValue = FloorDivAssignStmt {floorDivAssignStmtName = obj ++ "." ++ attr, floorDivAssignStmtValue = valueExpr, floorDivAssignStmtPos = pos}, parseResultRemaining = remaining})
         Token {tokenType = IdentifierToken, lexeme = firstName, position = pos} : Token {tokenType = CommaToken} : rest ->
           parseUnpackAssign (ParseUnpackAssignConfig {parseUnpackAssignFirstName = firstName, parseUnpackAssignPos = pos, parseUnpackAssignTokenStream = rest})
         Token {tokenType = IdentifierToken, lexeme = name, position = pos} : Token {tokenType = ColonToken} : rest ->
@@ -147,36 +117,6 @@ parseStatement tokenStream =
           let valueExpr = parseResultValue valueResult
               remaining = parseResultRemaining valueResult
           Right (ParseResult {parseResultValue = AssignStmt {assignStmtName = name, assignStmtValue = valueExpr, assignStmtPos = pos}, parseResultRemaining = remaining})
-        Token {tokenType = IdentifierToken, lexeme = name, position = pos} : Token {tokenType = PlusAssignToken} : rest -> do
-          valueResult <- parseExpr rest
-          let valueExpr = parseResultValue valueResult
-              remaining = parseResultRemaining valueResult
-          Right (ParseResult {parseResultValue = AddAssignStmt {addAssignStmtName = name, addAssignStmtValue = valueExpr, addAssignStmtPos = pos}, parseResultRemaining = remaining})
-        Token {tokenType = IdentifierToken, lexeme = name, position = pos} : Token {tokenType = MinusAssignToken} : rest -> do
-          valueResult <- parseExpr rest
-          let valueExpr = parseResultValue valueResult
-              remaining = parseResultRemaining valueResult
-          Right (ParseResult {parseResultValue = SubAssignStmt {subAssignStmtName = name, subAssignStmtValue = valueExpr, subAssignStmtPos = pos}, parseResultRemaining = remaining})
-        Token {tokenType = IdentifierToken, lexeme = name, position = pos} : Token {tokenType = StarAssignToken} : rest -> do
-          valueResult <- parseExpr rest
-          let valueExpr = parseResultValue valueResult
-              remaining = parseResultRemaining valueResult
-          Right (ParseResult {parseResultValue = MulAssignStmt {mulAssignStmtName = name, mulAssignStmtValue = valueExpr, mulAssignStmtPos = pos}, parseResultRemaining = remaining})
-        Token {tokenType = IdentifierToken, lexeme = name, position = pos} : Token {tokenType = SlashAssignToken} : rest -> do
-          valueResult <- parseExpr rest
-          let valueExpr = parseResultValue valueResult
-              remaining = parseResultRemaining valueResult
-          Right (ParseResult {parseResultValue = DivAssignStmt {divAssignStmtName = name, divAssignStmtValue = valueExpr, divAssignStmtPos = pos}, parseResultRemaining = remaining})
-        Token {tokenType = IdentifierToken, lexeme = name, position = pos} : Token {tokenType = PercentAssignToken} : rest -> do
-          valueResult <- parseExpr rest
-          let valueExpr = parseResultValue valueResult
-              remaining = parseResultRemaining valueResult
-          Right (ParseResult {parseResultValue = ModAssignStmt {modAssignStmtName = name, modAssignStmtValue = valueExpr, modAssignStmtPos = pos}, parseResultRemaining = remaining})
-        Token {tokenType = IdentifierToken, lexeme = name, position = pos} : Token {tokenType = DoubleSlashAssignToken} : rest -> do
-          valueResult <- parseExpr rest
-          let valueExpr = parseResultValue valueResult
-              remaining = parseResultRemaining valueResult
-          Right (ParseResult {parseResultValue = FloorDivAssignStmt {floorDivAssignStmtName = name, floorDivAssignStmtValue = valueExpr, floorDivAssignStmtPos = pos}, parseResultRemaining = remaining})
         Token {tokenType = IfToken} : _ -> parseCompoundStmt compoundStmtConfig
         Token {tokenType = TryToken} : _ -> parseCompoundStmt compoundStmtConfig
         Token {tokenType = MatchToken, position = pos} : rest ->
@@ -189,8 +129,14 @@ parseStatement tokenStream =
         Token {tokenType = ClassToken, position = posClass} : Token {tokenType = IdentifierToken, lexeme = name} : rest ->
           parseClassStmt (ParseClassStmtConfig {parseClassStmtSuite = parseSuiteWithStatements, parseClassStmtPos = posClass, parseClassStmtName = name, parseClassStmtTokenStream = rest})
         Token {tokenType = IdentifierToken, position = pos} : _ ->
-          case parseExprStatement tokenStream of
-            Just statementResult -> Right statementResult
-            Nothing -> Left (ExpectedAssignAfterIdentifier {parseErrorPosition = pos})
+          case parseAugAssignStmt augAssignConfig of
+            Just statementResult -> statementResult
+            Nothing ->
+              case parseSubscriptAssignStmt subscriptAssignConfig of
+                Just statementResult -> statementResult
+                Nothing ->
+                  case parseExprStatement tokenStream of
+                    Just statementResult -> Right statementResult
+                    Nothing -> Left (ExpectedAssignAfterIdentifier {parseErrorPosition = pos})
         tok : _ -> Left (ExpectedExpression {parseErrorPosition = position tok})
         [] -> Left (ExpectedExpression {parseErrorPosition = Position {line = 0, column = 0}})

@@ -160,6 +160,9 @@ library
     , PythonHS.Parser.ParsePrimaryConfig
     , PythonHS.Parser.ParseAnnAssignStmt
     , PythonHS.Parser.ParseAnnAssignStmtConfig
+    , PythonHS.Parser.ParseAugAssignOperator
+    , PythonHS.Parser.ParseAugAssignStmt
+    , PythonHS.Parser.ParseAugAssignStmtConfig
     , PythonHS.Parser.ParseCallArgument
     , PythonHS.Parser.ParseCallArgumentConfig
     , PythonHS.Parser.ParseCallArgumentResult
@@ -173,6 +176,8 @@ library
     , PythonHS.Parser.ParseParenTupleConfig
     , PythonHS.Parser.ParseSubscriptExpr
     , PythonHS.Parser.ParseSubscriptExprConfig
+    , PythonHS.Parser.ParseSubscriptAssignStmt
+    , PythonHS.Parser.ParseSubscriptAssignStmtConfig
     , PythonHS.Parser.ParseLambdaExpr
     , PythonHS.Parser.ParseWalrusExpr
     , PythonHS.Parser.ExprPos
@@ -318,6 +323,8 @@ library
     , PythonHS.VM.ExecutePrintTopConfig
     , PythonHS.VM.SplitByDot
     , PythonHS.VM.GetitemValue
+    , PythonHS.VM.SetitemValue
+    , PythonHS.VM.SetitemValueConfig
     , PythonHS.VM.SliceValue
     , PythonHS.VM.CallMathBuiltin
     , PythonHS.VM.CallNumericBuiltin
@@ -331,6 +338,10 @@ library
       , PythonHS.VM.CompileClassDefStmt
       , PythonHS.VM.CompileClassStmt
     , PythonHS.VM.CompileCompoundAssign
+    , PythonHS.VM.CompileRaiseStmt
+    , PythonHS.VM.CompileRaiseStmtConfig
+    , PythonHS.VM.CompileSubscriptAssign
+    , PythonHS.VM.CompileSubscriptAssignConfig
     , PythonHS.VM.CompileDecoratorApplications
     , PythonHS.VM.ToCallArg
     , PythonHS.VM.ToCallArgInput
@@ -615,6 +626,7 @@ test-suite python-hs-test
     , Test.VM.RunSourceVmPart23Spec
     , Test.VM.RunSourceVmPart24Spec
     , Test.VM.RunSourceVmPart25Spec
+    , Test.VM.RunSourceVmPart26Spec
     , Test.VM.RunInstructionsSpec
     , Test.Structure.CheckStructureSpec
     , Test.Structure.DetectPositionalArgsSpec
