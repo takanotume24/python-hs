@@ -7,6 +7,8 @@ import PythonHS.Evaluator.ModuleAttr (ModuleAttr (..))
 import PythonHS.Evaluator.ShowPos (showPos)
 import PythonHS.Evaluator.Value (Value (..))
 import PythonHS.VM.CompileExprResult (CompileExprResult (..))
+import PythonHS.VM.CompileFromStdlibImport (compileFromStdlibImport)
+import PythonHS.VM.CompileFromStdlibImportConfig (CompileFromStdlibImportConfig (..))
 import PythonHS.VM.CompileImportStmtConfig (CompileImportStmtConfig (..))
 import PythonHS.VM.CompiledCallArg (CompiledCallArg (..))
 import PythonHS.VM.Instruction (Instruction (..))
@@ -70,7 +72,9 @@ compileImportStmt config = case stmt of
       | modulePath == ["dataclasses"] =
           compileFromDataclassesItems currentBaseIndex importedNames pos
       | otherwise =
-          Left ("Import error: unsupported module " ++ joinModulePath modulePath ++ " at " ++ showPos pos)
+          case compileFromStdlibImport CompileFromStdlibImportConfig {compileFromStdlibImportBaseIndex = currentBaseIndex, compileFromStdlibImportModulePath = modulePath, compileFromStdlibImportImportedNames = importedNames, compileFromStdlibImportPos = pos} of
+            Just result -> result
+            Nothing -> Left ("Import error: unsupported module " ++ joinModulePath modulePath ++ " at " ++ showPos pos)
 
     compileFromMathItems currentBaseIndex moduleAlias importedNames pos =
       case importedNames of

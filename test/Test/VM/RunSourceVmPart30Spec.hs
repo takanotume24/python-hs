@@ -82,6 +82,25 @@ spec = describe "runSourceVm (vm mvp) - part 30" $ do
         result <- runIn dir "import middle\nprint middle.two()\n"
         result `shouldBe` Right ["2"]
 
+  describe "standard module from-import" $ do
+    it "imports os.getcwd" $ do
+      runSourceVm "from os import getcwd\nprint getcwd()\n" `shouldBe` Right ["."]
+
+    it "imports os.path as a module value" $ do
+      runSourceVm "from os import path\nprint path\n" `shouldBe` Right ["<module:os.path>"]
+
+    it "imports json functions" $ do
+      runSourceVm "from json import dumps, loads\nprint dumps(1)\nprint loads(\"1\")\n" `shouldBe` Right ["1", "1"]
+
+    it "imports pathlib.Path" $ do
+      runSourceVm "from pathlib import Path\nprint Path(\"a/b\")\n" `shouldBe` Right ["a/b"]
+
+    it "supports aliases for standard module members" $ do
+      runSourceVm "from json import dumps as d\nprint d(2)\n" `shouldBe` Right ["2"]
+
+    it "reports an unsupported standard module member" $ do
+      runSourceVm "from os import missing\n" `shouldBe` Left "Import error: unsupported module member missing at 1:1"
+
   describe "import errors" $ do
     it "reports a missing top-level module" $
       withSystemTempDirectory "vm-local-missing-module" $ \dir -> do

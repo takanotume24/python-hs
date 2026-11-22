@@ -745,7 +745,7 @@
 - [x] `import pkg.sub` / `from pkg import name` の解決を回帰テストで固定する
 - [x] 未解決モジュール・循環 import のエラー規約をテストで固定する
 - [x] 既存の `math` / `dataclasses` / ローカル package テストが壊れないことを確認する
-- 完了: `RunSourceVmPart30Spec`（15 examples）。同一名の `.py` と package が並ぶ場合は CPython と同じく package を優先するよう `findModuleFile` の探索順を修正。ローカルモジュール・package・循環 import・未解決エラーの規約を回帰で固定。
+- 完了: `RunSourceVmPart30Spec`（21 examples）。同一名の `.py` と package が並ぶ場合は CPython と同じく package を優先するよう `findModuleFile` の探索順を修正。ローカルモジュール・package・循環 import・未解決エラーの規約を回帰で固定。あわせて `from os import getcwd, path` / `from json import dumps, loads` / `from pathlib import Path` を標準モジュールの from-import として解決。
 
 ### 優先順位とリスク
 - 優先順: P121 → P122 → P123 → P124 → P125

@@ -14,9 +14,18 @@ callStdlibBuiltin config = case name of
   "getattr" -> Just (evalGetattr args pos)
   _ -> Nothing
   where
-    name = callStdlibBuiltinName config
+    name = normalizeName (callStdlibBuiltinName config)
     args = callStdlibBuiltinArgs config
     pos = callStdlibBuiltinPos config
+
+    normalizeName rawName =
+      case rawName of
+        "__python_hs_stdlib_dumps" -> "dumps"
+        "__python_hs_stdlib_loads" -> "loads"
+        "__python_hs_stdlib_Path" -> "Path"
+        "__python_hs_stdlib_getcwd" -> "getcwd"
+        "__python_hs_stdlib_getattr" -> "getattr"
+        _ -> rawName
     evalJsonDumps values =
       case values of
         [ModuleValue {moduleValueName = moduleName}, IntValue {intValue = n}]

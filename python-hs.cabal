@@ -375,6 +375,7 @@ library
     , PythonHS.VM.CompileComparisonChainBodyResult
       , PythonHS.VM.CompileExprItemsAt
       , PythonHS.VM.CompileExprResult
+    , PythonHS.VM.CompileFromStdlibImport
     , PythonHS.VM.CompileImportStmt
     , PythonHS.VM.CompileLogicalExpr
     , PythonHS.VM.CompileMatch
@@ -475,6 +476,7 @@ library
     , PythonHS.VM.CompileExprAtConfig
     , PythonHS.VM.CompileExprItemsAtConfig
     , PythonHS.VM.CompileFunctionDefStmtConfig
+    , PythonHS.VM.CompileFromStdlibImportConfig
     , PythonHS.VM.CompileImportStmtConfig
     , PythonHS.VM.CompileLogicalExprConfig
     , PythonHS.VM.CompileMatchConfig
