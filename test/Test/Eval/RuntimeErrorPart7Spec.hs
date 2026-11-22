@@ -108,6 +108,7 @@ spec = describe "runtime error reporting - part 7" $ do
             WhileStmt
               (BinaryExpr LtOperator (IdentifierExpr "x" (Position 28 7)) (IntegerExpr 2000 (Position 28 11)) (Position 28 9))
               [AssignStmt "x" (BinaryExpr AddOperator (IdentifierExpr "x" (Position 29 5)) (IntegerExpr 1 (Position 29 9)) (Position 29 7)) (Position 29 1)]
+              Nothing
               (Position 28 1),
             PrintStmt (IdentifierExpr "x" (Position 30 7)) (Position 30 1)
           ]
@@ -120,6 +121,7 @@ spec = describe "runtime error reporting - part 7" $ do
               "i"
               (CallExpr "range" [IntegerExpr 2000 (Position 31 17)] (Position 31 10))
               [PassStmt (Position 32 1)]
+              Nothing
               (Position 31 1),
             PrintStmt (IntegerExpr 1 (Position 33 7)) (Position 33 1)
           ]
@@ -132,6 +134,7 @@ spec = describe "runtime error reporting - part 7" $ do
             WhileStmt
               (BinaryExpr LtOperator (IdentifierExpr "x" (Position 35 7)) (IntegerExpr 2001 (Position 35 11)) (Position 35 9))
               [AssignStmt "x" (BinaryExpr AddOperator (IdentifierExpr "x" (Position 36 5)) (IntegerExpr 1 (Position 36 9)) (Position 36 7)) (Position 36 1)]
+              Nothing
               (Position 35 1)
           ]
       )
@@ -143,6 +146,7 @@ spec = describe "runtime error reporting - part 7" $ do
               "i"
               (CallExpr "range" [IntegerExpr 2001 (Position 37 17)] (Position 37 10))
               [PassStmt (Position 38 1)]
+              Nothing
               (Position 37 1)
           ]
       )
@@ -151,7 +155,7 @@ spec = describe "runtime error reporting - part 7" $ do
   it "reports for-loop iterable type error clearly" $ do
     evalProgram
       ( Program
-          [ ForStmt "i" (StringExpr "abc" (Position 21 10)) [PrintStmt (IdentifierExpr "i" (Position 21 22)) (Position 21 16)] (Position 21 1)
+          [ ForStmt "i" (StringExpr "abc" (Position 21 10)) [PrintStmt (IdentifierExpr "i" (Position 21 22)) (Position 21 16)] Nothing (Position 21 1)
           ]
       )
       `shouldBe` Left "Type error: for expects iterable (int range, list, or dict) at 21:10"

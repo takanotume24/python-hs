@@ -18,6 +18,8 @@ import PythonHS.VM.CompileDeleteSubscriptConfig (CompileDeleteSubscriptConfig (.
 import PythonHS.VM.CompileExprAt (compileExprAt)
 import PythonHS.VM.CompileExprAtConfig (CompileExprAtConfig (..))
 import PythonHS.VM.CompileExprResult (CompileExprResult (..))
+import PythonHS.VM.CompileForStmt (compileForStmt)
+import PythonHS.VM.CompileForStmtConfig (CompileForStmtConfig (..))
 import PythonHS.VM.CompileFunctionDefStmt (compileFunctionDefStmt)
 import PythonHS.VM.CompileFunctionDefStmtConfig (CompileFunctionDefStmtConfig (..))
 import PythonHS.VM.CompileImportStmt (compileImportStmt)
@@ -30,11 +32,12 @@ import PythonHS.VM.CompileSubscriptAssign (compileSubscriptAssign)
 import PythonHS.VM.CompileSubscriptAssignConfig (CompileSubscriptAssignConfig (..))
 import PythonHS.VM.CompileTryExcept (compileTryExcept)
 import PythonHS.VM.CompileTryExceptConfig (CompileTryExceptConfig (..))
+import PythonHS.VM.CompileWhileStmt (compileWhileStmt)
+import PythonHS.VM.CompileWhileStmtConfig (CompileWhileStmtConfig (..))
 import PythonHS.VM.CompileWithStmt (compileWithStmt)
 import PythonHS.VM.CompileWithStmtConfig (CompileWithStmtConfig (..))
 import PythonHS.VM.CompileYieldCollectStmt (compileYieldCollectStmt)
 import PythonHS.VM.CompileYieldCollectStmtConfig (CompileYieldCollectStmtConfig (..))
-import PythonHS.VM.ExprPosition (exprPosition)
 import PythonHS.VM.FunctionDefStmtResult (FunctionDefStmtResult (..))
 import PythonHS.VM.Instruction (Instruction (..))
 import PythonHS.VM.LoopContext (LoopContext (..))
@@ -125,37 +128,10 @@ compileProgram Program {programStmts = stmts} = do
               elseResult <- compileStatements elseStartIndex inFunction maybeLoop elseStmts
               let code = compileExprResultCode condResult ++ [JumpIfFalse {jumpIfFalseTarget = elseStartIndex}] ++ compileExprResultCode thenResult ++ [Jump {jumpTarget = compileExprResultEndIndex elseResult}] ++ compileExprResultCode elseResult
               pure (CompileExprResult {compileExprResultCode = code, compileExprResultEndIndex = compileExprResultEndIndex elseResult})
-        WhileStmt {whileStmtCond = cond, whileStmtBody = body, whileStmtPos = whilePos} -> do
-          let loopStartIndex = baseIndex + 1
-          condResult <- compileExprAt' loopStartIndex cond
-          let jumpIfFalseIndex = compileExprResultEndIndex condResult
-              bodyStartIndex = jumpIfFalseIndex + 1
-              guardIndex = bodyStartIndex
-              firstBodyStmtIndex = guardIndex + 1
-              provisionalLoopContext = Just LoopContext {loopContextBreakTarget = 0, loopContextContinueTarget = loopStartIndex}
-          provisionalBodyResult <- compileStatements firstBodyStmtIndex inFunction provisionalLoopContext body
-          let loopEndIndex = compileExprResultEndIndex provisionalBodyResult + 1
-              breakTarget = loopEndIndex + 1
-              loopContext = Just LoopContext {loopContextBreakTarget = breakTarget, loopContextContinueTarget = loopStartIndex}
-          bodyResult <- compileStatements firstBodyStmtIndex inFunction loopContext body
-          let code = [PushLoopBoundary] ++ compileExprResultCode condResult ++ [JumpIfFalse {jumpIfFalseTarget = loopEndIndex}, LoopGuard {loopGuardPos = whilePos}] ++ compileExprResultCode bodyResult ++ [Jump {jumpTarget = loopStartIndex}, PopLoopBoundary]
-          pure (CompileExprResult {compileExprResultCode = code, compileExprResultEndIndex = breakTarget})
-        ForStmt {forStmtVar = name, forStmtIter = iterExpr, forStmtBody = body, forStmtPos = forPos} -> do
-          let loopStartIndex = baseIndex + 1
-          iterResult <- compileExprAt' loopStartIndex iterExpr
-          let setupIndex = compileExprResultEndIndex iterResult
-              nextIndex = setupIndex + 1
-              guardIndex = nextIndex + 1
-              bodyStartIndex = guardIndex + 1
-              provisionalLoopContext = Just LoopContext {loopContextBreakTarget = 0, loopContextContinueTarget = nextIndex}
-          provisionalBodyResult <- compileStatements bodyStartIndex inFunction provisionalLoopContext body
-          let loopEndIndex = compileExprResultEndIndex provisionalBodyResult + 1
-              breakTarget = loopEndIndex + 1
-              loopContext = Just LoopContext {loopContextBreakTarget = breakTarget, loopContextContinueTarget = nextIndex}
-          bodyResult <- compileStatements bodyStartIndex inFunction loopContext body
-          let iterPos = exprPosition iterExpr
-              code = [PushLoopBoundary] ++ compileExprResultCode iterResult ++ [ForSetup {forSetupNextIndex = nextIndex, forSetupPos = iterPos}, ForNext {forNextName = name, forNextLoopEndIndex = loopEndIndex, forNextPos = iterPos}, LoopGuard {loopGuardPos = forPos}] ++ compileExprResultCode bodyResult ++ [Jump {jumpTarget = nextIndex}, PopLoopBoundary]
-          pure (CompileExprResult {compileExprResultCode = code, compileExprResultEndIndex = breakTarget})
+        WhileStmt {whileStmtCond = cond, whileStmtBody = body, whileStmtElse = maybeElse, whileStmtPos = whilePos} ->
+          compileWhileStmt CompileWhileStmtConfig {compileWhileStmtCompileExpr = compileExprAt', compileWhileStmtCompileStatements = compileStatements, compileWhileStmtBaseIndex = baseIndex, compileWhileStmtInFunction = inFunction, compileWhileStmtCond = cond, compileWhileStmtBody = body, compileWhileStmtMaybeElse = maybeElse, compileWhileStmtPos = whilePos}
+        ForStmt {forStmtVar = name, forStmtIter = iterExpr, forStmtBody = body, forStmtElse = maybeElse, forStmtPos = forPos} ->
+          compileForStmt CompileForStmtConfig {compileForStmtCompileExpr = compileExprAt', compileForStmtCompileStatements = compileStatements, compileForStmtBaseIndex = baseIndex, compileForStmtInFunction = inFunction, compileForStmtName = name, compileForStmtIter = iterExpr, compileForStmtBody = body, compileForStmtMaybeElse = maybeElse, compileForStmtPos = forPos}
         ClassDefStmt {classDefStmtName = className, classDefStmtBase = maybeBase, classDefStmtBody = body} -> compileClassDefStmt CompileClassDefStmtConfig {compileClassDefStmtCompileDefaults = \ce ds -> compileDefaults CompileDefaultsConfig {compileDefaultsCompileExpr = ce, compileDefaultsDefaults = ds}, compileClassDefStmtCompileStatements = compileStatements, compileClassDefStmtCompileExpr = compileExprAt', compileClassDefStmtBaseIndex = baseIndex, compileClassDefStmtClassName = className, compileClassDefStmtMaybeBase = maybeBase, compileClassDefStmtBody = body, compileClassDefStmtMaybeDataclass = Nothing}
         FunctionDefStmt {functionDefStmtName = name, functionDefStmtParams = params, functionDefStmtBody = body, functionDefStmtPos = posDef} ->
           let functionGlobalDecls = collectFunctionGlobalStmtDecls body

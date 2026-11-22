@@ -120,6 +120,7 @@ spec = describe "evalProgram - part 3" $ do
               [ PrintStmt (IdentifierExpr "x" (Position 0 0)) (Position 0 0),
                 AssignStmt "x" (BinaryExpr AddOperator (IdentifierExpr "x" (Position 0 0)) (IntegerExpr 1 (Position 0 0)) (Position 0 0)) (Position 0 0)
               ]
+              Nothing
               (Position 0 0)
           ]
       )
@@ -135,6 +136,7 @@ spec = describe "evalProgram - part 3" $ do
                 ContinueStmt (Position 0 0),
                 PrintStmt (IntegerExpr 999 (Position 0 0)) (Position 0 0)
               ]
+              Nothing
               (Position 0 0),
             PrintStmt (IdentifierExpr "x" (Position 0 0)) (Position 0 0)
           ]
@@ -149,6 +151,7 @@ spec = describe "evalProgram - part 3" $ do
               [ AssignStmt "x" (BinaryExpr AddOperator (IdentifierExpr "x" (Position 0 0)) (IntegerExpr 1 (Position 0 0)) (Position 0 0)) (Position 0 0),
                 BreakStmt (Position 0 0)
               ]
+              Nothing
               (Position 0 0),
             PrintStmt (IdentifierExpr "x" (Position 0 0)) (Position 0 0)
           ]
@@ -158,7 +161,7 @@ spec = describe "evalProgram - part 3" $ do
   it "supports for loop with range builtin" $ do
     evalProgram
       ( Program
-          [ ForStmt "i" (CallExpr "range" [IntegerExpr 3 (Position 0 0)] (Position 0 0)) [PrintStmt (IdentifierExpr "i" (Position 0 0)) (Position 0 0)] (Position 0 0)
+          [ ForStmt "i" (CallExpr "range" [IntegerExpr 3 (Position 0 0)] (Position 0 0)) [PrintStmt (IdentifierExpr "i" (Position 0 0)) (Position 0 0)] Nothing (Position 0 0)
           ]
       )
       `shouldBe` Right ["0", "1", "2"]
@@ -170,6 +173,7 @@ spec = describe "evalProgram - part 3" $ do
               "i"
               (ListExpr [IntegerExpr 10 (Position 0 0), IntegerExpr 20 (Position 0 0)] (Position 0 0))
               [PrintStmt (IdentifierExpr "i" (Position 0 0)) (Position 0 0)]
+              Nothing
               (Position 0 0)
           ]
       )
@@ -182,6 +186,7 @@ spec = describe "evalProgram - part 3" $ do
               "k"
               (DictExpr [DictEntry {dictEntryKey = IntegerExpr 3 (Position 0 0), dictEntryValue = IntegerExpr 30 (Position 0 0)}, DictEntry {dictEntryKey = IntegerExpr 1 (Position 0 0), dictEntryValue = IntegerExpr 10 (Position 0 0)}] (Position 0 0))
               [PrintStmt (IdentifierExpr "k" (Position 0 0)) (Position 0 0)]
+              Nothing
               (Position 0 0)
           ]
       )

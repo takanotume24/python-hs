@@ -22,9 +22,7 @@ import PythonHS.Parser.ParseResult (ParseResult (..))
 
 processSubmission :: ProcessSubmissionConfig -> Either String SubmissionResult
 processSubmission config =
-  let env = processSubmissionEnv config
-      fenv = processSubmissionFuncEnv config
-      src = processSubmissionSrc config
+  let src = processSubmissionSrc config
    in case scanTokens src of
         Left lexErr -> Left (show lexErr)
         Right tokens ->

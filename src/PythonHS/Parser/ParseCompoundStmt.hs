@@ -77,9 +77,10 @@ parseCompoundStmt config =
           case afterCond of
             Token {tokenType = ColonToken} : afterColon -> do
               suiteResult <- parseSuiteWithStatements afterColon
+              elseResult <- parseElseSuiteTail (parseResultRemaining suiteResult)
               let bodySuite = parseResultValue suiteResult
-                  finalRest = parseResultRemaining suiteResult
-              Right (ParseResult {parseResultValue = WhileStmt {whileStmtCond = cond, whileStmtBody = bodySuite, whileStmtPos = pos}, parseResultRemaining = finalRest})
+                  finalRest = parseResultRemaining elseResult
+              Right (ParseResult {parseResultValue = WhileStmt {whileStmtCond = cond, whileStmtBody = bodySuite, whileStmtElse = parseResultValue elseResult, whileStmtPos = pos}, parseResultRemaining = finalRest})
             Token {position = pos'} : _ -> Left (ExpectedExpression {parseErrorPosition = pos'})
             _ -> Left (ExpectedExpression {parseErrorPosition = Position {line = 0, column = 0}})
         Token {tokenType = ForToken, position = pos} : Token {tokenType = IdentifierToken, lexeme = firstName} : afterFirstTarget -> do
@@ -94,9 +95,10 @@ parseCompoundStmt config =
               case afterIter of
                 Token {tokenType = ColonToken} : afterColon -> do
                   suiteResult <- parseSuiteWithStatements afterColon
+                  elseResult <- parseElseSuiteTail (parseResultRemaining suiteResult)
                   let bodySuite = desugarForTargets pos targets (parseResultValue suiteResult)
-                      finalRest = parseResultRemaining suiteResult
-                  Right (ParseResult {parseResultValue = ForStmt {forStmtVar = forLoopVariable targets, forStmtIter = iterExpr, forStmtBody = bodySuite, forStmtPos = pos}, parseResultRemaining = finalRest})
+                      finalRest = parseResultRemaining elseResult
+                  Right (ParseResult {parseResultValue = ForStmt {forStmtVar = forLoopVariable targets, forStmtIter = iterExpr, forStmtBody = bodySuite, forStmtElse = parseResultValue elseResult, forStmtPos = pos}, parseResultRemaining = finalRest})
                 Token {position = pos'} : _ -> Left (ExpectedExpression {parseErrorPosition = pos'})
                 _ -> Left (ExpectedExpression {parseErrorPosition = Position {line = 0, column = 0}})
             Token {position = pos'} : _ -> Left (ExpectedExpression {parseErrorPosition = pos'})

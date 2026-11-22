@@ -3,7 +3,7 @@ module PythonHS.VM.ExecuteCallFunction (executeCallFunction) where
 import Data.Map.Strict qualified as Map
 import Data.Set qualified as Set
 import PythonHS.Evaluator.ShowPos (showPos)
-import PythonHS.Evaluator.Value (Value (ClassValue, FunctionRefValue, InstanceValue, IntValue))
+import PythonHS.Evaluator.Value (Value (ClassValue, FunctionRefValue, InstanceValue, IntValue, NoneValue))
 import PythonHS.Lexer.Position (Position)
 import PythonHS.VM.BindCallArguments (bindCallArguments)
 import PythonHS.VM.BindDefaults (bindDefaults)
@@ -27,6 +27,7 @@ import PythonHS.VM.Instruction (Instruction)
 import PythonHS.VM.KeywordArgInfo (KeywordArgInfo (..))
 import PythonHS.VM.LookupName (lookupName)
 import PythonHS.VM.LoopState (LoopState (..))
+import PythonHS.VM.MethodContextBindings (methodContextBindings)
 import PythonHS.VM.MethodKind (MethodKind (..))
 import PythonHS.VM.MethodNamePair (MethodNamePair (..))
 import PythonHS.VM.VMState (VMState (..))
@@ -118,7 +119,7 @@ executeCallFunction execute isTopLevel fname compiledArgs pos stack globalsEnv l
                               case findMethodFunctionName globalsAfterArgs localEnv className fname of
                                 Just methodPair ->
                                   let methodArgs = methodArgsForInstanceCall methodPair className instanceArg restArgs globalsAfterArgs localEnv
-                                      methodBindings = instanceMethodBindings methodPair instanceArg
+                                      methodBindings = instanceMethodBindings className methodPair instanceArg
                                    in executeCallUserFunction execute isTopLevel pos stack localEnv (methodNamePairMangled methodPair) methodBindings methodArgs globalsAfterArgs functionsAfterArgs outputsAfterArgs
                                 Nothing -> builtinFallback
                             _ -> builtinFallback
@@ -138,10 +139,10 @@ executeCallFunction execute isTopLevel fname compiledArgs pos stack globalsEnv l
             _ -> restArgs
         InstanceMethod -> instanceArg : restArgs
 
-    instanceMethodBindings methodPair instanceArg =
+    instanceMethodBindings className methodPair instanceArg =
       case methodNamePairKind methodPair of
-        InstanceMethod -> Just [("__python_hs_bound_self__", instanceArg)]
-        _ -> Nothing
+        InstanceMethod -> Just (methodContextBindings className instanceArg ++ [("__python_hs_bound_self__", instanceArg)])
+        _ -> Just (methodContextBindings className NoneValue)
 
     isBuiltinName name =
       case callBuiltin CallBuiltinConfig {callBuiltinName = name, callBuiltinArgs = [], callBuiltinPos = pos} of

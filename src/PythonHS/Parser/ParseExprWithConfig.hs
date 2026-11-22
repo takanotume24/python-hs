@@ -24,11 +24,12 @@ import PythonHS.Lexer.TokenType
         StarToken
       ),
   )
-import PythonHS.Parser.ExprPos (exprPos)
 import PythonHS.Parser.ParseBitwiseExpr (parseBitwiseExpr)
 import PythonHS.Parser.ParseBitwiseExprConfig (ParseBitwiseExprConfig (..))
 import PythonHS.Parser.ParseComparisonItem (ParseComparisonItem (..))
-import PythonHS.Parser.ParseError (ParseError)
+import PythonHS.Parser.ParseConditionalExpr (parseConditionalExpr)
+import PythonHS.Parser.ParseConditionalExprConfig (ParseConditionalExprConfig (..))
+import PythonHS.Parser.ParseError (ParseError (..))
 import PythonHS.Parser.ParseExprConfig (ParseExprConfig (..))
 import PythonHS.Parser.ParseLambdaExpr (parseLambdaExpr)
 import PythonHS.Parser.ParseLambdaExprConfig (ParseLambdaExprConfig (..))
@@ -41,10 +42,18 @@ import PythonHS.Parser.ParseWalrusExpr (parseWalrusExpr)
 import PythonHS.Parser.ParseWalrusExprConfig (ParseWalrusExprConfig (..))
 
 parseExprWithConfig :: ParseExprConfig -> Either ParseError (ParseResult Expr)
-parseExprWithConfig config = parseLambdaExpr (ParseLambdaExprConfig {lambdaExprFallback = \ts -> parseWalrusExpr (ParseWalrusExprConfig {walrusExprFallback = parseOr, walrusExprTokens = ts}), lambdaExprTokens = tokens})
+parseExprWithConfig config = parseConditional tokens
   where
     allowBitwiseOr = parseExprConfigAllowBitwiseOr config
     tokens = parseExprConfigTokens config
+
+    parseConditional tokenStream =
+      parseConditionalExpr
+        ParseConditionalExprConfig
+          { parseConditionalExprBase = \ts -> parseLambdaExpr (ParseLambdaExprConfig {lambdaExprFallback = \fallbackTokens -> parseWalrusExpr (ParseWalrusExprConfig {walrusExprFallback = parseOr, walrusExprTokens = fallbackTokens}), lambdaExprTokens = ts}),
+            parseConditionalExprCondition = parseOr,
+            parseConditionalExprTokens = tokenStream
+          }
     parseOr ts = do
       andResult <- parseAnd ts
       let left = parseResultValue andResult
@@ -89,7 +98,7 @@ parseExprWithConfig config = parseLambdaExpr (ParseLambdaExprConfig {lambdaExprF
         [] -> Right (ParseResult {parseResultValue = left, parseResultRemaining = remaining})
         [ParseComparisonItem {parseComparisonItemOp = op, parseComparisonItemExpr = right, parseComparisonItemPos = pos}] -> Right (ParseResult {parseResultValue = BinaryExpr {binaryExprOp = op, binaryExprLeft = left, binaryExprRight = right, binaryExprPos = pos}, parseResultRemaining = remaining})
         _ ->
-          let firstPos = case items of [] -> exprPos left; firstItem : _ -> parseComparisonItemPos firstItem
+          let firstPos = case items of firstItem : _ -> parseComparisonItemPos firstItem
            in Right (ParseResult {parseResultValue = ComparisonChainExpr {comparisonChainLeft = left, comparisonChainOps = map parseComparisonItemOp items, comparisonChainRights = map parseComparisonItemExpr items, comparisonChainPos = firstPos}, parseResultRemaining = remaining})
 
     parseComparisonOperand ts = if allowBitwiseOr then parseBitwiseExpr ParseBitwiseExprConfig {parseBitwiseExprConfigNextParser = parseAdd, parseBitwiseExprConfigTokens = ts} else parseAdd ts

@@ -23,7 +23,7 @@ collectFunctionLocalDecls params stmts globalDecls =
         AnnAssignStmt {annAssignStmtName = name} -> addSimpleName name
         AssignUnpackStmt {assignUnpackStmtNames = names} -> Set.fromList (filter (not . isAttrPath) names)
         DeleteStmt {deleteStmtTarget = target} -> addSimpleName target
-        ForStmt {forStmtVar = name, forStmtBody = body} -> Set.insert name (foldMap collectFromStmt body)
+        ForStmt {forStmtVar = name, forStmtBody = body, forStmtElse = maybeElse} -> Set.union (Set.insert name (foldMap collectFromStmt body)) (maybe Set.empty (foldMap collectFromStmt) maybeElse)
         WithStmt {withStmtVarName = maybeName, withStmtBody = body} ->
           let fromName = maybe Set.empty Set.singleton maybeName
            in Set.union fromName (foldMap collectFromStmt body)
@@ -31,7 +31,7 @@ collectFunctionLocalDecls params stmts globalDecls =
           let fromThen = foldMap collectFromStmt thenBranch
               fromElse = maybe Set.empty (foldMap collectFromStmt) maybeElse
            in Set.union fromThen fromElse
-        WhileStmt {whileStmtBody = body} -> foldMap collectFromStmt body
+        WhileStmt {whileStmtBody = body, whileStmtElse = maybeElse} -> Set.union (foldMap collectFromStmt body) (maybe Set.empty (foldMap collectFromStmt) maybeElse)
         TryExceptStmt {tryExceptStmtTryBody = tryBody, tryExceptStmtExceptSuites = exceptSuites, tryExceptStmtElseBody = maybeElse, tryExceptStmtFinallyBody = maybeFinally} ->
           let fromTry = foldMap collectFromStmt tryBody
               fromElse = maybe Set.empty (foldMap collectFromStmt) maybeElse

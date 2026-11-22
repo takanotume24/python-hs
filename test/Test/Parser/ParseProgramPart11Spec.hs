@@ -191,4 +191,4 @@ spec = describe "parseProgram - part 11" $ do
         Token NewlineToken "\\n" (Position 1 20),
         Token EOFToken "" (Position 2 1)
       ]
-      `shouldBe` Right (Program [ForStmt "i" (IntegerExpr 3 (Position 1 10)) [PrintStmt (IdentifierExpr "i" (Position 1 19)) (Position 1 13)] (Position 1 1)])
+      `shouldBe` Right (Program [ForStmt "i" (IntegerExpr 3 (Position 1 10)) [PrintStmt (IdentifierExpr "i" (Position 1 19)) (Position 1 13)] Nothing (Position 1 1)])

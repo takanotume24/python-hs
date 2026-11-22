@@ -33,6 +33,7 @@ spec = describe "runtime error reporting - part 1" $ do
             WhileStmt
               (BinaryExpr LtOperator (IdentifierExpr "x" (Position 6 7)) (IdentifierExpr "limit" (Position 6 11)) (Position 6 9))
               [PrintStmt (IdentifierExpr "x" (Position 7 9)) (Position 7 9)]
+              Nothing
               (Position 6 1)
           ]
       )

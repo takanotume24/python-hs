@@ -9,16 +9,16 @@ import PythonHS.VM.CallBuiltinOrFailConfig (CallBuiltinOrFailConfig (..))
 import PythonHS.VM.CallExceptionClassBuiltin (callExceptionClassBuiltin)
 import PythonHS.VM.CallExceptionClassBuiltinConfig (CallExceptionClassBuiltinConfig (..))
 import PythonHS.VM.CallFileBuiltinOrPass (callFileBuiltinOrPass)
-import PythonHS.VM.CallInstanceMethodStringConfig (CallInstanceMethodStringConfig (..))
-import PythonHS.VM.CallInstanceMethodStringResult (CallInstanceMethodStringResult (..))
 import PythonHS.VM.CallIteratorBuiltinOrPass (callIteratorBuiltinOrPass)
 import PythonHS.VM.CallMapFilterBuiltin (callMapFilterBuiltin)
 import PythonHS.VM.CallMapFilterBuiltinConfig (CallMapFilterBuiltinConfig (..))
 import PythonHS.VM.CallMapFilterBuiltinResult (CallMapFilterBuiltinResult (..))
 import PythonHS.VM.CallReflectionBuiltin (callReflectionBuiltin)
 import PythonHS.VM.CallReflectionBuiltinConfig (CallReflectionBuiltinConfig (..))
-import PythonHS.VM.CallStrConversion (callStrConversion)
-import PythonHS.VM.CallStrConversionConfig (CallStrConversionConfig (..))
+import PythonHS.VM.CallStrConversionOrPass (callStrConversionOrPass)
+import PythonHS.VM.CallStrConversionOrPassConfig (CallStrConversionOrPassConfig (..))
+import PythonHS.VM.CallSuperBuiltin (callSuperBuiltin)
+import PythonHS.VM.CallSuperBuiltinConfig (CallSuperBuiltinConfig (..))
 import PythonHS.VM.CallUnittestRuntime (callUnittestRuntime)
 import PythonHS.VM.CallUnittestRuntimeConfig (CallUnittestRuntimeConfig (..))
 import PythonHS.VM.ExecuteCallUserFunction (executeCallUserFunction)
@@ -57,7 +57,7 @@ callBuiltinOrFail config =
                   | isBuiltinName name && name /= "subTest" ->
                       Left ("Argument error: keyword arguments are not supported for builtin " ++ name ++ " at " ++ showPos (keywordArgInfoPos kwInfo))
                 Nothing ->
-                  case callStrConversionFor of
+                  case callStrConversionOrPass strConversionConfig of
                     Just conversionResult -> conversionResult
                     Nothing ->
                       case callUnittestRuntime runtimeConfig of
@@ -105,14 +105,27 @@ callBuiltinOrFail config =
         }
 
     dispatchBuiltin =
-      case callReflectionBuiltin reflectionConfig of
+      case callSuperBuiltin superConfig of
         Just (Left err) -> Left err
         Just (Right builtinValue) -> pushBuiltin builtinValue
         Nothing ->
-          case callBuiltin CallBuiltinConfig {callBuiltinName = name, callBuiltinArgs = args, callBuiltinPos = pos} of
+          case callReflectionBuiltin reflectionConfig of
             Just (Left err) -> Left err
             Just (Right builtinValue) -> pushBuiltin builtinValue
-            Nothing -> Left ("Name error: undefined function " ++ name ++ " at " ++ showPos pos)
+            Nothing ->
+              case callBuiltin CallBuiltinConfig {callBuiltinName = name, callBuiltinArgs = args, callBuiltinPos = pos} of
+                Just (Left err) -> Left err
+                Just (Right builtinValue) -> pushBuiltin builtinValue
+                Nothing -> Left ("Name error: undefined function " ++ name ++ " at " ++ showPos pos)
+
+    superConfig =
+      CallSuperBuiltinConfig
+        { callSuperBuiltinName = name,
+          callSuperBuiltinArgs = args,
+          callSuperBuiltinPos = pos,
+          callSuperBuiltinLocals = localEnv,
+          callSuperBuiltinGlobals = globalsAfterArgs
+        }
 
     pushBuiltin builtinValue =
       let newLocalEnv = if isTopLevel then globalsAfterArgs else localEnv
@@ -142,36 +155,19 @@ callBuiltinOrFail config =
           callUnittestRuntimeOutputs = outputsAfterArgs
         }
 
-    callStrConversionFor =
-      case callStrConversion
-        CallStrConversionConfig
-          { callStrConversionName = name,
-            callStrConversionArgs = args,
-            callStrConversionMethodConfig =
-              CallInstanceMethodStringConfig
-                { callInstanceMethodStringExecute = execute,
-                  callInstanceMethodStringIsTopLevel = isTopLevel,
-                  callInstanceMethodStringPos = pos,
-                  callInstanceMethodStringStack = stack,
-                  callInstanceMethodStringInstance = IntValue 0,
-                  callInstanceMethodStringGlobals = globalsAfterArgs,
-                  callInstanceMethodStringLocals = localEnv,
-                  callInstanceMethodStringFunctions = functionsAfterArgs,
-                  callInstanceMethodStringOutputs = outputsAfterArgs
-                }
-          } of
-        Nothing -> Nothing
-        Just (Left err) -> Just (Left err)
-        Just (Right result) ->
-          Just
-            ( Right
-                ( callInstanceMethodStringResultStack result,
-                  callInstanceMethodStringResultGlobals result,
-                  callInstanceMethodStringResultLocals result,
-                  callInstanceMethodStringResultFunctions result,
-                  callInstanceMethodStringResultOutputs result
-                )
-            )
+    strConversionConfig =
+      CallStrConversionOrPassConfig
+        { callStrConversionOrPassExecute = execute,
+          callStrConversionOrPassIsTopLevel = isTopLevel,
+          callStrConversionOrPassName = name,
+          callStrConversionOrPassArgs = args,
+          callStrConversionOrPassPos = pos,
+          callStrConversionOrPassStack = stack,
+          callStrConversionOrPassGlobals = globalsAfterArgs,
+          callStrConversionOrPassLocals = localEnv,
+          callStrConversionOrPassFunctions = functionsAfterArgs,
+          callStrConversionOrPassOutputs = outputsAfterArgs
+        }
 
     callModuleMemberFunction =
       case args of

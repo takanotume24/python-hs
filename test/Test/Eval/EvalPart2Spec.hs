@@ -85,6 +85,7 @@ spec = describe "evalProgram - part 2" $ do
             WhileStmt
               (NoneExpr (Position 0 0))
               [AssignStmt "x" (BinaryExpr AddOperator (IdentifierExpr "x" (Position 0 0)) (IntegerExpr 1 (Position 0 0)) (Position 0 0)) (Position 0 0)]
+              Nothing
               (Position 0 0),
             PrintStmt (IdentifierExpr "x" (Position 0 0)) (Position 0 0),
             PrintStmt (NotExpr (NoneExpr (Position 0 0)) (Position 0 0)) (Position 0 0)
@@ -135,6 +136,7 @@ spec = describe "evalProgram - part 2" $ do
           [ WhileStmt
               (IntegerExpr 0 (Position 0 0))
               [PassStmt (Position 0 0)]
+              Nothing
               (Position 0 0),
             PrintStmt (IntegerExpr 1 (Position 0 0)) (Position 0 0)
           ]
@@ -148,6 +150,7 @@ spec = describe "evalProgram - part 2" $ do
               "i"
               (ListExpr [IntegerExpr 1 (Position 0 0)] (Position 0 0))
               [PassStmt (Position 0 0)]
+              Nothing
               (Position 0 0),
             PrintStmt (IntegerExpr 2 (Position 0 0)) (Position 0 0)
           ]

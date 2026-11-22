@@ -3,7 +3,7 @@ module PythonHS.Parser.ParseParenTuple (parseParenTuple) where
 import PythonHS.AST.Expr (Expr (..))
 import PythonHS.Lexer.Position (Position (..))
 import PythonHS.Lexer.Token (Token (Token), position)
-import PythonHS.Lexer.TokenType (TokenType (CommaToken, RParenToken))
+import PythonHS.Lexer.TokenType (TokenType (CommaToken, RParenToken, StarToken))
 import PythonHS.Parser.ParseError (ParseError (..))
 import PythonHS.Parser.ParseParenTupleConfig (ParseParenTupleConfig (..))
 import PythonHS.Parser.ParseResult (ParseResult (..))
@@ -18,11 +18,16 @@ parseParenTuple config =
    in case rest of
         Token RParenToken _ _ : rest' -> Right (ParseResult {parseResultValue = TupleExpr {tupleExprItems = [], tupleExprPos = parenPos}, parseResultRemaining = rest'})
         _ -> do
-          firstResult <- parseExpr rest
+          firstResult <- parseElement parseExpr rest
           let firstExpr = parseResultValue firstResult
               afterFirst = parseResultRemaining firstResult
           parseTupleOrGrouped parseExpr parenPos firstExpr afterFirst
   where
+    parseElement parseExprFn (Token StarToken _ starPos : restTokens) = do
+      valueResult <- parseExprFn restTokens
+      Right (ParseResult {parseResultValue = StarArgExpr {starArgExprValue = parseResultValue valueResult, starArgExprPos = starPos}, parseResultRemaining = parseResultRemaining valueResult})
+    parseElement parseExprFn tokensToParse = parseExprFn tokensToParse
+
     parseTupleOrGrouped parseExpr parenPos firstExpr afterFirst =
       case afterFirst of
         Token CommaToken _ _ : restTokens ->
@@ -37,7 +42,7 @@ parseParenTuple config =
         Token RParenToken _ _ : restTokens ->
           Right (ParseResult {parseResultValue = TupleExpr {tupleExprItems = exprs, tupleExprPos = parenPos}, parseResultRemaining = restTokens})
         _ -> do
-          nextResult <- parseExpr tokenStream
+          nextResult <- parseElement parseExpr tokenStream
           let nextExpr = parseResultValue nextResult
               afterNext = parseResultRemaining nextResult
           case afterNext of

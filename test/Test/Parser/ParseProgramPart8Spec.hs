@@ -69,6 +69,7 @@ spec = describe "parseProgram - part 8" $ do
                     (Position 2 3),
                   PassStmt (Position 6 3)
                 ]
+                Nothing
                 (Position 1 1),
               PrintStmt (IntegerExpr 9 (Position 7 7)) (Position 7 1)
             ]

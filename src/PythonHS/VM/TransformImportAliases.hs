@@ -49,10 +49,10 @@ transformImportAliases renameDefNames moduleAlias callAlias identAlias stmt =
         (fmap (transformImportAliases renameDefNames moduleAlias callAlias identAlias) thenBranch)
         (fmap (fmap (transformImportAliases renameDefNames moduleAlias callAlias identAlias)) elseBranch)
         pos
-    WhileStmt {whileStmtCond = cond, whileStmtBody = body, whileStmtPos = pos} ->
-      WhileStmt (transformExpr moduleAlias callAlias identAlias cond) (fmap (transformImportAliases renameDefNames moduleAlias callAlias identAlias) body) pos
-    ForStmt {forStmtVar = name, forStmtIter = expr, forStmtBody = body, forStmtPos = pos} ->
-      ForStmt name (transformExpr moduleAlias callAlias identAlias expr) (fmap (transformImportAliases renameDefNames moduleAlias callAlias identAlias) body) pos
+    WhileStmt {whileStmtCond = cond, whileStmtBody = body, whileStmtElse = maybeElse, whileStmtPos = pos} ->
+      WhileStmt (transformExpr moduleAlias callAlias identAlias cond) (fmap (transformImportAliases renameDefNames moduleAlias callAlias identAlias) body) (fmap (fmap (transformImportAliases renameDefNames moduleAlias callAlias identAlias)) maybeElse) pos
+    ForStmt {forStmtVar = name, forStmtIter = expr, forStmtBody = body, forStmtElse = maybeElse, forStmtPos = pos} ->
+      ForStmt name (transformExpr moduleAlias callAlias identAlias expr) (fmap (transformImportAliases renameDefNames moduleAlias callAlias identAlias) body) (fmap (fmap (transformImportAliases renameDefNames moduleAlias callAlias identAlias)) maybeElse) pos
     FunctionDefStmt {functionDefStmtName = name, functionDefStmtParams = params, functionDefStmtBody = body, functionDefStmtPos = pos} ->
       FunctionDefStmt (renameName renameDefNames callAlias name) params (fmap (transformImportAliases renameDefNames moduleAlias callAlias identAlias) body) pos
     FunctionDefDefaultsStmt {functionDefDefaultsStmtName = name, functionDefDefaultsStmtParams = params, functionDefDefaultsStmtDefaults = defaults, functionDefDefaultsStmtBody = body, functionDefDefaultsStmtPos = pos} ->
@@ -92,6 +92,8 @@ transformImportAliases renameDefNames moduleAlias callAlias identAlias stmt =
         UnaryMinusExpr {unaryMinusExprValue = value, unaryMinusExprPos = pos} -> UnaryMinusExpr (transformExpr moduleAliases callAliases identAliases value) pos
         NotExpr {notExprValue = value, notExprPos = pos} -> NotExpr (transformExpr moduleAliases callAliases identAliases value) pos
         BitwiseNotExpr {bitwiseNotExprValue = value, bitwiseNotExprPos = pos} -> BitwiseNotExpr (transformExpr moduleAliases callAliases identAliases value) pos
+        ConditionalExpr {conditionalExprThen = thenExpr, conditionalExprCondition = condExpr, conditionalExprElse = elseExpr, conditionalExprPos = pos} ->
+          ConditionalExpr (transformExpr moduleAliases callAliases identAliases thenExpr) (transformExpr moduleAliases callAliases identAliases condExpr) (transformExpr moduleAliases callAliases identAliases elseExpr) pos
         ComparisonChainExpr {comparisonChainLeft = left, comparisonChainOps = ops, comparisonChainRights = rights, comparisonChainPos = pos} -> ComparisonChainExpr (transformExpr moduleAliases callAliases identAliases left) ops (map (transformExpr moduleAliases callAliases identAliases) rights) pos
         BinaryExpr {binaryExprOp = op, binaryExprLeft = left, binaryExprRight = right, binaryExprPos = pos} ->
           BinaryExpr op (transformExpr moduleAliases callAliases identAliases left) (transformExpr moduleAliases callAliases identAliases right) pos

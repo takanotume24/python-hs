@@ -104,6 +104,11 @@ evalExpr input =
           case v of
             IntValue {intValue = n} -> Right (EvalExprResult {evalExprResultValue = IntValue (complement n), evalExprResultOutputs = outs, evalExprResultEnv = envAfterExpr})
             _ -> Left $ "Type error: ~ expects int at " ++ showPos bitwiseNotExprPos
+        ConditionalExpr {conditionalExprThen = thenExpr, conditionalExprCondition = condExpr, conditionalExprElse = elseExpr} -> do
+          EvalExprResult {evalExprResultValue = condValue, evalExprResultOutputs = condOutputs, evalExprResultEnv = envAfterCond} <- evalSub env fenv condExpr
+          condNum <- expectTruthy ExpectTruthyInput {expectTruthyInputContext = "conditional expression", expectTruthyInputPos = exprPos condExpr, expectTruthyInputValue = condValue}
+          branchResult <- evalSub envAfterCond fenv (if condNum /= 0 then thenExpr else elseExpr)
+          Right branchResult {evalExprResultOutputs = condOutputs ++ evalExprResultOutputs branchResult}
         ComparisonChainExpr {comparisonChainLeft = leftExpr, comparisonChainOps = ops, comparisonChainRights = rights, comparisonChainPos = pos} ->
           evalComparisonChain
             EvalComparisonChainInput

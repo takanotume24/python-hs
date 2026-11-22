@@ -89,6 +89,12 @@ data Expr
       { bitwiseNotExprValue :: Expr,
         bitwiseNotExprPos :: Position
       }
+  | ConditionalExpr
+      { conditionalExprThen :: Expr,
+        conditionalExprCondition :: Expr,
+        conditionalExprElse :: Expr,
+        conditionalExprPos :: Position
+      }
   | ComparisonChainExpr
       { comparisonChainLeft :: Expr,
         comparisonChainOps :: [BinaryOperator],

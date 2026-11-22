@@ -133,7 +133,7 @@ spec = describe "parseProgram - part 7" $ do
         Token NewlineToken "\\n" (Position 1 1),
         Token EOFToken "" (Position 1 1)
       ]
-      `shouldBe` Right (Program [WhileStmt (IdentifierExpr "cond" (Position 1 1)) [PrintStmt (IdentifierExpr "cond" (Position 1 1)) (Position 1 1)] (Position 1 1)])
+      `shouldBe` Right (Program [WhileStmt (IdentifierExpr "cond" (Position 1 1)) [PrintStmt (IdentifierExpr "cond" (Position 1 1)) (Position 1 1)] Nothing (Position 1 1)])
 
   it "parses an indented while suite with multiple statements" $ do
     parseProgram
@@ -158,6 +158,7 @@ spec = describe "parseProgram - part 7" $ do
                 [ PassStmt (Position 2 3),
                   AssignStmt "x" (IntegerExpr 1 (Position 3 7)) (Position 3 3)
                 ]
+                Nothing
                 (Position 1 1)
             ]
         )

@@ -1,19 +1,16 @@
 module PythonHS.Parser.ParsePrimary (parsePrimary) where
 
-import PythonHS.AST.DictEntry (DictEntry (..))
 import PythonHS.AST.Expr (Expr (..))
 import PythonHS.Lexer.Position (Position (..))
 import PythonHS.Lexer.Token (Token (Token), position)
 import PythonHS.Lexer.TokenType
   ( TokenType
       ( BytesToken,
-        ColonToken,
         CommaToken,
         DotToken,
         FStringToken,
         FalseToken,
         FloatToken,
-        ForToken,
         IdentifierToken,
         IntegerToken,
         LBraceToken,
@@ -21,24 +18,25 @@ import PythonHS.Lexer.TokenType
         LParenToken,
         MinusToken,
         NoneToken,
-        RBraceToken,
-        RBracketToken,
         RParenToken,
         StringToken,
         TildeToken,
         TrueToken
       ),
   )
+import PythonHS.Parser.DesugarStarredTuple (desugarStarredTuple)
 import PythonHS.Parser.ExprPos (exprPos)
 import PythonHS.Parser.NormalizeFloatLiteral (normalizeFloatLiteral)
 import PythonHS.Parser.ParseCallArgument (parseCallArgument)
 import PythonHS.Parser.ParseCallArgumentConfig (ParseCallArgumentConfig (..))
 import PythonHS.Parser.ParseCallArgumentResult (ParseCallArgumentResult (..))
-import PythonHS.Parser.ParseComprehensionTail (parseComprehensionTail)
-import PythonHS.Parser.ParseComprehensionTailConfig (ParseComprehensionTailConfig (..))
+import PythonHS.Parser.ParseDictDisplay (parseDictDisplay)
+import PythonHS.Parser.ParseDictDisplayConfig (ParseDictDisplayConfig (..))
 import PythonHS.Parser.ParseError (ParseError (..))
 import PythonHS.Parser.ParseFStringExpr (parseFStringExpr)
 import PythonHS.Parser.ParseFStringExprConfig (ParseFStringExprConfig (..))
+import PythonHS.Parser.ParseListDisplay (parseListDisplay)
+import PythonHS.Parser.ParseListDisplayConfig (ParseListDisplayConfig (..))
 import PythonHS.Parser.ParseParenTuple (parseParenTuple)
 import PythonHS.Parser.ParseParenTupleConfig (ParseParenTupleConfig (..))
 import PythonHS.Parser.ParsePrimaryConfig (ParsePrimaryConfig (..))
@@ -78,10 +76,17 @@ parsePrimary config = do
     parseAtom (Token FStringToken value pos : rest) = do
       expr <- parseFStringExpr ParseFStringExprConfig {parseFStringExprParseExpr = parsePrimaryExpr config, parseFStringExprContent = value, parseFStringExprPos = pos}
       Right (ParseResult {parseResultValue = expr, parseResultRemaining = rest})
-    parseAtom (Token LBracketToken _ pos : rest) = parseListElements pos rest
-    parseAtom (Token LBraceToken _ pos : rest) = parseDictEntries pos rest
-    parseAtom (Token LParenToken _ parenPos : rest) =
-      parseParenTuple (ParseParenTupleConfig {parseParenTupleExpr = parsePrimaryExpr config, parseParenTuplePos = parenPos, parseParenTupleTokenStream = rest})
+    parseAtom (Token LBracketToken _ pos : rest) =
+      parseListDisplay ParseListDisplayConfig {parseListDisplayExpr = parsePrimaryExpr config, parseListDisplayPos = pos, parseListDisplayTokenStream = rest}
+    parseAtom (Token LBraceToken _ pos : rest) =
+      parseDictDisplay ParseDictDisplayConfig {parseDictDisplayExpr = parsePrimaryExpr config, parseDictDisplayPos = pos, parseDictDisplayTokenStream = rest}
+    parseAtom (Token LParenToken _ parenPos : rest) = do
+      tupleResult <- parseParenTuple (ParseParenTupleConfig {parseParenTupleExpr = parsePrimaryExpr config, parseParenTuplePos = parenPos, parseParenTupleTokenStream = rest})
+      let tupleExpr = parseResultValue tupleResult
+      case tupleExpr of
+        TupleExpr {tupleExprItems = items, tupleExprPos = pos} ->
+          Right (ParseResult {parseResultValue = desugarStarredTuple pos items, parseResultRemaining = parseResultRemaining tupleResult})
+        _ -> Right tupleResult
     parseAtom (Token IdentifierToken value pos : rest) = Right (ParseResult {parseResultValue = IdentifierExpr {identifierExprName = value, identifierExprPos = pos}, parseResultRemaining = rest})
     parseAtom (tok : _) = Left (ExpectedExpression {parseErrorPosition = position tok})
     parseAtom _ = Left (ExpectedExpression {parseErrorPosition = Position {line = 0, column = 0}})
@@ -114,65 +119,6 @@ parsePrimary config = do
     parsePostfix (IdentifierExpr receiverName receiverPos) (Token DotToken _ _ : Token IdentifierToken attrName _ : rest) =
       parsePostfix (IdentifierExpr {identifierExprName = receiverName ++ "." ++ attrName, identifierExprPos = receiverPos}) rest
     parsePostfix expr rest = Right (ParseResult {parseResultValue = expr, parseResultRemaining = rest})
-
-    parseListElements listPos (Token RBracketToken _ _ : rest) =
-      Right (ParseResult {parseResultValue = ListExpr {listExprItems = [], listExprPos = listPos}, parseResultRemaining = rest})
-    parseListElements listPos ts = do
-      firstResult <- parsePrimaryExpr config ts
-      let firstExpr = parseResultValue firstResult
-          afterFirst = parseResultRemaining firstResult
-      case afterFirst of
-        forTokens@(Token ForToken _ _ : _) ->
-          parseComprehensionTail (ParseComprehensionTailConfig {parseComprehensionTailExpr = parsePrimaryExpr config, parseComprehensionTailValueExpr = firstExpr, parseComprehensionTailListPos = listPos, parseComprehensionTailClauses = [], parseComprehensionTailTokenStream = forTokens})
-        _ -> parseListTail listPos [firstExpr] afterFirst
-
-    parseListTail listPos exprs (Token CommaToken _ _ : rest) = do
-      case rest of
-        Token RBracketToken _ _ : afterBracket -> Right (ParseResult {parseResultValue = ListExpr {listExprItems = exprs, listExprPos = listPos}, parseResultRemaining = afterBracket})
-        _ -> do
-          nextResult <- parsePrimaryExpr config rest
-          let nextExpr = parseResultValue nextResult
-              afterNext = parseResultRemaining nextResult
-          parseListTail listPos (exprs ++ [nextExpr]) afterNext
-    parseListTail listPos exprs (Token RBracketToken _ _ : rest) =
-      Right (ParseResult {parseResultValue = ListExpr {listExprItems = exprs, listExprPos = listPos}, parseResultRemaining = rest})
-    parseListTail _ _ (tok : _) = Left (ExpectedExpression {parseErrorPosition = position tok})
-    parseListTail _ _ _ = Left (ExpectedExpression {parseErrorPosition = Position {line = 0, column = 0}})
-
-    parseDictEntries dictPos (Token RBraceToken _ _ : rest) =
-      Right (ParseResult {parseResultValue = DictExpr {dictExprEntries = [], dictExprPos = dictPos}, parseResultRemaining = rest})
-    parseDictEntries dictPos ts = do
-      keyResult <- parsePrimaryExpr config ts
-      let keyExpr = parseResultValue keyResult
-          afterKey = parseResultRemaining keyResult
-      case afterKey of
-        Token ColonToken _ _ : afterColon -> do
-          valueResult <- parsePrimaryExpr config afterColon
-          let valueExpr = parseResultValue valueResult
-              afterValue = parseResultRemaining valueResult
-          parseDictTail dictPos [DictEntry {dictEntryKey = keyExpr, dictEntryValue = valueExpr}] afterValue
-        tok : _ -> Left (ExpectedExpression {parseErrorPosition = position tok})
-        _ -> Left (ExpectedExpression {parseErrorPosition = Position {line = 0, column = 0}})
-
-    parseDictTail dictPos pairs (Token CommaToken _ _ : rest) = do
-      case rest of
-        Token RBraceToken _ _ : afterBrace -> Right (ParseResult {parseResultValue = DictExpr {dictExprEntries = pairs, dictExprPos = dictPos}, parseResultRemaining = afterBrace})
-        _ -> do
-          nextKeyResult <- parsePrimaryExpr config rest
-          let nextKey = parseResultValue nextKeyResult
-              afterKey = parseResultRemaining nextKeyResult
-          case afterKey of
-            Token ColonToken _ _ : afterColon -> do
-              nextValueResult <- parsePrimaryExpr config afterColon
-              let nextValue = parseResultValue nextValueResult
-                  afterValue = parseResultRemaining nextValueResult
-              parseDictTail dictPos (pairs ++ [DictEntry {dictEntryKey = nextKey, dictEntryValue = nextValue}]) afterValue
-            tok : _ -> Left (ExpectedExpression {parseErrorPosition = position tok})
-            _ -> Left (ExpectedExpression {parseErrorPosition = Position {line = 0, column = 0}})
-    parseDictTail dictPos pairs (Token RBraceToken _ _ : rest) =
-      Right (ParseResult {parseResultValue = DictExpr {dictExprEntries = pairs, dictExprPos = dictPos}, parseResultRemaining = rest})
-    parseDictTail _ _ (tok : _) = Left (ExpectedExpression {parseErrorPosition = position tok})
-    parseDictTail _ _ _ = Left (ExpectedExpression {parseErrorPosition = Position {line = 0, column = 0}})
 
     parseArguments (Token RParenToken _ _ : rest) = Right (ParseResult {parseResultValue = [], parseResultRemaining = rest})
     parseArguments ts = parseArgumentsTail False [] ts

@@ -51,6 +51,7 @@ spec = describe "parseProgram - part 12" $ do
                 [ PassStmt (Position 2 3),
                   PrintStmt (IdentifierExpr "item" (Position 3 9)) (Position 3 3)
                 ]
+                Nothing
                 (Position 1 1)
             ]
         )
@@ -101,6 +102,7 @@ spec = describe "parseProgram - part 12" $ do
                     (Position 2 3),
                   PassStmt (Position 6 3)
                 ]
+                Nothing
                 (Position 1 1),
               PrintStmt (IntegerExpr 9 (Position 7 7)) (Position 7 1)
             ]

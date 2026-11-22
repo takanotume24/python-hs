@@ -13,8 +13,8 @@ hasYieldInStmts stmts =
         YieldFromStmt _ _ -> True
         IfStmt _ thenStmts maybeElseStmts _ ->
           hasYieldInStmts thenStmts || maybe False hasYieldInStmts maybeElseStmts || hasYieldInStmts rest
-        WhileStmt _ body _ -> hasYieldInStmts body || hasYieldInStmts rest
-        ForStmt _ _ body _ -> hasYieldInStmts body || hasYieldInStmts rest
+        WhileStmt _ body maybeElse _ -> hasYieldInStmts body || maybe False hasYieldInStmts maybeElse || hasYieldInStmts rest
+        ForStmt _ _ body maybeElse _ -> hasYieldInStmts body || maybe False hasYieldInStmts maybeElse || hasYieldInStmts rest
         TryExceptStmt {tryExceptStmtTryBody = tryStmts, tryExceptStmtExceptSuites = exceptSuites, tryExceptStmtElseBody = maybeElse, tryExceptStmtFinallyBody = maybeFinally} ->
           hasYieldInStmts tryStmts
             || any (\ExceptSuite {exceptSuiteBody = suiteStmts} -> hasYieldInStmts suiteStmts) exceptSuites

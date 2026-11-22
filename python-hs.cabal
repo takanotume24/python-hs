@@ -265,6 +265,15 @@ library
     , PythonHS.Parser.ParseModuleTailConfig
     , PythonHS.Parser.ParseWithStmt
     , PythonHS.Parser.ParseWithStmtConfig
+    , PythonHS.Parser.DesugarStarredDict
+    , PythonHS.Parser.DesugarStarredList
+    , PythonHS.Parser.DesugarStarredTuple
+    , PythonHS.Parser.ParseDictDisplay
+    , PythonHS.Parser.ParseDictDisplayConfig
+    , PythonHS.Parser.ParseListDisplay
+    , PythonHS.Parser.ParseListDisplayConfig
+    , PythonHS.Parser.ParseConditionalExpr
+    , PythonHS.Parser.ParseConditionalExprConfig
     , PythonHS.Parser.DropLeadingNewlines
     , PythonHS.Parser.ParseUnpackAssign
     , PythonHS.Parser.ParseUnpackAssignConfig
@@ -385,6 +394,10 @@ library
     , PythonHS.VM.CallReflectionBuiltinConfig
     , PythonHS.VM.CallStrConversion
     , PythonHS.VM.CallStrConversionConfig
+    , PythonHS.VM.CallStrConversionOrPass
+    , PythonHS.VM.CallStrConversionOrPassConfig
+    , PythonHS.VM.CallSuperBuiltin
+    , PythonHS.VM.CallSuperBuiltinConfig
     , PythonHS.VM.ExecutePrintTop
     , PythonHS.VM.ExecutePrintTopConfig
     , PythonHS.VM.SplitByDot
@@ -424,7 +437,9 @@ library
     , PythonHS.VM.ToCallArg
     , PythonHS.VM.ToCallArgInput
     , PythonHS.VM.CompileDecoratedStmt
+    , PythonHS.VM.CompileForStmt
     , PythonHS.VM.CompileFunctionDefStmt
+    , PythonHS.VM.CompileWhileStmt
     , PythonHS.VM.CompileYieldCollectStmt
     , PythonHS.VM.CompileComprehensionClauses
       , PythonHS.VM.CompileDictEntriesAt
@@ -556,12 +571,14 @@ library
     , PythonHS.VM.CompileExprAtConfig
     , PythonHS.VM.CompileExprItemsAtConfig
     , PythonHS.VM.CompileFunctionDefStmtConfig
+    , PythonHS.VM.CompileForStmtConfig
     , PythonHS.VM.CompileFromStdlibImportConfig
     , PythonHS.VM.CompileImportStmtConfig
     , PythonHS.VM.CompileLogicalExprConfig
     , PythonHS.VM.CompileMatchConfig
     , PythonHS.VM.CompileTryExceptConfig
     , PythonHS.VM.CompileWithStmtConfig
+    , PythonHS.VM.CompileWhileStmtConfig
     , PythonHS.VM.CompileYieldCollectStmtConfig
     , PythonHS.VM.EvalBinaryOpConfig
     , PythonHS.VM.ExecuteArithmeticInstructionConfig
@@ -580,6 +597,7 @@ library
     , PythonHS.VM.CompiledDefaultCode
     , PythonHS.VM.FunctionInfo
     , PythonHS.VM.MethodInfo
+    , PythonHS.VM.MethodContextBindings
     , PythonHS.VM.MethodKind
     , PythonHS.VM.CompiledMethodDef
     , PythonHS.VM.FieldInfo
@@ -764,12 +782,14 @@ test-suite python-hs-test
     , Test.VM.RunSourceVmPart36Spec
     , Test.VM.RunSourceVmPart37Spec
     , Test.VM.RunSourceVmPart38Spec
+    , Test.VM.RunSourceVmPart39Spec
     , Test.VM.RunInstructionsSpec
     , Test.VM.RunSourceVmAugAssignBitwiseSpec
     , Test.VM.RunSourceVmBlankLineSpec
     , Test.VM.RunSourceVmUnaryPrecedenceSpec
     , Test.VM.RunSourceVmSequenceOpSpec
     , Test.VM.RunSourceVmCompileSpec
+    , Test.VM.RunSourceVmUnittestContextSpec
     , Test.VM.RunSourceVmUnittestSpec
     , Test.Structure.CheckStructureSpec
     , Test.Structure.DetectPositionalArgsSpec

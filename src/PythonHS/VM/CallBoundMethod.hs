@@ -5,6 +5,7 @@ import PythonHS.VM.CallBoundMethodConfig (CallBoundMethodConfig (..))
 import PythonHS.VM.CallBoundMethodResult (CallBoundMethodResult (..))
 import PythonHS.VM.ExecuteCallUserFunction (executeCallUserFunction)
 import PythonHS.VM.FindMethodFunctionName (findMethodFunctionName)
+import PythonHS.VM.MethodContextBindings (methodContextBindings)
 import PythonHS.VM.MethodKind (MethodKind (InstanceMethod))
 import PythonHS.VM.MethodNamePair (MethodNamePair (..))
 
@@ -26,7 +27,7 @@ callBoundMethod config =
                   []
                   locals
                   (methodNamePairMangled methodPair)
-                  (Just [("__python_hs_bound_self__", instanceValue)])
+                  (Just (methodContextBindings className instanceValue ++ [("__python_hs_bound_self__", instanceValue)]))
                   [instanceValue]
                   globals
                   functions

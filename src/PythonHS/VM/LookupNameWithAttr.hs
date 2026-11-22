@@ -3,10 +3,11 @@ module PythonHS.VM.LookupNameWithAttr (lookupNameWithAttr) where
 import Data.Map.Strict qualified as Map
 import PythonHS.Evaluator.ModuleAttr (ModuleAttr (..))
 import PythonHS.Evaluator.ShowPos (showPos)
-import PythonHS.Evaluator.Value (Value (ClassValue, FunctionRefValue, InstanceValue, ModuleValue))
+import PythonHS.Evaluator.Value (Value (ClassValue, FunctionRefValue, InstanceValue, ModuleValue, NoneValue))
 import PythonHS.Lexer.Position (Position)
 import PythonHS.VM.IsBuiltinCallableName (isBuiltinCallableName)
 import PythonHS.VM.LookupName (lookupName)
+import PythonHS.VM.MethodContextBindings (methodContextBindings)
 import PythonHS.VM.MethodKind (MethodKind (..))
 import PythonHS.VM.MethodNamePair (MethodNamePair (..))
 import PythonHS.VM.ModulePrefixFor (modulePrefixFor)
@@ -52,18 +53,18 @@ lookupNameWithAttr name pos localNow globalsNow =
 
     methodRefForInstance methodPair instanceValue className =
       case methodNamePairKind methodPair of
-        StaticMethod -> FunctionRefValue (methodNamePairMangled methodPair) []
+        StaticMethod -> FunctionRefValue (methodNamePairMangled methodPair) (methodContextBindings className NoneValue)
         ClassMethod ->
           case lookupName className localNow globalsNow of
-            Just classValue@ClassValue {} -> FunctionRefValue (methodNamePairMangled methodPair) [("__python_hs_bound_self__", classValue)]
-            _ -> FunctionRefValue (methodNamePairMangled methodPair) []
-        InstanceMethod -> FunctionRefValue (methodNamePairMangled methodPair) [("__python_hs_bound_self__", instanceValue)]
+            Just classValue@ClassValue {} -> FunctionRefValue (methodNamePairMangled methodPair) (methodContextBindings className classValue ++ [("__python_hs_bound_self__", classValue)])
+            _ -> FunctionRefValue (methodNamePairMangled methodPair) (methodContextBindings className NoneValue)
+        InstanceMethod -> FunctionRefValue (methodNamePairMangled methodPair) (methodContextBindings className instanceValue ++ [("__python_hs_bound_self__", instanceValue)])
 
-    methodRefForClass methodPair classValue =
+    methodRefForClass methodPair classValue className =
       case methodNamePairKind methodPair of
-        StaticMethod -> FunctionRefValue (methodNamePairMangled methodPair) []
-        ClassMethod -> FunctionRefValue (methodNamePairMangled methodPair) [("__python_hs_bound_self__", classValue)]
-        InstanceMethod -> FunctionRefValue (methodNamePairMangled methodPair) []
+        StaticMethod -> FunctionRefValue (methodNamePairMangled methodPair) (methodContextBindings className NoneValue)
+        ClassMethod -> FunctionRefValue (methodNamePairMangled methodPair) (methodContextBindings className classValue ++ [("__python_hs_bound_self__", classValue)])
+        InstanceMethod -> FunctionRefValue (methodNamePairMangled methodPair) (methodContextBindings className NoneValue)
 
     loadAttrPath currentValue attrs =
       case attrs of
@@ -86,7 +87,7 @@ lookupNameWithAttr name pos localNow globalsNow =
             ClassValue className _ _ _ ->
               case findClassAttrOrMethod className attrName of
                 Just (Right attrValue) -> loadAttrPath attrValue restAttrs
-                Just (Left methodPair) -> loadAttrPath (methodRefForClass methodPair currentValue) restAttrs
+                Just (Left methodPair) -> loadAttrPath (methodRefForClass methodPair currentValue className) restAttrs
                 Nothing -> Nothing
             ModuleValue moduleName moduleAttrs ->
               case filter (\attr -> moduleAttrName attr == attrName) moduleAttrs of

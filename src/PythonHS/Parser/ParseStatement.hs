@@ -151,5 +151,3 @@ parseStatement tokenStream =
             Just statementResult -> Right statementResult
             Nothing -> Left (ExpectedExpression {parseErrorPosition = pos})
         [] -> Left (ExpectedExpression {parseErrorPosition = Position {line = 0, column = 0}})
-        tok : _ -> Left (ExpectedExpression {parseErrorPosition = position tok})
-        [] -> Left (ExpectedExpression {parseErrorPosition = Position {line = 0, column = 0}})

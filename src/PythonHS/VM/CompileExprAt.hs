@@ -65,6 +65,19 @@ compileExprAt config =
         BitwiseNotExpr {bitwiseNotExprValue = bitwiseNotExpr, bitwiseNotExprPos = pos} -> do
           bitwiseNotResult <- compileExprAt' baseIndex bitwiseNotExpr
           pure (CompileExprResult {compileExprResultCode = compileExprResultCode bitwiseNotResult ++ [ApplyBitwiseNot {applyBitwiseNotPos = pos}], compileExprResultEndIndex = compileExprResultEndIndex bitwiseNotResult + 1})
+        ConditionalExpr {conditionalExprThen = thenExpr, conditionalExprCondition = condExpr, conditionalExprElse = elseExpr} -> do
+          condResult <- compileExprAt' baseIndex condExpr
+          let thenStartIndex = compileExprResultEndIndex condResult + 1
+          thenResult <- compileExprAt' thenStartIndex thenExpr
+          let elseStartIndex = compileExprResultEndIndex thenResult + 1
+          elseResult <- compileExprAt' elseStartIndex elseExpr
+          let code =
+                compileExprResultCode condResult
+                  ++ [JumpIfFalse {jumpIfFalseTarget = elseStartIndex}]
+                  ++ compileExprResultCode thenResult
+                  ++ [Jump {jumpTarget = compileExprResultEndIndex elseResult}]
+                  ++ compileExprResultCode elseResult
+          pure (CompileExprResult {compileExprResultCode = code, compileExprResultEndIndex = compileExprResultEndIndex elseResult})
         ComparisonChainExpr {comparisonChainLeft = left, comparisonChainOps = ops, comparisonChainRights = rights, comparisonChainPos = pos} ->
           compileComparisonChain CompileComparisonChainConfig {compileComparisonChainCompileExpr = compileExprAt', compileComparisonChainBaseIndex = baseIndex, compileComparisonChainLeft = left, compileComparisonChainOps = ops, compileComparisonChainRights = rights, compileComparisonChainPos = pos}
         WalrusExpr {walrusExprName = name, walrusExprValue = valueExpr} -> do

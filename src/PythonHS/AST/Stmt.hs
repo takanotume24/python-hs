@@ -146,12 +146,14 @@ data Stmt
   | WhileStmt
       { whileStmtCond :: Expr,
         whileStmtBody :: [Stmt],
+        whileStmtElse :: Maybe [Stmt],
         whileStmtPos :: Position
       }
   | ForStmt
       { forStmtVar :: String,
         forStmtIter :: Expr,
         forStmtBody :: [Stmt],
+        forStmtElse :: Maybe [Stmt],
         forStmtPos :: Position
       }
   | ClassDefStmt
