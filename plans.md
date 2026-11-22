@@ -811,6 +811,18 @@
 - P129 は実ファイルシステムに触れる。テストでは `withSystemTempDirectory` / `withSystemTempFile` を使用し、テストの独立性を保つ。
 - P130 は標準ライブラリの追加である。P125 で整備した stdlib from-import 方針を流用する。
 
+## 現在のスコープ（P131: CPython テスト実行基盤と Nix devcontainer）
+- [x] P131-1: CPython を `third_party/cpython` に submodule として追加（`v3.12.16` に固定）
+- [x] P131-2: devcontainer の Haskell 環境を ghcup から Nix（`flake.nix` の devShell）へ移行
+- [x] P131-3: Nix devShell / devcontainer に `python3`・`gnumake`・`openssl` など CPython テスト用の依存を追加
+- [x] P131-4: GHC を `9.10.3` に固定し、`cabal.project` の `with-compiler` と CI に一致させる
+- [x] P131-5: Lexer で行コメント（`# ...`）を読み飛ばす（インライン・行全体の両方）
+- [ ] P131-6: 空行（論理行でない改行）を構文解析で読み飛ばす
+- [ ] P131-7: `run-cpython-test` executable を追加し、CPython テストを実行・判定できるようにする
+- [ ] P131-8: `unittest` / `test.support` の最小 shim を追加する
+- [ ] P131-9: allowlist 方式で CPython テストを段階的に実行対象へ追加する
+- [x] P131-10: 品質ゲート: `cabal run quality-gate` 全項目 PASS
+
 ## 現在のスコープ（P120: 組み込みメソッド構文の拡張）
 - [x] P120 開始: parser の `receiver.method(args)` → `method(receiver, args)` 脱糖を確認
 - [x] P120-1: 失敗テストを `RunSourceVmPart25Spec` に追加（文字列・リスト・辞書）
