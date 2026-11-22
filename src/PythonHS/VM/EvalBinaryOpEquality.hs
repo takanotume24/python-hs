@@ -1,6 +1,7 @@
 module PythonHS.VM.EvalBinaryOpEquality (evalBinaryOpEquality) where
 
 import PythonHS.Evaluator.Value (Value (..))
+import PythonHS.Evaluator.ValuesEqual (valuesEqual)
 import PythonHS.VM.EvalBinaryOpEqualityConfig (EvalBinaryOpEqualityConfig (..))
 
 evalBinaryOpEquality :: EvalBinaryOpEqualityConfig -> Either String Value
@@ -22,4 +23,16 @@ evalBinaryOpEquality config =
           case right of
             TupleValue {tupleValueItems = rightVals} -> Right (IntValue {intValue = if (leftVals == rightVals) /= negateResult then 1 else 0})
             _ -> fallback
+        SetValue {setValueItems = leftItems} ->
+          case right of
+            SetValue {setValueItems = rightItems} -> Right (IntValue {intValue = if (setsEqual leftItems rightItems) /= negateResult then 1 else 0})
+            _ -> fallback
+        BytesValue {bytesValueItems = leftItems} ->
+          case right of
+            BytesValue {bytesValueItems = rightItems} -> Right (IntValue {intValue = if (leftItems == rightItems) /= negateResult then 1 else 0})
+            _ -> fallback
         _ -> fallback
+  where
+    setsEqual leftItems rightItems =
+      length leftItems == length rightItems
+        && all (\leftItem -> any (valuesEqual leftItem) rightItems) leftItems

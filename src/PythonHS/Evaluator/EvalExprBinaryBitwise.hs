@@ -22,9 +22,9 @@ evalExprBinaryBitwise config = do
   result <- evalBitwiseValue op opName pos leftVal rightVal
   Right (EvalExprResult {evalExprResultValue = result, evalExprResultOutputs = leftOuts ++ rightOuts, evalExprResultEnv = envAfterRight})
   where
-    evalBitwiseValue BitwiseAndOperator _ pos' IntValue {intValue = leftInt} IntValue {intValue = rightInt} = Right (IntValue {intValue = leftInt .&. rightInt})
-    evalBitwiseValue BitwiseOrOperator _ pos' IntValue {intValue = leftInt} IntValue {intValue = rightInt} = Right (IntValue {intValue = leftInt .|. rightInt})
-    evalBitwiseValue BitwiseXorOperator _ pos' IntValue {intValue = leftInt} IntValue {intValue = rightInt} = Right (IntValue {intValue = leftInt `xor` rightInt})
+    evalBitwiseValue BitwiseAndOperator _ _ IntValue {intValue = leftInt} IntValue {intValue = rightInt} = Right (IntValue {intValue = leftInt .&. rightInt})
+    evalBitwiseValue BitwiseOrOperator _ _ IntValue {intValue = leftInt} IntValue {intValue = rightInt} = Right (IntValue {intValue = leftInt .|. rightInt})
+    evalBitwiseValue BitwiseXorOperator _ _ IntValue {intValue = leftInt} IntValue {intValue = rightInt} = Right (IntValue {intValue = leftInt `xor` rightInt})
     evalBitwiseValue LeftShiftOperator _ pos' IntValue {intValue = leftInt} IntValue {intValue = rightInt} =
       if rightInt < 0
         then Left ("Value error: negative shift count at " ++ showPos pos')

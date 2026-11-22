@@ -1,7 +1,6 @@
 module PythonHS.VM.CompileDictEntriesAt (compileDictEntriesAt) where
 
 import PythonHS.AST.DictEntry (DictEntry (..))
-import PythonHS.AST.Expr (Expr)
 import PythonHS.VM.CompileDictEntriesAtConfig (CompileDictEntriesAtConfig (..))
 import PythonHS.VM.CompileExprResult (CompileExprResult (..))
 

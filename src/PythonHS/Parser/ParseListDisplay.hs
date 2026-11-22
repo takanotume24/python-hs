@@ -28,6 +28,7 @@ parseListDisplay config =
                 parseComprehensionTailValueExpr = firstExpr,
                 parseComprehensionTailListPos = parseListDisplayPos config,
                 parseComprehensionTailClauses = [],
+                parseComprehensionTailClosingToken = RBracketToken,
                 parseComprehensionTailTokenStream = forTokens
               }
         _ -> parseListTail [firstExpr] afterFirst

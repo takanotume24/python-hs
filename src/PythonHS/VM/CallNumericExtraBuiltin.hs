@@ -17,27 +17,27 @@ callNumericExtraBuiltin config =
 
     evalPow values =
       case values of
-        [IntValue {intValue = base}, IntValue {intValue = exponent}] -> integerPower base exponent
-        [IntValue {intValue = base}, IntValue {intValue = exponent}, IntValue {intValue = modulus}] -> modularPower base exponent modulus
-        [base, exponent] -> floatPower base exponent
+        [IntValue {intValue = base}, IntValue {intValue = powerExponent}] -> integerPower base powerExponent
+        [IntValue {intValue = base}, IntValue {intValue = powerExponent}, IntValue {intValue = modulus}] -> modularPower base powerExponent modulus
+        [base, powerExponent] -> floatPower base powerExponent
         [_, _, _] -> Left ("Type error: pow with modulus expects int arguments at " ++ showPos pos)
         _ -> Left (countMismatch "pow")
 
-    integerPower base exponent
-      | exponent >= 0 = Right (IntValue {intValue = base ^ exponent})
+    integerPower base powerExponent
+      | powerExponent >= 0 = Right (IntValue {intValue = base ^ powerExponent})
       | base == 0 = Left ("Value error: 0.0 cannot be raised to a negative power at " ++ showPos pos)
-      | otherwise = Right (FloatValue {floatValue = fromIntegral base ** fromIntegral exponent})
+      | otherwise = Right (FloatValue {floatValue = fromIntegral base ** fromIntegral powerExponent})
 
-    modularPower base exponent modulus
+    modularPower base powerExponent modulus
       | modulus == 0 = Left ("Value error: pow modulus must not be zero at " ++ showPos pos)
-      | exponent < 0 = Left ("Value error: pow with modulus requires a non-negative exponent at " ++ showPos pos)
-      | otherwise = Right (IntValue {intValue = base ^ exponent `mod` modulus})
+      | powerExponent < 0 = Left ("Value error: pow with modulus requires a non-negative exponent at " ++ showPos pos)
+      | otherwise = Right (IntValue {intValue = base ^ powerExponent `mod` modulus})
 
-    floatPower base exponent =
-      case (numberValue base, numberValue exponent) of
-        (Just baseNumber, Just exponentNumber)
-          | baseNumber == 0 && exponentNumber < 0 -> Left ("Value error: 0.0 cannot be raised to a negative power at " ++ showPos pos)
-          | otherwise -> Right (FloatValue {floatValue = baseNumber ** exponentNumber})
+    floatPower base powerExponent =
+      case (numberValue base, numberValue powerExponent) of
+        (Just baseNumber, Just powerExponentNumber)
+          | baseNumber == 0 && powerExponentNumber < 0 -> Left ("Value error: 0.0 cannot be raised to a negative power at " ++ showPos pos)
+          | otherwise -> Right (FloatValue {floatValue = baseNumber ** powerExponentNumber})
         _ -> Left ("Type error: pow expects number arguments at " ++ showPos pos)
 
     evalDivMod values =

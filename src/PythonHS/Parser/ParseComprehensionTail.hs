@@ -4,7 +4,7 @@ import PythonHS.AST.Expr (Expr (..))
 import PythonHS.AST.ListComprehensionClause (ListComprehensionClause (..))
 import PythonHS.Lexer.Position (Position (..))
 import PythonHS.Lexer.Token (Token (..))
-import PythonHS.Lexer.TokenType (TokenType (CommaToken, ForToken, IdentifierToken, IfToken, InToken, RBracketToken))
+import PythonHS.Lexer.TokenType (TokenType (CommaToken, ForToken, IdentifierToken, IfToken, InToken))
 import PythonHS.Parser.ParseComprehensionTailConfig (ParseComprehensionTailConfig (..))
 import PythonHS.Parser.ParseError (ParseError (..))
 import PythonHS.Parser.ParseResult (ParseResult (..))
@@ -35,10 +35,11 @@ parseComprehensionTail config =
           let iterExpr = parseResultValue iterResult
               afterIter = parseResultRemaining iterResult
           parseComprehensionTail (config {parseComprehensionTailClauses = clauses ++ [ListComprehensionClause {listComprehensionClauseTargets = loopTargets, listComprehensionClauseIter = iterExpr, listComprehensionClauseConds = []}], parseComprehensionTailTokenStream = afterIter})
-        Token RBracketToken _ _ : rest ->
-          case clauses of
-            [ListComprehensionClause {listComprehensionClauseTargets = [loopVar], listComprehensionClauseIter = iterExpr, listComprehensionClauseConds = []}] -> Right (ParseResult {parseResultValue = ListComprehensionExpr {listComprehensionExprValue = valueExpr, listComprehensionExprLoopName = loopVar, listComprehensionExprIter = iterExpr, listComprehensionExprPos = listPos}, parseResultRemaining = rest})
-            _ -> Right (ParseResult {parseResultValue = ListComprehensionClausesExpr {listComprehensionClausesExprValue = valueExpr, listComprehensionClausesExprClauses = clauses, listComprehensionClausesExprPos = listPos}, parseResultRemaining = rest})
+        Token closingToken _ _ : rest
+          | closingToken == parseComprehensionTailClosingToken config ->
+              case clauses of
+                [ListComprehensionClause {listComprehensionClauseTargets = [loopVar], listComprehensionClauseIter = iterExpr, listComprehensionClauseConds = []}] -> Right (ParseResult {parseResultValue = ListComprehensionExpr {listComprehensionExprValue = valueExpr, listComprehensionExprLoopName = loopVar, listComprehensionExprIter = iterExpr, listComprehensionExprPos = listPos}, parseResultRemaining = rest})
+                _ -> Right (ParseResult {parseResultValue = ListComprehensionClausesExpr {listComprehensionClausesExprValue = valueExpr, listComprehensionClausesExprClauses = clauses, listComprehensionClausesExprPos = listPos}, parseResultRemaining = rest})
         tok : _ -> Left (ExpectedExpression {parseErrorPosition = position tok})
         _ -> Left (ExpectedExpression {parseErrorPosition = Position {line = 0, column = 0}})
   where

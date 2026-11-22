@@ -1,7 +1,6 @@
 module PythonHS.VM.CompileYieldCollectStmt (compileYieldCollectStmt) where
 
 import PythonHS.AST.Expr (Expr (..))
-import PythonHS.Lexer.Position (Position)
 import PythonHS.VM.CompileExprResult (CompileExprResult (..))
 import PythonHS.VM.CompileYieldCollectStmtConfig (CompileYieldCollectStmtConfig (..))
 import PythonHS.VM.Instruction (Instruction (..))

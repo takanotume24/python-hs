@@ -17,10 +17,16 @@ evalBinaryOpMembership config =
         ListValue {listValueItems = items} -> Right (boolValue (any (valuesEqual left) items))
         TupleValue {tupleValueItems = items} -> Right (boolValue (any (valuesEqual left) items))
         DictValue {dictValuePairs = pairs} -> Right (boolValue (any (valuesEqual left . pairKey) pairs))
+        SetValue {setValueItems = items} -> Right (boolValue (any (valuesEqual left) items))
         StringValue {stringValue = s} ->
           case left of
             StringValue {stringValue = t} -> Right (boolValue (t `isInfixOf` s))
             _ -> Left ("Type error: expected string in in at " ++ showPos pos)
+        BytesValue {bytesValueItems = items} ->
+          case left of
+            IntValue {intValue = int} -> Right (boolValue (int >= 0 && int <= 255 && fromIntegral int `elem` items))
+            BytesValue {bytesValueItems = needle} -> Right (boolValue (needle `isInfixOf` items))
+            _ -> Left ("Type error: expected int or bytes in bytes containment at " ++ showPos pos)
         _ -> Left ("Type error: expected list/dict/tuple/string in in at " ++ showPos pos)
   where
     boolValue condition = IntValue {intValue = if condition then 1 else 0}

@@ -42,6 +42,7 @@ compileComparisonChain config = do
       finalEnd = endLabel
   Right (CompileExprResult {compileExprResultCode = finalCode, compileExprResultEndIndex = finalEnd})
   where
+    compileItems :: (Int -> Expr -> Either String CompileExprResult) -> String -> Position -> Int -> [BinaryOperator] -> [Expr] -> Int -> Either String CompileComparisonChainBodyResult
     compileItems _ _ _ endIndex [] [] _ = Right (CompileComparisonChainBodyResult {compileComparisonChainBodyCode = [], compileComparisonChainBodyEndIndex = endIndex})
     compileItems compileExprFn' prefix pos endIndex (op : restOps) (rightExpr : restRights) idx = do
       rightResult <- compileExprFn' endIndex rightExpr
@@ -61,6 +62,7 @@ compileComparisonChain config = do
           currentEnd = rightEnd + length comparisonCode
       restResult <- compileItems compileExprFn' prefix pos currentEnd restOps restRights nextIdx
       Right (CompileComparisonChainBodyResult {compileComparisonChainBodyCode = rightCode ++ comparisonCode ++ compileComparisonChainBodyCode restResult, compileComparisonChainBodyEndIndex = compileComparisonChainBodyEndIndex restResult})
+    compileItems _ _ _ _ _ _ _ = Left "VM runtime error: malformed comparison chain"
 
     chainNamePrefix pos' = "__cmpchain_l" ++ show (line pos') ++ "_c" ++ show (column pos')
 

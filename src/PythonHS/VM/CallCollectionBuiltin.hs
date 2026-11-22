@@ -35,6 +35,8 @@ callCollectionBuiltin config =
           [ListValue {listValueItems = vals}] -> Right (IntValue {intValue = fromIntegral (length vals)})
           [TupleValue {tupleValueItems = vals}] -> Right (IntValue {intValue = fromIntegral (length vals)})
           [DictValue {dictValuePairs = pairs}] -> Right (IntValue {intValue = fromIntegral (length pairs)})
+          [SetValue {setValueItems = items}] -> Right (IntValue {intValue = fromIntegral (length items)})
+          [BytesValue {bytesValueItems = items}] -> Right (IntValue {intValue = fromIntegral (length items)})
           [_] -> Left ("Type error: len expects string or list at " ++ showPos pos)
           _ -> Left ("Argument count mismatch when calling len at " ++ showPos pos)
         "bool" -> Just $ case args of
@@ -46,6 +48,8 @@ callCollectionBuiltin config =
           [ListValue {listValueItems = vals}] -> Right (IntValue {intValue = if null vals then 0 else 1})
           [TupleValue {tupleValueItems = vals}] -> Right (IntValue {intValue = if null vals then 0 else 1})
           [DictValue {dictValuePairs = pairs}] -> Right (IntValue {intValue = if null pairs then 0 else 1})
+          [SetValue {setValueItems = items}] -> Right (IntValue {intValue = if null items then 0 else 1})
+          [BytesValue {bytesValueItems = items}] -> Right (IntValue {intValue = if null items then 0 else 1})
           _ -> Left ("Argument count mismatch when calling bool at " ++ showPos pos)
         "__python_hs_getitem__" -> Just $ case args of
           [seqValue, indexValue] -> getitemValue GetitemValueConfig {getitemValuePos = pos, getitemValueSeqValue = seqValue, getitemValueIndexValue = indexValue}

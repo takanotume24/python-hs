@@ -28,6 +28,8 @@ evalBinaryOpSequence config =
           Just (Right (ListValue {listValueItems = leftItems ++ rightItems}))
         (TupleValue {tupleValueItems = leftItems}, TupleValue {tupleValueItems = rightItems}) ->
           Just (Right (TupleValue {tupleValueItems = leftItems ++ rightItems}))
+        (BytesValue {bytesValueItems = leftItems, bytesValueIsMutable = isMutable}, BytesValue {bytesValueItems = rightItems}) ->
+          Just (Right (BytesValue {bytesValueItems = leftItems ++ rightItems, bytesValueIsMutable = isMutable}))
         _ -> Nothing
 
     repeatSequence =
@@ -44,13 +46,19 @@ evalBinaryOpSequence config =
           Just (Right (TupleValue {tupleValueItems = repeatItems items count}))
         (IntValue {intValue = count}, TupleValue {tupleValueItems = items}) ->
           Just (Right (TupleValue {tupleValueItems = repeatItems items count}))
+        (BytesValue {bytesValueItems = items, bytesValueIsMutable = isMutable}, IntValue {intValue = count}) ->
+          Just (Right (BytesValue {bytesValueItems = repeatItems items count, bytesValueIsMutable = isMutable}))
+        (IntValue {intValue = count}, BytesValue {bytesValueItems = items, bytesValueIsMutable = isMutable}) ->
+          Just (Right (BytesValue {bytesValueItems = repeatItems items count, bytesValueIsMutable = isMutable}))
         (StringValue {}, _) -> Just (Left typeError)
         (ListValue {}, _) -> Just (Left typeError)
         (TupleValue {}, _) -> Just (Left typeError)
+        (BytesValue {}, _) -> Just (Left typeError)
         _ -> Nothing
 
     repeatText text count = concat (replicate (repeatCount count) text)
 
+    repeatItems :: [a] -> Integer -> [a]
     repeatItems items count = concat (replicate (repeatCount count) items)
 
     repeatCount count
@@ -58,6 +66,7 @@ evalBinaryOpSequence config =
       | count > fromIntegral maxRepeat = maxRepeat
       | otherwise = fromIntegral count
 
+    maxRepeat :: Int
     maxRepeat = 1000000
 
     typeError = "Type error: cannot multiply sequence at " ++ showPos pos

@@ -915,17 +915,19 @@
 - 備考: 条件式は `else` が続く場合のみ条件式として扱い、リスト内包表記の `if` 節と区別する。`super()` は 0 引数と `(class, object)` 形式に対応し、メソッド実行時の所属クラスとレシーバをローカルに束縛して解決する。
 
 ## 現在のスコープ（P144: set / frozenset）
-- [ ] P144-1: `SetValue` と集合リテラル・`set()` / `frozenset()` を追加する
-- [ ] P144-2: `len` / `in` / 反復 / repr / 等価比較を実装する
-- [ ] P144-3: `add` / `remove` / `discard` / `pop` / `clear` / `update` を実装する
-- [ ] P144-4: `union` / `intersection` / `difference` と集合演算子を実装する
-- [ ] P144-5: 集合内包表記を実装する
+- [x] P144-1: `SetValue` と集合リテラル・`set()` / `frozenset()` を追加する
+- [x] P144-2: `len` / `in` / 反復 / repr / 等価比較を実装する
+- [x] P144-3: `add` / `remove` / `discard` / `pop` / `clear` / `update` を実装する
+- [x] P144-4: `union` / `intersection` / `difference` と集合演算子を実装する
+- [x] P144-5: 集合内包表記を実装する
+- 備考: 集合リテラルは `set([...])` へ脱糖する。集合メソッドは第一引数が集合のときだけ集合組み込みとして処理し、dict の `update` など既存メソッドを優先的に解決できるようにした。
 
 ## 現在のスコープ（P145: bytes / bytearray 最小）
-- [ ] P145-1: `BytesValue` と `bytes()` / `bytearray()` を追加する
-- [ ] P145-2: `len` / index / slice / concat / repeat / 反復を実装する
-- [ ] P145-3: `decode` / `encode` を実装する
-- [ ] P145-4: repr と `print` を実装する
+- [x] P145-1: `BytesValue` と `bytes()` / `bytearray()` を追加する
+- [x] P145-2: `len` / index / slice / concat / repeat / 反復を実装する
+- [x] P145-3: `decode` / `encode` を実装する
+- [x] P145-4: repr と `print` を実装する
+- 備考: bytes リテラルは `bytes(<text>, "latin-1")` へ脱糖する。UTF-8 / latin-1 / ascii の encode・decode に対応し、非 ASCII の UTF-8 往復も扱う。
 
 ## 現在のスコープ（P146: allowlist 拡張と CI 安定化）
 - [ ] P146-1: allowlist を 52 件から 100 件以上へ拡大する

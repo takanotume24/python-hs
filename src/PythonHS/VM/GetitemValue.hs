@@ -3,7 +3,6 @@ module PythonHS.VM.GetitemValue (getitemValue) where
 import PythonHS.Evaluator.DictPair (DictPair (..))
 import PythonHS.Evaluator.ShowPos (showPos)
 import PythonHS.Evaluator.Value (Value (..))
-import PythonHS.Lexer.Position (Position)
 import PythonHS.VM.GetitemValueConfig (GetitemValueConfig (..))
 
 getitemValue :: GetitemValueConfig -> Either String Value
@@ -14,6 +13,8 @@ getitemValue config = case seqValue of
     | IntValue {intValue = idx} <- indexValue -> getAtValues vals idx
   StringValue {stringValue = s}
     | IntValue {intValue = idx} <- indexValue -> getAtString s idx
+  BytesValue {bytesValueItems = vals}
+    | IntValue {intValue = idx} <- indexValue -> getAtBytes vals idx
   DictValue {dictValuePairs = pairs} -> getAtDict pairs
   _
     | IntValue {} <- indexValue ->
@@ -38,6 +39,11 @@ getitemValue config = case seqValue of
       case normalizeIndex (length s) idx of
         Just i -> Right (StringValue {stringValue = [s !! i]})
         Nothing -> Left ("Value error: string index out of range at " ++ showPos pos)
+
+    getAtBytes values idx =
+      case normalizeIndex (length values) idx of
+        Just i -> Right (IntValue {intValue = fromIntegral (values !! i)})
+        Nothing -> Left ("Value error: bytes index out of range at " ++ showPos pos)
 
     getAtDict pairs =
       case filter (\pair -> dictPairKey pair == indexValue) pairs of

@@ -1,10 +1,8 @@
 module PythonHS.VM.CompileWithStmt (compileWithStmt) where
 
 import PythonHS.AST.Expr (Expr (..))
-import PythonHS.AST.Stmt (Stmt)
 import PythonHS.AST.WithContext (ContextManager (..), WithEntry (..), WithExit (..))
 import PythonHS.Evaluator.Value (Value (NoneValue))
-import PythonHS.Lexer.Position (Position)
 import PythonHS.VM.CompileExprAt (compileExprAt)
 import PythonHS.VM.CompileExprAtConfig (CompileExprAtConfig (..))
 import PythonHS.VM.CompileExprResult (CompileExprResult (..))

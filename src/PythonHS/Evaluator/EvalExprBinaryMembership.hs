@@ -30,10 +30,16 @@ evalExprBinaryMembership config = do
         ListValue {listValueItems = items} -> Right (boolValue (any (valuesEqual leftVal) items))
         TupleValue {tupleValueItems = items} -> Right (boolValue (any (valuesEqual leftVal) items))
         DictValue {dictValuePairs = pairs} -> Right (boolValue (any (valuesEqual leftVal . pairKey) pairs))
+        SetValue {setValueItems = items} -> Right (boolValue (any (valuesEqual leftVal) items))
         StringValue {stringValue = s} ->
           case leftVal of
             StringValue {stringValue = t} -> Right (boolValue (t `isInfixOf` s))
             _ -> Left ("Type error: expected string in in at " ++ showPos pos)
+        BytesValue {bytesValueItems = items} ->
+          case leftVal of
+            IntValue {intValue = int} -> Right (boolValue (int >= 0 && int <= 255 && fromIntegral int `elem` items))
+            BytesValue {bytesValueItems = needle} -> Right (boolValue (needle `isInfixOf` items))
+            _ -> Left ("Type error: expected int or bytes in bytes containment at " ++ showPos pos)
         _ -> Left ("Type error: expected list/dict/tuple/string in in at " ++ showPos pos)
       where
         boolValue condition = IntValue {intValue = if condition then 1 else 0}

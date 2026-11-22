@@ -11,4 +11,8 @@ valuesEqual (FloatValue {floatValue = leftFloat}) (FloatValue {floatValue = righ
 valuesEqual (StringValue {stringValue = leftString}) (StringValue {stringValue = rightString}) = leftString == rightString
 valuesEqual (ListValue {listValueItems = leftItems}) (ListValue {listValueItems = rightItems}) = leftItems == rightItems
 valuesEqual (TupleValue {tupleValueItems = leftItems}) (TupleValue {tupleValueItems = rightItems}) = leftItems == rightItems
+valuesEqual (SetValue {setValueItems = leftItems}) (SetValue {setValueItems = rightItems}) =
+  length leftItems == length rightItems
+    && all (\leftItem -> any (valuesEqual leftItem) rightItems) leftItems
+valuesEqual (BytesValue {bytesValueItems = leftItems}) (BytesValue {bytesValueItems = rightItems}) = leftItems == rightItems
 valuesEqual leftValue rightValue = leftValue == rightValue

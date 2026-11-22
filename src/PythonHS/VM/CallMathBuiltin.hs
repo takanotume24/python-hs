@@ -2,7 +2,6 @@ module PythonHS.VM.CallMathBuiltin (callMathBuiltin) where
 
 import PythonHS.Evaluator.ShowPos (showPos)
 import PythonHS.Evaluator.Value (Value (..))
-import PythonHS.Lexer.Position (Position)
 import PythonHS.VM.CallMathBuiltinConfig (CallMathBuiltinConfig (..))
 
 callMathBuiltin :: CallMathBuiltinConfig -> Maybe (Either String Value)

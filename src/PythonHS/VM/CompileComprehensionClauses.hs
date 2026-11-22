@@ -1,6 +1,5 @@
 module PythonHS.VM.CompileComprehensionClauses (compileComprehensionClauses) where
 
-import PythonHS.AST.Expr (Expr)
 import PythonHS.AST.ListComprehensionClause (ListComprehensionClause (..))
 import PythonHS.VM.CompileComprehensionClausesConfig (CompileComprehensionClausesConfig (..))
 import PythonHS.VM.CompileExprResult (CompileExprResult (..))

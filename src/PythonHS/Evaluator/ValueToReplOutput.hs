@@ -1,5 +1,6 @@
 module PythonHS.Evaluator.ValueToReplOutput (valueToReplOutput) where
 
+import PythonHS.Evaluator.BytesRepr (bytesRepr)
 import PythonHS.Evaluator.DictPair (DictPair (..))
 import PythonHS.Evaluator.Value (Value (..))
 
@@ -13,6 +14,8 @@ valueToReplOutput value =
     ListValue {listValueItems = vals} -> "[" ++ joinWithCommaSpace (map valueToReplOutput vals) ++ "]"
     TupleValue {tupleValueItems = vals} -> tupleToOutput vals
     DictValue {dictValuePairs = pairs} -> "{" ++ joinWithCommaSpace (map pairToOutput pairs) ++ "}"
+    SetValue {setValueItems = items, setValueIsFrozen = frozen} -> setToOutput items frozen
+    BytesValue {bytesValueItems = items, bytesValueIsMutable = isMutable} -> bytesRepr isMutable items
     ModuleValue {moduleValueName} -> "<module:" ++ moduleValueName ++ ">"
     FunctionRefValue {functionRefValueName = name} -> "<function " ++ name ++ ">"
     ClassValue {classValueName = name} -> "<class " ++ name ++ ">"
@@ -34,6 +37,12 @@ valueToReplOutput value =
         [] -> "()"
         [single] -> "(" ++ valueToReplOutput single ++ ",)"
         _ -> "(" ++ joinWithCommaSpace (map valueToReplOutput values) ++ ")"
+
+    setToOutput items frozen =
+      let body = "{" ++ joinWithCommaSpace (map valueToReplOutput items) ++ "}"
+       in if frozen
+            then if null items then "frozenset()" else "frozenset(" ++ body ++ ")"
+            else if null items then "set()" else body
 
     escapeString [] = []
     escapeString ('\\' : rest) = "\\\\" ++ escapeString rest

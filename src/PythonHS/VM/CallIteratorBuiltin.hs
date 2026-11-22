@@ -164,6 +164,8 @@ callIteratorBuiltin config =
         ListValue {} -> "list"
         TupleValue {} -> "tuple"
         DictValue {} -> "dict"
+        SetValue {} -> "set"
+        BytesValue {} -> "bytes"
         ModuleValue {} -> "module"
         FunctionRefValue {} -> "function"
         ClassValue {} -> "type"

@@ -16,4 +16,6 @@ toForIterable config =
         ListValue {listValueItems = vals} -> Right vals
         TupleValue {tupleValueItems = vals} -> Right vals
         DictValue {dictValuePairs = pairs} -> Right (map dictPairKey pairs)
+        SetValue {setValueItems = items} -> Right items
+        BytesValue {bytesValueItems = items} -> Right (map (IntValue . fromIntegral) items)
         _ -> Left ("Type error: for expects iterable (int range, list, or dict) at " ++ showPos pos)

@@ -59,6 +59,6 @@ spec = describe "runSourceVm literal compatibility" $ do
         `shouldBe` Right ["[1, 2]"]
 
   describe "bytes literals" $ do
-    it "accepts a bytes literal until byte values are implemented" $ do
+    it "keeps a bytes literal as a bytes value" $ do
       runSourceVm "print b\"abc\"\n"
-        `shouldBe` Right ["abc"]
+        `shouldBe` Right ["b'abc'"]

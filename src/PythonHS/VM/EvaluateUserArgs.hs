@@ -4,7 +4,7 @@ import Data.Map.Strict qualified as Map
 import Data.Set qualified as Set
 import PythonHS.Evaluator.DictPair (DictPair (..))
 import PythonHS.Evaluator.ShowPos (showPos)
-import PythonHS.Evaluator.Value (Value (DictValue, ListValue, NoneValue, StringValue))
+import PythonHS.Evaluator.Value (Value (DictValue, NoneValue, StringValue))
 import PythonHS.Lexer.Position (Position)
 import PythonHS.VM.CompiledCallArg (CompiledCallArg (..))
 import PythonHS.VM.EnvState (EnvState (..))

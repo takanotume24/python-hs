@@ -18,6 +18,7 @@ import PythonHS.Lexer.TokenType
         LParenToken,
         MinusToken,
         NoneToken,
+        RBraceToken,
         RParenToken,
         StringToken,
         TildeToken,
@@ -30,6 +31,8 @@ import PythonHS.Parser.NormalizeFloatLiteral (normalizeFloatLiteral)
 import PythonHS.Parser.ParseCallArgument (parseCallArgument)
 import PythonHS.Parser.ParseCallArgumentConfig (ParseCallArgumentConfig (..))
 import PythonHS.Parser.ParseCallArgumentResult (ParseCallArgumentResult (..))
+import PythonHS.Parser.ParseComprehensionTail (parseComprehensionTail)
+import PythonHS.Parser.ParseComprehensionTailConfig (ParseComprehensionTailConfig (..))
 import PythonHS.Parser.ParseDictDisplay (parseDictDisplay)
 import PythonHS.Parser.ParseDictDisplayConfig (ParseDictDisplayConfig (..))
 import PythonHS.Parser.ParseError (ParseError (..))
@@ -72,14 +75,38 @@ parsePrimary config = do
       let (adjacentValues, remaining) = collectAdjacentStrings rest
        in Right (ParseResult {parseResultValue = StringExpr {stringExprValue = concat (value : adjacentValues), stringExprPos = pos}, parseResultRemaining = remaining})
     parseAtom (Token BytesToken value pos : rest) =
-      Right (ParseResult {parseResultValue = StringExpr {stringExprValue = value, stringExprPos = pos}, parseResultRemaining = rest})
+      let (adjacentValues, remaining) = collectAdjacentBytes rest
+          sourceText = concat (value : adjacentValues)
+          textExpr = StringExpr {stringExprValue = sourceText, stringExprPos = pos}
+          encodingExpr = StringExpr {stringExprValue = "latin-1", stringExprPos = pos}
+       in Right
+            ( ParseResult
+                { parseResultValue = CallExpr {callExprName = "bytes", callExprArgs = [textExpr, encodingExpr], callExprPos = pos},
+                  parseResultRemaining = remaining
+                }
+            )
     parseAtom (Token FStringToken value pos : rest) = do
       expr <- parseFStringExpr ParseFStringExprConfig {parseFStringExprParseExpr = parsePrimaryExpr config, parseFStringExprContent = value, parseFStringExprPos = pos}
       Right (ParseResult {parseResultValue = expr, parseResultRemaining = rest})
     parseAtom (Token LBracketToken _ pos : rest) =
       parseListDisplay ParseListDisplayConfig {parseListDisplayExpr = parsePrimaryExpr config, parseListDisplayPos = pos, parseListDisplayTokenStream = rest}
     parseAtom (Token LBraceToken _ pos : rest) =
-      parseDictDisplay ParseDictDisplayConfig {parseDictDisplayExpr = parsePrimaryExpr config, parseDictDisplayPos = pos, parseDictDisplayTokenStream = rest}
+      parseDictDisplay
+        ParseDictDisplayConfig
+          { parseDictDisplayExpr = parsePrimaryExpr config,
+            parseDictDisplayComprehension = \valueExpr comprehensionTokens ->
+              parseComprehensionTail
+                ParseComprehensionTailConfig
+                  { parseComprehensionTailExpr = parsePrimaryExpr config,
+                    parseComprehensionTailValueExpr = valueExpr,
+                    parseComprehensionTailListPos = pos,
+                    parseComprehensionTailClauses = [],
+                    parseComprehensionTailClosingToken = RBraceToken,
+                    parseComprehensionTailTokenStream = comprehensionTokens
+                  },
+            parseDictDisplayPos = pos,
+            parseDictDisplayTokenStream = rest
+          }
     parseAtom (Token LParenToken _ parenPos : rest) = do
       tupleResult <- parseParenTuple (ParseParenTupleConfig {parseParenTupleExpr = parsePrimaryExpr config, parseParenTuplePos = parenPos, parseParenTupleTokenStream = rest})
       let tupleExpr = parseResultValue tupleResult
@@ -95,6 +122,11 @@ parsePrimary config = do
       let (values, remaining) = collectAdjacentStrings rest
        in (value : values, remaining)
     collectAdjacentStrings rest = ([], rest)
+
+    collectAdjacentBytes (Token BytesToken value _ : rest) =
+      let (values, remaining) = collectAdjacentBytes rest
+       in (value : values, remaining)
+    collectAdjacentBytes rest = ([], rest)
 
     parsePostfix (IdentifierExpr name pos) (Token LParenToken _ _ : rest) = do
       argsResult <- parseArguments rest

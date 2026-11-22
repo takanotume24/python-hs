@@ -1,6 +1,5 @@
 module PythonHS.Evaluator.EvalIndexExpr (evalIndexExpr) where
 
-import PythonHS.AST.Expr (Expr)
 import PythonHS.Evaluator.EvalExprResult (EvalExprResult (..))
 import PythonHS.Evaluator.EvalIndexExprInput (EvalIndexExprInput (..))
 import PythonHS.VM.GetitemValue (getitemValue)

@@ -86,6 +86,11 @@ library
     , PythonHS.Evaluator.Env
     , PythonHS.Evaluator.Value
     , PythonHS.Evaluator.ValuesEqual
+    , PythonHS.Evaluator.BytesRepr
+    , PythonHS.Evaluator.Utf8Encode
+    , PythonHS.Evaluator.Utf8Decode
+    , PythonHS.Evaluator.EncodeText
+    , PythonHS.Evaluator.DecodeText
     , PythonHS.Evaluator.FuncEnv
     , PythonHS.Evaluator.EvalContextManager
     , PythonHS.Evaluator.EvalExprResult
@@ -346,6 +351,7 @@ library
     , PythonHS.Runner.RunSourceWithEngine
     , PythonHS.Runner.RunSourceWithEngineConfig
     , PythonHS.VM.CallBuiltin
+    , PythonHS.VM.CallBytesBuiltin
     , PythonHS.VM.CallBuiltinOrFail
     , PythonHS.VM.CallBuiltinOrFailConfig
     , PythonHS.VM.BindDefaults
@@ -390,6 +396,8 @@ library
     , PythonHS.VM.CallInstanceMethodStringConfig
     , PythonHS.VM.CallInstanceMethodStringResult
     , PythonHS.VM.CallNumericExtraBuiltin
+    , PythonHS.VM.CallSetBuiltin
+    , PythonHS.VM.CallSetBuiltinConfig
     , PythonHS.VM.CallReflectionBuiltin
     , PythonHS.VM.CallReflectionBuiltinConfig
     , PythonHS.VM.CallStrConversion
@@ -472,6 +480,12 @@ library
     , PythonHS.VM.EvalBinaryOpMembershipConfig
     , PythonHS.VM.EvalBinaryOpSequence
     , PythonHS.VM.EvalBinaryOpSequenceConfig
+    , PythonHS.VM.EvalBinaryOpSet
+    , PythonHS.VM.EvalBinaryOpSetConfig
+    , PythonHS.VM.EvalBinaryOpSetOrBitwise
+    , PythonHS.VM.EvalBinaryOpSetOrBitwiseConfig
+    , PythonHS.VM.EvalOrderComparison
+    , PythonHS.VM.EvalOrderComparisonConfig
     , PythonHS.VM.FindModuleFile
     , PythonHS.VM.CollectExports
     , PythonHS.VM.IsBuiltinImportModule
@@ -554,6 +568,7 @@ library
     , PythonHS.VM.CompileWithStmt
     , PythonHS.VM.VMScopeContext
     , PythonHS.VM.CallBuiltinConfig
+    , PythonHS.VM.CallBytesBuiltinConfig
     , PythonHS.VM.CallCollectionBuiltinConfig
     , PythonHS.VM.CallMapFilterBuiltinConfig
     , PythonHS.VM.CallMapFilterBuiltinResult
@@ -783,6 +798,8 @@ test-suite python-hs-test
     , Test.VM.RunSourceVmPart37Spec
     , Test.VM.RunSourceVmPart38Spec
     , Test.VM.RunSourceVmPart39Spec
+    , Test.VM.RunSourceVmPart40Spec
+    , Test.VM.RunSourceVmPart41Spec
     , Test.VM.RunInstructionsSpec
     , Test.VM.RunSourceVmAugAssignBitwiseSpec
     , Test.VM.RunSourceVmBlankLineSpec

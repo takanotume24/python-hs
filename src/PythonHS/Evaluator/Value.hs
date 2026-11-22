@@ -1,8 +1,8 @@
 module PythonHS.Evaluator.Value (Value (..)) where
 
+import Data.Word (Word8)
 import PythonHS.Evaluator.DictPair (DictPair)
 import PythonHS.Evaluator.ModuleAttr (ModuleAttr)
-import PythonHS.VM.MethodKind (MethodKind)
 import PythonHS.VM.MethodNamePair (MethodNamePair)
 
 data Value
@@ -13,6 +13,14 @@ data Value
   | ListValue {listValueItems :: [Value]}
   | TupleValue {tupleValueItems :: [Value]}
   | DictValue {dictValuePairs :: [DictPair Value Value]}
+  | SetValue
+      { setValueItems :: [Value],
+        setValueIsFrozen :: Bool
+      }
+  | BytesValue
+      { bytesValueItems :: [Word8],
+        bytesValueIsMutable :: Bool
+      }
   | ModuleValue {moduleValueName :: String, moduleValueAttrs :: [ModuleAttr Value]}
   | FunctionRefValue {functionRefValueName :: String, functionRefValueBindings :: [(String, Value)]}
   | ClassValue

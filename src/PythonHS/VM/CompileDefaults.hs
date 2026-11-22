@@ -1,6 +1,5 @@
 module PythonHS.VM.CompileDefaults (compileDefaults) where
 
-import PythonHS.AST.Expr (Expr)
 import PythonHS.AST.FunctionDefault (FunctionDefault (..))
 import PythonHS.VM.CompileDefaultsConfig (CompileDefaultsConfig (..))
 import PythonHS.VM.CompileDefaultsResult (CompileDefaultsResult (..))

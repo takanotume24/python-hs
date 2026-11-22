@@ -4,7 +4,6 @@ import PythonHS.AST.Expr (Expr)
 import PythonHS.AST.MatchCase (MatchCase)
 import PythonHS.AST.Pattern (Pattern)
 import PythonHS.AST.Stmt (Stmt)
-import PythonHS.Lexer.Position (Position)
 import PythonHS.VM.CompileExprResult (CompileExprResult)
 import PythonHS.VM.LoopContext (LoopContext)
 

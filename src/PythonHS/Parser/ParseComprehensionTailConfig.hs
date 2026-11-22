@@ -4,6 +4,7 @@ import PythonHS.AST.Expr (Expr)
 import PythonHS.AST.ListComprehensionClause (ListComprehensionClause)
 import PythonHS.Lexer.Position (Position)
 import PythonHS.Lexer.Token (Token)
+import PythonHS.Lexer.TokenType (TokenType)
 import PythonHS.Parser.ParseError (ParseError)
 import PythonHS.Parser.ParseResult (ParseResult)
 
@@ -12,5 +13,6 @@ data ParseComprehensionTailConfig = ParseComprehensionTailConfig
     parseComprehensionTailValueExpr :: Expr,
     parseComprehensionTailListPos :: Position,
     parseComprehensionTailClauses :: [ListComprehensionClause Expr],
+    parseComprehensionTailClosingToken :: TokenType,
     parseComprehensionTailTokenStream :: [Token]
   }

@@ -1,6 +1,5 @@
 module PythonHS.VM.PopValues (popValues) where
 
-import PythonHS.Evaluator.Value (Value)
 import PythonHS.VM.PopValuesConfig (PopValuesConfig (..))
 import PythonHS.VM.PopValuesResult (PopValuesResult (..))
 

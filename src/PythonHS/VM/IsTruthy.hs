@@ -12,6 +12,8 @@ isTruthy value =
     ListValue {listValueItems = vals} -> not (null vals)
     TupleValue {tupleValueItems = vals} -> not (null vals)
     DictValue {dictValuePairs = pairs} -> not (null pairs)
+    SetValue {setValueItems = items} -> not (null items)
+    BytesValue {bytesValueItems = items} -> not (null items)
     ModuleValue {} -> True
     ClassValue {} -> True
     FunctionRefValue {} -> True

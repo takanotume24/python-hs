@@ -1,6 +1,5 @@
 module PythonHS.VM.FirstKeywordArg (firstKeywordArg) where
 
-import PythonHS.Lexer.Position (Position)
 import PythonHS.VM.CompiledCallArg (CompiledCallArg (..))
 import PythonHS.VM.Instruction (Instruction)
 import PythonHS.VM.KeywordArgInfo (KeywordArgInfo (..))

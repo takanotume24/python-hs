@@ -1,20 +1,15 @@
 module PythonHS.Evaluator.EvalForStmt (evalForStmt) where
 
 import Data.Map.Strict qualified as Map
-import PythonHS.AST.Expr (Expr (..))
-import PythonHS.AST.Stmt (Stmt)
 import PythonHS.Evaluator.DictPair (DictPair (..))
-import PythonHS.Evaluator.Env (Env)
 import PythonHS.Evaluator.EvalExprResult (EvalExprResult (..))
 import PythonHS.Evaluator.EvalForStmtConfig (EvalForStmtConfig (..))
 import PythonHS.Evaluator.EvalForStmtInput (EvalForStmtInput (..))
 import PythonHS.Evaluator.EvalStmtResult (EvalStmtResult (..))
 import PythonHS.Evaluator.EvalStmtRet (EvalStmtRet (..))
-import PythonHS.Evaluator.FuncEnv (FuncEnv)
 import PythonHS.Evaluator.MaxLoopIterations (maxLoopIterations)
 import PythonHS.Evaluator.ShowPos (showPos)
 import PythonHS.Evaluator.Value (Value (..))
-import PythonHS.Lexer.Position (Position)
 import PythonHS.Parser.ExprPos (exprPos)
 
 evalForStmt :: EvalForStmtInput -> Either String EvalStmtResult
@@ -47,17 +42,17 @@ evalForStmt input = do
     forPos = evalForStmtInputPos input
     rest = evalForStmtInputRest input
 
-    loopRange evalStatementsFn env' fenv' idx upper outputAcc iterations
-      | idx >= upper = evalStatementsFn env' fenv' (outputAcc []) rest
+    loopRange runStatements env' fenv' idx upper outputAcc iterations
+      | idx >= upper = runStatements env' fenv' (outputAcc []) rest
       | iterations >= maxLoopIterations = Left $ "Value error: iteration limit exceeded at " ++ showPos forPos
       | otherwise = do
           let envWithVar = Map.insert name (IntValue idx) env'
-          EvalStmtResult {evalStmtResultEnv = envAfter, evalStmtResultFuncEnv = fenvAfter, evalStmtResultOutputs = outputsAfter, evalStmtResultRet = ret} <- evalStatementsFn envWithVar fenv' [] body
+          EvalStmtResult {evalStmtResultEnv = envAfter, evalStmtResultFuncEnv = fenvAfter, evalStmtResultOutputs = outputsAfter, evalStmtResultRet = ret} <- runStatements envWithVar fenv' [] body
           let nextOutputAcc = outputAcc . (outputsAfter ++)
           let nextIterations = iterations + 1
           case ret of
-            Just EvalStmtRet {evalStmtRetValue = BreakValue} -> evalStatementsFn envAfter fenvAfter (nextOutputAcc []) rest
-            Just EvalStmtRet {evalStmtRetValue = ContinueValue} -> nextIterations `seq` loopRange evalStatementsFn envAfter fenvAfter (idx + 1) upper nextOutputAcc nextIterations
+            Just EvalStmtRet {evalStmtRetValue = BreakValue} -> runStatements envAfter fenvAfter (nextOutputAcc []) rest
+            Just EvalStmtRet {evalStmtRetValue = ContinueValue} -> nextIterations `seq` loopRange runStatements envAfter fenvAfter (idx + 1) upper nextOutputAcc nextIterations
             Just _ ->
               Right
                 EvalStmtResult
@@ -66,19 +61,19 @@ evalForStmt input = do
                     evalStmtResultOutputs = nextOutputAcc [],
                     evalStmtResultRet = ret
                   }
-            Nothing -> nextIterations `seq` loopRange evalStatementsFn envAfter fenvAfter (idx + 1) upper nextOutputAcc nextIterations
+            Nothing -> nextIterations `seq` loopRange runStatements envAfter fenvAfter (idx + 1) upper nextOutputAcc nextIterations
 
-    loopList evalStatementsFn env' fenv' [] outputAcc _ = evalStatementsFn env' fenv' (outputAcc []) rest
-    loopList evalStatementsFn env' fenv' (value : remaining) outputAcc iterations
+    loopList runStatements env' fenv' [] outputAcc _ = runStatements env' fenv' (outputAcc []) rest
+    loopList runStatements env' fenv' (value : remaining) outputAcc iterations
       | iterations >= maxLoopIterations = Left $ "Value error: iteration limit exceeded at " ++ showPos forPos
       | otherwise = do
           let envWithVar = Map.insert name value env'
-          EvalStmtResult {evalStmtResultEnv = envAfter, evalStmtResultFuncEnv = fenvAfter, evalStmtResultOutputs = outputsAfter, evalStmtResultRet = ret} <- evalStatementsFn envWithVar fenv' [] body
+          EvalStmtResult {evalStmtResultEnv = envAfter, evalStmtResultFuncEnv = fenvAfter, evalStmtResultOutputs = outputsAfter, evalStmtResultRet = ret} <- runStatements envWithVar fenv' [] body
           let nextOutputAcc = outputAcc . (outputsAfter ++)
           let nextIterations = iterations + 1
           case ret of
-            Just EvalStmtRet {evalStmtRetValue = BreakValue} -> evalStatementsFn envAfter fenvAfter (nextOutputAcc []) rest
-            Just EvalStmtRet {evalStmtRetValue = ContinueValue} -> nextIterations `seq` loopList evalStatementsFn envAfter fenvAfter remaining nextOutputAcc nextIterations
+            Just EvalStmtRet {evalStmtRetValue = BreakValue} -> runStatements envAfter fenvAfter (nextOutputAcc []) rest
+            Just EvalStmtRet {evalStmtRetValue = ContinueValue} -> nextIterations `seq` loopList runStatements envAfter fenvAfter remaining nextOutputAcc nextIterations
             Just _ ->
               Right
                 EvalStmtResult
@@ -87,4 +82,4 @@ evalForStmt input = do
                     evalStmtResultOutputs = nextOutputAcc [],
                     evalStmtResultRet = ret
                   }
-            Nothing -> nextIterations `seq` loopList evalStatementsFn envAfter fenvAfter remaining nextOutputAcc nextIterations
+            Nothing -> nextIterations `seq` loopList runStatements envAfter fenvAfter remaining nextOutputAcc nextIterations

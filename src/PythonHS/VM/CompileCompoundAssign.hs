@@ -1,8 +1,5 @@
 module PythonHS.VM.CompileCompoundAssign (compileCompoundAssign) where
 
-import PythonHS.AST.BinaryOperator (BinaryOperator)
-import PythonHS.AST.Expr (Expr)
-import PythonHS.Lexer.Position (Position)
 import PythonHS.VM.CompileCompoundAssignConfig (CompileCompoundAssignConfig (..))
 import PythonHS.VM.CompileExprResult (CompileExprResult (..))
 import PythonHS.VM.Instruction (Instruction (..))

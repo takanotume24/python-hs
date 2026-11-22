@@ -4,7 +4,7 @@ import PythonHS.AST.DictEntry (DictEntry (..))
 import PythonHS.AST.Expr (Expr (..))
 import PythonHS.Lexer.Position (Position (..))
 import PythonHS.Lexer.Token (Token (Token), position)
-import PythonHS.Lexer.TokenType (TokenType (ColonToken, CommaToken, DoubleStarToken, RBraceToken))
+import PythonHS.Lexer.TokenType (TokenType (ColonToken, CommaToken, DoubleStarToken, ForToken, RBraceToken))
 import PythonHS.Parser.DesugarStarredDict (desugarStarredDict)
 import PythonHS.Parser.ParseDictDisplayConfig (ParseDictDisplayConfig (..))
 import PythonHS.Parser.ParseError (ParseError (..))
@@ -30,11 +30,34 @@ parseDictDisplay config =
           let valueExpr = parseResultValue valueResult
               afterValue = parseResultRemaining valueResult
           parseDictTail [DictEntry {dictEntryKey = keyExpr, dictEntryValue = valueExpr}] afterValue
+        forTokens@(Token ForToken _ _ : _) -> do
+          comprehensionResult <- parseDictDisplayComprehension config keyExpr forTokens
+          let comprehensionExpr = parseResultValue comprehensionResult
+          Right (ParseResult {parseResultValue = setExprFromList comprehensionExpr, parseResultRemaining = parseResultRemaining comprehensionResult})
+        commaTokens@(Token CommaToken _ _ : _) -> parseSetTail [keyExpr] commaTokens
+        Token RBraceToken _ _ : afterBrace ->
+          Right (ParseResult {parseResultValue = setExprFromList (ListExpr {listExprItems = [keyExpr], listExprPos = parseDictDisplayPos config}), parseResultRemaining = afterBrace})
         tok : _ -> Left (ExpectedExpression {parseErrorPosition = position tok})
         _ -> Left (ExpectedExpression {parseErrorPosition = Position 0 0})
   where
+    setExprFromList listExpr =
+      CallExpr {callExprName = "set", callExprArgs = [listExpr], callExprPos = parseDictDisplayPos config}
+
     spreadEntry starPos valueExpr =
       DictEntry {dictEntryKey = KwStarArgExpr {kwStarArgExprValue = valueExpr, kwStarArgExprPos = starPos}, dictEntryValue = NoneExpr {noneExprPos = starPos}}
+
+    parseSetTail items (Token RBraceToken _ _ : rest) =
+      Right (ParseResult {parseResultValue = setExprFromList (ListExpr {listExprItems = items, listExprPos = parseDictDisplayPos config}), parseResultRemaining = rest})
+    parseSetTail items (Token CommaToken _ _ : rest) =
+      case rest of
+        Token RBraceToken _ _ : afterBrace ->
+          Right (ParseResult {parseResultValue = setExprFromList (ListExpr {listExprItems = items, listExprPos = parseDictDisplayPos config}), parseResultRemaining = afterBrace})
+        _ -> do
+          nextResult <- parseDictDisplayExpr config rest
+          let nextExpr = parseResultValue nextResult
+          parseSetTail (items ++ [nextExpr]) (parseResultRemaining nextResult)
+    parseSetTail _ (tok : _) = Left (ExpectedExpression {parseErrorPosition = position tok})
+    parseSetTail _ _ = Left (ExpectedExpression {parseErrorPosition = Position 0 0})
 
     parseDictTail pairs (Token CommaToken _ _ : rest) =
       case rest of

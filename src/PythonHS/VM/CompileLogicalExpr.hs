@@ -1,7 +1,6 @@
 module PythonHS.VM.CompileLogicalExpr (compileLogicalExpr) where
 
 import PythonHS.AST.BinaryOperator (BinaryOperator (AndOperator, OrOperator))
-import PythonHS.AST.Expr (Expr)
 import PythonHS.Evaluator.Value (Value (..))
 import PythonHS.VM.CompileExprResult (CompileExprResult (..))
 import PythonHS.VM.CompileLogicalExprConfig (CompileLogicalExprConfig (..))

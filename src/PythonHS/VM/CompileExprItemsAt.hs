@@ -1,6 +1,5 @@
 module PythonHS.VM.CompileExprItemsAt (compileExprItemsAt) where
 
-import PythonHS.AST.Expr (Expr)
 import PythonHS.VM.CompileExprItemsAtConfig (CompileExprItemsAtConfig (..))
 import PythonHS.VM.CompileExprResult (CompileExprResult (..))
 

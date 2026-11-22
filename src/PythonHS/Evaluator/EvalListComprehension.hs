@@ -3,16 +3,13 @@ module PythonHS.Evaluator.EvalListComprehension (evalListComprehension) where
 import Data.Map.Strict qualified as Map
 import PythonHS.AST.Expr (Expr)
 import PythonHS.AST.ListComprehensionClause (ListComprehensionClause (..))
-import PythonHS.Evaluator.DictPair (DictPair (..))
 import PythonHS.Evaluator.Env (Env)
 import PythonHS.Evaluator.EvalExprResult (EvalExprResult (..))
 import PythonHS.Evaluator.EvalListComprehensionInput (EvalListComprehensionInput (..))
 import PythonHS.Evaluator.ExpectTruthy (expectTruthy)
 import PythonHS.Evaluator.ExpectTruthyInput (ExpectTruthyInput (..))
-import PythonHS.Evaluator.FuncEnv (FuncEnv)
 import PythonHS.Evaluator.ShowPos (showPos)
 import PythonHS.Evaluator.Value (Value (..))
-import PythonHS.Lexer.Position (Position)
 import PythonHS.VM.ToForIterable (toForIterable)
 import PythonHS.VM.ToForIterableConfig (ToForIterableConfig (..))
 

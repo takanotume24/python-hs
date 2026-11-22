@@ -2,7 +2,6 @@ module PythonHS.VM.CompileTryExceptConfig (CompileTryExceptConfig (..)) where
 
 import PythonHS.AST.ExceptSuite (ExceptSuite)
 import PythonHS.AST.Stmt (Stmt)
-import PythonHS.Lexer.Position (Position)
 import PythonHS.VM.CompileExprResult (CompileExprResult)
 import PythonHS.VM.LoopContext (LoopContext)
 

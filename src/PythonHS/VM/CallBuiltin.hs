@@ -5,6 +5,8 @@ import PythonHS.Evaluator.RangeValuesConfig (RangeValuesConfig (..))
 import PythonHS.Evaluator.ShowPos (showPos)
 import PythonHS.Evaluator.Value (Value (..))
 import PythonHS.VM.CallBuiltinConfig (CallBuiltinConfig (..))
+import PythonHS.VM.CallBytesBuiltin (callBytesBuiltin)
+import PythonHS.VM.CallBytesBuiltinConfig (CallBytesBuiltinConfig (..))
 import PythonHS.VM.CallCollectionBuiltin (callCollectionBuiltin)
 import PythonHS.VM.CallCollectionBuiltinConfig (CallCollectionBuiltinConfig (..))
 import PythonHS.VM.CallCollectionMethodBuiltin (callCollectionMethodBuiltin)
@@ -23,6 +25,8 @@ import PythonHS.VM.CallMathBuiltinConfig (CallMathBuiltinConfig (..))
 import PythonHS.VM.CallNumericBuiltin (callNumericBuiltin)
 import PythonHS.VM.CallNumericBuiltinConfig (CallNumericBuiltinConfig (..))
 import PythonHS.VM.CallNumericExtraBuiltin (callNumericExtraBuiltin)
+import PythonHS.VM.CallSetBuiltin (callSetBuiltin)
+import PythonHS.VM.CallSetBuiltinConfig (CallSetBuiltinConfig (..))
 import PythonHS.VM.CallStdlibBuiltin (callStdlibBuiltin)
 import PythonHS.VM.CallStdlibBuiltinConfig (CallStdlibBuiltinConfig (..))
 import PythonHS.VM.CallStringBuiltin (callStringBuiltin)
@@ -55,11 +59,13 @@ callBuiltin config =
           firstJust
             [ callConstructorBuiltin CallConstructorBuiltinConfig {callConstructorBuiltinName = name, callConstructorBuiltinArgs = args, callConstructorBuiltinPos = pos},
               callConversionBuiltin CallConversionBuiltinConfig {callConversionBuiltinName = name, callConversionBuiltinArgs = args, callConversionBuiltinPos = pos},
+              callBytesBuiltin CallBytesBuiltinConfig {callBytesBuiltinName = name, callBytesBuiltinArgs = args, callBytesBuiltinPos = pos},
               callFormatBuiltin CallBuiltinConfig {callBuiltinName = name, callBuiltinArgs = args, callBuiltinPos = pos},
               callIterableBuiltin CallIterableBuiltinConfig {callIterableBuiltinName = name, callIterableBuiltinArgs = args, callIterableBuiltinPos = pos},
               callStringBuiltin CallStringBuiltinConfig {callStringBuiltinName = name, callStringBuiltinArgs = args, callStringBuiltinPos = pos},
               callStringSearchBuiltin CallStringBuiltinConfig {callStringBuiltinName = name, callStringBuiltinArgs = args, callStringBuiltinPos = pos},
               callStringPredicateBuiltin CallStringBuiltinConfig {callStringBuiltinName = name, callStringBuiltinArgs = args, callStringBuiltinPos = pos},
+              callSetBuiltin CallSetBuiltinConfig {callSetBuiltinName = name, callSetBuiltinArgs = args, callSetBuiltinPos = pos},
               callCollectionMethodBuiltin CallCollectionMethodBuiltinConfig {callCollectionMethodBuiltinName = name, callCollectionMethodBuiltinArgs = args, callCollectionMethodBuiltinPos = pos},
               callNumericBuiltin CallNumericBuiltinConfig {callNumericBuiltinName = name, callNumericBuiltinArgs = args, callNumericBuiltinPos = pos},
               callNumericExtraBuiltin CallBuiltinConfig {callBuiltinName = name, callBuiltinArgs = args, callBuiltinPos = pos},
