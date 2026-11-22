@@ -44,8 +44,9 @@ import PythonHS.VM.PopValues (popValues)
 import PythonHS.VM.PopValuesConfig (PopValuesConfig (..))
 import PythonHS.VM.PopValuesResult (PopValuesResult (..))
 import PythonHS.VM.StoreNameWithAttr (storeNameWithAttr)
-import PythonHS.VM.ToForIterable (toForIterable)
-import PythonHS.VM.ToForIterableConfig (ToForIterableConfig (..))
+import PythonHS.VM.ToIterableValues (toIterableValues)
+import PythonHS.VM.ToIterableValuesConfig (ToIterableValuesConfig (..))
+import PythonHS.VM.ToIterableValuesResult (ToIterableValuesResult (..))
 import PythonHS.VM.ToPairs (toPairs)
 import PythonHS.VM.VMScopeContext (VMScopeContext (VMScopeContext))
 import PythonHS.VM.VMState (VMState (..))
@@ -105,8 +106,26 @@ executeOneInstruction execute state instruction =
                 ForSetup forNextIndex pos ->
                   case vmStack state of
                     iterableValue : rest -> do
-                      iterableValues <- toForIterable ToForIterableConfig {toForIterableValue = iterableValue, toForIterablePos = pos}
-                      Right state {vmIp = vmIp state + 1, vmStack = rest, vmLoop = (vmLoop state) {loopForStates = Map.insert forNextIndex iterableValues (loopForStates (vmLoop state))}}
+                      iterableResult <-
+                        toIterableValues
+                          ToIterableValuesConfig
+                            { toIterableValuesExecute = execute,
+                              toIterableValuesIsTopLevel = vmIsTopLevel state,
+                              toIterableValuesValue = iterableValue,
+                              toIterableValuesPos = pos,
+                              toIterableValuesGlobals = envGlobals (vmEnv state),
+                              toIterableValuesLocals = envLocals (vmEnv state),
+                              toIterableValuesFunctions = envFunctions (vmEnv state),
+                              toIterableValuesOutputs = vmOutputs state
+                            }
+                      let iterableValues = toIterableValuesResultValues iterableResult
+                          newEnv =
+                            (vmEnv state)
+                              { envGlobals = toIterableValuesResultGlobals iterableResult,
+                                envLocals = toIterableValuesResultLocals iterableResult,
+                                envFunctions = toIterableValuesResultFunctions iterableResult
+                              }
+                      Right state {vmIp = vmIp state + 1, vmStack = rest, vmEnv = newEnv, vmOutputs = toIterableValuesResultOutputs iterableResult, vmLoop = (vmLoop state) {loopForStates = Map.insert forNextIndex iterableValues (loopForStates (vmLoop state))}}
                     _ -> Left "VM runtime error: for setup requires iterable value on stack"
                 ForNext name loopEndIndex _ ->
                   case executeForNext scopeCtx (vmIp state) name loopEndIndex (loopForStates (vmLoop state)) (envGlobals (vmEnv state)) (envLocals (vmEnv state)) of

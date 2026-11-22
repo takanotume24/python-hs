@@ -10,6 +10,7 @@ import PythonHS.VM.CallExceptionClassBuiltin (callExceptionClassBuiltin)
 import PythonHS.VM.CallExceptionClassBuiltinConfig (CallExceptionClassBuiltinConfig (..))
 import PythonHS.VM.CallInstanceMethodStringConfig (CallInstanceMethodStringConfig (..))
 import PythonHS.VM.CallInstanceMethodStringResult (CallInstanceMethodStringResult (..))
+import PythonHS.VM.CallIteratorBuiltinOrPass (callIteratorBuiltinOrPass)
 import PythonHS.VM.CallMapFilterBuiltin (callMapFilterBuiltin)
 import PythonHS.VM.CallMapFilterBuiltinConfig (CallMapFilterBuiltinConfig (..))
 import PythonHS.VM.CallMapFilterBuiltinResult (CallMapFilterBuiltinResult (..))
@@ -60,7 +61,10 @@ callBuiltinOrFail config =
                     Nothing ->
                       case callUnittestRuntime runtimeConfig of
                         Just runtimeResult -> runtimeResult
-                        Nothing -> dispatchBuiltin
+                        Nothing ->
+                          case callIteratorBuiltinOrPass config of
+                            Just iteratorResult -> iteratorResult
+                            Nothing -> dispatchBuiltin
                 _ -> dispatchBuiltin
   where
     execute = callBuiltinOrFailExecute config

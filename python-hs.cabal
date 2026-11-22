@@ -352,6 +352,13 @@ library
     , PythonHS.VM.FormatValueConfig
     , PythonHS.VM.CallIterableBuiltin
     , PythonHS.VM.CallIterableBuiltinConfig
+    , PythonHS.VM.CallIteratorBuiltin
+    , PythonHS.VM.CallIteratorBuiltinConfig
+    , PythonHS.VM.CallIteratorBuiltinResult
+    , PythonHS.VM.CallIteratorBuiltinOrPass
+    , PythonHS.VM.CallBoundMethod
+    , PythonHS.VM.CallBoundMethodConfig
+    , PythonHS.VM.CallBoundMethodResult
     , PythonHS.VM.CallMapFilterBuiltin
     , PythonHS.VM.CallStringBuiltin
     , PythonHS.VM.CallStringBuiltinConfig
@@ -449,6 +456,7 @@ library
     , PythonHS.VM.IsBuiltinImportModule
     , PythonHS.VM.IsBuiltinCallableName
     , PythonHS.VM.ParseFormatSpec
+    , PythonHS.VM.PropagateInstanceMutation
     , PythonHS.VM.MatchesExceptionClass
     , PythonHS.VM.IterableItems
     , PythonHS.VM.ModuleKeyFor
@@ -504,10 +512,15 @@ library
     , PythonHS.VM.LookupNameWithAttr
     , PythonHS.VM.StoreNameWithAttr
     , PythonHS.VM.FindMethodFunctionName
+    , PythonHS.VM.FindInstanceMutation
+    , PythonHS.VM.InstanceMutation
     , PythonHS.VM.MatchPatternBindings
     , PythonHS.VM.BindPatternCaptures
     , PythonHS.VM.PopValues
     , PythonHS.VM.ToForIterable
+    , PythonHS.VM.ToIterableValues
+    , PythonHS.VM.ToIterableValuesConfig
+    , PythonHS.VM.ToIterableValuesResult
     , PythonHS.VM.ToPairs
     , PythonHS.VM.InitVMState
     , PythonHS.VM.ExecuteDefineClassInstruction
@@ -729,6 +742,7 @@ test-suite python-hs-test
     , Test.VM.RunSourceVmFStringSpec
     , Test.VM.RunSourceVmPart29Spec
     , Test.VM.RunSourceVmPart30Spec
+    , Test.VM.RunSourceVmPart32Spec
     , Test.VM.RunInstructionsSpec
     , Test.VM.RunSourceVmAugAssignBitwiseSpec
     , Test.VM.RunSourceVmBlankLineSpec

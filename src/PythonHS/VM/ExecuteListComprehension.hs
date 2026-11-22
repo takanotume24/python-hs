@@ -12,8 +12,9 @@ import PythonHS.VM.FunctionInfo (FunctionInfo)
 import PythonHS.VM.Instruction (Instruction)
 import PythonHS.VM.IsTruthy (isTruthy)
 import PythonHS.VM.LoopState (LoopState (..))
-import PythonHS.VM.ToForIterable (toForIterable)
-import PythonHS.VM.ToForIterableConfig (ToForIterableConfig (..))
+import PythonHS.VM.ToIterableValues (toIterableValues)
+import PythonHS.VM.ToIterableValuesConfig (ToIterableValuesConfig (..))
+import PythonHS.VM.ToIterableValuesResult (ToIterableValuesResult (..))
 import PythonHS.VM.VMState (VMState (..))
 
 executeListComprehension ::
@@ -74,8 +75,19 @@ executeListComprehension execute clauses valueCode pos globalsEnv localEnv funct
       let iterState = emptyState (compiledComprehensionClauseIterCode clause) globalsNow localsNow functionsNow outputsNow
       finalIterState <- execute iterState
       iterValue <- requireValue (extractReturnValue finalIterState)
-      iterItems <- toForIterable ToForIterableConfig {toForIterableValue = iterValue, toForIterablePos = pos}
-      evalClauseItems (compiledComprehensionClauseTargets clause) (compiledComprehensionClauseConds clause) restClauses localsNow iterItems acc (envGlobals (vmEnv finalIterState)) (envFunctions (vmEnv finalIterState)) (vmOutputs finalIterState)
+      iterableResult <-
+        toIterableValues
+          ToIterableValuesConfig
+            { toIterableValuesExecute = execute,
+              toIterableValuesIsTopLevel = False,
+              toIterableValuesValue = iterValue,
+              toIterableValuesPos = pos,
+              toIterableValuesGlobals = envGlobals (vmEnv finalIterState),
+              toIterableValuesLocals = envLocals (vmEnv finalIterState),
+              toIterableValuesFunctions = envFunctions (vmEnv finalIterState),
+              toIterableValuesOutputs = vmOutputs finalIterState
+            }
+      evalClauseItems (compiledComprehensionClauseTargets clause) (compiledComprehensionClauseConds clause) restClauses (toIterableValuesResultLocals iterableResult) (toIterableValuesResultValues iterableResult) acc (toIterableValuesResultGlobals iterableResult) (toIterableValuesResultFunctions iterableResult) (toIterableValuesResultOutputs iterableResult)
 
     evalClauseItems _ _ _ _ [] acc globalsNow functionsNow outputsNow =
       Right (acc, globalsNow, functionsNow, outputsNow)

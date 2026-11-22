@@ -9,8 +9,11 @@ import PythonHS.VM.BindDefaults (bindDefaults)
 import PythonHS.VM.CollectFunctionGlobalDecls (collectFunctionGlobalDecls)
 import PythonHS.VM.EnvState (EnvState (..))
 import PythonHS.VM.ExceptionState (ExceptionState (..))
+import PythonHS.VM.FindInstanceMutation (findInstanceMutation)
 import PythonHS.VM.FunctionInfo (FunctionInfo (..))
+import PythonHS.VM.InstanceMutation (InstanceMutation (..))
 import PythonHS.VM.LoopState (LoopState (..))
+import PythonHS.VM.PropagateInstanceMutation (propagateInstanceMutation)
 import PythonHS.VM.VMState (VMState (..))
 
 executeCallUserFunction ::
@@ -35,7 +38,9 @@ executeCallUserFunction execute isTopLevel pos stack localEnv targetName maybeCa
       initialLocals <- bindCallArguments targetName pos params initArgValues initArgKinds
       let capturedLocals =
             case maybeCapturedBindings of
-              Just bindings -> Map.fromList bindings
+              Just bindings ->
+                Map.fromList
+                  (filter (\(name, _) -> name /= "__python_hs_bound_self__") bindings)
               Nothing -> Map.empty
           mergedLocals = Map.union initialLocals capturedLocals
       (functionLocals, globalsAfterDefaults, functionsAfterDefaults, outputsAfterDefaults) <-
@@ -61,6 +66,19 @@ executeCallUserFunction execute isTopLevel pos stack localEnv targetName maybeCa
                 vmTraceFailure = Nothing
               }
       finalState <- execute callState
-      let returnValue = case vmStack finalState of (value : _) -> value; [] -> IntValue 0
-          newLocalEnv = if isTopLevel then envGlobals (vmEnv finalState) else localEnv
-      Right (returnValue : stack, envGlobals (vmEnv finalState), newLocalEnv, envFunctions (vmEnv finalState), vmOutputs finalState)
+      let finalEnv = vmEnv finalState
+          capturedBindings =
+            case maybeCapturedBindings of
+              Just bindings -> bindings
+              Nothing -> []
+          mutatedSelf = findInstanceMutation params capturedBindings (envLocals finalEnv)
+          applyMutation environment =
+            case mutatedSelf of
+              Just InstanceMutation {instanceMutationOldValue = oldValue, instanceMutationNewValue = newValue} ->
+                propagateInstanceMutation oldValue newValue environment
+              Nothing -> environment
+          propagatedGlobals = applyMutation (envGlobals finalEnv)
+          propagatedLocals = applyMutation localEnv
+          returnValue = case vmStack finalState of (value : _) -> value; [] -> IntValue 0
+          newLocalEnv = if isTopLevel then propagatedGlobals else propagatedLocals
+      Right (returnValue : stack, propagatedGlobals, newLocalEnv, envFunctions finalEnv, vmOutputs finalState)

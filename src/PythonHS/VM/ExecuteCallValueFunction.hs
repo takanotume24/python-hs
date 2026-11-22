@@ -14,10 +14,13 @@ import PythonHS.VM.CompiledCallArg (CompiledCallArg (..))
 import PythonHS.VM.EnvState (EnvState (..))
 import PythonHS.VM.EvaluateUserArgs (evaluateUserArgs)
 import PythonHS.VM.ExceptionState (ExceptionState (..))
+import PythonHS.VM.FindInstanceMutation (findInstanceMutation)
 import PythonHS.VM.FunctionInfo (FunctionInfo (..))
+import PythonHS.VM.InstanceMutation (InstanceMutation (..))
 import PythonHS.VM.Instruction (Instruction)
 import PythonHS.VM.IsBuiltinCallableName (isBuiltinCallableName)
 import PythonHS.VM.LoopState (LoopState (..))
+import PythonHS.VM.PropagateInstanceMutation (propagateInstanceMutation)
 import PythonHS.VM.VMState (VMState (..))
 
 executeCallValueFunction ::
@@ -71,12 +74,21 @@ executeCallValueFunction execute isTopLevel compiledArgs pos stack globalsEnv lo
                         vmTraceFailure = Nothing
                       }
               finalState <- execute callState
-              let returnValue =
+              let finalEnv = vmEnv finalState
+                  mutatedSelf = findInstanceMutation params capturedBindings (envLocals finalEnv)
+                  applyMutation environment =
+                    case mutatedSelf of
+                      Just InstanceMutation {instanceMutationOldValue = oldValue, instanceMutationNewValue = newValue} ->
+                        propagateInstanceMutation oldValue newValue environment
+                      Nothing -> environment
+                  propagatedGlobals = applyMutation (envGlobals finalEnv)
+                  propagatedLocals = applyMutation localEnv
+                  returnValue =
                     case vmStack finalState of
                       (value : _) -> value
                       [] -> IntValue 0
-                  newLocalEnv = if isTopLevel then envGlobals (vmEnv finalState) else localEnv
-              Right (returnValue : restStack, envGlobals (vmEnv finalState), newLocalEnv, envFunctions (vmEnv finalState), vmOutputs finalState)
+                  newLocalEnv = if isTopLevel then propagatedGlobals else propagatedLocals
+              Right (returnValue : restStack, propagatedGlobals, newLocalEnv, envFunctions finalEnv, vmOutputs finalState)
         _ -> Left ("Type error: callable expected at " ++ showPos pos)
     _ -> Left "VM runtime error: call requires callable on stack"
   where

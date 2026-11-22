@@ -893,9 +893,9 @@
 - [x] P126-4: エラー規約をテストで固定し、品質ゲートを通す
 
 ## 現在のスコープ（P127: ユーザー定義反復プロトコル）
-- [ ] P127-1: `__iter__` / `__next__` を for・内包表記・list/tuple で動作させる
-- [ ] P127-2: `next(iterable)` / `next(iterable, default)` を追加する
-- [ ] P127-3: 未定義時の型エラー規約をテストで固定し、品質ゲートを通す
+- [x] P127-1: `__iter__` / `__next__` を for・内包表記・list/tuple で動作させる
+- [x] P127-2: `next(iterable)` / `next(iterable, default)` を追加する
+- [x] P127-3: 未定義時の型エラー規約をテストで固定し、品質ゲートを通す
 
 ## 現在のスコープ（P128: nonlocal 文）
 - [ ] P128-1: `nonlocal` を lexer / parser / AST に追加する

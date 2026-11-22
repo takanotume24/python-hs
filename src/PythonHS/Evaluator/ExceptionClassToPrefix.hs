@@ -13,4 +13,5 @@ exceptionClassToPrefix className
   | className == "UnboundLocalError" = "UnboundLocalError: "
   | className == "AttributeError" = "Attribute error: "
   | className == "AssertionError" = "AssertionError: "
+  | className == "StopIteration" = "StopIteration: "
   | otherwise = "Runtime error: "

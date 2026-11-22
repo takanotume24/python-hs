@@ -118,7 +118,8 @@ executeCallFunction execute isTopLevel fname compiledArgs pos stack globalsEnv l
                               case findMethodFunctionName globalsAfterArgs localEnv className fname of
                                 Just methodPair ->
                                   let methodArgs = methodArgsForInstanceCall methodPair className instanceArg restArgs globalsAfterArgs localEnv
-                                   in executeCallUserFunction execute isTopLevel pos stack localEnv (methodNamePairMangled methodPair) Nothing methodArgs globalsAfterArgs functionsAfterArgs outputsAfterArgs
+                                      methodBindings = instanceMethodBindings methodPair instanceArg
+                                   in executeCallUserFunction execute isTopLevel pos stack localEnv (methodNamePairMangled methodPair) methodBindings methodArgs globalsAfterArgs functionsAfterArgs outputsAfterArgs
                                 Nothing -> builtinFallback
                             _ -> builtinFallback
   where
@@ -136,6 +137,11 @@ executeCallFunction execute isTopLevel fname compiledArgs pos stack globalsEnv l
             Just classValue@ClassValue {} -> classValue : restArgs
             _ -> restArgs
         InstanceMethod -> instanceArg : restArgs
+
+    instanceMethodBindings methodPair instanceArg =
+      case methodNamePairKind methodPair of
+        InstanceMethod -> Just [("__python_hs_bound_self__", instanceArg)]
+        _ -> Nothing
 
     isBuiltinName name =
       case callBuiltin CallBuiltinConfig {callBuiltinName = name, callBuiltinArgs = [], callBuiltinPos = pos} of
