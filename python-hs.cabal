@@ -760,6 +760,7 @@ test-suite python-hs-test
     , Test.VM.RunSourceVmPart34Spec
     , Test.VM.RunSourceVmPart35Spec
     , Test.VM.RunSourceVmPart36Spec
+    , Test.VM.RunSourceVmPart37Spec
     , Test.VM.RunInstructionsSpec
     , Test.VM.RunSourceVmAugAssignBitwiseSpec
     , Test.VM.RunSourceVmBlankLineSpec

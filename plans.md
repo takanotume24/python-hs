@@ -893,9 +893,9 @@
 - [x] P140-4: `runSourceVmWithSearchPaths` 経由の import / from-import を回帰テストで固定する
 
 ## 現在のスコープ（P141: test.support / 標準 shim の拡張）
-- [ ] P141-1: `cpython_only` と `ALWAYS_EQ` を test.support に追加する
-- [ ] P141-2: `gc` / `array` / `itertools` / `builtins` の最小 shim を追加する
-- [ ] P141-3: shim 解決順と未対応メンバーのエラーをテストで固定する
+- [x] P141-1: `cpython_only` と `ALWAYS_EQ` を test.support に追加する
+- [x] P141-2: `gc` / `array` / `itertools` / `builtins` の最小 shim を追加する
+- [x] P141-3: shim 解決順と未対応メンバーのエラーをテストで固定する
 
 ## 現在のスコープ（P142: 字句・リテラル互換）
 - [ ] P142-1: raw string（`r"..."` / `r'...'`）を字句解析する
