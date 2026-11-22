@@ -13,12 +13,14 @@ import PythonHS.VM.CallConstructorBuiltin (callConstructorBuiltin)
 import PythonHS.VM.CallConstructorBuiltinConfig (CallConstructorBuiltinConfig (..))
 import PythonHS.VM.CallConversionBuiltin (callConversionBuiltin)
 import PythonHS.VM.CallConversionBuiltinConfig (CallConversionBuiltinConfig (..))
+import PythonHS.VM.CallInputBuiltin (callInputBuiltin)
 import PythonHS.VM.CallIterableBuiltin (callIterableBuiltin)
 import PythonHS.VM.CallIterableBuiltinConfig (CallIterableBuiltinConfig (..))
 import PythonHS.VM.CallMathBuiltin (callMathBuiltin)
 import PythonHS.VM.CallMathBuiltinConfig (CallMathBuiltinConfig (..))
 import PythonHS.VM.CallNumericBuiltin (callNumericBuiltin)
 import PythonHS.VM.CallNumericBuiltinConfig (CallNumericBuiltinConfig (..))
+import PythonHS.VM.CallNumericExtraBuiltin (callNumericExtraBuiltin)
 import PythonHS.VM.CallStdlibBuiltin (callStdlibBuiltin)
 import PythonHS.VM.CallStdlibBuiltinConfig (CallStdlibBuiltinConfig (..))
 import PythonHS.VM.CallStringBuiltin (callStringBuiltin)
@@ -53,9 +55,11 @@ callBuiltin config =
               callStringSearchBuiltin CallStringBuiltinConfig {callStringBuiltinName = name, callStringBuiltinArgs = args, callStringBuiltinPos = pos},
               callCollectionMethodBuiltin CallCollectionMethodBuiltinConfig {callCollectionMethodBuiltinName = name, callCollectionMethodBuiltinArgs = args, callCollectionMethodBuiltinPos = pos},
               callNumericBuiltin CallNumericBuiltinConfig {callNumericBuiltinName = name, callNumericBuiltinArgs = args, callNumericBuiltinPos = pos},
+              callNumericExtraBuiltin CallBuiltinConfig {callBuiltinName = name, callBuiltinArgs = args, callBuiltinPos = pos},
               callMathBuiltin CallMathBuiltinConfig {callMathBuiltinName = name, callMathBuiltinArgs = args, callMathBuiltinPos = pos},
               callStdlibBuiltin CallStdlibBuiltinConfig {callStdlibBuiltinName = name, callStdlibBuiltinArgs = args, callStdlibBuiltinPos = pos},
-              callCollectionBuiltin CallCollectionBuiltinConfig {callCollectionBuiltinName = name, callCollectionBuiltinArgs = args, callCollectionBuiltinPos = pos}
+              callCollectionBuiltin CallCollectionBuiltinConfig {callCollectionBuiltinName = name, callCollectionBuiltinArgs = args, callCollectionBuiltinPos = pos},
+              callInputBuiltin CallBuiltinConfig {callBuiltinName = name, callBuiltinArgs = args, callBuiltinPos = pos}
             ]
   where
     firstJust [] = Nothing

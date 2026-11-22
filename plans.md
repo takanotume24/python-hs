@@ -663,13 +663,13 @@
 - [x] parser が未対応なら共有構文拡張の要否を判断
 - [x] VM 実行で target へのタプル分解束縛を実装し、テストで固定
 
-### P117: 追加組み込み関数（pow / divmod / reversed / input）
-- [ ] `pow(base, exp[, mod])` を追加（整数累乗、mod 指定時は剰余累乗）
-- [ ] `divmod(a, b)` を追加（商と剰余のタプルを返す）
-- [ ] `reversed(iterable)` を追加（list/tuple/string に対応）
-- [ ] `input([prompt])` を追加（標準入力から1行読み込み、末尾改行を除く）
-- [ ] 引数個数・型エラー・空入力の扱いをテストで固定
-- [ ] 既存 `CallBuiltin` ディスパッチに組み込み追加し、可能な範囲で `CallNumericBuiltin` / `CallIterableBuiltin` を再利用
+### P117: 追加組み込み関数（pow / divmod / reversed / input）（完了）
+- [x] `pow(base, exp[, mod])` を追加（整数累乗、mod 指定時は剰余累乗）
+- [x] `divmod(a, b)` を追加（商と剰余のタプルを返す）
+- [x] `reversed(iterable)` を追加（list/tuple/string に対応）
+- [x] `input([prompt])` を追加（標準入力から1行読み込み、末尾改行を除く）
+- [x] 引数個数・型エラー・空入力の扱いをテストで固定
+- [x] 既存 `CallBuiltin` ディスパッチに組み込み追加し、可能な範囲で `CallNumericBuiltin` / `CallIterableBuiltin` を再利用
 
 ### P118: クラス特殊メソッドの最小対応
 - [ ] `__str__` / `__repr__` を定義したクラスインスタンスの `str()` / `print` 表現で呼び出されるようにする
@@ -696,6 +696,16 @@
 - P118 はクラス属性解決・メソッド束縛との相互作用があり、中リスク
 - P119 は `type` / `isinstance` が今後のクラスシステム拡張と密接なため、段階的な仕様固定とする
 - P120 は既存メソッド構文の拡張だが、影響範囲が広いため回帰テストを充実させる
+
+## 現在のスコープ（P117: 追加組み込み関数）
+- [x] P117 開始: `pow` / `divmod` / `reversed` / `input` を VM 組み込みとして追加
+- [x] P117-1: 失敗テストを `RunSourceVmPart22Spec` / `CLIPart7Spec` に追加
+- [x] P117-2: `CallNumericExtraBuiltin` を新設し、`pow` と `divmod` を実装
+- [x] P117-3: `reversed` を `CallIterableBuiltin` に追加（list/tuple/string/dict キー）
+- [x] P117-4: `input` を `CallInputBuiltin` に追加し、標準入力の1行読み込みと EOF エラーを固定
+- [x] P117-5: `input` の prompt 引数は受理するが現状は出力しない（README に明記）
+- [x] P117-6: 全テスト PASS（1391 examples, 0 failures）
+- [x] P117-7: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
 
 ## 現在のスコープ（P116: for ループのタプルアンパック）
 - [x] P116 開始: `for a, b in iterable:` の target タプルアンパックを VM で実現
@@ -1120,6 +1130,12 @@
 ## メンテナンス記録（要約）
 - 注記: 以下は時系列ログ。古い日付の「未対応」項目は、その後のエントリで仕様更新済みの場合がある。
 - 2026-11-21
+  - [x] P117 完了: 追加組み込み関数（pow / divmod / reversed / input）
+  - [x] P117 実装: `CallNumericExtraBuiltin` に `pow` / `divmod` を追加
+  - [x] P117 実装: `CallIterableBuiltin` に `reversed` を追加
+  - [x] P117 実装: `CallInputBuiltin` に `input` を追加（標準入力・EOF エラー）
+  - [x] P117 テスト: `RunSourceVmPart22Spec`（21 tests）と `CLIPart7Spec`（5 tests）を追加
+  - [x] P117 品質ゲート: `cabal run quality-gate` が全項目 PASS（1391 examples, 0 failures）
   - [x] P116 完了: for ループのタプルアンパック
   - [x] P116 実装: parser の for-target をカンマ区切り名リストとして受理
   - [x] P116 実装: 複数 target を予約変数 + `AssignUnpackStmt` へ脱糖

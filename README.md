@@ -139,6 +139,10 @@ MIT License — 詳細は [LICENSE](LICENSE) を参照してください。
 - [x] `count(s, sub)`（重複しない出現回数、空の sub は length + 1）
 - [x] `any(iterable)` / `all(iterable)`（要素の truthiness を判定し 1/0 を返す）
 - [x] `round(x)` / `round(x, ndigits)`（最近接整数。同距離は偶数へ丸め、ndigits 指定時は float）
+- [x] `pow(base, exp)` / `pow(base, exp, mod)`（整数累乗・浮動小数累乗・剰余累乗）
+- [x] `divmod(a, b)`（床除算の商と剰余をタプルで返す。int/float 対応）
+- [x] `reversed(iterable)`（list/tuple/string/dict キーを逆順のリストで返す）
+- [x] `input()` / `input(prompt)`（標準入力から1行読み込み。prompt は現状出力しない）
 - [x] `chr(i)` / `ord(c)`（Unicode コードポイントと1文字の相互変換）
 - [x] `math`: `sqrt`, `sin`, `cos`, `tan`, `log`, `exp`, `pi`, `e`
 - [x] `json`: `dumps`, `loads`

@@ -303,6 +303,8 @@ library
     , PythonHS.VM.CallStringBuiltin
     , PythonHS.VM.CallStringBuiltinConfig
     , PythonHS.VM.CallStringSearchBuiltin
+    , PythonHS.VM.CallInputBuiltin
+    , PythonHS.VM.CallNumericExtraBuiltin
     , PythonHS.VM.GetitemValue
     , PythonHS.VM.SliceValue
     , PythonHS.VM.CallMathBuiltin
@@ -528,6 +530,7 @@ test-suite python-hs-test
     , Test.CLI.CLIPart4Spec
     , Test.CLI.CLIPart5Spec
     , Test.CLI.CLIPart6Spec
+    , Test.CLI.CLIPart7Spec
     , Test.Eval.EvalPart1Spec
     , Test.Eval.EvalPart2Spec
     , Test.Eval.EvalPart3Spec
@@ -596,6 +599,7 @@ test-suite python-hs-test
     , Test.VM.RunSourceVmPart19Spec
     , Test.VM.RunSourceVmPart20Spec
     , Test.VM.RunSourceVmPart21Spec
+    , Test.VM.RunSourceVmPart22Spec
     , Test.VM.RunInstructionsSpec
     , Test.Structure.CheckStructureSpec
     , Test.Structure.DetectPositionalArgsSpec

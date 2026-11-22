@@ -14,6 +14,7 @@ callIterableBuiltin config =
     "zip" -> Just (evalZip args)
     "any" -> Just (evalQuantifier "any" or args)
     "all" -> Just (evalQuantifier "all" and args)
+    "reversed" -> Just (evalReversed args)
     _ -> Nothing
   where
     name = callIterableBuiltinName config
@@ -63,6 +64,14 @@ callIterableBuiltin config =
 
     tailOrEmpty [] = []
     tailOrEmpty (_ : restItems) = restItems
+
+    evalReversed values =
+      case values of
+        [value] ->
+          case iterableItems value of
+            Nothing -> Left ("Type error: reversed expects iterable at " ++ showPos pos)
+            Just items -> Right (ListValue {listValueItems = reverse items})
+        _ -> Left (countMismatch "reversed")
 
     evalQuantifier fname combine values =
       case values of
