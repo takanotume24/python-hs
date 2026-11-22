@@ -27,6 +27,7 @@ import PythonHS.Lexer.TokenType
         LambdaToken,
         MatchToken,
         NoneToken,
+        NonlocalToken,
         NotToken,
         OrToken,
         PassToken,
@@ -64,6 +65,7 @@ keywordOrIdentifier value
   | value == "break" = BreakToken
   | value == "continue" = ContinueToken
   | value == "global" = GlobalToken
+  | value == "nonlocal" = NonlocalToken
   | value == "pass" = PassToken
   | value == "from" = FromToken
   | value == "as" = AsToken

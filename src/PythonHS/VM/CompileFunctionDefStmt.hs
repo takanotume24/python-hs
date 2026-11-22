@@ -3,6 +3,7 @@ module PythonHS.VM.CompileFunctionDefStmt (compileFunctionDefStmt) where
 import Data.Set qualified as Set
 import PythonHS.Evaluator.Value (Value (..))
 import PythonHS.VM.CollectFunctionLocalDecls (collectFunctionLocalDecls)
+import PythonHS.VM.CollectFunctionNonlocalStmtDecls (collectFunctionNonlocalStmtDecls)
 import PythonHS.VM.CompileDefaults (compileDefaults)
 import PythonHS.VM.CompileDefaultsConfig (CompileDefaultsConfig (..))
 import PythonHS.VM.CompileDefaultsResult (CompileDefaultsResult (..))
@@ -21,7 +22,8 @@ compileFunctionDefStmt config =
       body = compileFunctionDefStmtBody config
       params = compileFunctionDefStmtParams config
       globalDecls = compileFunctionDefStmtGlobalDecls config
-      localDecls = collectFunctionLocalDecls params body globalDecls
+      nonlocalDecls = collectFunctionNonlocalStmtDecls body
+      localDecls = collectFunctionLocalDecls params body (Set.union globalDecls nonlocalDecls)
       sentinelInitCode = buildSentinelInit localDecls
    in do
         defaultsResult <- compileDefaults CompileDefaultsConfig {compileDefaultsCompileExpr = compileExpr, compileDefaultsDefaults = defaults}

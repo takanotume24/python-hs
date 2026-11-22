@@ -60,6 +60,7 @@ data TokenType
   | BreakToken
   | ContinueToken
   | GlobalToken
+  | NonlocalToken
   | PassToken
   | FromToken
   | AsToken

@@ -475,6 +475,10 @@ library
     , PythonHS.VM.RewriteClassAttrRefsConfig
     , PythonHS.VM.CollectFunctionGlobalDecls
     , PythonHS.VM.CollectFunctionGlobalStmtDecls
+    , PythonHS.VM.CollectFunctionNonlocalDecls
+    , PythonHS.VM.CollectFunctionNonlocalStmtDecls
+    , PythonHS.VM.ValidateNonlocalDecls
+    , PythonHS.VM.ValidateNonlocalDeclsConfig
     , PythonHS.VM.CollectFunctionLocalDecls
     , PythonHS.VM.EvaluateBuiltinArgs
     , PythonHS.VM.ExecuteArithmeticInstruction
@@ -743,6 +747,7 @@ test-suite python-hs-test
     , Test.VM.RunSourceVmPart29Spec
     , Test.VM.RunSourceVmPart30Spec
     , Test.VM.RunSourceVmPart32Spec
+    , Test.VM.RunSourceVmPart33Spec
     , Test.VM.RunInstructionsSpec
     , Test.VM.RunSourceVmAugAssignBitwiseSpec
     , Test.VM.RunSourceVmBlankLineSpec

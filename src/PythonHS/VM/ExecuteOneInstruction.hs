@@ -66,6 +66,8 @@ executeOneInstruction execute state instruction =
                   executeLoadName ExecuteLoadNameConfig {executeLoadNameState = state, executeLoadNameName = name, executeLoadNamePos = pos}
                 DeclareGlobal name ->
                   Right state {vmIp = vmIp state + 1, vmEnv = (vmEnv state) {envGlobalDecls = Set.insert name (envGlobalDecls (vmEnv state))}}
+                DeclareNonlocal _ _ ->
+                  Right state {vmIp = vmIp state + 1}
                 StoreName name ->
                   case vmStack state of
                     value : rest ->

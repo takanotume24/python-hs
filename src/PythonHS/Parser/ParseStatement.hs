@@ -25,6 +25,7 @@ import PythonHS.Lexer.TokenType
         ImportToken,
         MatchToken,
         NewlineToken,
+        NonlocalToken,
         PassToken,
         PrintToken,
         RaiseToken,
@@ -100,6 +101,8 @@ parseStatement tokenStream =
         Token {tokenType = PassToken, position = pos} : rest -> Right (ParseResult {parseResultValue = PassStmt {passStmtPos = pos}, parseResultRemaining = rest})
         Token {tokenType = GlobalToken, position = pos} : Token {tokenType = IdentifierToken, lexeme = name} : rest ->
           Right (ParseResult {parseResultValue = GlobalStmt {globalStmtName = name, globalStmtPos = pos}, parseResultRemaining = rest})
+        Token {tokenType = NonlocalToken, position = pos} : Token {tokenType = IdentifierToken, lexeme = name} : rest ->
+          Right (ParseResult {parseResultValue = NonlocalStmt {nonlocalStmtName = name, nonlocalStmtPos = pos}, parseResultRemaining = rest})
         Token {tokenType = DelToken, position = pos} : rest ->
           parseDelStmt (ParseDelStmtConfig {parseDelStmtExpr = parseExpr, parseDelStmtPos = pos, parseDelStmtTokenStream = rest})
         Token {tokenType = ImportToken} : _ -> parseImportStmt tokenStream

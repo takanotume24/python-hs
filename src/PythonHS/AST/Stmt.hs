@@ -106,6 +106,10 @@ data Stmt
       { globalStmtName :: String,
         globalStmtPos :: Position
       }
+  | NonlocalStmt
+      { nonlocalStmtName :: String,
+        nonlocalStmtPos :: Position
+      }
   | ImportStmt
       { importStmtItems :: [ImportEntry],
         importStmtPos :: Position

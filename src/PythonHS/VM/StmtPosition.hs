@@ -32,6 +32,7 @@ stmtPosition stmt =
     ForStmt {forStmtPos} -> forStmtPos
     ClassDefStmt {classDefStmtPos} -> classDefStmtPos
     GlobalStmt {globalStmtPos} -> globalStmtPos
+    NonlocalStmt {nonlocalStmtPos} -> nonlocalStmtPos
     ImportStmt {importStmtPos} -> importStmtPos
     FromImportStmt {fromImportStmtPos} -> fromImportStmtPos
     TryExceptStmt {tryExceptStmtPos} -> tryExceptStmtPos

@@ -10,6 +10,7 @@ import PythonHS.VM.BindDefaults (bindDefaults)
 import PythonHS.VM.CallBuiltin (callBuiltin)
 import PythonHS.VM.CallBuiltinConfig (CallBuiltinConfig (..))
 import PythonHS.VM.CollectFunctionGlobalDecls (collectFunctionGlobalDecls)
+import PythonHS.VM.CollectFunctionNonlocalDecls (collectFunctionNonlocalDecls)
 import PythonHS.VM.CompiledCallArg (CompiledCallArg (..))
 import PythonHS.VM.EnvState (EnvState (..))
 import PythonHS.VM.EvaluateUserArgs (evaluateUserArgs)
@@ -22,6 +23,8 @@ import PythonHS.VM.IsBuiltinCallableName (isBuiltinCallableName)
 import PythonHS.VM.LoopState (LoopState (..))
 import PythonHS.VM.PropagateInstanceMutation (propagateInstanceMutation)
 import PythonHS.VM.VMState (VMState (..))
+import PythonHS.VM.ValidateNonlocalDecls (validateNonlocalDecls)
+import PythonHS.VM.ValidateNonlocalDeclsConfig (ValidateNonlocalDeclsConfig (..))
 
 executeCallValueFunction ::
   (VMState -> Either String VMState) ->
@@ -49,12 +52,21 @@ executeCallValueFunction execute isTopLevel compiledArgs pos stack globalsEnv lo
                 evaluateUserArgs execute functionName pos localEnv compiledArgs globalsEnv functions outputs False Set.empty [] []
               let (boundArgValues, boundArgKinds) = injectBoundSelf params capturedBindings argValues argKinds
               callLocals <- bindCallArguments functionName pos params boundArgValues boundArgKinds
-              let capturedLocals = Map.fromList capturedBindings
-                  mergedLocals = Map.union callLocals capturedLocals
+              let nonlocalNames = collectFunctionNonlocalDecls functionCode
+                  nonlocalLocals = Map.restrictKeys localEnv (Map.keysSet nonlocalNames)
+                  capturedLocals = Map.fromList capturedBindings
+                  mergedLocals = Map.union callLocals (Map.union nonlocalLocals capturedLocals)
               (functionLocals, globalsAfterDefaults, functionsAfterDefaults, outputsAfterDefaults) <-
                 bindDefaults execute functionName pos params defaultCodes mergedLocals globalsAfterArgs functionsAfterArgs outputsAfterArgs
               let functionGlobalDecls = collectFunctionGlobalDecls functionCode
-                  callState =
+              validateNonlocalDecls
+                ValidateNonlocalDeclsConfig
+                  { validateNonlocalDeclsParams = params,
+                    validateNonlocalDeclsNames = nonlocalNames,
+                    validateNonlocalDeclsGlobalNames = functionGlobalDecls,
+                    validateNonlocalDeclsLocals = functionLocals
+                  }
+              let callState =
                     VMState
                       { vmCode = functionCode,
                         vmIp = 0,
@@ -82,7 +94,17 @@ executeCallValueFunction execute isTopLevel compiledArgs pos stack globalsEnv lo
                         propagateInstanceMutation oldValue newValue environment
                       Nothing -> environment
                   propagatedGlobals = applyMutation (envGlobals finalEnv)
-                  propagatedLocals = applyMutation localEnv
+                  finalLocals = envLocals finalEnv
+                  propagateNonlocal environment =
+                    foldl
+                      ( \current name ->
+                          case Map.lookup name finalLocals of
+                            Just value -> Map.insert name value current
+                            Nothing -> current
+                      )
+                      environment
+                      (Map.keys nonlocalNames)
+                  propagatedLocals = propagateNonlocal (applyMutation localEnv)
                   returnValue =
                     case vmStack finalState of
                       (value : _) -> value

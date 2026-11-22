@@ -21,6 +21,10 @@ data Instruction
   | BuildTuple {buildTupleCount :: Int}
   | BuildDict {buildDictCount :: Int}
   | DeclareGlobal {declareGlobalName :: String}
+  | DeclareNonlocal
+      { declareNonlocalName :: String,
+        declareNonlocalPos :: Position
+      }
   | LoopGuard {loopGuardPos :: Position}
   | ForSetup
       { forSetupNextIndex :: Int,

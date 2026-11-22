@@ -80,6 +80,7 @@ evalStatements env fenv outputs (stmt : rest) =
     BreakStmt {breakStmtPos} -> Right baseResult {evalStmtResultRet = Just EvalStmtRet {evalStmtRetValue = BreakValue, evalStmtRetPos = breakStmtPos}}
     ContinueStmt {continueStmtPos} -> Right baseResult {evalStmtResultRet = Just EvalStmtRet {evalStmtRetValue = ContinueValue, evalStmtRetPos = continueStmtPos}}
     GlobalStmt {} -> evalStatements env fenv outputs rest
+    NonlocalStmt {} -> evalStatements env fenv outputs rest
     ImportStmt {} -> evalStatements env fenv outputs rest
     FromImportStmt {} -> evalStatements env fenv outputs rest
     TryExceptStmt {tryExceptStmtPos} -> Left $ "Runtime error: try/except is only supported in vm engine at " ++ showPos tryExceptStmtPos
