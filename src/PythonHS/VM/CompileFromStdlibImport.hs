@@ -7,6 +7,7 @@ import PythonHS.VM.CompileExprResult (CompileExprResult (..))
 import PythonHS.VM.CompileFromStdlibImportConfig (CompileFromStdlibImportConfig (..))
 import PythonHS.VM.CompiledCallArg (CompiledCallArg (..))
 import PythonHS.VM.Instruction (Instruction (..))
+import PythonHS.VM.StdlibModuleValue (stdlibModuleValue)
 
 -- | Compiles @from os/json/pathlib import ...@ into module-value bindings and
 -- thin wrapper functions. Returns Nothing for modules this helper does not own.
@@ -16,6 +17,9 @@ compileFromStdlibImport config =
     ["os"] -> Just (compileItems "os")
     ["json"] -> Just (compileItems "json")
     ["pathlib"] -> Just (compileItems "pathlib")
+    ["sys"] -> Just (compileItems "sys")
+    ["time"] -> Just (compileItems "time")
+    ["random"] -> Just (compileItems "random")
     _ -> Nothing
   where
     baseIndex = compileFromStdlibImportBaseIndex config
@@ -26,7 +30,7 @@ compileFromStdlibImport config =
     compileItems moduleName = do
       let moduleAlias = moduleAliasFor moduleName
           setupCode =
-            [ PushConst {pushConstValue = ModuleValue {moduleValueName = moduleName, moduleValueAttrs = []}},
+            [ PushConst {pushConstValue = stdlibModuleValue moduleName},
               StoreName {storeNameName = moduleAlias}
             ]
       itemsResult <- compileEntries moduleAlias (baseIndex + length setupCode) importedNames
@@ -58,6 +62,17 @@ compileFromStdlibImport config =
                   compileExprResultEndIndex = currentIndex + 2
                 }
             )
+        (aliasName, memberName)
+          | aliasName == "__python_hs_import_sys" && isSysMember memberName ->
+              Right
+                ( CompileExprResult
+                    { compileExprResultCode =
+                        [ LoadName {loadNameName = aliasName ++ "." ++ memberName, loadNamePos = pos},
+                          StoreName {storeNameName = targetName}
+                        ],
+                      compileExprResultEndIndex = currentIndex + 2
+                    }
+                )
         (_, memberName) ->
           case memberArity moduleAlias memberName of
             Just arity -> Right (wrapperResult moduleAlias currentIndex entry memberName arity)
@@ -114,6 +129,13 @@ compileFromStdlibImport config =
         ("__python_hs_import_json", "dumps") -> Just 1
         ("__python_hs_import_json", "loads") -> Just 1
         ("__python_hs_import_pathlib", "Path") -> Just 1
+        ("__python_hs_import_time", "time") -> Just 0
+        ("__python_hs_import_time", "sleep") -> Just 1
+        ("__python_hs_import_random", "randint") -> Just 2
+        ("__python_hs_import_random", "choice") -> Just 1
         _ -> Nothing
+
+    isSysMember memberName =
+      memberName `elem` ["argv", "path", "version", "platform"]
 
     moduleAliasFor moduleName = "__python_hs_import_" ++ moduleName

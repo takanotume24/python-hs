@@ -12,6 +12,7 @@ import PythonHS.VM.CompileFromStdlibImportConfig (CompileFromStdlibImportConfig 
 import PythonHS.VM.CompileImportStmtConfig (CompileImportStmtConfig (..))
 import PythonHS.VM.CompiledCallArg (CompiledCallArg (..))
 import PythonHS.VM.Instruction (Instruction (..))
+import PythonHS.VM.StdlibModuleValue (stdlibModuleValue)
 
 compileImportStmt :: CompileImportStmtConfig -> Either String CompileExprResult
 compileImportStmt config = case stmt of
@@ -41,12 +42,12 @@ compileImportStmt config = case stmt of
         else case maybeAlias of
           Just aliasName ->
             let moduleName = joinModulePath modulePath
-                importCode = [PushConst {pushConstValue = ModuleValue {moduleValueName = moduleName, moduleValueAttrs = []}}, StoreName {storeNameName = aliasName}]
+                importCode = [PushConst {pushConstValue = stdlibModuleValue moduleName}, StoreName {storeNameName = aliasName}]
              in Right (CompileExprResult {compileExprResultCode = importCode, compileExprResultEndIndex = currentBaseIndex + length importCode})
           Nothing ->
             case modulePath of
               [singleName] ->
-                let importCode = [PushConst {pushConstValue = ModuleValue {moduleValueName = singleName, moduleValueAttrs = []}}, StoreName {storeNameName = singleName}]
+                let importCode = [PushConst {pushConstValue = stdlibModuleValue singleName}, StoreName {storeNameName = singleName}]
                  in Right (CompileExprResult {compileExprResultCode = importCode, compileExprResultEndIndex = currentBaseIndex + length importCode})
               rootName : _ ->
                 let rootValue = buildRootModuleValue modulePath

@@ -436,6 +436,7 @@ library
       , PythonHS.VM.CompileExprResult
     , PythonHS.VM.CompileFromStdlibImport
     , PythonHS.VM.CompileImportStmt
+    , PythonHS.VM.StdlibModuleValue
     , PythonHS.VM.CompileLogicalExpr
     , PythonHS.VM.CompileMatch
     , PythonHS.VM.CompileTryExcept
@@ -604,6 +605,8 @@ library
     , text
     , bytestring
     , syb
+    , random
+    , time
   default-language:    GHC2024
   ghc-options:         -Wall
 
@@ -753,6 +756,7 @@ test-suite python-hs-test
     , Test.VM.RunSourceVmPart32Spec
     , Test.VM.RunSourceVmPart33Spec
     , Test.VM.RunSourceVmPart34Spec
+    , Test.VM.RunSourceVmPart35Spec
     , Test.VM.RunInstructionsSpec
     , Test.VM.RunSourceVmAugAssignBitwiseSpec
     , Test.VM.RunSourceVmBlankLineSpec

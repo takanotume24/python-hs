@@ -796,11 +796,11 @@
 - 予定テスト: `RunSourceVmPart34Spec`、必要に応じて `CLIPart*` にファイル実行ケース追加
 
 ### P130: 追加標準ライブラリ（sys / time / random 最小）
-- [ ] `sys`: `argv` / `path` / `version` / `platform` 相当のマーカー値を提供する
-- [ ] `time`: `time()` / `sleep(seconds)` を実装する
-- [ ] `random`: `randint(a, b)` / `choice(seq)` を実装する
-- [ ] `import` / `from ... import` の解決方針をこれらのモジュールにも適用する
-- [ ] 引数型・範囲外・空シーケンスのエラー規約をテストで固定する
+- [x] `sys`: `argv` / `path` / `version` / `platform` 相当のマーカー値を提供する
+- [x] `time`: `time()` / `sleep(seconds)` を実装する
+- [x] `random`: `randint(a, b)` / `choice(seq)` を実装する
+- [x] `import` / `from ... import` の解決方針をこれらのモジュールにも適用する
+- [x] 引数型・範囲外・空シーケンスのエラー規約をテストで固定する
 - 予定テスト: `RunSourceVmPart35Spec`
 
 ### 優先順位とリスク
@@ -908,8 +908,8 @@
 - [x] P129-3: エラー規約をテストで固定し、品質ゲートを通す
 
 ## 現在のスコープ（P130: 追加標準ライブラリ）
-- [ ] P130-1: `sys` / `time` / `random` の最小モジュールを追加する
-- [ ] P130-2: import 解決とエラー規約をテストで固定し、品質ゲートを通す
+- [x] P130-1: `sys` / `time` / `random` の最小モジュールを追加する
+- [x] P130-2: import 解決とエラー規約をテストで固定し、品質ゲートを通す
 
 ## 現在のスコープ（P120: 組み込みメソッド構文の拡張）
 - [x] P120 開始: parser の `receiver.method(args)` → `method(receiver, args)` 脱糖を確認
