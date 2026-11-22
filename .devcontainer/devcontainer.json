@@ -1,13 +1,17 @@
 // For format details, see https://aka.ms/devcontainer.json. For config options, see the
 // README at: https://github.com/devcontainers/templates/tree/main/src/ubuntu
 {
-	"name": "Ubuntu",
+	"name": "python-hs",
 	"build": {
 		"dockerfile": "Dockerfile",
 		"context": ".."
 	},
-	"features": {},
-	"postCreateCommand": "cabal update",
+	"features": {
+		"ghcr.io/devcontainers/features/nix:1": {
+			"extraNixConfig": "experimental-features = nix-command flakes"
+		}
+	},
+	"postCreateCommand": "git submodule update --init --recursive && nix profile install . && cabal update",
 	"postStartCommand": "bash .devcontainer/post-start.sh",
 	"remoteUser": "vscode",
 	"customizations": {
