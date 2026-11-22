@@ -20,13 +20,13 @@ spec = describe "parse error reporting - part 1" $ do
       ]
       `shouldBe` Left (ExpectedExpression (Position 1 6))
 
-  it "reports ExpectedAssignAfterIdentifier with position" $ do
+  it "accepts a bare identifier expression statement" $ do
     parseProgram
       [ Token IdentifierToken "x" (Position 4 3),
         Token NewlineToken "\\n" (Position 4 4),
         Token EOFToken "" (Position 5 1)
       ]
-      `shouldBe` Left (ExpectedAssignAfterIdentifier (Position 4 3))
+      `shouldSatisfy` isRight
 
   it "reports ExpectedNewlineAfterStatement with position" $ do
     parseProgram

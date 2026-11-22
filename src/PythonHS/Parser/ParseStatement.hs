@@ -29,6 +29,7 @@ import PythonHS.Lexer.TokenType
         PrintToken,
         RaiseToken,
         ReturnToken,
+        StringToken,
         TryToken,
         WhileToken,
         WithToken,
@@ -128,6 +129,10 @@ parseStatement tokenStream =
           parseWithStmt (ParseWithStmtConfig {parseWithStmtStatement = parseStatement, parseWithStmtPos = pos, parseWithStmtTokenStream = rest})
         Token {tokenType = ClassToken, position = posClass} : Token {tokenType = IdentifierToken, lexeme = name} : rest ->
           parseClassStmt (ParseClassStmtConfig {parseClassStmtSuite = parseSuiteWithStatements, parseClassStmtPos = posClass, parseClassStmtName = name, parseClassStmtTokenStream = rest})
+        Token {tokenType = StringToken, position = pos} : _ ->
+          case parseExprStatement tokenStream of
+            Just statementResult -> Right statementResult
+            Nothing -> Left (ExpectedExpression {parseErrorPosition = pos})
         Token {tokenType = IdentifierToken, position = pos} : _ ->
           case parseAugAssignStmt augAssignConfig of
             Just statementResult -> statementResult
@@ -138,5 +143,10 @@ parseStatement tokenStream =
                   case parseExprStatement tokenStream of
                     Just statementResult -> Right statementResult
                     Nothing -> Left (ExpectedAssignAfterIdentifier {parseErrorPosition = pos})
+        Token {position = pos} : _ ->
+          case parseExprStatement tokenStream of
+            Just statementResult -> Right statementResult
+            Nothing -> Left (ExpectedExpression {parseErrorPosition = pos})
+        [] -> Left (ExpectedExpression {parseErrorPosition = Position {line = 0, column = 0}})
         tok : _ -> Left (ExpectedExpression {parseErrorPosition = position tok})
         [] -> Left (ExpectedExpression {parseErrorPosition = Position {line = 0, column = 0}})

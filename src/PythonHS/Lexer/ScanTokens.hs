@@ -8,15 +8,18 @@ import PythonHS.Lexer.Position (Position (..), column)
 import PythonHS.Lexer.ScanTokenStep (scanTokenStep)
 import PythonHS.Lexer.ScanTokenStepConfig (ScanTokenStepConfig (..))
 import PythonHS.Lexer.ScanTokenStepResult (ScanTokenStepResult (..))
+import PythonHS.Lexer.ScanTripleQuotedString (scanTripleQuotedString)
 import PythonHS.Lexer.Token (Token (..))
 import PythonHS.Lexer.TokenType
   ( TokenType
       ( DedentToken,
         EOFToken,
         IndentToken,
-        NewlineToken
+        NewlineToken,
+        StringToken
       ),
   )
+import PythonHS.Lexer.TripleQuotedStringResult (TripleQuotedStringResult (..))
 
 scanTokens :: String -> Either LexerError [Token]
 scanTokens input = go input 1 1 True [0] []
@@ -38,8 +41,9 @@ scanTokens input = go input 1 1 True [0] []
                   finalTokens = dedents ++ [Token {tokenType = EOFToken, lexeme = "", position = Position {line = ln, column = col + indent}}]
                in Right (reverse (reverse finalTokens ++ acc))
             ('\n' : rest') ->
-              let tok = Token {tokenType = NewlineToken, lexeme = "\\n", position = Position {line = ln, column = col + indent}}
-               in go rest' (ln + 1) 1 True indentStack (tok : acc)
+              -- A blank line is not a logical line, so it must not emit a
+              -- statement-terminating newline token.
+              go rest' (ln + 1) 1 True indentStack acc
             ('#' : restComment) ->
               let (comment, restAfterComment) = span (/= '\n') restComment
                in case restAfterComment of
@@ -52,6 +56,16 @@ scanTokens input = go input 1 1 True [0] []
       let tok = Token {tokenType = NewlineToken, lexeme = "\\n", position = Position {line = ln, column = col}}
        in go rest (ln + 1) 1 True indentStack (tok : acc)
     go src ln col False indentStack acc =
+      case scanTripleQuotedString src of
+        Just result ->
+          let tok = Token {tokenType = StringToken, lexeme = tripleQuotedStringResultContent result, position = Position {line = ln, column = col}}
+              newLine = ln + tripleQuotedStringResultLineCount result
+              newColumn = tripleQuotedStringResultEndColumn result
+           in go (tripleQuotedStringResultRemaining result) newLine newColumn False indentStack (tok : acc)
+        Nothing ->
+          goToken src ln col indentStack acc
+
+    goToken src ln col indentStack acc =
       case src of
         (c : rest)
           | c == '#' ->
@@ -64,6 +78,7 @@ scanTokens input = go input 1 1 True [0] []
                   restAfterToken = scanTokenStepResultRemaining result
                   nextCol = column (scanTokenStepResultNextPosition result)
               go restAfterToken ln nextCol False indentStack (tok : acc)
+        [] -> Left (UnexpectedCharacter {unexpectedChar = ' '})
 
     adjustIndent :: Int -> [Int] -> Int -> Either LexerError AdjustIndentResult
     adjustIndent ln indentStack indent =

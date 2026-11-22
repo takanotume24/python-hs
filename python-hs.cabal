@@ -31,11 +31,22 @@ library
     , PythonHS.AST.WithExit
     , PythonHS.AST.WithContext
     , PythonHS.Lexer.Position
+    , PythonHS.CPython.AllCasesPassed
+    , PythonHS.CPython.BuildDriverSource
+    , PythonHS.CPython.CaseId
+    , PythonHS.CPython.CaseReport
+    , PythonHS.CPython.ParseCaseId
+    , PythonHS.CPython.ReadFileSafely
+    , PythonHS.CPython.ReportLines
+    , PythonHS.CPython.RunCpythonTest
+    , PythonHS.CPython.RunCpythonTestConfig
     , PythonHS.Parser.ParseError
     , PythonHS.Parser.ParseResult
     , PythonHS.Parser.ParseUnpackNamesConfig
     , PythonHS.Parser.ParseWalrusExprConfig
     , PythonHS.Parser.ParseLambdaExprConfig
+    , PythonHS.Parser.ParsePowerExpr
+    , PythonHS.Parser.ParsePowerExprConfig
     , PythonHS.Parser.ParseProgram
     , PythonHS.RunSource
     , PythonHS.RunSourceVm
@@ -57,6 +68,7 @@ library
     , PythonHS.Evaluator.ShowPos
     , PythonHS.Evaluator.Env
     , PythonHS.Evaluator.Value
+    , PythonHS.Evaluator.ValuesEqual
     , PythonHS.Evaluator.FuncEnv
     , PythonHS.Evaluator.EvalContextManager
     , PythonHS.Evaluator.EvalExprResult
@@ -146,10 +158,14 @@ library
     , PythonHS.Lexer.ParseExponent
     , PythonHS.Lexer.ParseExponentResult
     , PythonHS.Lexer.ScanFString
+    , PythonHS.Lexer.ScanOperatorToken
+    , PythonHS.Lexer.ScanOperatorTokenConfig
     , PythonHS.Lexer.ScanTokenStep
     , PythonHS.Lexer.ScanTokenStepConfig
     , PythonHS.Lexer.ScanTokenStepResult
+    , PythonHS.Lexer.ScanTripleQuotedString
     , PythonHS.Lexer.SpanDigits
+    , PythonHS.Lexer.TripleQuotedStringResult
       , PythonHS.Parser.ParseExpr
     , PythonHS.Parser.ParseExprConfig
     , PythonHS.Parser.ParseExprNoBitwiseOr
@@ -316,6 +332,8 @@ library
     , PythonHS.VM.CallStringBuiltin
     , PythonHS.VM.CallStringBuiltinConfig
     , PythonHS.VM.CallStringSearchBuiltin
+    , PythonHS.VM.CallUnittestBuiltin
+    , PythonHS.VM.CallUnittestBuiltinConfig
     , PythonHS.VM.CallInputBuiltin
     , PythonHS.VM.CallInstanceMethodString
     , PythonHS.VM.CallInstanceMethodStringConfig
@@ -540,6 +558,15 @@ executable python-hs
   default-language:    GHC2024
   ghc-options:         -Wall
 
+executable run-cpython-test
+  hs-source-dirs:      app/run-cpython-test
+  main-is:             Main.hs
+  build-depends:
+      base >=4.14 && <5
+    , python-hs
+  default-language:    GHC2024
+  ghc-options:         -Wall
+
 executable check-structure
   hs-source-dirs:      app/check-structure
   main-is:             Main.hs
@@ -567,6 +594,9 @@ test-suite python-hs-test
   other-modules:
       Test.Acceptance.MvpScenarioSpec
     , Paths_python_hs
+    , Test.CPython.BuildDriverSourceSpec
+    , Test.CPython.ParseCaseIdSpec
+    , Test.CPython.RunCpythonTestSpec
     , Test.CLI.CLIPart1Spec
     , Test.CLI.CLIPart2Spec
     , Test.CLI.CLIPart3Spec
@@ -590,9 +620,11 @@ test-suite python-hs-test
     , Test.Eval.RuntimeErrorPart7Spec
     , Test.Eval.RuntimeErrorPart8Spec
     , Test.Eval.RuntimeErrorPart9Spec
+    , Test.Lexer.ScanTokensBlankLineSpec
     , Test.Lexer.ScanTokensCorePart1Spec
     , Test.Lexer.ScanTokensCorePart2Spec
     , Test.Lexer.ScanTokensIndentSpec
+    , Test.Lexer.ScanTokensTripleQuoteSpec
     , Test.Parser.ParseProgramPart1Spec
     , Test.Parser.ParseProgramPart2Spec
     , Test.Parser.ParseProgramPart3Spec
@@ -608,6 +640,7 @@ test-suite python-hs-test
     , Test.Parser.ParseProgramPart13Spec
     , Test.Parser.ParseProgramPart14Spec
     , Test.Parser.ParseProgramPart15Spec
+    , Test.Parser.ParseProgramDottedClassBaseSpec
     , Test.Parser.ParserErrorPart1Spec
     , Test.Parser.ParserErrorPart2Spec
     , Test.Parser.ParserErrorPart3Spec
@@ -652,6 +685,10 @@ test-suite python-hs-test
     , Test.VM.RunSourceVmPart29Spec
     , Test.VM.RunSourceVmPart30Spec
     , Test.VM.RunInstructionsSpec
+    , Test.VM.RunSourceVmAugAssignBitwiseSpec
+    , Test.VM.RunSourceVmBlankLineSpec
+    , Test.VM.RunSourceVmUnaryPrecedenceSpec
+    , Test.VM.RunSourceVmUnittestSpec
     , Test.Structure.CheckStructureSpec
     , Test.Structure.DetectPositionalArgsSpec
     , Test.Evaluator.EvalContextManagerSpec

@@ -1,6 +1,5 @@
 module PythonHS.Parser.ParseExprStatement (parseExprStatement) where
 
-import PythonHS.AST.Expr (Expr (..))
 import PythonHS.AST.Stmt (Stmt (..))
 import PythonHS.Lexer.Token (Token (..))
 import PythonHS.Lexer.TokenType (TokenType (EOFToken, NewlineToken))
@@ -16,11 +15,9 @@ parseExprStatement tokens =
           Just (ParseResult {parseResultValue = ExprStmt {exprStmtValue = parseResultValue exprResult, exprStmtPos = exprPos (parseResultValue exprResult)}, parseResultRemaining = parseResultRemaining exprResult})
     _ -> Nothing
   where
-    isStatementExpr expr = case expr of
-      IdentifierExpr {identifierExprName = identifierName} -> elem '.' identifierName
-      CallExpr {} -> True
-      CallValueExpr {} -> True
-      _ -> False
+    -- CPython allows any expression to be used as a statement. The result is
+    -- evaluated for its side effects and then discarded.
+    isStatementExpr _ = True
 
     isStatementEnd restTokens = case restTokens of
       [] -> True

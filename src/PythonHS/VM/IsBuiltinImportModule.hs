@@ -7,3 +7,4 @@ isBuiltinImportModule modulePath =
     || modulePath == ["os"]
     || modulePath == ["json"]
     || modulePath == ["pathlib"]
+    || modulePath == ["unittest"]

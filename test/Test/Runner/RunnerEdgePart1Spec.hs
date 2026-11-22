@@ -114,10 +114,10 @@ spec = describe "runSource (integration edge/error) - part 1" $ do
     runSource "  print 1\n" `shouldBe` Left "ExpectedExpression (Position {line = 1, column = 1})"
 
   it "returns parse error for if header followed by blank line only" $ do
-    runSource "if 1:\n\n" `shouldBe` Left "ExpectedExpression (Position {line = 2, column = 1})"
+    runSource "if 1:\n\n" `shouldBe` Left "ExpectedExpression (Position {line = 3, column = 1})"
 
   it "returns parse error for while header followed by blank line only" $ do
-    runSource "while 1:\n\n" `shouldBe` Left "ExpectedExpression (Position {line = 2, column = 1})"
+    runSource "while 1:\n\n" `shouldBe` Left "ExpectedExpression (Position {line = 3, column = 1})"
 
   it "returns parse error for if header missing colon" $ do
     runSource "if 1\n" `shouldBe` Left "ExpectedExpression (Position {line = 1, column = 5})"

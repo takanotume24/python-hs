@@ -26,10 +26,10 @@ spec = describe "runSourceVm (vm mvp) - part 5" $ do
     runSourceVm "  print 1\n" `shouldBe` Left "ExpectedExpression (Position {line = 1, column = 1})"
 
   it "returns parse error for if header followed by blank line only" $ do
-    runSourceVm "if 1:\n\n" `shouldBe` Left "ExpectedExpression (Position {line = 2, column = 1})"
+    runSourceVm "if 1:\n\n" `shouldBe` Left "ExpectedExpression (Position {line = 3, column = 1})"
 
   it "returns parse error for while header followed by blank line only" $ do
-    runSourceVm "while 1:\n\n" `shouldBe` Left "ExpectedExpression (Position {line = 2, column = 1})"
+    runSourceVm "while 1:\n\n" `shouldBe` Left "ExpectedExpression (Position {line = 3, column = 1})"
 
   it "returns parse error for if header missing colon" $ do
     runSourceVm "if 1\n" `shouldBe` Left "ExpectedExpression (Position {line = 1, column = 5})"

@@ -6,53 +6,28 @@ import PythonHS.Lexer.LexerError (LexerError (..))
 import PythonHS.Lexer.ParseExponent (ParseExponentResult (..), parseExponent)
 import PythonHS.Lexer.Position (Position (Position))
 import PythonHS.Lexer.ScanFString (scanFString)
+import PythonHS.Lexer.ScanOperatorToken (scanOperatorToken)
+import PythonHS.Lexer.ScanOperatorTokenConfig (ScanOperatorTokenConfig (..))
 import PythonHS.Lexer.ScanTokenStepConfig (ScanTokenStepConfig (..))
 import PythonHS.Lexer.ScanTokenStepResult (ScanTokenStepResult (..))
 import PythonHS.Lexer.Token (Token (Token))
 import PythonHS.Lexer.TokenType
   ( TokenType
-      ( AmpersandToken,
-        AssignToken,
-        AtToken,
-        CaretToken,
+      ( AtToken,
         ColonAssignToken,
         ColonToken,
         CommaToken,
         DotToken,
-        DoubleSlashAssignToken,
-        DoubleSlashToken,
-        DoubleStarAssignToken,
-        DoubleStarToken,
-        EqToken,
         FStringToken,
         FloatToken,
-        GtToken,
-        GteToken,
         IntegerToken,
         LBraceToken,
         LBracketToken,
         LParenToken,
-        LeftShiftToken,
-        LtToken,
-        LteToken,
-        MinusAssignToken,
-        MinusToken,
-        NotEqToken,
-        PercentAssignToken,
-        PercentToken,
-        PipeToken,
-        PlusAssignToken,
-        PlusToken,
         RBraceToken,
         RBracketToken,
         RParenToken,
-        RightShiftToken,
-        SlashAssignToken,
-        SlashToken,
-        StarAssignToken,
-        StarToken,
-        StringToken,
-        TildeToken
+        StringToken
       ),
   )
 
@@ -63,52 +38,14 @@ scanTokenStep config =
    in case src of
         [] -> Left (UnexpectedCharacter {unexpectedChar = ' '})
         (c : rest)
-          | c == '=' ->
-              case rest of
-                ('=' : rest') -> Right (ScanTokenStepResult (Token EqToken "==" (Position ln col)) rest' (Position ln (col + 2)))
-                _ -> Right (ScanTokenStepResult (Token AssignToken "=" (Position ln col)) rest (Position ln (col + 1)))
-          | c == '!' ->
-              case rest of
-                ('=' : rest') -> Right (ScanTokenStepResult (Token NotEqToken "!=" (Position ln col)) rest' (Position ln (col + 2)))
-                _ -> Left (UnexpectedCharacter {unexpectedChar = '!'})
-          | c == '<' ->
-              case rest of
-                ('<' : rest') -> Right (ScanTokenStepResult (Token LeftShiftToken "<<" (Position ln col)) rest' (Position ln (col + 2)))
-                ('=' : rest') -> Right (ScanTokenStepResult (Token LteToken "<=" (Position ln col)) rest' (Position ln (col + 2)))
-                _ -> Right (ScanTokenStepResult (Token LtToken "<" (Position ln col)) rest (Position ln (col + 1)))
-          | c == '>' ->
-              case rest of
-                ('>' : rest') -> Right (ScanTokenStepResult (Token RightShiftToken ">>" (Position ln col)) rest' (Position ln (col + 2)))
-                ('=' : rest') -> Right (ScanTokenStepResult (Token GteToken ">=" (Position ln col)) rest' (Position ln (col + 2)))
-                _ -> Right (ScanTokenStepResult (Token GtToken ">" (Position ln col)) rest (Position ln (col + 1)))
-          | c == '&' -> Right (ScanTokenStepResult (Token AmpersandToken "&" (Position ln col)) rest (Position ln (col + 1)))
-          | c == '^' -> Right (ScanTokenStepResult (Token CaretToken "^" (Position ln col)) rest (Position ln (col + 1)))
-          | c == '~' -> Right (ScanTokenStepResult (Token TildeToken "~" (Position ln col)) rest (Position ln (col + 1)))
-          | c == '+' ->
-              case rest of
-                ('=' : rest') -> Right (ScanTokenStepResult (Token PlusAssignToken "+=" (Position ln col)) rest' (Position ln (col + 2)))
-                _ -> Right (ScanTokenStepResult (Token PlusToken "+" (Position ln col)) rest (Position ln (col + 1)))
-          | c == '-' ->
-              case rest of
-                ('=' : rest') -> Right (ScanTokenStepResult (Token MinusAssignToken "-=" (Position ln col)) rest' (Position ln (col + 2)))
-                _ -> Right (ScanTokenStepResult (Token MinusToken "-" (Position ln col)) rest (Position ln (col + 1)))
-          | c == '*' ->
-              case rest of
-                ('*' : '=' : rest') -> Right (ScanTokenStepResult (Token DoubleStarAssignToken "**=" (Position ln col)) rest' (Position ln (col + 3)))
-                ('*' : rest') -> Right (ScanTokenStepResult (Token DoubleStarToken "**" (Position ln col)) rest' (Position ln (col + 2)))
-                ('=' : rest') -> Right (ScanTokenStepResult (Token StarAssignToken "*=" (Position ln col)) rest' (Position ln (col + 2)))
-                _ -> Right (ScanTokenStepResult (Token StarToken "*" (Position ln col)) rest (Position ln (col + 1)))
-          | c == '/' ->
-              case rest of
-                ('/' : '=' : rest') -> Right (ScanTokenStepResult (Token DoubleSlashAssignToken "//=" (Position ln col)) rest' (Position ln (col + 3)))
-                ('/' : rest') -> Right (ScanTokenStepResult (Token DoubleSlashToken "//" (Position ln col)) rest' (Position ln (col + 2)))
-                ('=' : rest') -> Right (ScanTokenStepResult (Token SlashAssignToken "/=" (Position ln col)) rest' (Position ln (col + 2)))
-                _ -> Right (ScanTokenStepResult (Token SlashToken "/" (Position ln col)) rest (Position ln (col + 1)))
-          | c == '%' ->
-              case rest of
-                ('=' : rest') -> Right (ScanTokenStepResult (Token PercentAssignToken "%=" (Position ln col)) rest' (Position ln (col + 2)))
-                _ -> Right (ScanTokenStepResult (Token PercentToken "%" (Position ln col)) rest (Position ln (col + 1)))
-          | c == '|' -> Right (ScanTokenStepResult (Token PipeToken "|" (Position ln col)) rest (Position ln (col + 1)))
+          | Just result <-
+              scanOperatorToken
+                ScanOperatorTokenConfig
+                  { scanOperatorTokenCharacter = c,
+                    scanOperatorTokenRest = rest,
+                    scanOperatorTokenPosition = Position ln col
+                  } ->
+              result
           | c == '@' -> Right (ScanTokenStepResult (Token AtToken "@" (Position ln col)) rest (Position ln (col + 1)))
           | c == '(' -> Right (ScanTokenStepResult (Token LParenToken "(" (Position ln col)) rest (Position ln (col + 1)))
           | c == ')' -> Right (ScanTokenStepResult (Token RParenToken ")" (Position ln col)) rest (Position ln (col + 1)))

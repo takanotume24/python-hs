@@ -1,0 +1,7 @@
+# CPython tests that python-hs can run.
+# Format: path::ClassName::methodName
+third_party/cpython/Lib/test/test_augassign.py::AugAssignTest::testBasic
+third_party/cpython/Lib/test/test_augassign.py::AugAssignTest::testInList
+third_party/cpython/Lib/test/test_augassign.py::AugAssignTest::testInDict
+third_party/cpython/Lib/test/test_unary.py::UnaryOpTestCase::test_invert
+third_party/cpython/Lib/test/test_unary.py::UnaryOpTestCase::test_negation_of_exponentiation

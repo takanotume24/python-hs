@@ -6,6 +6,7 @@ import PythonHS.Evaluator.EvalExprBinaryMembershipConfig (EvalExprBinaryMembersh
 import PythonHS.Evaluator.EvalExprResult (EvalExprResult (..))
 import PythonHS.Evaluator.ShowPos (showPos)
 import PythonHS.Evaluator.Value (Value (..))
+import PythonHS.Evaluator.ValuesEqual (valuesEqual)
 import PythonHS.Lexer.Position (Position)
 
 evalExprBinaryMembership :: EvalExprBinaryMembershipConfig -> Either String EvalExprResult
@@ -39,16 +40,6 @@ evalExprBinaryMembership config = do
 
     pairKey :: DictPair k v -> k
     pairKey (DictPair key _) = key
-
-    valuesEqual :: Value -> Value -> Bool
-    valuesEqual (IntValue {intValue = leftInt}) (IntValue {intValue = rightInt}) = leftInt == rightInt
-    valuesEqual (IntValue {intValue = leftInt}) (FloatValue {floatValue = rightFloat}) = (fromIntegral leftInt :: Double) == rightFloat
-    valuesEqual (FloatValue {floatValue = leftFloat}) (IntValue {intValue = rightInt}) = leftFloat == (fromIntegral rightInt :: Double)
-    valuesEqual (FloatValue {floatValue = leftFloat}) (FloatValue {floatValue = rightFloat}) = leftFloat == rightFloat
-    valuesEqual (StringValue {stringValue = leftString}) (StringValue {stringValue = rightString}) = leftString == rightString
-    valuesEqual (ListValue {listValueItems = leftItems}) (ListValue {listValueItems = rightItems}) = leftItems == rightItems
-    valuesEqual (TupleValue {tupleValueItems = leftItems}) (TupleValue {tupleValueItems = rightItems}) = leftItems == rightItems
-    valuesEqual leftValue rightValue = leftValue == rightValue
 
     applyNegate :: Bool -> Value -> Value
     applyNegate True IntValue {intValue = n} = IntValue {intValue = if n == 0 then 1 else 0}

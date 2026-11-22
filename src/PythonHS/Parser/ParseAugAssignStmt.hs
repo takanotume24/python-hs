@@ -6,13 +6,18 @@ import PythonHS.AST.Stmt (Stmt (..))
 import PythonHS.Lexer.Token (Token (..))
 import PythonHS.Lexer.TokenType
   ( TokenType
-      ( DotToken,
+      ( AmpersandAssignToken,
+        CaretAssignToken,
+        DotToken,
         DoubleSlashAssignToken,
         DoubleStarAssignToken,
         IdentifierToken,
+        LeftShiftAssignToken,
         MinusAssignToken,
         PercentAssignToken,
+        PipeAssignToken,
         PlusAssignToken,
+        RightShiftAssignToken,
         SlashAssignToken,
         StarAssignToken
       ),
@@ -53,6 +58,16 @@ parseAugAssignStmt config =
       case opTokens of
         Token {tokenType = DoubleStarAssignToken} : rest ->
           Just (powerAssign target pos, rest)
+        Token {tokenType = AmpersandAssignToken} : rest ->
+          Just (compoundAssign target pos BitwiseAndOperator, rest)
+        Token {tokenType = PipeAssignToken} : rest ->
+          Just (compoundAssign target pos BitwiseOrOperator, rest)
+        Token {tokenType = CaretAssignToken} : rest ->
+          Just (compoundAssign target pos BitwiseXorOperator, rest)
+        Token {tokenType = LeftShiftAssignToken} : rest ->
+          Just (compoundAssign target pos LeftShiftOperator, rest)
+        Token {tokenType = RightShiftAssignToken} : rest ->
+          Just (compoundAssign target pos RightShiftOperator, rest)
         Token {tokenType = opType} : rest ->
           case opType of
             PlusAssignToken -> Just (addAssign target pos, rest)
@@ -70,6 +85,19 @@ parseAugAssignStmt config =
           assignStmtValue =
             BinaryExpr
               { binaryExprOp = PowerOperator,
+                binaryExprLeft = IdentifierExpr {identifierExprName = target, identifierExprPos = pos},
+                binaryExprRight = valueExpr,
+                binaryExprPos = pos
+              },
+          assignStmtPos = pos
+        }
+
+    compoundAssign target pos operator valueExpr =
+      AssignStmt
+        { assignStmtName = target,
+          assignStmtValue =
+            BinaryExpr
+              { binaryExprOp = operator,
                 binaryExprLeft = IdentifierExpr {identifierExprName = target, identifierExprPos = pos},
                 binaryExprRight = valueExpr,
                 binaryExprPos = pos

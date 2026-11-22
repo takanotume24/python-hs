@@ -1,13 +1,12 @@
 module PythonHS.Parser.ParseExprWithConfig (parseExprWithConfig) where
 
-import PythonHS.AST.BinaryOperator (BinaryOperator (AddOperator, AndOperator, DivideOperator, EqOperator, FloorDivideOperator, GtOperator, GteOperator, InOperator, IsNotOperator, IsOperator, LtOperator, LteOperator, ModuloOperator, MultiplyOperator, NotEqOperator, NotInOperator, OrOperator, PowerOperator, SubtractOperator))
+import PythonHS.AST.BinaryOperator (BinaryOperator (AddOperator, AndOperator, DivideOperator, EqOperator, FloorDivideOperator, GtOperator, GteOperator, InOperator, IsNotOperator, IsOperator, LtOperator, LteOperator, ModuloOperator, MultiplyOperator, NotEqOperator, NotInOperator, OrOperator, SubtractOperator))
 import PythonHS.AST.Expr (Expr (..))
 import PythonHS.Lexer.Token (Token (Token))
 import PythonHS.Lexer.TokenType
   ( TokenType
       ( AndToken,
         DoubleSlashToken,
-        DoubleStarToken,
         EqToken,
         GtToken,
         GteToken,
@@ -25,6 +24,7 @@ import PythonHS.Lexer.TokenType
         StarToken
       ),
   )
+import PythonHS.Parser.ExprPos (exprPos)
 import PythonHS.Parser.ParseBitwiseExpr (parseBitwiseExpr)
 import PythonHS.Parser.ParseBitwiseExprConfig (ParseBitwiseExprConfig (..))
 import PythonHS.Parser.ParseComparisonItem (ParseComparisonItem (..))
@@ -32,6 +32,8 @@ import PythonHS.Parser.ParseError (ParseError)
 import PythonHS.Parser.ParseExprConfig (ParseExprConfig (..))
 import PythonHS.Parser.ParseLambdaExpr (parseLambdaExpr)
 import PythonHS.Parser.ParseLambdaExprConfig (ParseLambdaExprConfig (..))
+import PythonHS.Parser.ParsePowerExpr (parsePowerExpr)
+import PythonHS.Parser.ParsePowerExprConfig (ParsePowerExprConfig (..))
 import PythonHS.Parser.ParsePrimary (parsePrimary)
 import PythonHS.Parser.ParsePrimaryConfig (ParsePrimaryConfig (..))
 import PythonHS.Parser.ParseResult (ParseResult (..))
@@ -87,7 +89,7 @@ parseExprWithConfig config = parseLambdaExpr (ParseLambdaExprConfig {lambdaExprF
         [] -> Right (ParseResult {parseResultValue = left, parseResultRemaining = remaining})
         [ParseComparisonItem {parseComparisonItemOp = op, parseComparisonItemExpr = right, parseComparisonItemPos = pos}] -> Right (ParseResult {parseResultValue = BinaryExpr {binaryExprOp = op, binaryExprLeft = left, binaryExprRight = right, binaryExprPos = pos}, parseResultRemaining = remaining})
         _ ->
-          let firstPos = case items of ParseComparisonItem {parseComparisonItemPos = pos} : _ -> pos; _ -> error "unreachable"
+          let firstPos = case items of [] -> exprPos left; firstItem : _ -> parseComparisonItemPos firstItem
            in Right (ParseResult {parseResultValue = ComparisonChainExpr {comparisonChainLeft = left, comparisonChainOps = map parseComparisonItemOp items, comparisonChainRights = map parseComparisonItemExpr items, comparisonChainPos = firstPos}, parseResultRemaining = remaining})
 
     parseComparisonOperand ts = if allowBitwiseOr then parseBitwiseExpr ParseBitwiseExprConfig {parseBitwiseExprConfigNextParser = parseAdd, parseBitwiseExprConfigTokens = ts} else parseAdd ts
@@ -170,15 +172,19 @@ parseExprWithConfig config = parseLambdaExpr (ParseLambdaExprConfig {lambdaExprF
       parseMulTail (BinaryExpr {binaryExprOp = ModuloOperator, binaryExprLeft = left, binaryExprRight = rightExpr, binaryExprPos = pos}) remaining
     parseMulTail left remaining = Right (ParseResult {parseResultValue = left, parseResultRemaining = remaining})
 
-    parsePower tokenStream = do
-      primaryResult <- parsePrimary (ParsePrimaryConfig {parsePrimaryExpr = \ts -> parseExprWithConfig ParseExprConfig {parseExprConfigAllowBitwiseOr = allowBitwiseOr, parseExprConfigTokens = ts}, parsePrimaryTokenStream = tokenStream})
-      let leftExpr = parseResultValue primaryResult
-          remaining = parseResultRemaining primaryResult
-      parsePowerTail leftExpr remaining
-
-    parsePowerTail left (Token DoubleStarToken _ pos : rest) = do
-      rightResult <- parsePower rest
-      let rightExpr = parseResultValue rightResult
-          remaining = parseResultRemaining rightResult
-      Right (ParseResult {parseResultValue = BinaryExpr {binaryExprOp = PowerOperator, binaryExprLeft = left, binaryExprRight = rightExpr, binaryExprPos = pos}, parseResultRemaining = remaining})
-    parsePowerTail left remaining = Right (ParseResult {parseResultValue = left, parseResultRemaining = remaining})
+    parsePower tokenStream =
+      parsePowerExpr
+        ParsePowerExprConfig
+          { parsePowerExprConfigParsePrimary = \ts ->
+              parsePrimary
+                ParsePrimaryConfig
+                  { parsePrimaryExpr = \nestedTokens ->
+                      parseExprWithConfig
+                        ParseExprConfig
+                          { parseExprConfigAllowBitwiseOr = allowBitwiseOr,
+                            parseExprConfigTokens = nestedTokens
+                          },
+                    parsePrimaryTokenStream = ts
+                  },
+            parsePowerExprConfigTokens = tokenStream
+          }

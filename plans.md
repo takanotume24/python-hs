@@ -817,10 +817,11 @@
 - [x] P131-3: Nix devShell / devcontainer に `python3`・`gnumake`・`openssl` など CPython テスト用の依存を追加
 - [x] P131-4: GHC を `9.10.3` に固定し、`cabal.project` の `with-compiler` と CI に一致させる
 - [x] P131-5: Lexer で行コメント（`# ...`）を読み飛ばす（インライン・行全体の両方）
-- [ ] P131-6: 空行（論理行でない改行）を構文解析で読み飛ばす
-- [ ] P131-7: `run-cpython-test` executable を追加し、CPython テストを実行・判定できるようにする
-- [ ] P131-8: `unittest` / `test.support` の最小 shim を追加する
-- [ ] P131-9: allowlist 方式で CPython テストを段階的に実行対象へ追加する
+- [x] P131-6: 空行（論理行でない改行）を構文解析で読み飛ばす
+- [x] P131-7: `run-cpython-test` executable を追加し、CPython テストを実行・判定できるようにする
+- [x] P131-8: `unittest` / `test.support` の最小 shim を追加する
+- [x] P131-9: allowlist 方式で CPython テストを段階的に実行対象へ追加する
+- 補足: `run-cpython-test` は allowlist のメソッド単位で import・クラスヘッダ・対象メソッドのみを抽出して実行する。初期 allowlist は `test_augassign.py` の 3 件と `test_unary.py` の 2 件。
 - [x] P131-10: 品質ゲート: `cabal run quality-gate` 全項目 PASS
 
 ## 現在のスコープ（P120: 組み込みメソッド構文の拡張）

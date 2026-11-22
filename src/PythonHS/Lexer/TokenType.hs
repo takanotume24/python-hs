@@ -19,6 +19,11 @@ data TokenType
   | StarToken
   | DoubleStarToken
   | DoubleStarAssignToken
+  | AmpersandAssignToken
+  | PipeAssignToken
+  | CaretAssignToken
+  | LeftShiftAssignToken
+  | RightShiftAssignToken
   | SlashToken
   | DoubleSlashToken
   | PercentToken

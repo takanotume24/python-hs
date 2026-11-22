@@ -27,6 +27,8 @@ import PythonHS.VM.CallStdlibBuiltinConfig (CallStdlibBuiltinConfig (..))
 import PythonHS.VM.CallStringBuiltin (callStringBuiltin)
 import PythonHS.VM.CallStringBuiltinConfig (CallStringBuiltinConfig (..))
 import PythonHS.VM.CallStringSearchBuiltin (callStringSearchBuiltin)
+import PythonHS.VM.CallUnittestBuiltin (callUnittestBuiltin)
+import PythonHS.VM.CallUnittestBuiltinConfig (CallUnittestBuiltinConfig (..))
 
 callBuiltin :: CallBuiltinConfig -> Maybe (Either String Value)
 callBuiltin config =
@@ -61,6 +63,7 @@ callBuiltin config =
               callMathBuiltin CallMathBuiltinConfig {callMathBuiltinName = name, callMathBuiltinArgs = args, callMathBuiltinPos = pos},
               callStdlibBuiltin CallStdlibBuiltinConfig {callStdlibBuiltinName = name, callStdlibBuiltinArgs = args, callStdlibBuiltinPos = pos},
               callCollectionBuiltin CallCollectionBuiltinConfig {callCollectionBuiltinName = name, callCollectionBuiltinArgs = args, callCollectionBuiltinPos = pos},
+              callUnittestBuiltin CallUnittestBuiltinConfig {callUnittestBuiltinName = name, callUnittestBuiltinArgs = args, callUnittestBuiltinPos = pos},
               callInputBuiltin CallBuiltinConfig {callBuiltinName = name, callBuiltinArgs = args, callBuiltinPos = pos}
             ]
   where
