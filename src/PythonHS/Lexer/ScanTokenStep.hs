@@ -5,6 +5,7 @@ import PythonHS.Lexer.KeywordOrIdentifier (keywordOrIdentifier)
 import PythonHS.Lexer.LexerError (LexerError (..))
 import PythonHS.Lexer.ParseExponent (ParseExponentResult (..), parseExponent)
 import PythonHS.Lexer.Position (Position (Position))
+import PythonHS.Lexer.ScanFString (scanFString)
 import PythonHS.Lexer.ScanTokenStepConfig (ScanTokenStepConfig (..))
 import PythonHS.Lexer.ScanTokenStepResult (ScanTokenStepResult (..))
 import PythonHS.Lexer.Token (Token (Token))
@@ -23,6 +24,7 @@ import PythonHS.Lexer.TokenType
         DoubleStarAssignToken,
         DoubleStarToken,
         EqToken,
+        FStringToken,
         FloatToken,
         GtToken,
         GteToken,
@@ -171,6 +173,12 @@ scanTokenStep config =
                             else
                               let lexeme = digits ++ exponentPart
                                in Right (ScanTokenStepResult (Token FloatToken lexeme (Position ln col)) tailInput (Position ln (col + length lexeme)))
+          | (c == 'f' || c == 'F'),
+            (quoteChar : afterQuote) <- rest,
+            quoteChar == '"' || quoteChar == '\'' ->
+              case scanFString quoteChar afterQuote of
+                Just (strContent, tailInput) -> Right (ScanTokenStepResult (Token FStringToken strContent (Position ln col)) tailInput (Position ln (col + length strContent + 3)))
+                Nothing -> Left (UnexpectedCharacter {unexpectedChar = quoteChar})
           | isAlpha c || c == '_' ->
               let spanRes = span (\x -> isAlphaNum x || x == '_') (c : rest)
                   word = fst spanRes

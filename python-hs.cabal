@@ -145,6 +145,7 @@ library
     , PythonHS.Lexer.KeywordOrIdentifier
     , PythonHS.Lexer.ParseExponent
     , PythonHS.Lexer.ParseExponentResult
+    , PythonHS.Lexer.ScanFString
     , PythonHS.Lexer.ScanTokenStep
     , PythonHS.Lexer.ScanTokenStepConfig
     , PythonHS.Lexer.ScanTokenStepResult
@@ -168,6 +169,8 @@ library
     , PythonHS.Parser.ParseCallArgumentResult
     , PythonHS.Parser.ParseAssertStmt
     , PythonHS.Parser.ParseExprStatement
+    , PythonHS.Parser.ParseFStringExpr
+    , PythonHS.Parser.ParseFStringExprConfig
     , PythonHS.Parser.ParseDecoratedStmt
     , PythonHS.Parser.ParseDecoratedStmtConfig
     , PythonHS.Parser.ParseDelStmt
@@ -306,6 +309,7 @@ library
     , PythonHS.VM.CallConstructorBuiltinConfig
     , PythonHS.VM.CallConversionBuiltin
     , PythonHS.VM.CallConversionBuiltinConfig
+    , PythonHS.VM.CallFormatBuiltin
     , PythonHS.VM.CallIterableBuiltin
     , PythonHS.VM.CallIterableBuiltinConfig
     , PythonHS.VM.CallMapFilterBuiltin
@@ -643,6 +647,7 @@ test-suite python-hs-test
     , Test.VM.RunSourceVmPart26Spec
     , Test.VM.RunSourceVmPart27Spec
     , Test.VM.RunSourceVmPart28Spec
+    , Test.VM.RunSourceVmPart29Spec
     , Test.VM.RunInstructionsSpec
     , Test.Structure.CheckStructureSpec
     , Test.Structure.DetectPositionalArgsSpec

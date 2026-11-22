@@ -13,6 +13,7 @@ import PythonHS.VM.CallConstructorBuiltin (callConstructorBuiltin)
 import PythonHS.VM.CallConstructorBuiltinConfig (CallConstructorBuiltinConfig (..))
 import PythonHS.VM.CallConversionBuiltin (callConversionBuiltin)
 import PythonHS.VM.CallConversionBuiltinConfig (CallConversionBuiltinConfig (..))
+import PythonHS.VM.CallFormatBuiltin (callFormatBuiltin)
 import PythonHS.VM.CallInputBuiltin (callInputBuiltin)
 import PythonHS.VM.CallIterableBuiltin (callIterableBuiltin)
 import PythonHS.VM.CallIterableBuiltinConfig (CallIterableBuiltinConfig (..))
@@ -50,6 +51,7 @@ callBuiltin config =
           firstJust
             [ callConstructorBuiltin CallConstructorBuiltinConfig {callConstructorBuiltinName = name, callConstructorBuiltinArgs = args, callConstructorBuiltinPos = pos},
               callConversionBuiltin CallConversionBuiltinConfig {callConversionBuiltinName = name, callConversionBuiltinArgs = args, callConversionBuiltinPos = pos},
+              callFormatBuiltin CallBuiltinConfig {callBuiltinName = name, callBuiltinArgs = args, callBuiltinPos = pos},
               callIterableBuiltin CallIterableBuiltinConfig {callIterableBuiltinName = name, callIterableBuiltinArgs = args, callIterableBuiltinPos = pos},
               callStringBuiltin CallStringBuiltinConfig {callStringBuiltinName = name, callStringBuiltinArgs = args, callStringBuiltinPos = pos},
               callStringSearchBuiltin CallStringBuiltinConfig {callStringBuiltinName = name, callStringBuiltinArgs = args, callStringBuiltinPos = pos},

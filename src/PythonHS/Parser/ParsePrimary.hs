@@ -9,6 +9,7 @@ import PythonHS.Lexer.TokenType
       ( ColonToken,
         CommaToken,
         DotToken,
+        FStringToken,
         FalseToken,
         FloatToken,
         ForToken,
@@ -35,6 +36,8 @@ import PythonHS.Parser.ParseCallArgumentResult (ParseCallArgumentResult (..))
 import PythonHS.Parser.ParseComprehensionTail (parseComprehensionTail)
 import PythonHS.Parser.ParseComprehensionTailConfig (ParseComprehensionTailConfig (..))
 import PythonHS.Parser.ParseError (ParseError (..))
+import PythonHS.Parser.ParseFStringExpr (parseFStringExpr)
+import PythonHS.Parser.ParseFStringExprConfig (ParseFStringExprConfig (..))
 import PythonHS.Parser.ParseParenTuple (parseParenTuple)
 import PythonHS.Parser.ParseParenTupleConfig (ParseParenTupleConfig (..))
 import PythonHS.Parser.ParsePrimaryConfig (ParsePrimaryConfig (..))
@@ -67,6 +70,9 @@ parsePrimary config = do
           remaining = parseResultRemaining primaryResult
       Right (ParseResult {parseResultValue = BitwiseNotExpr {bitwiseNotExprValue = expr, bitwiseNotExprPos = pos}, parseResultRemaining = remaining})
     parseAtom (Token StringToken value pos : rest) = Right (ParseResult {parseResultValue = StringExpr {stringExprValue = value, stringExprPos = pos}, parseResultRemaining = rest})
+    parseAtom (Token FStringToken value pos : rest) = do
+      expr <- parseFStringExpr ParseFStringExprConfig {parseFStringExprParseExpr = parsePrimaryExpr config, parseFStringExprContent = value, parseFStringExprPos = pos}
+      Right (ParseResult {parseResultValue = expr, parseResultRemaining = rest})
     parseAtom (Token LBracketToken _ pos : rest) = parseListElements pos rest
     parseAtom (Token LBraceToken _ pos : rest) = parseDictEntries pos rest
     parseAtom (Token LParenToken _ parenPos : rest) =
