@@ -41,6 +41,7 @@ spec = describe "reportJson" $ do
           "  \"total\": 2,",
           "  \"passed\": 1,",
           "  \"failed\": 1,",
+          "  \"failureCategories\": {\"assertion\":1},",
           "  \"cases\": [",
           "    {\"file\":\"test_ok.py\",\"class\":\"TestOk\",\"method\":\"test_ok\",\"status\":\"pass\",\"category\":null,\"message\":null},",
           "    {\"file\":\"test_fail.py\",\"class\":\"TestFail\",\"method\":\"test_fail\",\"status\":\"fail\",\"category\":\"assertion\",\"message\":\"AssertionError: 1 != 2\"}",

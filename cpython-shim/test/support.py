@@ -6,6 +6,10 @@ implement yet, so this file shadows it when running through run-cpython-test.
 """
 
 
+def import_module(name):
+    return name
+
+
 def requires(resource, msg=None):
     return None
 
@@ -27,8 +31,8 @@ def skipUnless(condition, reason):
 
 
 def check_syntax_error(testcase, statement, errtext=None):
-    return None
-
-
-def import_module(name):
-    return name
+    try:
+        compile(statement, "<test>", "exec")
+    except SyntaxError:
+        return None
+    raise AssertionError("expected SyntaxError for: " + statement)

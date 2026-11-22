@@ -82,7 +82,7 @@ executeCallFunction execute isTopLevel fname compiledArgs pos stack globalsEnv l
         Nothing ->
           case firstKeywordArg compiledArgs of
             Just kwInfo
-              | isBuiltinName fname ->
+              | isBuiltinName fname && fname /= "subTest" ->
                   Left ("Argument error: keyword arguments are not supported for builtin " ++ fname ++ " at " ++ showPos (keywordArgInfoPos kwInfo))
             _ ->
               case evaluateBuiltinArgs execute localEnv compiledArgs globalsEnv functions outputs [] of

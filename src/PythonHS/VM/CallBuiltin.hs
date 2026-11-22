@@ -9,6 +9,7 @@ import PythonHS.VM.CallCollectionBuiltin (callCollectionBuiltin)
 import PythonHS.VM.CallCollectionBuiltinConfig (CallCollectionBuiltinConfig (..))
 import PythonHS.VM.CallCollectionMethodBuiltin (callCollectionMethodBuiltin)
 import PythonHS.VM.CallCollectionMethodBuiltinConfig (CallCollectionMethodBuiltinConfig (..))
+import PythonHS.VM.CallCompileBuiltin (callCompileBuiltin)
 import PythonHS.VM.CallConstructorBuiltin (callConstructorBuiltin)
 import PythonHS.VM.CallConstructorBuiltinConfig (CallConstructorBuiltinConfig (..))
 import PythonHS.VM.CallConversionBuiltin (callConversionBuiltin)
@@ -26,6 +27,7 @@ import PythonHS.VM.CallStdlibBuiltin (callStdlibBuiltin)
 import PythonHS.VM.CallStdlibBuiltinConfig (CallStdlibBuiltinConfig (..))
 import PythonHS.VM.CallStringBuiltin (callStringBuiltin)
 import PythonHS.VM.CallStringBuiltinConfig (CallStringBuiltinConfig (..))
+import PythonHS.VM.CallStringPredicateBuiltin (callStringPredicateBuiltin)
 import PythonHS.VM.CallStringSearchBuiltin (callStringSearchBuiltin)
 import PythonHS.VM.CallUnittestBuiltin (callUnittestBuiltin)
 import PythonHS.VM.CallUnittestBuiltinConfig (CallUnittestBuiltinConfig (..))
@@ -57,11 +59,13 @@ callBuiltin config =
               callIterableBuiltin CallIterableBuiltinConfig {callIterableBuiltinName = name, callIterableBuiltinArgs = args, callIterableBuiltinPos = pos},
               callStringBuiltin CallStringBuiltinConfig {callStringBuiltinName = name, callStringBuiltinArgs = args, callStringBuiltinPos = pos},
               callStringSearchBuiltin CallStringBuiltinConfig {callStringBuiltinName = name, callStringBuiltinArgs = args, callStringBuiltinPos = pos},
+              callStringPredicateBuiltin CallStringBuiltinConfig {callStringBuiltinName = name, callStringBuiltinArgs = args, callStringBuiltinPos = pos},
               callCollectionMethodBuiltin CallCollectionMethodBuiltinConfig {callCollectionMethodBuiltinName = name, callCollectionMethodBuiltinArgs = args, callCollectionMethodBuiltinPos = pos},
               callNumericBuiltin CallNumericBuiltinConfig {callNumericBuiltinName = name, callNumericBuiltinArgs = args, callNumericBuiltinPos = pos},
               callNumericExtraBuiltin CallBuiltinConfig {callBuiltinName = name, callBuiltinArgs = args, callBuiltinPos = pos},
               callMathBuiltin CallMathBuiltinConfig {callMathBuiltinName = name, callMathBuiltinArgs = args, callMathBuiltinPos = pos},
               callStdlibBuiltin CallStdlibBuiltinConfig {callStdlibBuiltinName = name, callStdlibBuiltinArgs = args, callStdlibBuiltinPos = pos},
+              callCompileBuiltin CallBuiltinConfig {callBuiltinName = name, callBuiltinArgs = args, callBuiltinPos = pos},
               callCollectionBuiltin CallCollectionBuiltinConfig {callCollectionBuiltinName = name, callCollectionBuiltinArgs = args, callCollectionBuiltinPos = pos},
               callUnittestBuiltin CallUnittestBuiltinConfig {callUnittestBuiltinName = name, callUnittestBuiltinArgs = args, callUnittestBuiltinPos = pos},
               callInputBuiltin CallBuiltinConfig {callBuiltinName = name, callBuiltinArgs = args, callBuiltinPos = pos}

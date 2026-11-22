@@ -1,13 +1,31 @@
 # CPython tests that python-hs can run.
-# Format: path::ClassName::methodName
+#
+# Formats:
+#   path::ClassName::methodName  (single method)
+#   path::ClassName              (all test* methods in the class)
+#   path                         (all test* methods in the file)
+#
+# Stability rules:
+# - Entries must pass deterministically without network, wall-clock time,
+#   randomness, or writes outside the repository.
+# - Methods that need an unsupported module or platform-specific value are
+#   excluded rather than skipped at runtime.
+# - A failing entry is removed until the underlying gap is fixed; the runner
+#   never reports a case as skipped.
 third_party/cpython/Lib/test/test_augassign.py::AugAssignTest::testBasic
 third_party/cpython/Lib/test/test_augassign.py::AugAssignTest::testInList
 third_party/cpython/Lib/test/test_augassign.py::AugAssignTest::testInDict
+third_party/cpython/Lib/test/test_augassign.py::AugAssignTest::test_with_unpacking
 third_party/cpython/Lib/test/test_unary.py::UnaryOpTestCase::test_invert
 third_party/cpython/Lib/test/test_unary.py::UnaryOpTestCase::test_negation_of_exponentiation
 third_party/cpython/Lib/test/test_bool.py::BoolTest::test_float
 third_party/cpython/Lib/test/test_bool.py::BoolTest::test_contains
 third_party/cpython/Lib/test/test_bool.py::BoolTest::test_hasattr
+third_party/cpython/Lib/test/test_bool.py::BoolTest::test_convert
+third_party/cpython/Lib/test/test_bool.py::BoolTest::test_callable
+third_party/cpython/Lib/test/test_bool.py::BoolTest::test_issubclass
+third_party/cpython/Lib/test/test_bool.py::BoolTest::test_string
+third_party/cpython/Lib/test/test_bool.py::BoolTest::test_boolean
 third_party/cpython/Lib/test/test_keyword.py::Test_iskeyword::test_true_is_a_keyword
 third_party/cpython/Lib/test/test_keyword.py::Test_iskeyword::test_uppercase_true_is_not_a_keyword
 third_party/cpython/Lib/test/test_keyword.py::Test_iskeyword::test_none_value_is_not_a_keyword
@@ -15,3 +33,34 @@ third_party/cpython/Lib/test/test_keyword.py::Test_iskeyword::test_async_and_awa
 third_party/cpython/Lib/test/test_keyword.py::Test_iskeyword::test_soft_keywords
 third_party/cpython/Lib/test/test_keyword.py::Test_iskeyword::test_keywords_are_sorted
 third_party/cpython/Lib/test/test_keyword.py::Test_iskeyword::test_softkeywords_are_sorted
+third_party/cpython/Lib/test/test_exception_variations.py::ExceptTestCases::test_try_except_no_exception
+third_party/cpython/Lib/test/test_exception_variations.py::ExceptTestCases::test_try_finally_no_exception
+third_party/cpython/Lib/test/test_exception_variations.py::ExceptStarTestCases::test_try_finally_no_exception
+third_party/cpython/Lib/test/test_named_expressions.py::NamedExpressionAssignmentTest::test_named_expression_assignment_01
+third_party/cpython/Lib/test/test_named_expressions.py::NamedExpressionAssignmentTest::test_named_expression_assignment_02
+third_party/cpython/Lib/test/test_named_expressions.py::NamedExpressionAssignmentTest::test_named_expression_assignment_03
+third_party/cpython/Lib/test/test_named_expressions.py::NamedExpressionAssignmentTest::test_named_expression_assignment_04
+third_party/cpython/Lib/test/test_named_expressions.py::NamedExpressionAssignmentTest::test_named_expression_assignment_05
+third_party/cpython/Lib/test/test_named_expressions.py::NamedExpressionAssignmentTest::test_named_expression_assignment_06
+third_party/cpython/Lib/test/test_named_expressions.py::NamedExpressionAssignmentTest::test_named_expression_assignment_07
+third_party/cpython/Lib/test/test_named_expressions.py::NamedExpressionAssignmentTest::test_named_expression_assignment_08
+third_party/cpython/Lib/test/test_named_expressions.py::NamedExpressionAssignmentTest::test_named_expression_assignment_09
+third_party/cpython/Lib/test/test_named_expressions.py::NamedExpressionAssignmentTest::test_named_expression_assignment_12
+third_party/cpython/Lib/test/test_named_expressions.py::NamedExpressionAssignmentTest::test_named_expression_assignment_15
+third_party/cpython/Lib/test/test_opcache.py::TestLoadAttrCache::test_type_descriptor_shadows_attribute_method
+third_party/cpython/Lib/test/test_bool.py::BoolTest::test_blocked
+third_party/cpython/Lib/test/test_exception_variations.py::ExceptTestCases::test_try_except_finally
+third_party/cpython/Lib/test/test_exception_variations.py::ExceptTestCases::test_try_except_finally_no_exception
+third_party/cpython/Lib/test/test_exception_variations.py::ExceptTestCases::test_try_except_else_no_exception
+third_party/cpython/Lib/test/test_keyword.py::Test_iskeyword::test_all_keywords_fail_to_be_used_as_names
+third_party/cpython/Lib/test/test_named_expressions.py::NamedExpressionAssignmentTest::test_named_expression_assignment_14
+third_party/cpython/Lib/test/test_opcache.py::TestLoadMethodCache::test_type_descriptor_shadows_attribute_method
+third_party/cpython/Lib/test/test_pow.py::PowTest::test_negative_exponent
+third_party/cpython/Lib/test/test_exception_variations.py::ExceptTestCases::test_try_except_else_finally
+third_party/cpython/Lib/test/test_exception_variations.py::ExceptTestCases::test_try_except_else_finally_no_exception
+third_party/cpython/Lib/test/test_exception_variations.py::ExceptTestCases::test_nested
+third_party/cpython/Lib/test/test_exception_variations.py::ExceptTestCases::test_nested_else
+third_party/cpython/Lib/test/test_exception_variations.py::ExceptTestCases::test_nested_exception_in_except
+third_party/cpython/Lib/test/test_exception_variations.py::ExceptTestCases::test_nested_exception_in_else
+third_party/cpython/Lib/test/test_exception_variations.py::ExceptTestCases::test_nested_exception_in_finally_no_exception
+third_party/cpython/Lib/test/test_exception_variations.py::ExceptTestCases::test_nested_exception_in_finally_with_exception

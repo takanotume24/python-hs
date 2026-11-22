@@ -13,5 +13,12 @@ isBuiltinExceptionClass className =
              "ImportError",
              "UnboundLocalError",
              "AttributeError",
-             "AssertionError"
+             "AssertionError",
+             "SyntaxError",
+             "ZeroDivisionError",
+             "IndexError",
+             "KeyError",
+             "StopIteration",
+             "SystemExit",
+             "NotImplementedError"
            ]

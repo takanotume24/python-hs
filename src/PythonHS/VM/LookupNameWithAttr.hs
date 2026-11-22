@@ -5,6 +5,7 @@ import PythonHS.Evaluator.ModuleAttr (ModuleAttr (..))
 import PythonHS.Evaluator.ShowPos (showPos)
 import PythonHS.Evaluator.Value (Value (ClassValue, FunctionRefValue, InstanceValue, ModuleValue))
 import PythonHS.Lexer.Position (Position)
+import PythonHS.VM.IsBuiltinCallableName (isBuiltinCallableName)
 import PythonHS.VM.LookupName (lookupName)
 import PythonHS.VM.MethodKind (MethodKind (..))
 import PythonHS.VM.MethodNamePair (MethodNamePair (..))
@@ -76,7 +77,12 @@ lookupNameWithAttr name pos localNow globalsNow =
                   case findClassAttrOrMethod className attrName of
                     Just (Right attrValue) -> loadAttrPath attrValue restAttrs
                     Just (Left methodPair) -> loadAttrPath (methodRefForInstance methodPair currentValue className) restAttrs
-                    Nothing -> Nothing
+                    Nothing
+                      | isBuiltinCallableName attrName ->
+                          loadAttrPath
+                            (FunctionRefValue attrName [("__python_hs_bound_self__", currentValue)])
+                            restAttrs
+                      | otherwise -> Nothing
             ClassValue className _ _ _ ->
               case findClassAttrOrMethod className attrName of
                 Just (Right attrValue) -> loadAttrPath attrValue restAttrs

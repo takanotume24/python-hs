@@ -7,6 +7,8 @@ import PythonHS.Evaluator.Value (Value (FunctionRefValue, IntValue))
 import PythonHS.Lexer.Position (Position)
 import PythonHS.VM.BindCallArguments (bindCallArguments)
 import PythonHS.VM.BindDefaults (bindDefaults)
+import PythonHS.VM.CallBuiltin (callBuiltin)
+import PythonHS.VM.CallBuiltinConfig (CallBuiltinConfig (..))
 import PythonHS.VM.CollectFunctionGlobalDecls (collectFunctionGlobalDecls)
 import PythonHS.VM.CompiledCallArg (CompiledCallArg (..))
 import PythonHS.VM.EnvState (EnvState (..))
@@ -14,6 +16,7 @@ import PythonHS.VM.EvaluateUserArgs (evaluateUserArgs)
 import PythonHS.VM.ExceptionState (ExceptionState (..))
 import PythonHS.VM.FunctionInfo (FunctionInfo (..))
 import PythonHS.VM.Instruction (Instruction)
+import PythonHS.VM.IsBuiltinCallableName (isBuiltinCallableName)
 import PythonHS.VM.LoopState (LoopState (..))
 import PythonHS.VM.VMState (VMState (..))
 
@@ -34,6 +37,9 @@ executeCallValueFunction execute isTopLevel compiledArgs pos stack globalsEnv lo
       case callableValue of
         FunctionRefValue functionName capturedBindings ->
           case Map.lookup functionName functions of
+            Nothing
+              | isBuiltinCallableName functionName ->
+                  callBuiltinAsValue functionName capturedBindings restStack
             Nothing -> Left ("Name error: undefined function " ++ functionName ++ " at " ++ showPos pos)
             Just (FunctionInfo params defaultCodes functionCode) -> do
               (argValues, argKinds, globalsAfterArgs, functionsAfterArgs, outputsAfterArgs) <-
@@ -74,6 +80,19 @@ executeCallValueFunction execute isTopLevel compiledArgs pos stack globalsEnv lo
         _ -> Left ("Type error: callable expected at " ++ showPos pos)
     _ -> Left "VM runtime error: call requires callable on stack"
   where
+    callBuiltinAsValue functionName capturedBindings restStack = do
+      (argValues, _, globalsAfterArgs, functionsAfterArgs, outputsAfterArgs) <-
+        evaluateUserArgs execute functionName pos localEnv compiledArgs globalsEnv functions outputs False Set.empty [] []
+      let finalArgs = case lookup "__python_hs_bound_self__" capturedBindings of
+            Just boundSelf -> boundSelf : argValues
+            Nothing -> argValues
+      case callBuiltin CallBuiltinConfig {callBuiltinName = functionName, callBuiltinArgs = finalArgs, callBuiltinPos = pos} of
+        Just (Right builtinValue) ->
+          let newLocalEnv = if isTopLevel then globalsAfterArgs else localEnv
+           in Right (builtinValue : restStack, globalsAfterArgs, newLocalEnv, functionsAfterArgs, outputsAfterArgs)
+        Just (Left err) -> Left err
+        Nothing -> Left ("Name error: undefined function " ++ functionName ++ " at " ++ showPos pos)
+
     injectBoundSelf params capturedBindings argValues argKinds =
       case params of
         firstParam : _ ->

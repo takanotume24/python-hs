@@ -38,6 +38,7 @@ callCollectionBuiltin config =
           [_] -> Left ("Type error: len expects string or list at " ++ showPos pos)
           _ -> Left ("Argument count mismatch when calling len at " ++ showPos pos)
         "bool" -> Just $ case args of
+          [] -> Right (IntValue {intValue = 0})
           [IntValue {intValue = n}] -> Right (IntValue {intValue = if n == 0 then 0 else 1})
           [FloatValue {floatValue = n}] -> Right (IntValue {intValue = if n == 0 then 0 else 1})
           [NoneValue] -> Right (IntValue {intValue = 0})

@@ -5,7 +5,6 @@ import PythonHS.Evaluator.ModuleAttr (ModuleAttr (..))
 import PythonHS.Evaluator.ShowPos (showPos)
 import PythonHS.Evaluator.Value (Value (..))
 import PythonHS.VM.CallReflectionBuiltinConfig (CallReflectionBuiltinConfig (..))
-import PythonHS.VM.FunctionInfo (FunctionInfo)
 import PythonHS.VM.LookupName (lookupName)
 import PythonHS.VM.MethodNamePair (MethodNamePair (..))
 import PythonHS.VM.ModulePrefixFor (modulePrefixFor)
@@ -16,6 +15,8 @@ callReflectionBuiltin config =
   case name of
     "type" -> Just (evalType args)
     "isinstance" -> Just (evalIsInstance args)
+    "issubclass" -> Just (evalIsSubclass args)
+    "callable" -> Just (evalCallable args)
     "hasattr" -> Just (evalHasAttr args)
     _ -> Nothing
   where
@@ -33,9 +34,12 @@ callReflectionBuiltin config =
 
     evalIsInstance values =
       case values of
-        [value, StringValue {stringValue = className}] ->
-          Right (IntValue {intValue = if typeNameOf value == className then 1 else 0})
-        [_, _] -> Left ("Type error: isinstance expects class name string at " ++ showPos pos)
+        [value, expectedClass] ->
+          case classNameOf expectedClass of
+            Just className ->
+              Right (IntValue {intValue = if typeNameOf value == className then 1 else 0})
+            Nothing ->
+              Left ("Type error: isinstance expects class name string at " ++ showPos pos)
         _ -> Left (countMismatch "isinstance")
 
     evalHasAttr values =
@@ -44,6 +48,38 @@ callReflectionBuiltin config =
           Right (IntValue {intValue = if hasAttribute value attributeName then 1 else 0})
         [_, _] -> Left ("Type error: hasattr expects attribute name string at " ++ showPos pos)
         _ -> Left (countMismatch "hasattr")
+
+    evalCallable values =
+      case values of
+        [value] -> Right (IntValue {intValue = if isCallableValue value then 1 else 0})
+        _ -> Left (countMismatch "callable")
+
+    evalIsSubclass values =
+      case values of
+        [leftValue, rightValue] ->
+          Right (IntValue {intValue = if isSubclassOfValue leftValue rightValue then 1 else 0})
+        _ -> Left (countMismatch "issubclass")
+
+    isCallableValue value =
+      case value of
+        FunctionRefValue {} -> True
+        ClassValue {} -> True
+        _ -> False
+
+    isSubclassOfValue leftValue rightValue =
+      case (classNameOf leftValue, classNameOf rightValue) of
+        (Just leftName, Just rightName) ->
+          leftName == rightName
+            || (leftName == "bool" && rightName == "int")
+        _ -> False
+
+    classNameOf value =
+      case value of
+        ClassValue {classValueName = className} -> Just className
+        FunctionRefValue {functionRefValueName = functionName} -> Just functionName
+        ExceptionValue {exceptionValueClass = className} -> Just className
+        StringValue {stringValue = text} -> Just text
+        _ -> Nothing
 
     typeNameOf value =
       case value of
@@ -101,7 +137,14 @@ callReflectionBuiltin config =
         "startswith",
         "endswith",
         "isalnum",
-        "isalpha"
+        "isalpha",
+        "isdigit",
+        "isdecimal",
+        "isnumeric",
+        "isspace",
+        "islower",
+        "isupper",
+        "istitle"
       ]
 
     dictMethodNames =

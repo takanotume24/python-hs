@@ -17,6 +17,8 @@ import PythonHS.VM.CallReflectionBuiltin (callReflectionBuiltin)
 import PythonHS.VM.CallReflectionBuiltinConfig (CallReflectionBuiltinConfig (..))
 import PythonHS.VM.CallStrConversion (callStrConversion)
 import PythonHS.VM.CallStrConversionConfig (CallStrConversionConfig (..))
+import PythonHS.VM.CallUnittestRuntime (callUnittestRuntime)
+import PythonHS.VM.CallUnittestRuntimeConfig (CallUnittestRuntimeConfig (..))
 import PythonHS.VM.ExecuteCallUserFunction (executeCallUserFunction)
 import PythonHS.VM.FirstKeywordArg (firstKeywordArg)
 import PythonHS.VM.FunctionInfo (FunctionInfo)
@@ -50,12 +52,15 @@ callBuiltinOrFail config =
             Nothing ->
               case firstKeywordArg compiledArgs of
                 Just kwInfo
-                  | isBuiltinName name ->
+                  | isBuiltinName name && name /= "subTest" ->
                       Left ("Argument error: keyword arguments are not supported for builtin " ++ name ++ " at " ++ showPos (keywordArgInfoPos kwInfo))
                 Nothing ->
                   case callStrConversionFor of
                     Just conversionResult -> conversionResult
-                    Nothing -> dispatchBuiltin
+                    Nothing ->
+                      case callUnittestRuntime runtimeConfig of
+                        Just runtimeResult -> runtimeResult
+                        Nothing -> dispatchBuiltin
                 _ -> dispatchBuiltin
   where
     execute = callBuiltinOrFailExecute config
@@ -113,6 +118,20 @@ callBuiltinOrFail config =
           callReflectionBuiltinGlobals = globalsAfterArgs,
           callReflectionBuiltinLocals = localEnv,
           callReflectionBuiltinFunctions = functionsAfterArgs
+        }
+
+    runtimeConfig =
+      CallUnittestRuntimeConfig
+        { callUnittestRuntimeExecute = execute,
+          callUnittestRuntimeIsTopLevel = isTopLevel,
+          callUnittestRuntimeName = name,
+          callUnittestRuntimeArgs = args,
+          callUnittestRuntimePos = pos,
+          callUnittestRuntimeStack = stack,
+          callUnittestRuntimeGlobals = globalsAfterArgs,
+          callUnittestRuntimeLocals = localEnv,
+          callUnittestRuntimeFunctions = functionsAfterArgs,
+          callUnittestRuntimeOutputs = outputsAfterArgs
         }
 
     callStrConversionFor =

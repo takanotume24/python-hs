@@ -6,4 +6,4 @@ data CaseId = CaseId
     caseIdClassName :: String,
     caseIdMethodName :: String
   }
-  deriving (Eq, Show)
+  deriving (Eq, Ord, Show)

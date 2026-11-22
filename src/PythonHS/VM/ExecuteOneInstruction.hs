@@ -2,8 +2,7 @@ module PythonHS.VM.ExecuteOneInstruction (executeOneInstruction) where
 
 import Data.Map.Strict qualified as Map
 import Data.Set qualified as Set
-import PythonHS.Evaluator.ShowPos (showPos)
-import PythonHS.Evaluator.Value (Value (ClassValue, DictValue, FunctionRefValue, ListValue, TupleValue, UnboundLocalValue), classValueAttrs, classValueBase, classValueMethods, classValueName, unboundLocalValueName)
+import PythonHS.Evaluator.Value (Value (DictValue, FunctionRefValue, ListValue, TupleValue))
 import PythonHS.VM.EnvState (EnvState (..))
 import PythonHS.VM.ExecuteArithmeticInstruction (executeArithmeticInstruction)
 import PythonHS.VM.ExecuteArithmeticInstructionConfig (ExecuteArithmeticInstructionConfig (..))
@@ -21,6 +20,8 @@ import PythonHS.VM.ExecuteForNext (executeForNext)
 import PythonHS.VM.ExecuteJumpIfFalse (executeJumpIfFalse)
 import PythonHS.VM.ExecuteJumpIfFalseConfig (ExecuteJumpIfFalseConfig (..))
 import PythonHS.VM.ExecuteListComprehension (executeListComprehension)
+import PythonHS.VM.ExecuteLoadName (executeLoadName)
+import PythonHS.VM.ExecuteLoadNameConfig (ExecuteLoadNameConfig (..))
 import PythonHS.VM.ExecuteLoopGuard (executeLoopGuard)
 import PythonHS.VM.ExecuteLoopGuardConfig (ExecuteLoopGuardConfig (..))
 import PythonHS.VM.ExecuteMatchPattern (executeMatchPattern)
@@ -38,8 +39,6 @@ import PythonHS.VM.FunctionInfo (FunctionInfo (..))
 import PythonHS.VM.HandleExceptionInstruction (handleExceptionInstruction)
 import PythonHS.VM.HandleExceptionInstructionConfig (HandleExceptionInstructionConfig (..))
 import PythonHS.VM.Instruction (Instruction (..), isExceptionInstruction)
-import PythonHS.VM.IsBuiltinExceptionClass (isBuiltinExceptionClass)
-import PythonHS.VM.LookupNameWithAttr (lookupNameWithAttr)
 import PythonHS.VM.LoopState (LoopState (..))
 import PythonHS.VM.PopValues (popValues)
 import PythonHS.VM.PopValuesConfig (PopValuesConfig (..))
@@ -63,24 +62,7 @@ executeOneInstruction execute state instruction =
            in case instruction of
                 PushConst value -> Right state {vmIp = vmIp state + 1, vmStack = value : vmStack state}
                 LoadName name pos ->
-                  case lookupNameWithAttr name pos (envLocals (vmEnv state)) (envGlobals (vmEnv state)) of
-                    Left attrError -> Left attrError
-                    Right Nothing ->
-                      case Map.lookup name (envFunctions (vmEnv state)) of
-                        Just _ -> Right state {vmIp = vmIp state + 1, vmStack = FunctionRefValue name [] : vmStack state}
-                        Nothing
-                          | isBuiltinExceptionClass name ->
-                              Right
-                                state
-                                  { vmIp = vmIp state + 1,
-                                    vmStack = ClassValue {classValueName = name, classValueBase = Nothing, classValueMethods = [], classValueAttrs = []} : vmStack state
-                                  }
-                          | otherwise -> Left ("Name error: undefined identifier " ++ name ++ " at " ++ showPos pos)
-                    Right (Just value) ->
-                      case value of
-                        UnboundLocalValue {unboundLocalValueName = unboundName} ->
-                          Left ("UnboundLocalError: local variable " ++ unboundName ++ " referenced before assignment at " ++ showPos pos)
-                        _ -> Right state {vmIp = vmIp state + 1, vmStack = value : vmStack state}
+                  executeLoadName ExecuteLoadNameConfig {executeLoadNameState = state, executeLoadNameName = name, executeLoadNamePos = pos}
                 DeclareGlobal name ->
                   Right state {vmIp = vmIp state + 1, vmEnv = (vmEnv state) {envGlobalDecls = Set.insert name (envGlobalDecls (vmEnv state))}}
                 StoreName name ->

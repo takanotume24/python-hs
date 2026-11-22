@@ -4,12 +4,14 @@ import Data.Char (chr, isDigit, isSpace, ord)
 import PythonHS.Evaluator.ShowPos (showPos)
 import PythonHS.Evaluator.Value (Value (..))
 import PythonHS.Evaluator.ValueToOutput (valueToOutput)
+import PythonHS.Evaluator.ValueToReplOutput (valueToReplOutput)
 import PythonHS.VM.CallConversionBuiltinConfig (CallConversionBuiltinConfig (..))
 
 callConversionBuiltin :: CallConversionBuiltinConfig -> Maybe (Either String Value)
 callConversionBuiltin config =
   case name of
     "str" -> Just (evalStr name args)
+    "repr" -> Just (evalRepr name args)
     "int" -> Just (evalInt name args)
     "float" -> Just (evalFloat name args)
     "chr" -> Just (evalChr name args)
@@ -23,6 +25,11 @@ callConversionBuiltin config =
     evalStr fname values =
       case values of
         [value] -> Right (StringValue {stringValue = valueToOutput value})
+        _ -> Left (countMismatch fname)
+
+    evalRepr fname values =
+      case values of
+        [value] -> Right (StringValue {stringValue = valueToReplOutput value})
         _ -> Left (countMismatch fname)
 
     evalInt fname values =

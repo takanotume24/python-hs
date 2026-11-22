@@ -32,6 +32,7 @@ library
     , PythonHS.AST.WithContext
     , PythonHS.Lexer.Position
     , PythonHS.CPython.AllCasesPassed
+    , PythonHS.CPython.AllowlistEntry
     , PythonHS.CPython.BuildFileDriverSource
     , PythonHS.CPython.BuildDriverSource
     , PythonHS.CPython.CaseFailure
@@ -40,8 +41,14 @@ library
     , PythonHS.CPython.CaseId
     , PythonHS.CPython.CaseReport
     , PythonHS.CPython.ClassifyCaseFailure
+    , PythonHS.CPython.CountFailureCategories
+    , PythonHS.CPython.ExpandAllowlistEntry
+    , PythonHS.CPython.ExtractTestCases
+    , PythonHS.CPython.FailureCategoryCount
+    , PythonHS.CPython.FailureCategorySummaryLines
     , PythonHS.CPython.FormatCaseId
     , PythonHS.CPython.LoadCaseIds
+    , PythonHS.CPython.ParseAllowlistEntry
     , PythonHS.CPython.ParseCaseId
     , PythonHS.CPython.ReadFileSafely
     , PythonHS.CPython.ReportJson
@@ -345,8 +352,14 @@ library
     , PythonHS.VM.CallStringBuiltin
     , PythonHS.VM.CallStringBuiltinConfig
     , PythonHS.VM.CallStringSearchBuiltin
+    , PythonHS.VM.CallStringPredicateBuiltin
+    , PythonHS.VM.CallUnittestBinaryAssertion
     , PythonHS.VM.CallUnittestBuiltin
     , PythonHS.VM.CallUnittestBuiltinConfig
+    , PythonHS.VM.CallUnittestContextBuiltin
+    , PythonHS.VM.CallUnittestRuntime
+    , PythonHS.VM.CallUnittestRuntimeConfig
+    , PythonHS.VM.CallCompileBuiltin
     , PythonHS.VM.CallInputBuiltin
     , PythonHS.VM.CallInstanceMethodString
     , PythonHS.VM.CallInstanceMethodStringConfig
@@ -430,6 +443,8 @@ library
     , PythonHS.VM.FindModuleFile
     , PythonHS.VM.CollectExports
     , PythonHS.VM.IsBuiltinImportModule
+    , PythonHS.VM.IsBuiltinCallableName
+    , PythonHS.VM.MatchesExceptionClass
     , PythonHS.VM.IterableItems
     , PythonHS.VM.ModuleKeyFor
     , PythonHS.VM.ModulePrefixFor
@@ -462,6 +477,8 @@ library
     , PythonHS.VM.ExecuteDeleteName
     , PythonHS.VM.ExecuteForNext
     , PythonHS.VM.ExecuteListComprehension
+    , PythonHS.VM.ExecuteLoadName
+    , PythonHS.VM.ExecuteLoadNameConfig
     , PythonHS.VM.ExecuteJumpIfFalse
     , PythonHS.VM.ExecuteJumpIfFalseConfig
     , PythonHS.VM.ExecuteLoopGuard
@@ -611,6 +628,9 @@ test-suite python-hs-test
     , Paths_python_hs
     , Test.CPython.BuildDriverSourceSpec
     , Test.CPython.ClassifyCaseFailureSpec
+    , Test.CPython.ExtractTestCasesSpec
+    , Test.CPython.LoadCaseIdsSpec
+    , Test.CPython.ParseAllowlistEntrySpec
     , Test.CPython.ParseCaseIdSpec
     , Test.CPython.ReportJsonSpec
     , Test.CPython.RunCpythonTestFileModeSpec
@@ -708,6 +728,7 @@ test-suite python-hs-test
     , Test.VM.RunSourceVmBlankLineSpec
     , Test.VM.RunSourceVmUnaryPrecedenceSpec
     , Test.VM.RunSourceVmSequenceOpSpec
+    , Test.VM.RunSourceVmCompileSpec
     , Test.VM.RunSourceVmUnittestSpec
     , Test.Structure.CheckStructureSpec
     , Test.Structure.DetectPositionalArgsSpec

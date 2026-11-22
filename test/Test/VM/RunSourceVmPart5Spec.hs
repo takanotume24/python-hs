@@ -139,7 +139,7 @@ spec = describe "runSourceVm (vm mvp) - part 5" $ do
 
   it "reports builtin argument and type errors" $ do
     runSourceVm "print len(1)\n" `shouldBe` Left "Type error: len expects string or list at 1:7"
-    runSourceVm "print bool()\n" `shouldBe` Left "Argument count mismatch when calling bool at 1:7"
+    runSourceVm "print bool()\n" `shouldBe` Right ["0"]
     runSourceVm "print range(1, 2, 0)\n" `shouldBe` Left "Value error: range step must not be zero at 1:7"
 
   it "evaluates append sort and reverse builtins" $ do

@@ -131,3 +131,62 @@ spec = describe "runSourceVm unittest builtins" $ do
           ]
       )
       `shouldBe` Right ["done"]
+
+  it "accepts assertRaises in callable form" $ do
+    runSourceVm
+      ( unlines
+          [ "import unittest",
+            "class T(unittest.TestCase):",
+            "    def test_raises(self):",
+            "        def raise_value_error():",
+            "            raise ValueError(\"boom\")",
+            "        self.assertRaises(ValueError, raise_value_error)",
+            "T().test_raises()",
+            "print(\"done\")"
+          ]
+      )
+      `shouldBe` Right ["done"]
+
+  it "passes arguments to the callable form of assertRaises" $ do
+    runSourceVm
+      ( unlines
+          [ "import unittest",
+            "class T(unittest.TestCase):",
+            "    def test_raises(self):",
+            "        self.assertRaises(ValueError, int, \"not a number\")",
+            "T().test_raises()",
+            "print(\"done\")"
+          ]
+      )
+      `shouldBe` Right ["done"]
+
+  it "fails when the callable form of assertRaises observes no exception" $ do
+    let result =
+          runSourceVm
+            ( unlines
+                [ "import unittest",
+                  "class T(unittest.TestCase):",
+                  "    def test_no_raise(self):",
+                  "        def add(left, right):",
+                  "            return left + right",
+                  "        self.assertRaises(ValueError, add, 1, 2)",
+                  "T().test_no_raise()"
+                ]
+            )
+    case result of
+      Left message -> message `shouldContain` "AssertionError:"
+      Right outputs -> fail ("unexpected success: " ++ show outputs)
+
+  it "supports repr for strings and integers" $ do
+    runSourceVm
+      ( unlines
+          [ "import unittest",
+            "class T(unittest.TestCase):",
+            "    def test_repr(self):",
+            "        self.assertEqual(repr(\"x\"), \"'x'\")",
+            "        self.assertEqual(repr(42), \"42\")",
+            "T().test_repr()",
+            "print(\"done\")"
+          ]
+      )
+      `shouldBe` Right ["done"]

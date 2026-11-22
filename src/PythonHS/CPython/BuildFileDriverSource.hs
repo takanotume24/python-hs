@@ -22,5 +22,6 @@ buildFileDriverSource source caseId =
         "__python_hs_case.setUp()",
         "__python_hs_case." ++ caseIdMethodName caseId ++ "()",
         "__python_hs_case.tearDown()",
+        "__python_hs_case.__python_hs_run_cleanups__()",
         "print(\"__PYTHON_HS_CPYTHON_TEST_OK__\")"
       ]

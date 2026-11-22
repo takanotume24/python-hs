@@ -12,19 +12,19 @@ import PythonHS.CPython.CaseId (CaseId (..))
 -- allowlisted method can be executed without parsing unrelated methods.
 buildDriverSource :: String -> CaseId -> Either String String
 buildDriverSource source caseId =
-  case findClassHeader sourceLines of
+  case findClassBody sourceLines of
     Nothing -> Left ("Class not found: " ++ caseIdClassName caseId)
-    Just classHeader ->
-      case findNamedMethodBlock (caseIdMethodName caseId) of
+    Just (classHeader, classBody) ->
+      case findNamedMethodBlock classBody (caseIdMethodName caseId) of
         Nothing -> Left ("Method not found: " ++ caseIdMethodName caseId)
         Just methodBlock ->
           Right
             ( unlines
                 ( importLines
                     ++ [classHeader]
-                    ++ setUpBlock
+                    ++ setUpBlock classBody
                     ++ methodBlock
-                    ++ tearDownBlock
+                    ++ tearDownBlock classBody
                     ++ driverLines
                 )
             )
@@ -37,31 +37,38 @@ buildDriverSource source caseId =
         "__python_hs_case.setUp()",
         "__python_hs_case." ++ caseIdMethodName caseId ++ "()",
         "__python_hs_case.tearDown()",
+        "__python_hs_case.__python_hs_run_cleanups__()",
         "print(\"__PYTHON_HS_CPYTHON_TEST_OK__\")"
       ]
 
-    setUpBlock
+    setUpBlock classBody
       | caseIdMethodName caseId == "setUp" = []
-      | otherwise = maybe [] id (findNamedMethodBlock "setUp")
+      | otherwise = maybe [] id (findNamedMethodBlock classBody "setUp")
 
-    tearDownBlock
+    tearDownBlock classBody
       | caseIdMethodName caseId == "tearDown" = []
-      | otherwise = maybe [] id (findNamedMethodBlock "tearDown")
+      | otherwise = maybe [] id (findNamedMethodBlock classBody "tearDown")
 
     isImportLine line =
       "import " `isPrefixOf` line || "from " `isPrefixOf` line
 
-    findClassHeader (line : rest)
-      | isClassHeader line = Just line
-      | otherwise = findClassHeader rest
-    findClassHeader [] = Nothing
+    findClassBody (line : rest)
+      | isClassHeader line = Just (line, takeClassBody rest)
+      | otherwise = findClassBody rest
+    findClassBody [] = Nothing
+
+    takeClassBody (line : rest)
+      | isBlank line = line : takeClassBody rest
+      | indentation line > 0 = line : takeClassBody rest
+      | otherwise = []
+    takeClassBody [] = []
 
     isClassHeader line =
       case stripPrefix ("class " ++ caseIdClassName caseId) line of
         Just (nextChar : _) -> nextChar == '(' || nextChar == ':'
         _ -> False
 
-    findNamedMethodBlock methodName = findMethodBlock sourceLines
+    findNamedMethodBlock classBody methodName = findMethodBlock classBody
       where
         findMethodBlock (line : rest)
           | isMethodStart methodName line = Just (line : takeMethodBody rest)

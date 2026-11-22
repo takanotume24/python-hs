@@ -4,6 +4,7 @@ import Control.Monad (unless)
 import Data.Maybe (isJust)
 import PythonHS.CPython.AllCasesPassed (allCasesPassed)
 import PythonHS.CPython.CaseReport (CaseReport (..))
+import PythonHS.CPython.FailureCategorySummaryLines (failureCategorySummaryLines)
 import PythonHS.CPython.FormatCaseId (formatCaseId)
 import PythonHS.CPython.LoadCaseIds (loadCaseIds)
 import PythonHS.CPython.ReportJson (reportJson)
@@ -24,7 +25,8 @@ main = do
       exitFailure
     Right options
       | runCpythonTestOptionsList options -> do
-          caseIdsResult <- loadCaseIds (runCpythonTestConfigAllowlistPath (runCpythonTestOptionsConfig options))
+          let config = runCpythonTestOptionsConfig options
+          caseIdsResult <- loadCaseIds (runCpythonTestConfigRepoRoot config) (runCpythonTestConfigAllowlistPath config)
           case caseIdsResult of
             Left err -> do
               hPutStrLn stderr ("run-cpython-test: " ++ err)
@@ -41,6 +43,7 @@ main = do
                 then putStr (reportJson reports)
                 else do
                   mapM_ putStrLn (reportLines reports)
+                  mapM_ putStrLn (failureCategorySummaryLines reports)
                   let failedCount = length (filter (isJust . caseReportFailure) reports)
                   putStrLn ("summary: " ++ show (length reports) ++ " cases, " ++ show failedCount ++ " failed")
               unless (allCasesPassed reports) exitFailure

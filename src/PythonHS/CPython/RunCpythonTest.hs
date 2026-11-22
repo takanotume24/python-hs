@@ -16,7 +16,7 @@ import System.FilePath ((</>))
 -- | Run every allowlisted CPython test method and collect the outcomes.
 runCpythonTest :: RunCpythonTestConfig -> IO (Either String [CaseReport])
 runCpythonTest config = do
-  caseIdsResult <- loadCaseIds (runCpythonTestConfigAllowlistPath config)
+  caseIdsResult <- loadCaseIds repoRoot (runCpythonTestConfigAllowlistPath config)
   case caseIdsResult of
     Left err -> pure (Left err)
     Right caseIds -> Right <$> mapM runCase caseIds

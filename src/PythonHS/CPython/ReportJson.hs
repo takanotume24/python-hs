@@ -5,6 +5,8 @@ import PythonHS.CPython.CaseFailure (CaseFailure (..))
 import PythonHS.CPython.CaseFailureCategoryLabel (caseFailureCategoryLabel)
 import PythonHS.CPython.CaseId (CaseId (..))
 import PythonHS.CPython.CaseReport (CaseReport (..))
+import PythonHS.CPython.CountFailureCategories (countFailureCategories)
+import PythonHS.CPython.FailureCategoryCount (FailureCategoryCount (..))
 
 -- | Render a machine-readable JSON report.
 reportJson :: [CaseReport] -> String
@@ -14,6 +16,7 @@ reportJson reports =
       "  \"total\": " ++ show (length reports) ++ ",",
       "  \"passed\": " ++ show passedCount ++ ",",
       "  \"failed\": " ++ show failedCount ++ ",",
+      "  \"failureCategories\": " ++ renderFailureCategories ++ ",",
       "  \"cases\": [",
       intercalate ",\n" (map renderCase reports),
       "  ]",
@@ -22,6 +25,12 @@ reportJson reports =
   where
     passedCount = length (filter isPassed reports)
     failedCount = length reports - passedCount
+
+    renderFailureCategories =
+      "{" ++ intercalate "," (map renderFailureCategory (countFailureCategories reports)) ++ "}"
+
+    renderFailureCategory FailureCategoryCount {failureCategoryCountLabel = label, failureCategoryCountValue = count} =
+      jsonString label ++ ":" ++ show count
 
     isPassed CaseReport {caseReportFailure = Nothing} = True
     isPassed _ = False
