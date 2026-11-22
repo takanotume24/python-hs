@@ -3,17 +3,14 @@ module PythonHS.VM.ExecuteCallFunction (executeCallFunction) where
 import Data.Map.Strict qualified as Map
 import Data.Set qualified as Set
 import PythonHS.Evaluator.ShowPos (showPos)
-import PythonHS.Evaluator.Value (Value (ClassValue, FunctionRefValue, InstanceValue, IntValue, ModuleValue))
+import PythonHS.Evaluator.Value (Value (ClassValue, FunctionRefValue, InstanceValue, IntValue))
 import PythonHS.Lexer.Position (Position)
 import PythonHS.VM.BindCallArguments (bindCallArguments)
 import PythonHS.VM.BindDefaults (bindDefaults)
 import PythonHS.VM.CallBuiltin (callBuiltin)
 import PythonHS.VM.CallBuiltinConfig (CallBuiltinConfig (..))
-import PythonHS.VM.CallExceptionClassBuiltin (callExceptionClassBuiltin)
-import PythonHS.VM.CallExceptionClassBuiltinConfig (CallExceptionClassBuiltinConfig (..))
-import PythonHS.VM.CallMapFilterBuiltin (callMapFilterBuiltin)
-import PythonHS.VM.CallMapFilterBuiltinConfig (CallMapFilterBuiltinConfig (..))
-import PythonHS.VM.CallMapFilterBuiltinResult (CallMapFilterBuiltinResult (..))
+import PythonHS.VM.CallBuiltinOrFail qualified as CallBuiltinOrFail
+import PythonHS.VM.CallBuiltinOrFailConfig (CallBuiltinOrFailConfig (..))
 import PythonHS.VM.CollectFunctionGlobalDecls (collectFunctionGlobalDecls)
 import PythonHS.VM.CompiledCallArg (CompiledCallArg (..))
 import PythonHS.VM.EnvState (EnvState (..))
@@ -32,7 +29,6 @@ import PythonHS.VM.LookupName (lookupName)
 import PythonHS.VM.LoopState (LoopState (..))
 import PythonHS.VM.MethodKind (MethodKind (..))
 import PythonHS.VM.MethodNamePair (MethodNamePair (..))
-import PythonHS.VM.ModulePrefixFor (modulePrefixFor)
 import PythonHS.VM.VMState (VMState (..))
 
 executeCallFunction ::
@@ -92,82 +88,40 @@ executeCallFunction execute isTopLevel fname compiledArgs pos stack globalsEnv l
               case evaluateBuiltinArgs execute localEnv compiledArgs globalsEnv functions outputs [] of
                 Left err -> Left err
                 Right (args, globalsAfterArgs, functionsAfterArgs, outputsAfterArgs) ->
-                  case lookupName fname localEnv globalsEnv of
-                    Just (ClassValue className _ _ _) ->
-                      executeCreateInstance execute isTopLevel pos stack localEnv className args globalsAfterArgs functionsAfterArgs outputsAfterArgs
-                    _ ->
-                      case args of
-                        classValueArg@(ClassValue className _ _ _) : restArgs ->
-                          case findMethodFunctionName globalsAfterArgs localEnv className fname of
-                            Just methodPair ->
-                              let methodArgs = methodArgsForClassCall methodPair classValueArg restArgs
-                               in executeCallUserFunction execute isTopLevel pos stack localEnv (methodNamePairMangled methodPair) Nothing methodArgs globalsAfterArgs functionsAfterArgs outputsAfterArgs
-                            Nothing -> callBuiltinOrFail args globalsAfterArgs functionsAfterArgs outputsAfterArgs
-                        instanceArg@(InstanceValue className _) : restArgs ->
-                          case findMethodFunctionName globalsAfterArgs localEnv className fname of
-                            Just methodPair ->
-                              let methodArgs = methodArgsForInstanceCall methodPair className instanceArg restArgs globalsAfterArgs localEnv
-                               in executeCallUserFunction execute isTopLevel pos stack localEnv (methodNamePairMangled methodPair) Nothing methodArgs globalsAfterArgs functionsAfterArgs outputsAfterArgs
-                            Nothing -> callBuiltinOrFail args globalsAfterArgs functionsAfterArgs outputsAfterArgs
-                        _ -> callBuiltinOrFail args globalsAfterArgs functionsAfterArgs outputsAfterArgs
+                  let builtinFallback =
+                        CallBuiltinOrFail.callBuiltinOrFail
+                          CallBuiltinOrFailConfig
+                            { callBuiltinOrFailExecute = execute,
+                              callBuiltinOrFailIsTopLevel = isTopLevel,
+                              callBuiltinOrFailName = fname,
+                              callBuiltinOrFailCompiledArgs = compiledArgs,
+                              callBuiltinOrFailPos = pos,
+                              callBuiltinOrFailStack = stack,
+                              callBuiltinOrFailLocals = localEnv,
+                              callBuiltinOrFailArgs = args,
+                              callBuiltinOrFailGlobals = globalsAfterArgs,
+                              callBuiltinOrFailFunctions = functionsAfterArgs,
+                              callBuiltinOrFailOutputs = outputsAfterArgs
+                            }
+                   in case lookupName fname localEnv globalsEnv of
+                        Just (ClassValue className _ _ _) ->
+                          executeCreateInstance execute isTopLevel pos stack localEnv className args globalsAfterArgs functionsAfterArgs outputsAfterArgs
+                        _ ->
+                          case args of
+                            classValueArg@(ClassValue className _ _ _) : restArgs ->
+                              case findMethodFunctionName globalsAfterArgs localEnv className fname of
+                                Just methodPair ->
+                                  let methodArgs = methodArgsForClassCall methodPair classValueArg restArgs
+                                   in executeCallUserFunction execute isTopLevel pos stack localEnv (methodNamePairMangled methodPair) Nothing methodArgs globalsAfterArgs functionsAfterArgs outputsAfterArgs
+                                Nothing -> builtinFallback
+                            instanceArg@(InstanceValue className _) : restArgs ->
+                              case findMethodFunctionName globalsAfterArgs localEnv className fname of
+                                Just methodPair ->
+                                  let methodArgs = methodArgsForInstanceCall methodPair className instanceArg restArgs globalsAfterArgs localEnv
+                                   in executeCallUserFunction execute isTopLevel pos stack localEnv (methodNamePairMangled methodPair) Nothing methodArgs globalsAfterArgs functionsAfterArgs outputsAfterArgs
+                                Nothing -> builtinFallback
+                            _ -> builtinFallback
   where
-    callBuiltinOrFail args globalsAfterArgs functionsAfterArgs outputsAfterArgs =
-      case callMapFilterBuiltin CallMapFilterBuiltinConfig {callMapFilterBuiltinExecute = execute, callMapFilterBuiltinIsTopLevel = isTopLevel, callMapFilterBuiltinName = fname, callMapFilterBuiltinArgs = args, callMapFilterBuiltinPos = pos, callMapFilterBuiltinStack = stack, callMapFilterBuiltinGlobals = globalsAfterArgs, callMapFilterBuiltinLocals = localEnv, callMapFilterBuiltinFunctions = functionsAfterArgs, callMapFilterBuiltinOutputs = outputsAfterArgs} of
-        Just mapFilterResult ->
-          case mapFilterResult of
-            Left err -> Left err
-            Right result ->
-              Right
-                ( callMapFilterBuiltinResultStack result,
-                  callMapFilterBuiltinResultGlobals result,
-                  callMapFilterBuiltinResultLocals result,
-                  callMapFilterBuiltinResultFunctions result,
-                  callMapFilterBuiltinResultOutputs result
-                )
-        Nothing ->
-          case callExceptionClassBuiltin CallExceptionClassBuiltinConfig {callExceptionClassBuiltinName = fname, callExceptionClassBuiltinArgs = args, callExceptionClassBuiltinPos = pos} of
-            Just (Right exceptionValue) ->
-              let newLocalEnv = if isTopLevel then globalsAfterArgs else localEnv
-               in Right (exceptionValue : stack, globalsAfterArgs, newLocalEnv, functionsAfterArgs, outputsAfterArgs)
-            Just (Left err) -> Left err
-            Nothing ->
-              case callModuleMemberFunction args globalsAfterArgs functionsAfterArgs outputsAfterArgs of
-                Just result -> result
-                Nothing ->
-                  case firstKeywordArg compiledArgs of
-                    Just kwInfo
-                      | isBuiltinName fname ->
-                          Left ("Argument error: keyword arguments are not supported for builtin " ++ fname ++ " at " ++ showPos (keywordArgInfoPos kwInfo))
-                    Nothing ->
-                      case callBuiltin CallBuiltinConfig {callBuiltinName = fname, callBuiltinArgs = args, callBuiltinPos = pos} of
-                        Just (Left err) -> Left err
-                        Just (Right builtinValue) ->
-                          let newLocalEnv = if isTopLevel then globalsAfterArgs else localEnv
-                           in Right (builtinValue : stack, globalsAfterArgs, newLocalEnv, functionsAfterArgs, outputsAfterArgs)
-                        Nothing -> Left ("Name error: undefined function " ++ fname ++ " at " ++ showPos pos)
-                    _ ->
-                      case callBuiltin CallBuiltinConfig {callBuiltinName = fname, callBuiltinArgs = args, callBuiltinPos = pos} of
-                        Just (Left err) -> Left err
-                        Just (Right builtinValue) ->
-                          let newLocalEnv = if isTopLevel then globalsAfterArgs else localEnv
-                           in Right (builtinValue : stack, globalsAfterArgs, newLocalEnv, functionsAfterArgs, outputsAfterArgs)
-                        Nothing -> Left ("Name error: undefined function " ++ fname ++ " at " ++ showPos pos)
-
-    callModuleMemberFunction args globalsNow functionsNow outputsNow =
-      case args of
-        ModuleValue moduleName _ : restArgs ->
-          let memberFunctionName = modulePrefixFor (splitByDot moduleName) ++ fname
-           in case Map.lookup memberFunctionName functionsNow of
-                Just _ -> Just (executeCallUserFunction execute isTopLevel pos stack localEnv memberFunctionName Nothing restArgs globalsNow functionsNow outputsNow)
-                Nothing -> Nothing
-        _ -> Nothing
-
-    splitByDot text =
-      case break (== '.') text of
-        (segment, []) -> [segment]
-        (segment, '.' : rest) -> segment : splitByDot rest
-        _ -> [text]
-
     methodArgsForClassCall methodPair classValue restArgs =
       case methodNamePairKind methodPair of
         StaticMethod -> restArgs

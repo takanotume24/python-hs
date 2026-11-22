@@ -1,9 +1,10 @@
+{-# OPTIONS_GHC -fno-cse -fno-full-laziness #-}
+
 -- | The @input()@ builtin reads one line from process standard input.
 --
 -- The VM executor is pure, so this is the single place where the interpreter
 -- intentionally steps into IO. CSE and full-laziness are disabled to make sure
 -- every @input()@ call performs a fresh read instead of being shared.
-{-# OPTIONS_GHC -fno-cse -fno-full-laziness #-}
 module PythonHS.VM.CallInputBuiltin (callInputBuiltin) where
 
 import PythonHS.Evaluator.ShowPos (showPos)

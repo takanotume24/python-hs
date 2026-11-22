@@ -24,6 +24,8 @@ import PythonHS.VM.ExecuteListComprehension (executeListComprehension)
 import PythonHS.VM.ExecuteLoopGuard (executeLoopGuard)
 import PythonHS.VM.ExecuteLoopGuardConfig (ExecuteLoopGuardConfig (..))
 import PythonHS.VM.ExecuteMatchPattern (executeMatchPattern)
+import PythonHS.VM.ExecutePrintTop (executePrintTop)
+import PythonHS.VM.ExecutePrintTopConfig (ExecutePrintTopConfig (..))
 import PythonHS.VM.ExecutePushWithHandler (executePushWithHandler)
 import PythonHS.VM.ExecutePushWithHandlerConfig (ExecutePushWithHandlerConfig (..))
 import PythonHS.VM.ExecuteRaiseTopInstruction (executeRaiseTopInstruction)
@@ -173,7 +175,7 @@ executeOneInstruction execute state instruction =
                       }
                 RaiseTop pos ->
                   executeRaiseTopInstruction ExecuteRaiseTopInstructionConfig {executeRaiseTopInstructionState = state, executeRaiseTopInstructionPos = pos}
-                PrintTop -> executeStackInstruction ExecuteStackInstructionConfig {executeStackInstructionState = state, executeStackInstructionInstruction = PrintTop}
+                PrintTop -> executePrintTop ExecutePrintTopConfig {executePrintTopExecute = execute, executePrintTopState = state}
                 PopTop -> executeStackInstruction ExecuteStackInstructionConfig {executeStackInstructionState = state, executeStackInstructionInstruction = PopTop}
                 AssertTop pos ->
                   executeAssertInstruction ExecuteAssertInstructionConfig {executeAssertInstructionState = state, executeAssertInstructionInstruction = AssertTop pos}

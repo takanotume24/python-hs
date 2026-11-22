@@ -289,6 +289,8 @@ library
     , PythonHS.Runner.RunSourceWithEngine
     , PythonHS.Runner.RunSourceWithEngineConfig
     , PythonHS.VM.CallBuiltin
+    , PythonHS.VM.CallBuiltinOrFail
+    , PythonHS.VM.CallBuiltinOrFailConfig
     , PythonHS.VM.BindDefaults
     , PythonHS.VM.CallCollectionBuiltin
     , PythonHS.VM.CallCollectionMethodBuiltin
@@ -304,7 +306,15 @@ library
     , PythonHS.VM.CallStringBuiltinConfig
     , PythonHS.VM.CallStringSearchBuiltin
     , PythonHS.VM.CallInputBuiltin
+    , PythonHS.VM.CallInstanceMethodString
+    , PythonHS.VM.CallInstanceMethodStringConfig
+    , PythonHS.VM.CallInstanceMethodStringResult
     , PythonHS.VM.CallNumericExtraBuiltin
+    , PythonHS.VM.CallStrConversion
+    , PythonHS.VM.CallStrConversionConfig
+    , PythonHS.VM.ExecutePrintTop
+    , PythonHS.VM.ExecutePrintTopConfig
+    , PythonHS.VM.SplitByDot
     , PythonHS.VM.GetitemValue
     , PythonHS.VM.SliceValue
     , PythonHS.VM.CallMathBuiltin
@@ -600,6 +610,7 @@ test-suite python-hs-test
     , Test.VM.RunSourceVmPart20Spec
     , Test.VM.RunSourceVmPart21Spec
     , Test.VM.RunSourceVmPart22Spec
+    , Test.VM.RunSourceVmPart23Spec
     , Test.VM.RunInstructionsSpec
     , Test.Structure.CheckStructureSpec
     , Test.Structure.DetectPositionalArgsSpec

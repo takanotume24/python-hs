@@ -671,11 +671,13 @@
 - [x] 引数個数・型エラー・空入力の扱いをテストで固定
 - [x] 既存 `CallBuiltin` ディスパッチに組み込み追加し、可能な範囲で `CallNumericBuiltin` / `CallIterableBuiltin` を再利用
 
-### P118: クラス特殊メソッドの最小対応
-- [ ] `__str__` / `__repr__` を定義したクラスインスタンスの `str()` / `print` 表現で呼び出されるようにする
-- [ ] dataclass 自動生成の `__repr__` との整合を確認
-- [ ] 特殊メソッドが未定義の場合は既存の表示規約を維持
-- [ ] `RunSourceVmSpec` にユーザー定義 `__str__` / `__repr__` のケースを追加
+### P118: クラス特殊メソッドの最小対応（完了）
+- [x] `__str__` / `__repr__` を定義したクラスインスタンスの `str()` / `print` 表現で呼び出されるようにする
+  - `CallInstanceMethodString` を新設し、`__str__` 優先・`__repr__` フォールバックで呼び出す
+  - `print` は `ExecutePrintTop`、`str()` は `CallStrConversion` から同じ解決経路を使う
+- [x] dataclass 自動生成の `__repr__` との整合を確認
+- [x] 特殊メソッドが未定義の場合は既存の表示規約（`<ClassName instance>`）を維持
+- [x] `RunSourceVmPart23Spec` にユーザー定義 `__str__` / `__repr__` のケースを追加（10 tests）
 
 ### P119: 反射型組み込み関数（type / isinstance / hasattr）
 - [ ] `type(obj)` を追加（組み込み型は型名文字列、ユーザー定義クラスはクラス名文字列を返す）
@@ -696,6 +698,17 @@
 - P118 はクラス属性解決・メソッド束縛との相互作用があり、中リスク
 - P119 は `type` / `isinstance` が今後のクラスシステム拡張と密接なため、段階的な仕様固定とする
 - P120 は既存メソッド構文の拡張だが、影響範囲が広いため回帰テストを充実させる
+
+## 現在のスコープ（P118: クラス特殊メソッドの最小対応）
+- [x] P118 開始: `__str__` / `__repr__` を `print` / `str()` の表示経路で解決
+- [x] P118-1: 失敗テストを `RunSourceVmPart23Spec` に追加（優先順・継承・未定義・dataclass）
+- [x] P118-2: `CallInstanceMethodString` / Config / Result を新設し、`__str__` → `__repr__` の順で探索
+- [x] P118-3: `ExecutePrintTop` を新設し、`PrintTop` をインスタンス対応の表示に差し替え
+- [x] P118-4: `CallStrConversion` を新設し、`str(instance)` を同じ解決経路に接続
+- [x] P118-5: `ExecuteCallFunction` の組み込みフォールバックを `CallBuiltinOrFail` へ分離し 200 行制限を維持
+- [x] P118-6: 特殊メソッド未定義時は `<ClassName instance>` を維持
+- [x] P118-7: 全テスト PASS（1401 examples, 0 failures）
+- [x] P118-8: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
 
 ## 現在のスコープ（P117: 追加組み込み関数）
 - [x] P117 開始: `pow` / `divmod` / `reversed` / `input` を VM 組み込みとして追加
@@ -1130,6 +1143,13 @@
 ## メンテナンス記録（要約）
 - 注記: 以下は時系列ログ。古い日付の「未対応」項目は、その後のエントリで仕様更新済みの場合がある。
 - 2026-11-21
+  - [x] P118 完了: クラス特殊メソッドの最小対応（`__str__` / `__repr__`）
+  - [x] P118 実装: `CallInstanceMethodString` で `__str__` 優先・`__repr__` フォールバック
+  - [x] P118 実装: `ExecutePrintTop` で `print` のインスタンス表示を特殊メソッド解決
+  - [x] P118 実装: `CallStrConversion` で `str(instance)` を同じ経路に接続
+  - [x] P118 構造対応: `CallBuiltinOrFail` / `CallBuiltinOrFailConfig` を分離し 200 行制限を維持
+  - [x] P118 テスト: `RunSourceVmPart23Spec` に 10 ケースを追加
+  - [x] P118 品質ゲート: `cabal run quality-gate` が全項目 PASS（1401 examples, 0 failures）
   - [x] P117 完了: 追加組み込み関数（pow / divmod / reversed / input）
   - [x] P117 実装: `CallNumericExtraBuiltin` に `pow` / `divmod` を追加
   - [x] P117 実装: `CallIterableBuiltin` に `reversed` を追加

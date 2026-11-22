@@ -92,6 +92,7 @@ MIT License — 詳細は [LICENSE](LICENSE) を参照してください。
   - 注: AST 評価器は `try` 文を未サポートであり、例外処理は VM 実行経路のみで提供する
 - [x] `match/case`（パターンマッチ実行）
 - [x] `class`（インスタンス生成・メソッド呼び出し・継承・属性解決）
+- [x] `__str__` / `__repr__`（`print` / `str()` で優先順に解決。未定義時は `<ClassName instance>`）
 - [x] `dataclass`（`__init__`/`__repr__`/`__eq__`/`order`/`frozen`自動生成）
 - [x] `with`（Context Manager実行）
 - [x] `yield`/`yield from`（generator）
