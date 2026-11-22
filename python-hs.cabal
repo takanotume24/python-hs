@@ -310,6 +310,8 @@ library
     , PythonHS.VM.CallInstanceMethodStringConfig
     , PythonHS.VM.CallInstanceMethodStringResult
     , PythonHS.VM.CallNumericExtraBuiltin
+    , PythonHS.VM.CallReflectionBuiltin
+    , PythonHS.VM.CallReflectionBuiltinConfig
     , PythonHS.VM.CallStrConversion
     , PythonHS.VM.CallStrConversionConfig
     , PythonHS.VM.ExecutePrintTop
@@ -611,6 +613,7 @@ test-suite python-hs-test
     , Test.VM.RunSourceVmPart21Spec
     , Test.VM.RunSourceVmPart22Spec
     , Test.VM.RunSourceVmPart23Spec
+    , Test.VM.RunSourceVmPart24Spec
     , Test.VM.RunInstructionsSpec
     , Test.Structure.CheckStructureSpec
     , Test.Structure.DetectPositionalArgsSpec

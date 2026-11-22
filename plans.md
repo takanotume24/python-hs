@@ -679,12 +679,12 @@
 - [x] 特殊メソッドが未定義の場合は既存の表示規約（`<ClassName instance>`）を維持
 - [x] `RunSourceVmPart23Spec` にユーザー定義 `__str__` / `__repr__` のケースを追加（10 tests）
 
-### P119: 反射型組み込み関数（type / isinstance / hasattr）
-- [ ] `type(obj)` を追加（組み込み型は型名文字列、ユーザー定義クラスはクラス名文字列を返す）
-- [ ] `isinstance(obj, classinfo)` を追加（単一クラス名の文字列に対応）
-- [ ] `hasattr(obj, name)` を追加（属性参照の成否を 1/0 で返す）
-- [ ] 組み込み型・ユーザー定義クラス・モジュールオブジェクトの各ケースをテストで固定
-- [ ] `type` / `isinstance` の引数がクラス名文字列でない場合のエラー規約を固定
+### P119: 反射型組み込み関数（type / isinstance / hasattr）（完了）
+- [x] `type(obj)` を追加（組み込み型は型名文字列、ユーザー定義クラスはクラス名文字列を返す）
+- [x] `isinstance(obj, classinfo)` を追加（単一クラス名の文字列に対応）
+- [x] `hasattr(obj, name)` を追加（属性参照の成否を 1/0 で返す）
+- [x] 組み込み型・ユーザー定義クラス・モジュールオブジェクトの各ケースをテストで固定
+- [x] `type` / `isinstance` の引数がクラス名文字列でない場合のエラー規約を固定
 
 ### P120: 組み込みメソッド構文の拡張
 - [ ] `s.split()` / `s.join(...)` 等、既存の文字列組み込みをメソッド構文でも呼び出せるようにする
@@ -698,6 +698,17 @@
 - P118 はクラス属性解決・メソッド束縛との相互作用があり、中リスク
 - P119 は `type` / `isinstance` が今後のクラスシステム拡張と密接なため、段階的な仕様固定とする
 - P120 は既存メソッド構文の拡張だが、影響範囲が広いため回帰テストを充実させる
+
+## 現在のスコープ（P119: 反射型組み込み関数）
+- [x] P119 開始: `type` / `isinstance` / `hasattr` を VM 組み込みとして追加
+- [x] P119-1: 失敗テストを `RunSourceVmPart24Spec` に追加（型名・クラス・モジュール・エラー系）
+- [x] P119-2: `CallReflectionBuiltin` を新設し、`type` は型名文字列を返す
+- [x] P119-3: `isinstance` は型名・直接のクラス名一致を 1/0 で返す
+- [x] P119-4: `hasattr` はインスタンス属性・継承を含むクラスメソッド・モジュール属性を解決
+- [x] P119-5: `CallBuiltinOrFail` の組み込みフォールバックに反射系を接続
+- [x] P119-6: 非文字列 classinfo / 属性名は Type error、引数個数不一致も固定
+- [x] P119-7: 全テスト PASS（1417 examples, 0 failures）
+- [x] P119-8: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
 
 ## 現在のスコープ（P118: クラス特殊メソッドの最小対応）
 - [x] P118 開始: `__str__` / `__repr__` を `print` / `str()` の表示経路で解決
@@ -1143,6 +1154,11 @@
 ## メンテナンス記録（要約）
 - 注記: 以下は時系列ログ。古い日付の「未対応」項目は、その後のエントリで仕様更新済みの場合がある。
 - 2026-11-21
+  - [x] P119 完了: 反射型組み込み関数（type / isinstance / hasattr）
+  - [x] P119 実装: `CallReflectionBuiltin` を新設し、型名・クラス名・属性有無を返す
+  - [x] P119 実装: `hasattr` は継承を含むクラスメソッドとモジュール属性を解決
+  - [x] P119 テスト: `RunSourceVmPart24Spec` に 16 ケースを追加
+  - [x] P119 品質ゲート: `cabal run quality-gate` が全項目 PASS（1417 examples, 0 failures）
   - [x] P118 完了: クラス特殊メソッドの最小対応（`__str__` / `__repr__`）
   - [x] P118 実装: `CallInstanceMethodString` で `__str__` 優先・`__repr__` フォールバック
   - [x] P118 実装: `ExecutePrintTop` で `print` のインスタンス表示を特殊メソッド解決

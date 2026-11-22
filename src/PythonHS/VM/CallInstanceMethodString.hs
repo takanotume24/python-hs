@@ -29,20 +29,18 @@ callInstanceMethodString config =
         Nothing -> findMethodFunctionName globals locals className "__repr__"
 
     invoke instanceValue methodPair =
-      case
-          executeCallUserFunction
-            (callInstanceMethodStringExecute config)
-            (callInstanceMethodStringIsTopLevel config)
-            (callInstanceMethodStringPos config)
-            stack
-            locals
-            (methodNamePairMangled methodPair)
-            Nothing
-            [instanceValue]
-            globals
-            (callInstanceMethodStringFunctions config)
-            (callInstanceMethodStringOutputs config)
-        of
+      case executeCallUserFunction
+        (callInstanceMethodStringExecute config)
+        (callInstanceMethodStringIsTopLevel config)
+        (callInstanceMethodStringPos config)
+        stack
+        locals
+        (methodNamePairMangled methodPair)
+        Nothing
+        [instanceValue]
+        globals
+        (callInstanceMethodStringFunctions config)
+        (callInstanceMethodStringOutputs config) of
         Left err -> Left err
         Right (returnedStack, newGlobals, newLocals, newFunctions, newOutputs) ->
           case returnedStack of

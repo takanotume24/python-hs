@@ -145,6 +145,9 @@ MIT License — 詳細は [LICENSE](LICENSE) を参照してください。
 - [x] `reversed(iterable)`（list/tuple/string/dict キーを逆順のリストで返す）
 - [x] `input()` / `input(prompt)`（標準入力から1行読み込み。prompt は現状出力しない）
 - [x] `chr(i)` / `ord(c)`（Unicode コードポイントと1文字の相互変換）
+- [x] `type(obj)`（組み込み型は型名、ユーザー定義インスタンスはクラス名を文字列で返す）
+- [x] `isinstance(obj, 'class_name')`（型名・直接のクラス名一致を 1/0 で返す）
+- [x] `hasattr(obj, 'name')`（インスタンス属性・クラスメソッド・モジュール属性の有無を 1/0 で返す）
 - [x] `math`: `sqrt`, `sin`, `cos`, `tan`, `log`, `exp`, `pi`, `e`
 - [x] `json`: `dumps`, `loads`
 - [x] `pathlib`: `Path`

@@ -13,12 +13,12 @@ import PythonHS.VM.VMState (VMState (..))
 executePrintTop :: ExecutePrintTopConfig -> Either String VMState
 executePrintTop config =
   case vmStack state of
-        value : rest ->
-          case callInstanceMethodString (methodConfig value) of
-            Just (Left err) -> Left err
-            Just (Right result) -> Right (stateAfterMethod state rest result)
-            Nothing -> Right state {vmIp = vmIp state + 1, vmStack = rest, vmOutputs = vmOutputs state ++ [valueToOutput value]}
-        _ -> Left "VM runtime error: print requires one value on stack"
+    value : rest ->
+      case callInstanceMethodString (methodConfig value) of
+        Just (Left err) -> Left err
+        Just (Right result) -> Right (stateAfterMethod state rest result)
+        Nothing -> Right state {vmIp = vmIp state + 1, vmStack = rest, vmOutputs = vmOutputs state ++ [valueToOutput value]}
+    _ -> Left "VM runtime error: print requires one value on stack"
   where
     state = executePrintTopState config
 

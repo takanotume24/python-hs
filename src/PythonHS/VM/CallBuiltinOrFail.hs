@@ -13,6 +13,8 @@ import PythonHS.VM.CallInstanceMethodStringResult (CallInstanceMethodStringResul
 import PythonHS.VM.CallMapFilterBuiltin (callMapFilterBuiltin)
 import PythonHS.VM.CallMapFilterBuiltinConfig (CallMapFilterBuiltinConfig (..))
 import PythonHS.VM.CallMapFilterBuiltinResult (CallMapFilterBuiltinResult (..))
+import PythonHS.VM.CallReflectionBuiltin (callReflectionBuiltin)
+import PythonHS.VM.CallReflectionBuiltinConfig (CallReflectionBuiltinConfig (..))
 import PythonHS.VM.CallStrConversion (callStrConversion)
 import PythonHS.VM.CallStrConversionConfig (CallStrConversionConfig (..))
 import PythonHS.VM.ExecuteCallUserFunction (executeCallUserFunction)
@@ -90,33 +92,47 @@ callBuiltinOrFail config =
         }
 
     dispatchBuiltin =
-      case callBuiltin CallBuiltinConfig {callBuiltinName = name, callBuiltinArgs = args, callBuiltinPos = pos} of
+      case callReflectionBuiltin reflectionConfig of
         Just (Left err) -> Left err
-        Just (Right builtinValue) ->
-          let newLocalEnv = if isTopLevel then globalsAfterArgs else localEnv
-           in Right (builtinValue : stack, globalsAfterArgs, newLocalEnv, functionsAfterArgs, outputsAfterArgs)
-        Nothing -> Left ("Name error: undefined function " ++ name ++ " at " ++ showPos pos)
+        Just (Right builtinValue) -> pushBuiltin builtinValue
+        Nothing ->
+          case callBuiltin CallBuiltinConfig {callBuiltinName = name, callBuiltinArgs = args, callBuiltinPos = pos} of
+            Just (Left err) -> Left err
+            Just (Right builtinValue) -> pushBuiltin builtinValue
+            Nothing -> Left ("Name error: undefined function " ++ name ++ " at " ++ showPos pos)
+
+    pushBuiltin builtinValue =
+      let newLocalEnv = if isTopLevel then globalsAfterArgs else localEnv
+       in Right (builtinValue : stack, globalsAfterArgs, newLocalEnv, functionsAfterArgs, outputsAfterArgs)
+
+    reflectionConfig =
+      CallReflectionBuiltinConfig
+        { callReflectionBuiltinName = name,
+          callReflectionBuiltinArgs = args,
+          callReflectionBuiltinPos = pos,
+          callReflectionBuiltinGlobals = globalsAfterArgs,
+          callReflectionBuiltinLocals = localEnv,
+          callReflectionBuiltinFunctions = functionsAfterArgs
+        }
 
     callStrConversionFor =
-      case
-          callStrConversion
-            CallStrConversionConfig
-              { callStrConversionName = name,
-                callStrConversionArgs = args,
-                callStrConversionMethodConfig =
-                  CallInstanceMethodStringConfig
-                    { callInstanceMethodStringExecute = execute,
-                      callInstanceMethodStringIsTopLevel = isTopLevel,
-                      callInstanceMethodStringPos = pos,
-                      callInstanceMethodStringStack = stack,
-                      callInstanceMethodStringInstance = IntValue 0,
-                      callInstanceMethodStringGlobals = globalsAfterArgs,
-                      callInstanceMethodStringLocals = localEnv,
-                      callInstanceMethodStringFunctions = functionsAfterArgs,
-                      callInstanceMethodStringOutputs = outputsAfterArgs
-                    }
-              }
-        of
+      case callStrConversion
+        CallStrConversionConfig
+          { callStrConversionName = name,
+            callStrConversionArgs = args,
+            callStrConversionMethodConfig =
+              CallInstanceMethodStringConfig
+                { callInstanceMethodStringExecute = execute,
+                  callInstanceMethodStringIsTopLevel = isTopLevel,
+                  callInstanceMethodStringPos = pos,
+                  callInstanceMethodStringStack = stack,
+                  callInstanceMethodStringInstance = IntValue 0,
+                  callInstanceMethodStringGlobals = globalsAfterArgs,
+                  callInstanceMethodStringLocals = localEnv,
+                  callInstanceMethodStringFunctions = functionsAfterArgs,
+                  callInstanceMethodStringOutputs = outputsAfterArgs
+                }
+          } of
         Nothing -> Nothing
         Just (Left err) -> Just (Left err)
         Just (Right result) ->
@@ -140,6 +156,7 @@ callBuiltinOrFail config =
         _ -> Nothing
 
     isBuiltinName builtinName =
-      case callBuiltin CallBuiltinConfig {callBuiltinName = builtinName, callBuiltinArgs = [], callBuiltinPos = pos} of
-        Just _ -> True
-        Nothing -> False
+      builtinName `elem` ["type", "isinstance", "hasattr"]
+        || case callBuiltin CallBuiltinConfig {callBuiltinName = builtinName, callBuiltinArgs = [], callBuiltinPos = pos} of
+          Just _ -> True
+          Nothing -> False
