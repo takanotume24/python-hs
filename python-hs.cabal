@@ -614,6 +614,7 @@ test-suite python-hs-test
     , Test.VM.RunSourceVmPart22Spec
     , Test.VM.RunSourceVmPart23Spec
     , Test.VM.RunSourceVmPart24Spec
+    , Test.VM.RunSourceVmPart25Spec
     , Test.VM.RunInstructionsSpec
     , Test.Structure.CheckStructureSpec
     , Test.Structure.DetectPositionalArgsSpec

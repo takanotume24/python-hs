@@ -155,6 +155,7 @@ MIT License — 詳細は [LICENSE](LICENSE) を参照してください。
 - [x] `dataclass`（デコレータ・`field(default_factory=...)`）
 
 補足:
+- 文字列・リスト・辞書の組み込み関数は `receiver.method(args)` 形式でも呼び出せます（例: `xs.append(1)` / `d.keys()` / `s.strip()`）。対応する関数呼び出しと結果は一致します。
 - `math.pi` / `math.e` は現仕様では関数形式（`math.pi()` / `math.e()`）で利用します。
 - `import pkg.sub` / `import pkg.sub.deep` のような dotted import では、非 alias 時のトップレベル束縛は root module（例: `pkg`）のみです。`sub` / `deep` を直接参照したい場合は `from ... import ...` または `import ... as ...` を使います。
 - `from . import x` などの relative import は、package 配下モジュール内では利用可能です（エントリスクリプト直下では parent package がないためエラー）。

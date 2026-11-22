@@ -686,11 +686,11 @@
 - [x] 組み込み型・ユーザー定義クラス・モジュールオブジェクトの各ケースをテストで固定
 - [x] `type` / `isinstance` の引数がクラス名文字列でない場合のエラー規約を固定
 
-### P120: 組み込みメソッド構文の拡張
-- [ ] `s.split()` / `s.join(...)` 等、既存の文字列組み込みをメソッド構文でも呼び出せるようにする
-- [ ] `xs.sort()` / `xs.reverse()` / `xs.append(...)` 等、リスト組み込みメソッドの完全なメソッド構文対応
-- [ ] `d.keys()` / `d.values()` / `d.items()` 等、辞書組み込みメソッドの完全なメソッド構文対応
-- [ ] メソッド構文と関数呼び出しの結果が一致することを parity テストで固定
+### P120: 組み込みメソッド構文の拡張（完了）
+- [x] `s.split()` / `s.join(...)` 等、既存の文字列組み込みをメソッド構文でも呼び出せるようにする
+- [x] `xs.sort()` / `xs.reverse()` / `xs.append(...)` 等、リスト組み込みメソッドの完全なメソッド構文対応
+- [x] `d.keys()` / `d.values()` / `d.items()` 等、辞書組み込みメソッドの完全なメソッド構文対応
+- [x] メソッド構文と関数呼び出しの結果が一致することを parity テストで固定
 
 ### 優先順位とリスク
 - 優先順: P112 → P116 → P117 → P118 → P119 → P120
@@ -698,6 +698,16 @@
 - P118 はクラス属性解決・メソッド束縛との相互作用があり、中リスク
 - P119 は `type` / `isinstance` が今後のクラスシステム拡張と密接なため、段階的な仕様固定とする
 - P120 は既存メソッド構文の拡張だが、影響範囲が広いため回帰テストを充実させる
+
+## 現在のスコープ（P120: 組み込みメソッド構文の拡張）
+- [x] P120 開始: parser の `receiver.method(args)` → `method(receiver, args)` 脱糖を確認
+- [x] P120-1: 失敗テストを `RunSourceVmPart25Spec` に追加（文字列・リスト・辞書）
+- [x] P120-2: 文字列組み込み（split/join/lower/upper/strip/replace/find/count/startswith）をメソッド構文で固定
+- [x] P120-3: リスト組み込み（sort/reverse/append/extend/insert/remove/pop/clear/index/count/copy）をメソッド構文で固定
+- [x] P120-4: 辞書組み込み（keys/values/items/get/update/setdefault/pop/clear/copy/popitem）をメソッド構文で固定
+- [x] P120-5: メソッド構文と関数呼び出しの parity をテストで固定
+- [x] P120-6: 全テスト PASS（1432 examples, 0 failures）
+- [x] P120-7: 品質ゲート再実行（`cabal run quality-gate` 全項目 PASS）
 
 ## 現在のスコープ（P119: 反射型組み込み関数）
 - [x] P119 開始: `type` / `isinstance` / `hasattr` を VM 組み込みとして追加
@@ -1154,6 +1164,10 @@
 ## メンテナンス記録（要約）
 - 注記: 以下は時系列ログ。古い日付の「未対応」項目は、その後のエントリで仕様更新済みの場合がある。
 - 2026-11-21
+  - [x] P120 完了: 組み込みメソッド構文の拡張
+  - [x] P120 実装: parser の `receiver.method(args)` 脱糖で文字列・リスト・辞書の組み込みをメソッド構文で呼び出し可能
+  - [x] P120 テスト: `RunSourceVmPart25Spec` に 15 ケースを追加し、関数呼び出しとの parity を固定
+  - [x] P120 品質ゲート: `cabal run quality-gate` が全項目 PASS（1432 examples, 0 failures）
   - [x] P119 完了: 反射型組み込み関数（type / isinstance / hasattr）
   - [x] P119 実装: `CallReflectionBuiltin` を新設し、型名・クラス名・属性有無を返す
   - [x] P119 実装: `hasattr` は継承を含むクラスメソッドとモジュール属性を解決
