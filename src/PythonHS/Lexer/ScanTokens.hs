@@ -40,6 +40,11 @@ scanTokens input = go input 1 1 True [0] []
             ('\n' : rest') ->
               let tok = Token {tokenType = NewlineToken, lexeme = "\\n", position = Position {line = ln, column = col + indent}}
                in go rest' (ln + 1) 1 True indentStack (tok : acc)
+            ('#' : restComment) ->
+              let (comment, restAfterComment) = span (/= '\n') restComment
+               in case restAfterComment of
+                    ('\n' : rest') -> go rest' (ln + 1) 1 True indentStack acc
+                    _ -> go restAfterComment ln (col + indent + 1 + length comment) True indentStack acc
             _ -> do
               AdjustIndentResult {adjustIndentResultStack = newStack, adjustIndentResultTokens = indentTokens} <- adjustIndent ln indentStack indent
               go restAfterSpaces ln (1 + indent) False newStack (reverse indentTokens ++ acc)
@@ -49,6 +54,9 @@ scanTokens input = go input 1 1 True [0] []
     go src ln col False indentStack acc =
       case src of
         (c : rest)
+          | c == '#' ->
+              let (comment, restAfterComment) = span (/= '\n') rest
+               in go restAfterComment ln (col + 1 + length comment) False indentStack acc
           | isSpace c -> go rest ln (col + 1) False indentStack acc
           | otherwise -> do
               result <- scanTokenStep (ScanTokenStepConfig {scanTokenStepSource = src, scanTokenStepPosition = Position {line = ln, column = col}})

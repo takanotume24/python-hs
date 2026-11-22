@@ -172,3 +172,23 @@ spec = describe "scanTokens core tokens - part 1" $ do
           Token NewlineToken "\\n" (Position 1 8),
           Token EOFToken "" (Position 2 1)
         ]
+
+  it "skips an inline comment" $ do
+    scanTokens "x = 1 # comment\n"
+      `shouldBe` Right
+        [ Token IdentifierToken "x" (Position 1 1),
+          Token AssignToken "=" (Position 1 3),
+          Token IntegerToken "1" (Position 1 5),
+          Token NewlineToken "\\n" (Position 1 16),
+          Token EOFToken "" (Position 2 1)
+        ]
+
+  it "skips a full-line comment" $ do
+    scanTokens "# comment\nx = 1\n"
+      `shouldBe` Right
+        [ Token IdentifierToken "x" (Position 2 1),
+          Token AssignToken "=" (Position 2 3),
+          Token IntegerToken "1" (Position 2 5),
+          Token NewlineToken "\\n" (Position 2 6),
+          Token EOFToken "" (Position 3 1)
+        ]
