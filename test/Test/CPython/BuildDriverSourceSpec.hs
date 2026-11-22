@@ -33,7 +33,9 @@ spec = describe "buildDriverSource" $ do
               "        self.assertEqual(1, 1)",
               "",
               "__python_hs_case = T()",
+              "__python_hs_case.setUp()",
               "__python_hs_case.test_ok()",
+              "__python_hs_case.tearDown()",
               "print(\"__PYTHON_HS_CPYTHON_TEST_OK__\")"
             ]
         )

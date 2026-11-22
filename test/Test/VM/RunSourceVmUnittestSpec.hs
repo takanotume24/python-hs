@@ -1,7 +1,7 @@
 module Test.VM.RunSourceVmUnittestSpec (spec) where
 
 import PythonHS.RunSourceVm (runSourceVm)
-import Test.Hspec (Spec, describe, it, shouldBe)
+import Test.Hspec (Spec, describe, it, shouldBe, shouldContain)
 
 spec :: Spec
 spec = describe "runSourceVm unittest builtins" $ do
@@ -98,3 +98,36 @@ spec = describe "runSourceVm unittest builtins" $ do
           ]
       )
       `shouldBe` Right ["setup", "done"]
+
+  it "accepts assertRaises as a context manager" $ do
+    runSourceVm
+      ( unlines
+          [ "import unittest",
+            "class T(unittest.TestCase):",
+            "    def test_raises(self):",
+            "        with self.assertRaises(ValueError):",
+            "            raise ValueError(\"boom\")",
+            "T().test_raises()",
+            "print(\"done\")"
+          ]
+      )
+      `shouldBe` Right ["done"]
+
+  it "fails when assertRaises does not observe an exception" $ do
+    let result = runSourceVm "import unittest\nwith unittest.assertRaises(ValueError):\n    pass\n"
+    case result of
+      Left message -> message `shouldContain` "AssertionError:"
+      Right outputs -> fail ("unexpected success: " ++ show outputs)
+
+  it "accepts assertAlmostEqual for close floats" $ do
+    runSourceVm
+      ( unlines
+          [ "import unittest",
+            "class T(unittest.TestCase):",
+            "    def test_close(self):",
+            "        self.assertAlmostEqual(1.0, 1.00000001)",
+            "T().test_close()",
+            "print(\"done\")"
+          ]
+      )
+      `shouldBe` Right ["done"]

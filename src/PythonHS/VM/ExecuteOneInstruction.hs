@@ -3,7 +3,7 @@ module PythonHS.VM.ExecuteOneInstruction (executeOneInstruction) where
 import Data.Map.Strict qualified as Map
 import Data.Set qualified as Set
 import PythonHS.Evaluator.ShowPos (showPos)
-import PythonHS.Evaluator.Value (Value (DictValue, FunctionRefValue, ListValue, TupleValue, UnboundLocalValue), unboundLocalValueName)
+import PythonHS.Evaluator.Value (Value (ClassValue, DictValue, FunctionRefValue, ListValue, TupleValue, UnboundLocalValue), classValueAttrs, classValueBase, classValueMethods, classValueName, unboundLocalValueName)
 import PythonHS.VM.EnvState (EnvState (..))
 import PythonHS.VM.ExecuteArithmeticInstruction (executeArithmeticInstruction)
 import PythonHS.VM.ExecuteArithmeticInstructionConfig (ExecuteArithmeticInstructionConfig (..))
@@ -38,6 +38,7 @@ import PythonHS.VM.FunctionInfo (FunctionInfo (..))
 import PythonHS.VM.HandleExceptionInstruction (handleExceptionInstruction)
 import PythonHS.VM.HandleExceptionInstructionConfig (HandleExceptionInstructionConfig (..))
 import PythonHS.VM.Instruction (Instruction (..), isExceptionInstruction)
+import PythonHS.VM.IsBuiltinExceptionClass (isBuiltinExceptionClass)
 import PythonHS.VM.LookupNameWithAttr (lookupNameWithAttr)
 import PythonHS.VM.LoopState (LoopState (..))
 import PythonHS.VM.PopValues (popValues)
@@ -67,7 +68,14 @@ executeOneInstruction execute state instruction =
                     Right Nothing ->
                       case Map.lookup name (envFunctions (vmEnv state)) of
                         Just _ -> Right state {vmIp = vmIp state + 1, vmStack = FunctionRefValue name [] : vmStack state}
-                        Nothing -> Left ("Name error: undefined identifier " ++ name ++ " at " ++ showPos pos)
+                        Nothing
+                          | isBuiltinExceptionClass name ->
+                              Right
+                                state
+                                  { vmIp = vmIp state + 1,
+                                    vmStack = ClassValue {classValueName = name, classValueBase = Nothing, classValueMethods = [], classValueAttrs = []} : vmStack state
+                                  }
+                          | otherwise -> Left ("Name error: undefined identifier " ++ name ++ " at " ++ showPos pos)
                     Right (Just value) ->
                       case value of
                         UnboundLocalValue {unboundLocalValueName = unboundName} ->

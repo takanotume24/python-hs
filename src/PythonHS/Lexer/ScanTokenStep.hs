@@ -5,9 +5,11 @@ import PythonHS.Lexer.KeywordOrIdentifier (keywordOrIdentifier)
 import PythonHS.Lexer.LexerError (LexerError (..))
 import PythonHS.Lexer.ParseExponent (ParseExponentResult (..), parseExponent)
 import PythonHS.Lexer.Position (Position (Position))
+import PythonHS.Lexer.QuotedStringResult (QuotedStringResult (..))
 import PythonHS.Lexer.ScanFString (scanFString)
 import PythonHS.Lexer.ScanOperatorToken (scanOperatorToken)
 import PythonHS.Lexer.ScanOperatorTokenConfig (ScanOperatorTokenConfig (..))
+import PythonHS.Lexer.ScanQuotedString (scanQuotedString)
 import PythonHS.Lexer.ScanTokenStepConfig (ScanTokenStepConfig (..))
 import PythonHS.Lexer.ScanTokenStepResult (ScanTokenStepResult (..))
 import PythonHS.Lexer.Token (Token (Token))
@@ -30,6 +32,7 @@ import PythonHS.Lexer.TokenType
         StringToken
       ),
   )
+import PythonHS.Lexer.UnescapeStringLiteral (unescapeStringLiteral)
 
 scanTokenStep :: ScanTokenStepConfig -> Either LexerError ScanTokenStepResult
 scanTokenStep config =
@@ -70,22 +73,11 @@ scanTokenStep config =
                           lexeme = withFraction ++ exponentPart
                        in Right (ScanTokenStepResult (Token FloatToken lexeme (Position ln col)) tailInput (Position ln (col + length lexeme)))
                 _ -> Right (ScanTokenStepResult (Token DotToken "." (Position ln col)) rest (Position ln (col + 1)))
-          | c == '"' ->
-              let spanRes = span (\x -> x /= '"' && x /= '\n') rest
-                  strContent = fst spanRes
-                  tailInput = snd spanRes
-                  len = length strContent
-               in case tailInput of
-                    ('"' : rest') -> Right (ScanTokenStepResult (Token StringToken strContent (Position ln col)) rest' (Position ln (col + len + 2)))
-                    _ -> Left (UnexpectedCharacter {unexpectedChar = '"'})
-          | c == '\'' ->
-              let spanRes = span (\x -> x /= '\'' && x /= '\n') rest
-                  strContent = fst spanRes
-                  tailInput = snd spanRes
-                  len = length strContent
-               in case tailInput of
-                    ('\'' : rest') -> Right (ScanTokenStepResult (Token StringToken strContent (Position ln col)) rest' (Position ln (col + len + 2)))
-                    _ -> Left (UnexpectedCharacter {unexpectedChar = '\''})
+          | c == '"' || c == '\'' -> case scanQuotedString c rest of
+              Just result ->
+                let rawContent = quotedStringContent result
+                 in Right (ScanTokenStepResult (Token StringToken (unescapeStringLiteral rawContent) (Position ln col)) (quotedStringRemaining result) (Position ln (col + length rawContent + 2)))
+              Nothing -> Left (UnexpectedCharacter {unexpectedChar = c})
           | isDigit c ->
               let spanResDigits = span isDigit (c : rest)
                   digits = fst spanResDigits

@@ -10,6 +10,10 @@ def requires(resource, msg=None):
     return None
 
 
+def requires_resource(resource):
+    return requires
+
+
 def skip(reason):
     return None
 
@@ -20,3 +24,11 @@ def skipIf(condition, reason):
 
 def skipUnless(condition, reason):
     return None
+
+
+def check_syntax_error(testcase, statement, errtext=None):
+    return None
+
+
+def import_module(name):
+    return name

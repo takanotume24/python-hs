@@ -26,6 +26,10 @@ callUnittestBuiltin config =
     "assertIsNotNone" -> Just (assertNone False args)
     "assertIn" -> Just (assertMembership True args)
     "assertNotIn" -> Just (assertMembership False args)
+    "assertAlmostEqual" -> Just (assertAlmostEqual args)
+    "assertRaises" -> Just (makeAssertRaises args)
+    "__enter__" -> Just (contextEnter args)
+    "__exit__" -> Just (contextExit args)
     "setUp" -> Just (Right NoneValue)
     "tearDown" -> Just (Right NoneValue)
     "fail" -> Just (assertFail args)
@@ -75,6 +79,70 @@ callUnittestBuiltin config =
         [_] -> Left (assertionFailure "test failed")
         [_, message] -> Left (assertionFailure (valueToReplOutput message))
         _ -> Left (countMismatch name)
+
+    assertAlmostEqual symbols =
+      case symbols of
+        [_, leftValue, rightValue] -> compareAlmost 7 leftValue rightValue
+        [_, leftValue, rightValue, IntValue {intValue = places}] -> compareAlmost (fromIntegral places) leftValue rightValue
+        _ -> Left (countMismatch name)
+
+    compareAlmost :: Integer -> Value -> Value -> Either String Value
+    compareAlmost places leftValue rightValue =
+      case (asDouble leftValue, asDouble rightValue) of
+        (Just leftNumber, Just rightNumber) ->
+          if abs (leftNumber - rightNumber) <= tolerance
+            then Right NoneValue
+            else Left (assertionFailure (valueToReplOutput leftValue ++ " != " ++ valueToReplOutput rightValue))
+        _ ->
+          if valuesEqual leftValue rightValue
+            then Right NoneValue
+            else Left (assertionFailure (valueToReplOutput leftValue ++ " != " ++ valueToReplOutput rightValue))
+      where
+        tolerance = 0.5 * (10 ** negate (fromIntegral places :: Double))
+
+    asDouble value =
+      case value of
+        IntValue {intValue = number} -> Just (fromIntegral number)
+        FloatValue {floatValue = number} -> Just number
+        _ -> Nothing
+
+    makeAssertRaises symbols =
+      case symbols of
+        [_, expected] ->
+          Right
+            InstanceValue
+              { instanceValueClass = "__AssertRaisesContext__",
+                instanceValueAttrs = [("__expected_exception__", StringValue {stringValue = exceptionNameOf expected})]
+              }
+        _ -> Left ("Argument error: assertRaises supports only the context manager form at " ++ showPos pos)
+
+    exceptionNameOf value =
+      case value of
+        ClassValue {classValueName = className} -> className
+        ExceptionValue {exceptionValueClass = className} -> className
+        StringValue {stringValue = className} -> className
+        _ -> valueToReplOutput value
+
+    contextEnter symbols =
+      case symbols of
+        [InstanceValue {}] -> Right NoneValue
+        _ -> Left (countMismatch "__enter__")
+
+    contextExit symbols =
+      case symbols of
+        [InstanceValue {instanceValueAttrs = attrs}, raisedClass, _, _] ->
+          case raisedClass of
+            NoneValue -> Left (assertionFailure ("expected " ++ expectedName attrs ++ " to be raised"))
+            StringValue {stringValue = actualName}
+              | actualName == expectedName attrs -> Right (IntValue {intValue = 1})
+              | otherwise -> Right (IntValue {intValue = 0})
+            _ -> Right (IntValue {intValue = 0})
+        _ -> Left (countMismatch "__exit__")
+
+    expectedName attrs =
+      case lookup "__expected_exception__" attrs of
+        Just (StringValue {stringValue = className}) -> className
+        _ -> "Exception"
 
     isNone value =
       case value of

@@ -1,16 +1,20 @@
 module PythonHS.CPython.ReportLines (reportLines) where
 
-import PythonHS.CPython.CaseId (CaseId (..))
+import PythonHS.CPython.CaseFailure (CaseFailure (..))
+import PythonHS.CPython.CaseFailureCategoryLabel (caseFailureCategoryLabel)
 import PythonHS.CPython.CaseReport (CaseReport (..))
+import PythonHS.CPython.FormatCaseId (formatCaseId)
 
 -- | Render a human-readable report, one line per test case.
 reportLines :: [CaseReport] -> [String]
 reportLines = map renderReport
   where
     renderReport CaseReport {caseReportId = caseId, caseReportFailure = Nothing} =
-      "PASS " ++ renderCaseId caseId
+      "PASS " ++ formatCaseId caseId
     renderReport CaseReport {caseReportId = caseId, caseReportFailure = Just failure} =
-      "FAIL " ++ renderCaseId caseId ++ ": " ++ failure
-
-    renderCaseId CaseId {caseIdFile = file, caseIdClassName = className, caseIdMethodName = methodName} =
-      file ++ "::" ++ className ++ "::" ++ methodName
+      "FAIL "
+        ++ formatCaseId caseId
+        ++ " ["
+        ++ caseFailureCategoryLabel (caseFailureCategory failure)
+        ++ "] "
+        ++ caseFailureMessage failure

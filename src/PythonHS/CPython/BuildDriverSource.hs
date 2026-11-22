@@ -15,23 +15,38 @@ buildDriverSource source caseId =
   case findClassHeader sourceLines of
     Nothing -> Left ("Class not found: " ++ caseIdClassName caseId)
     Just classHeader ->
-      case findMethodBlock sourceLines of
+      case findNamedMethodBlock (caseIdMethodName caseId) of
         Nothing -> Left ("Method not found: " ++ caseIdMethodName caseId)
         Just methodBlock ->
           Right
             ( unlines
                 ( importLines
                     ++ [classHeader]
+                    ++ setUpBlock
                     ++ methodBlock
-                    ++ [ "__python_hs_case = " ++ caseIdClassName caseId ++ "()",
-                         "__python_hs_case." ++ caseIdMethodName caseId ++ "()",
-                         "print(\"__PYTHON_HS_CPYTHON_TEST_OK__\")"
-                       ]
+                    ++ tearDownBlock
+                    ++ driverLines
                 )
             )
   where
     sourceLines = lines source
     importLines = filter isImportLine sourceLines
+
+    driverLines =
+      [ "__python_hs_case = " ++ caseIdClassName caseId ++ "()",
+        "__python_hs_case.setUp()",
+        "__python_hs_case." ++ caseIdMethodName caseId ++ "()",
+        "__python_hs_case.tearDown()",
+        "print(\"__PYTHON_HS_CPYTHON_TEST_OK__\")"
+      ]
+
+    setUpBlock
+      | caseIdMethodName caseId == "setUp" = []
+      | otherwise = maybe [] id (findNamedMethodBlock "setUp")
+
+    tearDownBlock
+      | caseIdMethodName caseId == "tearDown" = []
+      | otherwise = maybe [] id (findNamedMethodBlock "tearDown")
 
     isImportLine line =
       "import " `isPrefixOf` line || "from " `isPrefixOf` line
@@ -46,16 +61,16 @@ buildDriverSource source caseId =
         Just (nextChar : _) -> nextChar == '(' || nextChar == ':'
         _ -> False
 
-    findMethodBlock (line : rest)
-      | isMethodStart line = Just (line : takeMethodBody rest)
-      | otherwise = findMethodBlock rest
-    findMethodBlock [] = Nothing
+    findNamedMethodBlock methodName = findMethodBlock sourceLines
+      where
+        findMethodBlock (line : rest)
+          | isMethodStart methodName line = Just (line : takeMethodBody rest)
+          | otherwise = findMethodBlock rest
+        findMethodBlock [] = Nothing
 
-    isMethodStart line =
+    isMethodStart methodName line =
       indentation line == 4
-        && isPrefixOf methodPrefix (drop 4 line)
-
-    methodPrefix = "def " ++ caseIdMethodName caseId
+        && isPrefixOf ("def " ++ methodName) (drop 4 line)
 
     takeMethodBody (line : rest)
       | isBlank line = line : takeMethodBody rest

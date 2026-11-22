@@ -824,6 +824,45 @@
 - 補足: `run-cpython-test` は allowlist のメソッド単位で import・クラスヘッダ・対象メソッドのみを抽出して実行する。初期 allowlist は `test_augassign.py` の 3 件と `test_unary.py` の 2 件。
 - [x] P131-10: 品質ゲート: `cabal run quality-gate` 全項目 PASS
 
+## 現在のスコープ（P132: CPython テスト結果のトリアージ強化）
+- [x] P132 開始: `run-cpython-test` の失敗をカテゴリ分類し、JSON / list 出力を追加する
+- [x] P132-1: 失敗カテゴリ（parse / import / assertion / runtime / marker）を型で表現する
+- [x] P132-2: `--json` で機械可読なレポートを出力する
+- [x] P132-3: `--list` で allowlist のケース一覧を表示する
+- [x] P132-4: トリアージ用のテストを追加し、品質ゲートを通す
+- 補足: `CaseFailureCategory` / `ClassifyCaseFailure` / `ReportJson` を追加し、`run-cpython-test --json` と `--list` を実装した。JSON レポートと分類の単体テストを追加済み。
+
+## 現在のスコープ（P133: CPython テスト allowlist 第2弾）
+- [x] P133 開始: トリアージ結果をもとに追加可能な CPython テストを選定する
+- [x] P133-1: allowlist を 15 件以上へ拡大する
+- [x] P133-2: 追加ケースに必要な構文・組み込みだけを実装する
+- [x] P133-3: 追加ケースの回帰テストを追加する
+- [x] P133-4: 品質ゲートを通す
+- 補足: list/tuple の `+`、文字列/list/tuple の `*` を追加し、`test_keyword.py` の 7 件、`test_bool.py` の 3 件、`test_contains` 相当を追加した。allowlist は合計 15 件で全件 PASS。回帰テストは `RunSourceVmSequenceOpSpec` に追加。
+
+## 現在のスコープ（P134: unittest 互換層の拡張）
+- [x] P134 開始: `assertRaises` と setUp/tearDown の不足をテストで固定する
+- [x] P134-1: `assertRaises` のコンテキストマネージャ構文に対応する
+- [x] P134-2: `setUp` / `tearDown` をテスト実行時に自動呼び出しする
+- [x] P134-3: `assertAlmostEqual` など不足アサーションを追加する
+- [x] P134-4: 品質ゲートを通す
+- 補足: `with self.assertRaises(...)` 用のコンテキスト値と `__enter__` / `__exit__` を実装した。ドライバは `setUp` / `tearDown` を自動で呼び、抽出方式でも `setUp` / `tearDown` 定義をコピーする。`assertAlmostEqual` も追加。
+
+## 現在のスコープ（P135: test.support shim の拡張）
+- [x] P135 開始: allowlist ケースが必要とする `test.support` 関数を洗い出す
+- [x] P135-1: `check_syntax_error` / `import_module` などの最小 shim を追加する
+- [x] P135-2: shim 解決順を回帰テストで固定する
+- [x] P135-3: 品質ゲートを通す
+- 補足: `cpython-shim/test/support/os_helper.py`、`cpython-shim/keyword.py` を追加し、`test.support` に `requires_resource` / `check_syntax_error` / `import_module` を追加した。`cpython-shim` が CPython 本体より優先されることを `RunCpythonTestFileModeSpec` で固定。
+
+## 現在のスコープ（P136: CPython テストのファイル全体実行モード）
+- [x] P136 開始: メソッド抽出方式に加えてファイル全体ロード方式を設計する
+- [x] P136-1: `--file` モードと main ガード無効化を実装する
+- [x] P136-2: 対象ファイル全体のパースに必要な構文を追加する
+- [x] P136-3: 抽出方式とファイル全体方式の結果一致をテストする
+- [x] P136-4: 品質ゲートを通す
+- 補足: `buildFileDriverSource` と `stripMainGuard` を追加し、`run-cpython-test --file` でファイル全体をロードしてから対象メソッドを実行できるようにした。`test_keyword.py` はファイル全体モードでも 7 件 PASS。抽出方式とファイル全体方式の結果一致は `RunCpythonTestFileModeSpec` で確認している。
+
 ## 現在のスコープ（P120: 組み込みメソッド構文の拡張）
 - [x] P120 開始: parser の `receiver.method(args)` → `method(receiver, args)` 脱糖を確認
 - [x] P120-1: 失敗テストを `RunSourceVmPart25Spec` に追加（文字列・リスト・辞書）

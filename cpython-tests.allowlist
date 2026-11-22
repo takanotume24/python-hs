@@ -5,3 +5,13 @@ third_party/cpython/Lib/test/test_augassign.py::AugAssignTest::testInList
 third_party/cpython/Lib/test/test_augassign.py::AugAssignTest::testInDict
 third_party/cpython/Lib/test/test_unary.py::UnaryOpTestCase::test_invert
 third_party/cpython/Lib/test/test_unary.py::UnaryOpTestCase::test_negation_of_exponentiation
+third_party/cpython/Lib/test/test_bool.py::BoolTest::test_float
+third_party/cpython/Lib/test/test_bool.py::BoolTest::test_contains
+third_party/cpython/Lib/test/test_bool.py::BoolTest::test_hasattr
+third_party/cpython/Lib/test/test_keyword.py::Test_iskeyword::test_true_is_a_keyword
+third_party/cpython/Lib/test/test_keyword.py::Test_iskeyword::test_uppercase_true_is_not_a_keyword
+third_party/cpython/Lib/test/test_keyword.py::Test_iskeyword::test_none_value_is_not_a_keyword
+third_party/cpython/Lib/test/test_keyword.py::Test_iskeyword::test_async_and_await_are_keywords
+third_party/cpython/Lib/test/test_keyword.py::Test_iskeyword::test_soft_keywords
+third_party/cpython/Lib/test/test_keyword.py::Test_iskeyword::test_keywords_are_sorted
+third_party/cpython/Lib/test/test_keyword.py::Test_iskeyword::test_softkeywords_are_sorted

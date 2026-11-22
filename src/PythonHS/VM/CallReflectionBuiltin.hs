@@ -69,7 +69,53 @@ callReflectionBuiltin config =
         InstanceValue {instanceValueClass = className, instanceValueAttrs = attrs} ->
           any ((== attributeName) . fst) attrs || classHasAttribute className attributeName
         ClassValue {classValueName = className} -> classHasAttribute className attributeName
+        ListValue {} -> attributeName `elem` listMethodNames
+        TupleValue {} -> attributeName `elem` listMethodNames
+        StringValue {} -> attributeName `elem` stringMethodNames
+        DictValue {} -> attributeName `elem` dictMethodNames
         _ -> False
+
+    listMethodNames =
+      [ "append",
+        "extend",
+        "insert",
+        "remove",
+        "pop",
+        "clear",
+        "index",
+        "count",
+        "sort",
+        "reverse",
+        "copy"
+      ]
+
+    stringMethodNames =
+      [ "split",
+        "join",
+        "lower",
+        "upper",
+        "strip",
+        "replace",
+        "find",
+        "count",
+        "startswith",
+        "endswith",
+        "isalnum",
+        "isalpha"
+      ]
+
+    dictMethodNames =
+      [ "keys",
+        "values",
+        "items",
+        "get",
+        "update",
+        "setdefault",
+        "pop",
+        "clear",
+        "copy",
+        "popitem"
+      ]
 
     moduleHasAttribute moduleValue attributeName =
       any ((== attributeName) . moduleAttrName) (moduleValueAttributes moduleValue)

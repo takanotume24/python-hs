@@ -32,14 +32,24 @@ library
     , PythonHS.AST.WithContext
     , PythonHS.Lexer.Position
     , PythonHS.CPython.AllCasesPassed
+    , PythonHS.CPython.BuildFileDriverSource
     , PythonHS.CPython.BuildDriverSource
+    , PythonHS.CPython.CaseFailure
+    , PythonHS.CPython.CaseFailureCategory
+    , PythonHS.CPython.CaseFailureCategoryLabel
     , PythonHS.CPython.CaseId
     , PythonHS.CPython.CaseReport
+    , PythonHS.CPython.ClassifyCaseFailure
+    , PythonHS.CPython.FormatCaseId
+    , PythonHS.CPython.LoadCaseIds
     , PythonHS.CPython.ParseCaseId
     , PythonHS.CPython.ReadFileSafely
+    , PythonHS.CPython.ReportJson
     , PythonHS.CPython.ReportLines
     , PythonHS.CPython.RunCpythonTest
     , PythonHS.CPython.RunCpythonTestConfig
+    , PythonHS.CPython.RunCpythonTestOptions
+    , PythonHS.CPython.StripMainGuard
     , PythonHS.Parser.ParseError
     , PythonHS.Parser.ParseResult
     , PythonHS.Parser.ParseUnpackNamesConfig
@@ -158,14 +168,17 @@ library
     , PythonHS.Lexer.ParseExponent
     , PythonHS.Lexer.ParseExponentResult
     , PythonHS.Lexer.ScanFString
+    , PythonHS.Lexer.QuotedStringResult
     , PythonHS.Lexer.ScanOperatorToken
     , PythonHS.Lexer.ScanOperatorTokenConfig
+    , PythonHS.Lexer.ScanQuotedString
     , PythonHS.Lexer.ScanTokenStep
     , PythonHS.Lexer.ScanTokenStepConfig
     , PythonHS.Lexer.ScanTokenStepResult
     , PythonHS.Lexer.ScanTripleQuotedString
     , PythonHS.Lexer.SpanDigits
     , PythonHS.Lexer.TripleQuotedStringResult
+    , PythonHS.Lexer.UnescapeStringLiteral
       , PythonHS.Parser.ParseExpr
     , PythonHS.Parser.ParseExprConfig
     , PythonHS.Parser.ParseExprNoBitwiseOr
@@ -412,6 +425,8 @@ library
     , PythonHS.VM.EvalBinaryOpPowerConfig
     , PythonHS.VM.EvalBinaryOpMembership
     , PythonHS.VM.EvalBinaryOpMembershipConfig
+    , PythonHS.VM.EvalBinaryOpSequence
+    , PythonHS.VM.EvalBinaryOpSequenceConfig
     , PythonHS.VM.FindModuleFile
     , PythonHS.VM.CollectExports
     , PythonHS.VM.IsBuiltinImportModule
@@ -595,8 +610,12 @@ test-suite python-hs-test
       Test.Acceptance.MvpScenarioSpec
     , Paths_python_hs
     , Test.CPython.BuildDriverSourceSpec
+    , Test.CPython.ClassifyCaseFailureSpec
     , Test.CPython.ParseCaseIdSpec
+    , Test.CPython.ReportJsonSpec
+    , Test.CPython.RunCpythonTestFileModeSpec
     , Test.CPython.RunCpythonTestSpec
+    , Test.CPython.StripMainGuardSpec
     , Test.CLI.CLIPart1Spec
     , Test.CLI.CLIPart2Spec
     , Test.CLI.CLIPart3Spec
@@ -688,6 +707,7 @@ test-suite python-hs-test
     , Test.VM.RunSourceVmAugAssignBitwiseSpec
     , Test.VM.RunSourceVmBlankLineSpec
     , Test.VM.RunSourceVmUnaryPrecedenceSpec
+    , Test.VM.RunSourceVmSequenceOpSpec
     , Test.VM.RunSourceVmUnittestSpec
     , Test.Structure.CheckStructureSpec
     , Test.Structure.DetectPositionalArgsSpec

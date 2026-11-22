@@ -17,6 +17,8 @@ import PythonHS.VM.EvalBinaryOpMembership (evalBinaryOpMembership)
 import PythonHS.VM.EvalBinaryOpMembershipConfig (EvalBinaryOpMembershipConfig (..))
 import PythonHS.VM.EvalBinaryOpPower (evalBinaryOpPower)
 import PythonHS.VM.EvalBinaryOpPowerConfig (EvalBinaryOpPowerConfig (..))
+import PythonHS.VM.EvalBinaryOpSequence (evalBinaryOpSequence)
+import PythonHS.VM.EvalBinaryOpSequenceConfig (EvalBinaryOpSequenceConfig (..))
 
 evalBinaryOp :: EvalBinaryOpConfig -> Either String Value
 evalBinaryOp config =
@@ -26,24 +28,30 @@ evalBinaryOp config =
       pos = evalBinaryOpPos config
    in case op of
         AddOperator ->
-          case left of
-            IntValue {intValue = l} ->
-              case right of
-                IntValue {intValue = r} -> Right (IntValue {intValue = l + r})
-                FloatValue {floatValue = r} -> Right (FloatValue {floatValue = fromIntegral l + r})
+          case evalSequence of
+            Just result -> result
+            Nothing ->
+              case left of
+                IntValue {intValue = l} ->
+                  case right of
+                    IntValue {intValue = r} -> Right (IntValue {intValue = l + r})
+                    FloatValue {floatValue = r} -> Right (FloatValue {floatValue = fromIntegral l + r})
+                    _ -> Left ("Type error: + expects int+int or string+string at " ++ showPos pos)
+                FloatValue {floatValue = l} ->
+                  case right of
+                    FloatValue {floatValue = r} -> Right (FloatValue {floatValue = l + r})
+                    IntValue {intValue = r} -> Right (FloatValue {floatValue = l + fromIntegral r})
+                    _ -> Left ("Type error: + expects int+int or string+string at " ++ showPos pos)
+                StringValue {stringValue = l} ->
+                  case right of
+                    StringValue {stringValue = r} -> Right (StringValue {stringValue = l ++ r})
+                    _ -> Left ("Type error: + expects int+int or string+string at " ++ showPos pos)
                 _ -> Left ("Type error: + expects int+int or string+string at " ++ showPos pos)
-            FloatValue {floatValue = l} ->
-              case right of
-                FloatValue {floatValue = r} -> Right (FloatValue {floatValue = l + r})
-                IntValue {intValue = r} -> Right (FloatValue {floatValue = l + fromIntegral r})
-                _ -> Left ("Type error: + expects int+int or string+string at " ++ showPos pos)
-            StringValue {stringValue = l} ->
-              case right of
-                StringValue {stringValue = r} -> Right (StringValue {stringValue = l ++ r})
-                _ -> Left ("Type error: + expects int+int or string+string at " ++ showPos pos)
-            _ -> Left ("Type error: + expects int+int or string+string at " ++ showPos pos)
         SubtractOperator -> evalNumericBinary "-" pos left right (-)
-        MultiplyOperator -> evalNumericBinary "*" pos left right (*)
+        MultiplyOperator ->
+          case evalSequence of
+            Just result -> result
+            Nothing -> evalNumericBinary "*" pos left right (*)
         DivideOperator -> evalBinaryOpDivide EvalBinaryOpDivideConfig {evalBinaryOpDivideConfigLeft = left, evalBinaryOpDivideConfigRight = right, evalBinaryOpDivideConfigPos = pos, evalBinaryOpDivideConfigExpectNumber = expectNumber "/"}
         FloorDivideOperator -> evalFloorDivide pos left right
         ModuloOperator -> evalModulo pos left right
@@ -72,6 +80,15 @@ evalBinaryOp config =
         LeftShiftOperator -> evalBinaryOpBitwise EvalBinaryOpBitwiseConfig {evalBinaryOpBitwiseConfigLeft = left, evalBinaryOpBitwiseConfigRight = right, evalBinaryOpBitwiseConfigOp = op, evalBinaryOpBitwiseConfigPos = pos}
         RightShiftOperator -> evalBinaryOpBitwise EvalBinaryOpBitwiseConfig {evalBinaryOpBitwiseConfigLeft = left, evalBinaryOpBitwiseConfigRight = right, evalBinaryOpBitwiseConfigOp = op, evalBinaryOpBitwiseConfigPos = pos}
   where
+    evalSequence =
+      evalBinaryOpSequence
+        EvalBinaryOpSequenceConfig
+          { evalBinaryOpSequenceOp = evalBinaryOpOp config,
+            evalBinaryOpSequenceLeft = evalBinaryOpLeft config,
+            evalBinaryOpSequenceRight = evalBinaryOpRight config,
+            evalBinaryOpSequencePos = evalBinaryOpPos config
+          }
+
     evalNumericBinary context pos' left' right' opFn = do
       leftNumber <- expectNumber context pos' left'
       rightNumber <- expectNumber context pos' right'
