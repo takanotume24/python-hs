@@ -13,26 +13,15 @@ import PythonHS.RunSourceVm (runSourceVm)
 
 processVmSubmission :: ProcessVmSubmissionConfig -> Either String VmSubmissionResult
 processVmSubmission config =
-  let acceptedSourceLines = processVmSubmissionAcceptedSourceLines config
-      acceptedOutputs = processVmSubmissionAcceptedOutputs config
-      submissionLines = processVmSubmissionSubmissionLines config
-      candidateSourceLines = acceptedSourceLines ++ submissionLines
-      candidateSource = unlines candidateSourceLines
-      formatSuccess newSourceLines allOutputs =
-        let deltaOutputs =
-              case stripPrefix acceptedOutputs allOutputs of
-                Just suffix -> suffix
-                Nothing -> drop (length acceptedOutputs) allOutputs
-         in Right VmSubmissionResult {vmResultLines = newSourceLines, vmResultOutputs = allOutputs, vmResultDeltaOutputs = deltaOutputs}
-   in case submissionLines of
-        [singleLine]
-          | isDisplayedExpressionLine singleLine ->
-              let fallbackSourceLines = acceptedSourceLines ++ ["print __python_hs_repl_repr__(" ++ singleLine ++ ")"]
-                  fallbackSource = unlines fallbackSourceLines
-               in case runSourceVm fallbackSource of
-                    Right allOutputs -> formatSuccess fallbackSourceLines allOutputs
-                    Left _ -> runCandidate
-        _ -> runCandidate
+  case submissionLines of
+    [singleLine]
+      | isDisplayedExpressionLine singleLine ->
+          let fallbackSourceLines = acceptedSourceLines ++ ["print __python_hs_repl_repr__(" ++ singleLine ++ ")"]
+              fallbackSource = unlines fallbackSourceLines
+           in case runSourceVm fallbackSource of
+                Right allOutputs -> formatSuccess fallbackSourceLines allOutputs
+                Left _ -> runCandidate
+    _ -> runCandidate
   where
     acceptedSourceLines = processVmSubmissionAcceptedSourceLines config
     acceptedOutputs = processVmSubmissionAcceptedOutputs config
