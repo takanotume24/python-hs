@@ -205,6 +205,7 @@ library
     , PythonHS.Parser.ParseCallArgumentResult
     , PythonHS.Parser.ParseAssertStmt
     , PythonHS.Parser.ParseExprStatement
+    , PythonHS.Parser.FStringInterpolation
     , PythonHS.Parser.ParseFStringExpr
     , PythonHS.Parser.ParseFStringExprConfig
     , PythonHS.Parser.ParseDecoratedStmt
@@ -346,6 +347,9 @@ library
     , PythonHS.VM.CallConversionBuiltin
     , PythonHS.VM.CallConversionBuiltinConfig
     , PythonHS.VM.CallFormatBuiltin
+    , PythonHS.VM.FormatSpec
+    , PythonHS.VM.FormatValue
+    , PythonHS.VM.FormatValueConfig
     , PythonHS.VM.CallIterableBuiltin
     , PythonHS.VM.CallIterableBuiltinConfig
     , PythonHS.VM.CallMapFilterBuiltin
@@ -444,6 +448,7 @@ library
     , PythonHS.VM.CollectExports
     , PythonHS.VM.IsBuiltinImportModule
     , PythonHS.VM.IsBuiltinCallableName
+    , PythonHS.VM.ParseFormatSpec
     , PythonHS.VM.MatchesExceptionClass
     , PythonHS.VM.IterableItems
     , PythonHS.VM.ModuleKeyFor
@@ -721,6 +726,7 @@ test-suite python-hs-test
     , Test.VM.RunSourceVmPart26Spec
     , Test.VM.RunSourceVmPart27Spec
     , Test.VM.RunSourceVmPart28Spec
+    , Test.VM.RunSourceVmFStringSpec
     , Test.VM.RunSourceVmPart29Spec
     , Test.VM.RunSourceVmPart30Spec
     , Test.VM.RunInstructionsSpec
