@@ -10,12 +10,14 @@ import PythonHS.Lexer.ScanFString (scanFString)
 import PythonHS.Lexer.ScanOperatorToken (scanOperatorToken)
 import PythonHS.Lexer.ScanOperatorTokenConfig (ScanOperatorTokenConfig (..))
 import PythonHS.Lexer.ScanQuotedString (scanQuotedString)
+import PythonHS.Lexer.ScanRawQuotedString (scanRawQuotedString)
 import PythonHS.Lexer.ScanTokenStepConfig (ScanTokenStepConfig (..))
 import PythonHS.Lexer.ScanTokenStepResult (ScanTokenStepResult (..))
 import PythonHS.Lexer.Token (Token (Token))
 import PythonHS.Lexer.TokenType
   ( TokenType
       ( AtToken,
+        BytesToken,
         ColonAssignToken,
         ColonToken,
         CommaToken,
@@ -102,6 +104,40 @@ scanTokenStep config =
                             else
                               let lexeme = digits ++ exponentPart
                                in Right (ScanTokenStepResult (Token FloatToken lexeme (Position ln col)) tailInput (Position ln (col + length lexeme)))
+          | (c == 'r' || c == 'R'),
+            (prefixB : quoteChar : afterPrefix) <- rest,
+            prefixB == 'b' || prefixB == 'B',
+            quoteChar == '"' || quoteChar == '\'' ->
+              case scanRawQuotedString quoteChar afterPrefix of
+                Just result ->
+                  let rawContent = quotedStringContent result
+                   in Right (ScanTokenStepResult (Token BytesToken rawContent (Position ln col)) (quotedStringRemaining result) (Position ln (col + length rawContent + 4)))
+                Nothing -> Left (UnexpectedCharacter {unexpectedChar = quoteChar})
+          | (c == 'b' || c == 'B'),
+            (prefixR : quoteChar : afterPrefix) <- rest,
+            prefixR == 'r' || prefixR == 'R',
+            quoteChar == '"' || quoteChar == '\'' ->
+              case scanRawQuotedString quoteChar afterPrefix of
+                Just result ->
+                  let rawContent = quotedStringContent result
+                   in Right (ScanTokenStepResult (Token BytesToken rawContent (Position ln col)) (quotedStringRemaining result) (Position ln (col + length rawContent + 4)))
+                Nothing -> Left (UnexpectedCharacter {unexpectedChar = quoteChar})
+          | (c == 'r' || c == 'R'),
+            (quoteChar : afterPrefix) <- rest,
+            quoteChar == '"' || quoteChar == '\'' ->
+              case scanRawQuotedString quoteChar afterPrefix of
+                Just result ->
+                  let rawContent = quotedStringContent result
+                   in Right (ScanTokenStepResult (Token StringToken rawContent (Position ln col)) (quotedStringRemaining result) (Position ln (col + length rawContent + 3)))
+                Nothing -> Left (UnexpectedCharacter {unexpectedChar = quoteChar})
+          | (c == 'b' || c == 'B'),
+            (quoteChar : afterPrefix) <- rest,
+            quoteChar == '"' || quoteChar == '\'' ->
+              case scanQuotedString quoteChar afterPrefix of
+                Just result ->
+                  let rawContent = quotedStringContent result
+                   in Right (ScanTokenStepResult (Token BytesToken (unescapeStringLiteral rawContent) (Position ln col)) (quotedStringRemaining result) (Position ln (col + length rawContent + 3)))
+                Nothing -> Left (UnexpectedCharacter {unexpectedChar = quoteChar})
           | (c == 'f' || c == 'F'),
             (quoteChar : afterQuote) <- rest,
             quoteChar == '"' || quoteChar == '\'' ->

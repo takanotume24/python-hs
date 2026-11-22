@@ -6,7 +6,8 @@ import PythonHS.Lexer.Position (Position (..))
 import PythonHS.Lexer.Token (Token (Token), position)
 import PythonHS.Lexer.TokenType
   ( TokenType
-      ( ColonToken,
+      ( BytesToken,
+        ColonToken,
         CommaToken,
         DotToken,
         FStringToken,
@@ -69,7 +70,11 @@ parsePrimary config = do
       let expr = parseResultValue primaryResult
           remaining = parseResultRemaining primaryResult
       Right (ParseResult {parseResultValue = BitwiseNotExpr {bitwiseNotExprValue = expr, bitwiseNotExprPos = pos}, parseResultRemaining = remaining})
-    parseAtom (Token StringToken value pos : rest) = Right (ParseResult {parseResultValue = StringExpr {stringExprValue = value, stringExprPos = pos}, parseResultRemaining = rest})
+    parseAtom (Token StringToken value pos : rest) =
+      let (adjacentValues, remaining) = collectAdjacentStrings rest
+       in Right (ParseResult {parseResultValue = StringExpr {stringExprValue = concat (value : adjacentValues), stringExprPos = pos}, parseResultRemaining = remaining})
+    parseAtom (Token BytesToken value pos : rest) =
+      Right (ParseResult {parseResultValue = StringExpr {stringExprValue = value, stringExprPos = pos}, parseResultRemaining = rest})
     parseAtom (Token FStringToken value pos : rest) = do
       expr <- parseFStringExpr ParseFStringExprConfig {parseFStringExprParseExpr = parsePrimaryExpr config, parseFStringExprContent = value, parseFStringExprPos = pos}
       Right (ParseResult {parseResultValue = expr, parseResultRemaining = rest})
@@ -80,6 +85,11 @@ parsePrimary config = do
     parseAtom (Token IdentifierToken value pos : rest) = Right (ParseResult {parseResultValue = IdentifierExpr {identifierExprName = value, identifierExprPos = pos}, parseResultRemaining = rest})
     parseAtom (tok : _) = Left (ExpectedExpression {parseErrorPosition = position tok})
     parseAtom _ = Left (ExpectedExpression {parseErrorPosition = Position {line = 0, column = 0}})
+
+    collectAdjacentStrings (Token StringToken value _ : rest) =
+      let (values, remaining) = collectAdjacentStrings rest
+       in (value : values, remaining)
+    collectAdjacentStrings rest = ([], rest)
 
     parsePostfix (IdentifierExpr name pos) (Token LParenToken _ _ : rest) = do
       argsResult <- parseArguments rest

@@ -15,22 +15,28 @@ import PythonHS.Lexer.TokenType
       ( DedentToken,
         EOFToken,
         IndentToken,
+        LBraceToken,
+        LBracketToken,
+        LParenToken,
         NewlineToken,
+        RBraceToken,
+        RBracketToken,
+        RParenToken,
         StringToken
       ),
   )
 import PythonHS.Lexer.TripleQuotedStringResult (TripleQuotedStringResult (..))
 
 scanTokens :: String -> Either LexerError [Token]
-scanTokens input = go input 1 1 True [0] []
+scanTokens input = go input 1 1 True [0] [] 0
   where
-    -- go input currentLine currentColumn isLineStart indentStack acc(reversed)
-    go :: String -> Int -> Int -> Bool -> [Int] -> [Token] -> Either LexerError [Token]
-    go [] ln col _ indentStack acc =
+    -- go input currentLine currentColumn isLineStart indentStack acc(reversed) bracketDepth
+    go :: String -> Int -> Int -> Bool -> [Int] -> [Token] -> Int -> Either LexerError [Token]
+    go [] ln col _ indentStack acc _ =
       let dedents = map (\_ -> Token {tokenType = DedentToken, lexeme = "<DEDENT>", position = Position {line = ln, column = 1}}) (drop 1 indentStack)
           finalTokens = dedents ++ [Token {tokenType = EOFToken, lexeme = "", position = Position {line = ln, column = col}}]
        in Right (reverse (reverse finalTokens ++ acc))
-    go src ln col True indentStack acc =
+    go src ln col True indentStack acc bracketDepth =
       let spanResult = span (== ' ') src
           spaces = fst spanResult
           restAfterSpaces = snd spanResult
@@ -43,42 +49,75 @@ scanTokens input = go input 1 1 True [0] []
             ('\n' : rest') ->
               -- A blank line is not a logical line, so it must not emit a
               -- statement-terminating newline token.
-              go rest' (ln + 1) 1 True indentStack acc
+              go rest' (ln + 1) 1 True indentStack acc bracketDepth
             ('#' : restComment) ->
               let (comment, restAfterComment) = span (/= '\n') restComment
                in case restAfterComment of
-                    ('\n' : rest') -> go rest' (ln + 1) 1 True indentStack acc
-                    _ -> go restAfterComment ln (col + indent + 1 + length comment) True indentStack acc
-            _ -> do
-              AdjustIndentResult {adjustIndentResultStack = newStack, adjustIndentResultTokens = indentTokens} <- adjustIndent ln indentStack indent
-              go restAfterSpaces ln (1 + indent) False newStack (reverse indentTokens ++ acc)
-    go ('\n' : rest) ln col _ indentStack acc =
-      let tok = Token {tokenType = NewlineToken, lexeme = "\\n", position = Position {line = ln, column = col}}
-       in go rest (ln + 1) 1 True indentStack (tok : acc)
-    go src ln col False indentStack acc =
+                    ('\n' : rest') -> go rest' (ln + 1) 1 True indentStack acc bracketDepth
+                    _ -> go restAfterComment ln (col + indent + 1 + length comment) True indentStack acc bracketDepth
+            _
+              | bracketDepth > 0 ->
+                  -- Inside brackets a newline is implicit continuation, so the
+                  -- indentation of the next physical line is not significant.
+                  go restAfterSpaces ln (1 + indent) False indentStack acc bracketDepth
+              | otherwise -> do
+                  AdjustIndentResult {adjustIndentResultStack = newStack, adjustIndentResultTokens = indentTokens} <- adjustIndent ln indentStack indent
+                  go restAfterSpaces ln (1 + indent) False newStack (reverse indentTokens ++ acc) bracketDepth
+    go ('\n' : rest) ln col _ indentStack acc bracketDepth
+      | bracketDepth > 0 = go rest (ln + 1) 1 True indentStack acc bracketDepth
+      | otherwise =
+          let tok = Token {tokenType = NewlineToken, lexeme = "\\n", position = Position {line = ln, column = col}}
+           in go rest (ln + 1) 1 True indentStack (tok : acc) bracketDepth
+    go src ln col False indentStack acc bracketDepth =
       case scanTripleQuotedString src of
         Just result ->
           let tok = Token {tokenType = StringToken, lexeme = tripleQuotedStringResultContent result, position = Position {line = ln, column = col}}
               newLine = ln + tripleQuotedStringResultLineCount result
               newColumn = tripleQuotedStringResultEndColumn result
-           in go (tripleQuotedStringResultRemaining result) newLine newColumn False indentStack (tok : acc)
+           in go (tripleQuotedStringResultRemaining result) newLine newColumn False indentStack (tok : acc) bracketDepth
         Nothing ->
-          goToken src ln col indentStack acc
+          goToken src ln col indentStack acc bracketDepth
 
-    goToken src ln col indentStack acc =
+    goToken src ln col indentStack acc bracketDepth =
       case src of
+        ('\\' : '\n' : rest) ->
+          -- An explicit line continuation joins the next physical line.
+          go rest (ln + 1) 1 False indentStack acc bracketDepth
         (c : rest)
           | c == '#' ->
               let (comment, restAfterComment) = span (/= '\n') rest
-               in go restAfterComment ln (col + 1 + length comment) False indentStack acc
-          | isSpace c -> go rest ln (col + 1) False indentStack acc
+               in go restAfterComment ln (col + 1 + length comment) False indentStack acc bracketDepth
+          | isSpace c -> go rest ln (col + 1) False indentStack acc bracketDepth
+          | c == ';' -> goSemicolon rest ln col indentStack acc bracketDepth
           | otherwise -> do
               result <- scanTokenStep (ScanTokenStepConfig {scanTokenStepSource = src, scanTokenStepPosition = Position {line = ln, column = col}})
               let tok = scanTokenStepResultToken result
                   restAfterToken = scanTokenStepResultRemaining result
                   nextCol = column (scanTokenStepResultNextPosition result)
-              go restAfterToken ln nextCol False indentStack (tok : acc)
+                  nextDepth = adjustBracketDepth bracketDepth tok
+              go restAfterToken ln nextCol False indentStack (tok : acc) nextDepth
         [] -> Left (UnexpectedCharacter {unexpectedChar = ' '})
+
+    goSemicolon rest ln col indentStack acc bracketDepth =
+      let restAfterSpaces = dropWhile (== ' ') rest
+          consumedSpaces = length rest - length restAfterSpaces
+       in case restAfterSpaces of
+            [] -> go [] ln (col + 1) False indentStack acc bracketDepth
+            ('\n' : _) -> go rest ln (col + 1) False indentStack acc bracketDepth
+            ('#' : _) -> go rest ln (col + 1) False indentStack acc bracketDepth
+            _ ->
+              let tok = Token {tokenType = NewlineToken, lexeme = ";", position = Position {line = ln, column = col}}
+               in go restAfterSpaces ln (col + 1 + consumedSpaces) False indentStack (tok : acc) bracketDepth
+
+    adjustBracketDepth depth tok =
+      case tokenType tok of
+        LParenToken -> depth + 1
+        LBracketToken -> depth + 1
+        LBraceToken -> depth + 1
+        RParenToken -> max 0 (depth - 1)
+        RBracketToken -> max 0 (depth - 1)
+        RBraceToken -> max 0 (depth - 1)
+        _ -> depth
 
     adjustIndent :: Int -> [Int] -> Int -> Either LexerError AdjustIndentResult
     adjustIndent ln indentStack indent =

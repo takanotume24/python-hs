@@ -5,6 +5,7 @@ data TokenType
   | IntegerToken
   | FloatToken
   | StringToken
+  | BytesToken
   | FStringToken
   | AssignToken
   | AssertToken
