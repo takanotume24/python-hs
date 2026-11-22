@@ -356,6 +356,10 @@ library
     , PythonHS.VM.CallIteratorBuiltinConfig
     , PythonHS.VM.CallIteratorBuiltinResult
     , PythonHS.VM.CallIteratorBuiltinOrPass
+    , PythonHS.VM.CallFileBuiltin
+    , PythonHS.VM.CallFileBuiltinConfig
+    , PythonHS.VM.CallFileBuiltinResult
+    , PythonHS.VM.CallFileBuiltinOrPass
     , PythonHS.VM.CallBoundMethod
     , PythonHS.VM.CallBoundMethodConfig
     , PythonHS.VM.CallBoundMethodResult
@@ -748,6 +752,7 @@ test-suite python-hs-test
     , Test.VM.RunSourceVmPart30Spec
     , Test.VM.RunSourceVmPart32Spec
     , Test.VM.RunSourceVmPart33Spec
+    , Test.VM.RunSourceVmPart34Spec
     , Test.VM.RunInstructionsSpec
     , Test.VM.RunSourceVmAugAssignBitwiseSpec
     , Test.VM.RunSourceVmBlankLineSpec

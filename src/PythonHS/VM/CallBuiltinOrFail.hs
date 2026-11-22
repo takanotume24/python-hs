@@ -8,6 +8,7 @@ import PythonHS.VM.CallBuiltinConfig (CallBuiltinConfig (..))
 import PythonHS.VM.CallBuiltinOrFailConfig (CallBuiltinOrFailConfig (..))
 import PythonHS.VM.CallExceptionClassBuiltin (callExceptionClassBuiltin)
 import PythonHS.VM.CallExceptionClassBuiltinConfig (CallExceptionClassBuiltinConfig (..))
+import PythonHS.VM.CallFileBuiltinOrPass (callFileBuiltinOrPass)
 import PythonHS.VM.CallInstanceMethodStringConfig (CallInstanceMethodStringConfig (..))
 import PythonHS.VM.CallInstanceMethodStringResult (CallInstanceMethodStringResult (..))
 import PythonHS.VM.CallIteratorBuiltinOrPass (callIteratorBuiltinOrPass)
@@ -64,7 +65,10 @@ callBuiltinOrFail config =
                         Nothing ->
                           case callIteratorBuiltinOrPass config of
                             Just iteratorResult -> iteratorResult
-                            Nothing -> dispatchBuiltin
+                            Nothing ->
+                              case callFileBuiltinOrPass config of
+                                Just fileResult -> fileResult
+                                Nothing -> dispatchBuiltin
                 _ -> dispatchBuiltin
   where
     execute = callBuiltinOrFailExecute config
