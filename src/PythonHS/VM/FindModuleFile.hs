@@ -8,7 +8,7 @@ findModuleFile :: FindModuleFileConfig -> IO (Either String FilePath)
 findModuleFile config =
   let relModule = foldl1Join "/" modulePath ++ ".py"
       relPackageInit = foldl1Join "/" modulePath </> "__init__.py"
-   in search [relModule, relPackageInit] paths
+   in search [relPackageInit, relModule] paths
   where
     modulePath = findModuleFileModulePath config
     paths = findModuleFilePaths config
