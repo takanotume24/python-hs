@@ -325,6 +325,7 @@ library
     , PythonHS.VM.ExecutePrintTopConfig
     , PythonHS.VM.SplitByDot
     , PythonHS.VM.GetitemValue
+    , PythonHS.VM.InsertAtIndex
     , PythonHS.VM.SetitemValue
     , PythonHS.VM.SetitemValueConfig
     , PythonHS.VM.SetsliceValue
@@ -641,6 +642,7 @@ test-suite python-hs-test
     , Test.VM.RunSourceVmPart25Spec
     , Test.VM.RunSourceVmPart26Spec
     , Test.VM.RunSourceVmPart27Spec
+    , Test.VM.RunSourceVmPart28Spec
     , Test.VM.RunInstructionsSpec
     , Test.Structure.CheckStructureSpec
     , Test.Structure.DetectPositionalArgsSpec

@@ -11,6 +11,7 @@ import PythonHS.VM.EnvState (EnvState (..))
 import PythonHS.VM.ExceptionState (ExceptionState (..))
 import PythonHS.VM.FunctionInfo (FunctionInfo)
 import PythonHS.VM.Instruction (Instruction (ReturnTop))
+import PythonHS.VM.IterableItems (iterableItems)
 import PythonHS.VM.LoopState (LoopState (..))
 import PythonHS.VM.VMState (VMState (..))
 
@@ -44,8 +45,8 @@ evaluateUserArgs executeFn callName callPos currentLocalEnv remainingArgs curren
           | argName == starArgMarker -> do
               (argValue, globalsAfterArg, functionsAfterArg, outputsAfterArg) <-
                 evalArgCode (compiledCallArgCode arg) currentGlobals currentFunctions currentOutputs
-              case argValue of
-                ListValue unpackedValues ->
+              case iterableItems argValue of
+                Just unpackedValues ->
                   if seenKeywordArg
                     then Left ("Argument count mismatch when calling " ++ callName ++ " at " ++ showPos callPos)
                     else
@@ -62,7 +63,7 @@ evaluateUserArgs executeFn callName callPos currentLocalEnv remainingArgs curren
                         seenKeywordNames
                         (accValues ++ unpackedValues)
                         (accKinds ++ fmap (\_ -> (Nothing, compiledCallArgPos arg)) unpackedValues)
-                _ -> Left ("Type error: * expects list at " ++ showPos (compiledCallArgPos arg))
+                Nothing -> Left ("Type error: * expects iterable at " ++ showPos (compiledCallArgPos arg))
           | argName == kwStarArgMarker -> do
               (argValue, globalsAfterArg, functionsAfterArg, outputsAfterArg) <-
                 evalArgCode (compiledCallArgCode arg) currentGlobals currentFunctions currentOutputs

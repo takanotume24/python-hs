@@ -724,11 +724,12 @@
 - 完了: `RunSourceVmPart27Spec`（18 examples）。`sliceRange` で境界を共通化し、setitem/delitem/setslice/delslice を追加。
 
 ### P123: 可変長引数 `*args` / `**kwargs`
-- [ ] 関数定義の `*args` / `**kwargs` を VM で束縛する
-- [ ] 呼び出し側の展開 `fn(*xs)` / `fn(**d)` を評価する
-- [ ] 通常引数・デフォルト引数・キーワード引数との組み合わせ順を固定する
-- [ ] 重複キー・非 iterable・非 dict のエラー規約をテストで固定する
-- [ ] 既存の引数バインディング回帰テストを拡充する
+- [x] 関数定義の `*args` / `**kwargs` を VM で束縛する
+- [x] 呼び出し側の展開 `fn(*xs)` / `fn(**d)` を評価する
+- [x] 通常引数・デフォルト引数・キーワード引数との組み合わせ順を固定する
+- [x] 重複キー・非 iterable・非 dict のエラー規約をテストで固定する
+- [x] 既存の引数バインディング回帰テストを拡充する
+- 完了: `RunSourceVmPart28Spec`（17 examples）。定義側は既存実装を回帰で固定し、呼び出し側 `*` を list/tuple/string/dict の iterable に拡張。`len(dict)` も追加。
 
 ### P124: f-string（フォーマット済み文字列リテラル）
 - [ ] `f"...{expr}..."` の字句解析・構文解析・評価を VM で実装する

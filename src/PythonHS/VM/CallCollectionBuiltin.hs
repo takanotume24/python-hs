@@ -14,6 +14,7 @@ import PythonHS.VM.DelsliceValue (delsliceValue)
 import PythonHS.VM.DelsliceValueConfig (DelsliceValueConfig (..))
 import PythonHS.VM.GetitemValue (getitemValue)
 import PythonHS.VM.GetitemValueConfig (GetitemValueConfig (..))
+import PythonHS.VM.InsertAtIndex (insertAtIndex)
 import PythonHS.VM.NumberPairs (numberPairs)
 import PythonHS.VM.SetitemValue (setitemValue)
 import PythonHS.VM.SetitemValueConfig (SetitemValueConfig (..))
@@ -33,6 +34,7 @@ callCollectionBuiltin config =
           [StringValue {stringValue = s}] -> Right (IntValue {intValue = fromIntegral (length s)})
           [ListValue {listValueItems = vals}] -> Right (IntValue {intValue = fromIntegral (length vals)})
           [TupleValue {tupleValueItems = vals}] -> Right (IntValue {intValue = fromIntegral (length vals)})
+          [DictValue {dictValuePairs = pairs}] -> Right (IntValue {intValue = fromIntegral (length pairs)})
           [_] -> Left ("Type error: len expects string or list at " ++ showPos pos)
           _ -> Left ("Argument count mismatch when calling len at " ++ showPos pos)
         "bool" -> Just $ case args of
@@ -176,14 +178,6 @@ callCollectionBuiltin config =
     removeFirstValue (v : restVals) target
       | v == target = Just restVals
       | otherwise = fmap (v :) (removeFirstValue restVals target)
-
-    insertAtIndex values index value =
-      let maxIndex = fromIntegral (length values)
-          clampedIndex = max 0 (min index maxIndex)
-          splitIndex = fromIntegral clampedIndex
-          leftValues = take splitIndex values
-          rightValues = drop splitIndex values
-       in leftValues ++ (value : rightValues)
 
     updateDictValue [] key value = [DictPair {dictPairKey = key, dictPairValue = value}]
     updateDictValue (entry : restPairs) key value
