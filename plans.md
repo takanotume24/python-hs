@@ -2252,3 +2252,15 @@
 - [x] P47-5: `SliceValue` の位置パターンマッチをレコード構文に統一
 - [x] P47-6: その他の残存位置パターンマッチをレコード構文に統一（`MatchPatternBindings`, `ExecutePendingExceptionInstruction` など）
 - [x] P47-7: 品質ゲート: `cabal test` / `cabal run check-structure` / warning 0 を再通過
+
+## 現在のスコープ（P147: linter の別リポジトリ分離）
+- [x] P147-1: `haskell-structure-lint` のローカル雛形を作成し、履歴を保持したまま `PythonHS.Structure.*` を `HsLint.*` へ改名する
+- [x] P147-2: 走査対象・行数上限・除外パス・`skipFunctionPaths` を JSON 設定へ移す
+- [x] P147-3: 統合 CLI `structure-lint` と互換 CLI `check-structure` / `detect-positional-args` を用意する
+- [x] P147-4: 新リポジトリで `cabal test`（31 examples）と警告 0 / hlint 0 hints を確認する
+- [x] P147-6: python-hs に `vendor/haskell-structure-lint` として取り込み、`cabal.project` と `structure-lint.json` を追加する
+- [x] P147-7: 旧 `PythonHS.Structure.*` / `app/check-structure` / `app/detect-positional-args` / `Test.Structure.*` を削除し、品質ゲートを再検証する
+- [x] P147-8: `cabal test` / `check-structure` / `ormolu` / `hlint` / `detect-positional-args` と `run-cpython-test`（71 cases, 0 failed）を再通過する
+- [ ] P147-5: リモートリポジトリを作成して push する（ユーザー指示により保留中）
+- [ ] P147-9: リモート作成後、`vendor/haskell-structure-lint` を git submodule に置き換える
+- メモ: ローカル雛形は `/tmp/opencode/haskell-structure-lint`（コミット `8889ec2`）。python-hs には vendor として反映済み。リモート設定は後日実施する。

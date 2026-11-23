@@ -1,0 +1,103 @@
+module Test.HsLint.DetectPositionalArgsSpec (spec) where
+
+import Data.Aeson (decode)
+import Data.Aeson.Types (Object)
+import Data.ByteString.Lazy.Char8 qualified as BSL
+import Data.List (isInfixOf)
+import Data.Maybe (isJust)
+import HsLint.DetectPositionalArgs (detectPositionalArgsFromSource)
+import HsLint.DetectSourceConfig (DetectSourceConfig (..))
+import HsLint.FormatViolationsJson (formatViolationsJson)
+import HsLint.FormatViolationsPlain (formatViolationsPlain)
+import HsLint.PositionalArgViolation (PositionalArgViolation (..))
+import HsLint.ViolationCategory (ViolationCategory (..))
+import Test.Hspec (Spec, describe, it, shouldBe, shouldSatisfy)
+
+spec :: Spec
+spec = describe "detectPositionalArgs" $ do
+  it "detects non-record data declarations" $ do
+    let src = unlines ["module Foo where", "data Foo = Foo Int String"]
+    result <- detectPositionalArgsFromSource (sourceConfig "Foo.hs" src)
+    length result `shouldSatisfy` (>= 1)
+    case result of
+      (v : _) -> do
+        filePath v `shouldBe` "Foo.hs"
+        category v `shouldBe` DataConCategory
+      _ -> return ()
+
+  it "detects non-record newtype declarations" $ do
+    let src = unlines ["module Bar where", "newtype Bar = Bar Int"]
+    result <- detectPositionalArgsFromSource (sourceConfig "Bar.hs" src)
+    length result `shouldSatisfy` (>= 1)
+    case result of
+      (v : _) -> category v `shouldBe` DataConCategory
+      _ -> return ()
+
+  it "does not detect record data declarations" $ do
+    let src = unlines ["module Baz where", "data Baz = Baz { field :: Int }"]
+    result <- detectPositionalArgsFromSource (sourceConfig "Baz.hs" src)
+    result `shouldSatisfy` null
+
+  it "does not detect nullary constructors" $ do
+    let src = unlines ["module Foo where", "data Foo = A | B | C"]
+    result <- detectPositionalArgsFromSource (sourceConfig "Foo.hs" src)
+    result `shouldSatisfy` null
+
+  it "detects function declarations with 4+ positional arguments" $ do
+    let src = unlines ["module Quux where", "f a b c d = a + b + c + d"]
+    result <- detectPositionalArgsFromSource (sourceConfig "Quux.hs" src)
+    result `shouldSatisfy` any (\v -> category v == FunDeclCategory)
+
+  it "does not detect functions with 0, 1, 2, or 3 arguments" $ do
+    let src = unlines ["module X where", "f = 1", "g x = x", "h a b = a + b", "i a b c = a + b + c"]
+    result <- detectPositionalArgsFromSource (sourceConfig "X.hs" src)
+    result `shouldSatisfy` null
+
+  it "does not detect simple recursive top-level helpers" $ do
+    let src = unlines ["module X where", "go [] _ = Nothing", "go (x : xs) target = go xs target"]
+    result <- detectPositionalArgsFromSource (sourceConfig "X.hs" src)
+    result `shouldSatisfy` null
+
+  it "does not detect builtin constructors like Just and Left" $ do
+    let src = unlines ["module Foo where", "f = Just 1", "g = Left \"x\""]
+    result <- detectPositionalArgsFromSource (sourceConfig "Foo.hs" src)
+    result `shouldSatisfy` null
+
+  it "does not detect constructor applications in expressions" $ do
+    let src = unlines ["module Foo where", "f = Foo 1 2"]
+    result <- detectPositionalArgsFromSource (sourceConfig "Foo.hs" src)
+    result `shouldSatisfy` null
+
+  it "produces valid JSON output" $ do
+    let src = unlines ["module Z where", "data Z = Z Int"]
+    result <- detectPositionalArgsFromSource (sourceConfig "Z.hs" src)
+    let json = formatViolationsJson result
+    (decode (BSL.pack json) :: Maybe [Object]) `shouldSatisfy` isJust
+
+  it "produces plain text output" $ do
+    let src = unlines ["module Z where", "data Z = Z Int"]
+    result <- detectPositionalArgsFromSource (sourceConfig "Z.hs" src)
+    let text = formatViolationsPlain result
+    text `shouldSatisfy` ("Z.hs" `isInfixOf`)
+    text `shouldSatisfy` ("data_constructor" `isInfixOf`)
+
+  it "produces empty plain text for no violations" $ do
+    let src = unlines ["module X where", "f = 1"]
+    result <- detectPositionalArgsFromSource (sourceConfig "X.hs" src)
+    formatViolationsPlain result `shouldBe` ""
+
+  it "respects exclude patterns" $ do
+    let src = unlines ["module Test where", "f a b c d = a + b + c + d"]
+    result <- detectPositionalArgsFromSource (sourceConfig "test/Test/Foo.hs" src)
+    length result `shouldSatisfy` (>= 1)
+    let matchesExclude patterns v = any (\p -> p `isInfixOf` filePath v) patterns
+        filtered = filter (not . matchesExclude ["test/"]) result
+    filtered `shouldSatisfy` null
+
+sourceConfig :: FilePath -> String -> DetectSourceConfig
+sourceConfig path content =
+  DetectSourceConfig
+    { sourceFilePath = path,
+      sourceContent = content,
+      sourceSkipFunctionPaths = []
+    }

@@ -1,0 +1,32 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: haskell-actions/setup@cd0d9bdd65b20557f41bea4dbe43d0b5fbbfe553 # v2.11.0
+        id: setup-haskell
+        with:
+          ghc-version: '9.10.3'
+          cabal-version: 'latest'
+      - uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: |
+            ~/.cabal/packages
+            ~/.cabal/store
+            dist-newstyle
+          key: ${{ runner.os }}-ghc-${{ steps.setup-haskell.outputs.ghc-version }}-cabal-${{ hashFiles('cabal.project', '*.cabal') }}
+          restore-keys: |
+            ${{ runner.os }}-ghc-${{ steps.setup-haskell.outputs.ghc-version }}-cabal-
+      - name: Build
+        run: cabal build all
+      - name: Test
+        run: cabal test

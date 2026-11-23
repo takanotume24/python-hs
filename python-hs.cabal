@@ -110,22 +110,6 @@ library
     , PythonHS.Evaluator.EvalIndexExpr
     , PythonHS.Evaluator.EvalSliceExprInput
     , PythonHS.Evaluator.EvalSliceExpr
-    , PythonHS.Structure.CheckStructure
-    , PythonHS.Structure.CheckStructureViolations
-    , PythonHS.Structure.PositionalArgViolation
-    , PythonHS.Structure.ViolationCategory
-    , PythonHS.Structure.DetectPositionalArgs
-    , PythonHS.Structure.DetectPositionalArgsFromSource
-    , PythonHS.Structure.DetectSourceConfig
-    , PythonHS.Structure.DetectModuleConfig
-    , PythonHS.Structure.DetectPositionalArgsFromDirectory
-    , PythonHS.Structure.DetectPositionalArgsFromDirectoryConfig
-    , PythonHS.Structure.Ghc2024LikeExtensions
-    , PythonHS.Structure.CollectHsFiles
-    , PythonHS.Structure.ExemptFileInfo
-    , PythonHS.Structure.IsHaskellFile
-    , PythonHS.Structure.FormatViolationsJson
-    , PythonHS.Structure.FormatViolationsPlain
     , PythonHS.VM.Instruction
     , PythonHS.VM.ApplyExceptionInstruction
     , PythonHS.VM.DropToLoopBoundary
@@ -284,11 +268,6 @@ library
     , PythonHS.Parser.ParseUnpackAssign
     , PythonHS.Parser.ParseUnpackAssignConfig
     , PythonHS.Parser.ParseUnpackNames
-    , PythonHS.Structure.CheckStructureWarnings
-    , PythonHS.Structure.CollectRecordConNames
-    , PythonHS.Structure.DetectFromModule
-    , PythonHS.Structure.DetectFromModuleConfig
-    , PythonHS.Structure.ExtractConAppResult
     , PythonHS.Evaluator.BindContextResult
     , PythonHS.Evaluator.EnterContextManager
     , PythonHS.Evaluator.ExitContextManager
@@ -637,11 +616,7 @@ library
     , directory
     , filepath
     , haskeline
-    , haskell-src-exts
-    , aeson
     , text
-    , bytestring
-    , syb
     , random
     , time
   default-language:    GHC2024
@@ -658,15 +633,6 @@ executable python-hs
 
 executable run-cpython-test
   hs-source-dirs:      app/run-cpython-test
-  main-is:             Main.hs
-  build-depends:
-      base >=4.14 && <5
-    , python-hs
-  default-language:    GHC2024
-  ghc-options:         -Wall
-
-executable check-structure
-  hs-source-dirs:      app/check-structure
   main-is:             Main.hs
   build-depends:
       base >=4.14 && <5
@@ -810,8 +776,6 @@ test-suite python-hs-test
     , Test.VM.RunSourceVmCompileSpec
     , Test.VM.RunSourceVmUnittestContextSpec
     , Test.VM.RunSourceVmUnittestSpec
-    , Test.Structure.CheckStructureSpec
-    , Test.Structure.DetectPositionalArgsSpec
     , Test.Evaluator.EvalContextManagerSpec
   build-depends:
       base >=4.14 && <5
@@ -822,24 +786,11 @@ test-suite python-hs-test
     , temporary
     , python-hs
     , containers >=0.6 && <0.9
-    , aeson
-    , bytestring
   -- prefer modern field to avoid deprecation warning
   build-tool-depends:
     hspec-discover:hspec-discover
     , python-hs:python-hs
     , python-hs:check-runner-case-coverage
-    , python-hs:detect-positional-args
-  default-language:    GHC2024
-  ghc-options:         -Wall
-
-executable detect-positional-args
-  hs-source-dirs:      app/detect-positional-args
-  main-is:             Main.hs
-  build-depends:
-      base >=4.14 && <5
-    , directory
-    , python-hs
   default-language:    GHC2024
   ghc-options:         -Wall
 

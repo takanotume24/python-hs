@@ -1,0 +1,107 @@
+cabal-version: 3.0
+
+name:               haskell-structure-lint
+version:            0.1.0.0
+synopsis:           Structure and positional-argument linter for Haskell projects
+description:
+  A small, reusable linter for Haskell source trees. It checks file and module
+  naming conventions, one-declaration-per-file rules, line limits, and detects
+  positional constructor/function arguments that should use record syntax.
+license:            MIT
+license-file:       LICENSE
+author:             takanotume24
+maintainer:         takanotume24
+build-type:         Simple
+extra-source-files: README.md
+                    structure-lint.json
+
+common common-settings
+  default-language: GHC2024
+  ghc-options:      -Wall
+
+library
+  hs-source-dirs:   src
+  exposed-modules:
+      HsLint.CLI
+      HsLint.CheckStructure
+      HsLint.CheckStructureViolations
+      HsLint.CheckStructureWarnings
+      HsLint.CollectHsFiles
+      HsLint.Config
+      HsLint.DetectFromModule
+      HsLint.DetectFromModuleConfig
+      HsLint.DetectModuleConfig
+      HsLint.DetectPositionalArgs
+      HsLint.DetectPositionalArgsFromDirectory
+      HsLint.DetectPositionalArgsFromDirectoryConfig
+      HsLint.DetectPositionalArgsFromSource
+      HsLint.DetectSourceConfig
+      HsLint.ExemptFileInfo
+      HsLint.FormatViolationsJson
+      HsLint.FormatViolationsPlain
+      HsLint.Ghc2024LikeExtensions
+      HsLint.IsHaskellFile
+      HsLint.LoadConfig
+      HsLint.PositionalArgViolation
+      HsLint.PositionalArgsConfig
+      HsLint.StructureConfig
+      HsLint.ViolationCategory
+  build-depends:
+      base >=4.14 && <5
+    , aeson
+    , bytestring
+    , directory
+    , filepath
+    , haskell-src-exts
+    , syb
+  default-language: GHC2024
+  ghc-options:      -Wall
+
+executable structure-lint
+  hs-source-dirs:   app/structure-lint
+  main-is:          Main.hs
+  build-depends:
+      base >=4.14 && <5
+    , haskell-structure-lint
+  default-language: GHC2024
+  ghc-options:      -Wall
+
+executable check-structure
+  hs-source-dirs:   app/check-structure
+  main-is:          Main.hs
+  build-depends:
+      base >=4.14 && <5
+    , haskell-structure-lint
+  default-language: GHC2024
+  ghc-options:      -Wall
+
+executable detect-positional-args
+  hs-source-dirs:   app/detect-positional-args
+  main-is:          Main.hs
+  build-depends:
+      base >=4.14 && <5
+    , haskell-structure-lint
+  default-language: GHC2024
+  ghc-options:      -Wall
+
+test-suite haskell-structure-lint-test
+  type:             exitcode-stdio-1.0
+  hs-source-dirs:   test
+  main-is:          Spec.hs
+  other-modules:
+      Test.HsLint.CheckStructureSpec
+      Test.HsLint.ConfigSpec
+      Test.HsLint.DetectPositionalArgsSpec
+  build-depends:
+      base >=4.14 && <5
+    , aeson
+    , bytestring
+    , directory
+    , filepath
+    , haskell-structure-lint
+    , hspec >=2.7 && <3
+    , temporary
+  build-tool-depends:
+      hspec-discover:hspec-discover
+  default-language: GHC2024
+  ghc-options:      -Wall

@@ -1,0 +1,18 @@
+{
+  "structure": {
+    "root": ".",
+    "roots": ["src", "app", "test"],
+    "maxLines": 200,
+    "lineExemptions": [],
+    "testDirPrefixes": ["test/"],
+    "appDirPrefixes": ["app/"],
+    "basenameModulePrefixes": ["app/"],
+    "discoverDriver": "test/Spec.hs",
+    "testSuffix": "Spec",
+    "moduleRootPrefixes": ["src", "app", "test"]
+  },
+  "positionalArgs": {
+    "excludes": [],
+    "skipFunctionPaths": ["/VM/"]
+  }
+}

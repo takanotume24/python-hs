@@ -1,4 +1,5 @@
 packages: .
+          vendor/haskell-structure-lint
 
 with-compiler: ghc-9.10.3
 

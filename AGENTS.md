@@ -26,7 +26,7 @@
 - コミットメッセージは変更の「理由（Why）」と「内容（What）」を簡潔に含める。日本語での記述を基本とする。
 - コミットメッセージの形式: 1行目に要約（50文字以内）、空行、3行目以降に詳細な説明を記述。箇条書きは `- ` で始める。
 - `DO NOT run git commit, git push, git reset, git rebase and/or do any other git mutations unless explicitly asked to do so.`（明示的に求められた場合のみ実行し、それ以外は実行しない。）
-- コミット前は必ず `cabal run quality-gate` を実行し、すべての必須品質ゲート（cabal test / check-structure / ormolu / hlint）が通過していることを確認する。
+- コミット前は必ず `cabal run quality-gate` を実行し、すべての必須品質ゲート（cabal test / check-structure / ormolu / hlint / detect-positional-args）が通過していることを確認する。
 - コミット後は `git log --oneline -3` で直近のログを確認し、意図したコミットになっていることを検証する。
 
 ## ファイル粒度ルール
@@ -52,7 +52,9 @@
 - コードベースの分析・検査・変換などの機能が必要になった場合は、**独立した executable（CLI）として実装する**ことを原則とする。
 - ライブラリ関数として閉じず、`python-hs.cabal` に `executable` を追加し、`cabal run <tool-name>` で実行可能にする。
 - 入出力はテキストまたは JSON とし、CI や他ツールからのパイプ利用を想定する。
-- 実装例: `check-structure`（構造チェック）、`detect-positional-args`（位置引数検出）、`check-runner-case-coverage`（テストケース網羅性チェック）。
+- 構造チェックと位置引数検出は `vendor/haskell-structure-lint` の `check-structure` / `detect-positional-args` を利用する。
+- 検査ルールはリポジトリ直下の `structure-lint.json` で管理する。
+- 実装例: `check-runner-case-coverage`（テストケース網羅性チェック）。
 
 ## 品質ゲート
 - `cabal run quality-gate` が成功すること。以下を個別に実行する必要はない。
@@ -61,8 +63,9 @@
   - `ormolu --mode check $(git ls-files '*.hs')`
   - `hlint src app`
 - `cabal run detect-positional-args -- src` を実行し、`function_declaration` カテゴリが0件であることを確認すること：
+  - `check-structure` / `detect-positional-args` は `vendor/haskell-structure-lint` が提供し、`structure-lint.json` を自動で読み込む
   - 検出対象: **4つ以上**の引数を持つトップレベル関数
-  - `PythonHS/VM/` 以下の内部DSLとして正当な関数は対象外
+  - `PythonHS/VM/` 以下の内部DSLとして正当な関数は `structure-lint.json` の `skipFunctionPaths` で対象外にする
   - 単純な再帰パターン（`go [] target` / `go (x : xs) target` 等）は除外
   - `positional_record_con` / `tuple` は現在 `detect-positional-args` の検出対象外（推奨事項としては引き続きレコード構文・専用型を検討する）
 - コンパイルに警告がないこと（警告が出たら修正してからコミットすること）
