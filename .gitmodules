@@ -1,3 +1,6 @@
 [submodule "third_party/cpython"]
 	path = third_party/cpython
 	url = https://github.com/python/cpython.git
+[submodule "vendor/haskell-structure-lint"]
+	path = vendor/haskell-structure-lint
+	url = git@github.com:takanotume24/haskell-structure-lint.git

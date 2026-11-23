@@ -2261,6 +2261,6 @@
 - [x] P147-6: python-hs に `vendor/haskell-structure-lint` として取り込み、`cabal.project` と `structure-lint.json` を追加する
 - [x] P147-7: 旧 `PythonHS.Structure.*` / `app/check-structure` / `app/detect-positional-args` / `Test.Structure.*` を削除し、品質ゲートを再検証する
 - [x] P147-8: `cabal test` / `check-structure` / `ormolu` / `hlint` / `detect-positional-args` と `run-cpython-test`（71 cases, 0 failed）を再通過する
-- [ ] P147-5: リモートリポジトリを作成して push する（ユーザー指示により保留中）
-- [ ] P147-9: リモート作成後、`vendor/haskell-structure-lint` を git submodule に置き換える
-- メモ: ローカル雛形は `/tmp/opencode/haskell-structure-lint`（コミット `8889ec2`）。python-hs には vendor として反映済み。リモート設定は後日実施する。
+- [ ] P147-5: 新リポジトリを remote へ push する（リモート作成と origin 設定は完了。push はユーザーが実施）
+- [x] P147-9: `vendor/haskell-structure-lint` を git submodule に置き換える（`.gitmodules` は GitHub URL を参照）
+- メモ: ローカル雛形は `/tmp/opencode/haskell-structure-lint`（コミット `5418b73`、origin は `git@github.com:takanotume24/haskell-structure-lint.git`）。python-hs の submodule は同コミットを指す。
