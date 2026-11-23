@@ -5,6 +5,7 @@ import PythonHS.Lexer.AdjustIndentResult (AdjustIndentResult (..))
 import PythonHS.Lexer.DedentToResult (DedentToResult (..))
 import PythonHS.Lexer.LexerError (LexerError (..))
 import PythonHS.Lexer.Position (Position (..), column)
+import PythonHS.Lexer.ScanRawTripleQuotedString (scanRawTripleQuotedString)
 import PythonHS.Lexer.ScanTokenStep (scanTokenStep)
 import PythonHS.Lexer.ScanTokenStepConfig (ScanTokenStepConfig (..))
 import PythonHS.Lexer.ScanTokenStepResult (ScanTokenStepResult (..))
@@ -69,14 +70,18 @@ scanTokens input = go input 1 1 True [0] [] 0
           let tok = Token {tokenType = NewlineToken, lexeme = "\\n", position = Position {line = ln, column = col}}
            in go rest (ln + 1) 1 True indentStack (tok : acc) bracketDepth
     go src ln col False indentStack acc bracketDepth =
-      case scanTripleQuotedString src of
-        Just result ->
+      case scanRawTripleQuotedString src of
+        Just result -> emitTripleQuotedString result
+        Nothing ->
+          case scanTripleQuotedString src of
+            Just result -> emitTripleQuotedString result
+            Nothing -> goToken src ln col indentStack acc bracketDepth
+      where
+        emitTripleQuotedString result =
           let tok = Token {tokenType = StringToken, lexeme = tripleQuotedStringResultContent result, position = Position {line = ln, column = col}}
               newLine = ln + tripleQuotedStringResultLineCount result
               newColumn = tripleQuotedStringResultEndColumn result
            in go (tripleQuotedStringResultRemaining result) newLine newColumn False indentStack (tok : acc) bracketDepth
-        Nothing ->
-          goToken src ln col indentStack acc bracketDepth
 
     goToken src ln col indentStack acc bracketDepth =
       case src of

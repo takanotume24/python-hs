@@ -45,6 +45,41 @@ spec = describe "buildDriverSource" $ do
     buildDriverSource "import unittest\n" CaseId {caseIdFile = "test.py", caseIdClassName = "T", caseIdMethodName = "test_ok"}
       `shouldBe` Left "Class not found: T"
 
+  it "does not hoist imports that are indented inside methods" $ do
+    let source =
+          unlines
+            [ "import unittest",
+              "",
+              "class T(unittest.TestCase):",
+              "    def test_ok(self):",
+              "        def inner():",
+              "            import sys",
+              "        self.assertEqual(1, 1)"
+            ]
+        caseId =
+          CaseId
+            { caseIdFile = "test.py",
+              caseIdClassName = "T",
+              caseIdMethodName = "test_ok"
+            }
+    buildDriverSource source caseId
+      `shouldBe` Right
+        ( unlines
+            [ "import unittest",
+              "class T(unittest.TestCase):",
+              "    def test_ok(self):",
+              "        def inner():",
+              "            import sys",
+              "        self.assertEqual(1, 1)",
+              "__python_hs_case = T()",
+              "__python_hs_case.setUp()",
+              "__python_hs_case.test_ok()",
+              "__python_hs_case.tearDown()",
+              "__python_hs_case.__python_hs_run_cleanups__()",
+              "print(\"__PYTHON_HS_CPYTHON_TEST_OK__\")"
+            ]
+        )
+
   it "takes setUp from the target class only" $ do
     let source =
           unlines

@@ -12,7 +12,8 @@ import PythonHS.Lexer.TokenType
         ExceptToken,
         IdentifierToken,
         LParenToken,
-        RParenToken
+        RParenToken,
+        StarToken
       ),
   )
 import PythonHS.Parser.DropLeadingNewlines (dropLeadingNewlines)
@@ -26,7 +27,11 @@ parseExceptSuites config =
       ts = parseExceptSuitesTokenStream config
    in case ts of
         Token ExceptToken _ exceptPos : restAfterExcept -> do
-          typeNamesResult <- parseExceptTypeNames restAfterExcept
+          let afterStar =
+                case restAfterExcept of
+                  Token {tokenType = StarToken} : rest -> rest
+                  _ -> restAfterExcept
+          typeNamesResult <- parseExceptTypeNames afterStar
           let typeNames = parseResultValue typeNamesResult
               afterTypeNames = parseResultRemaining typeNamesResult
           aliasResult <- parseAlias afterTypeNames

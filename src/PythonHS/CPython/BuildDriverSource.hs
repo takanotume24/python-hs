@@ -50,7 +50,8 @@ buildDriverSource source caseId =
       | otherwise = maybe [] id (findNamedMethodBlock classBody "tearDown")
 
     isImportLine line =
-      "import " `isPrefixOf` line || "from " `isPrefixOf` line
+      indentation line == 0
+        && ("import " `isPrefixOf` line || "from " `isPrefixOf` line)
 
     findClassBody (line : rest)
       | isClassHeader line = Just (line, takeClassBody rest)

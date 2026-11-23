@@ -26,3 +26,11 @@ spec = describe "scanTokens triple-quoted strings" $ do
           Token NewlineToken "\\n" (Position 3 8),
           Token EOFToken "" (Position 4 1)
         ]
+
+  it "tokenizes a raw triple-quoted string without decoding escapes" $ do
+    scanTokens "r'''a\\nb'''\n"
+      `shouldBe` Right
+        [ Token StringToken "a\\nb" (Position 1 1),
+          Token NewlineToken "\\n" (Position 1 11),
+          Token EOFToken "" (Position 2 1)
+        ]

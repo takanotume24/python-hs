@@ -933,6 +933,7 @@
 - [ ] P146-1: allowlist を 52 件から 100 件以上へ拡大する
 - [ ] P146-2: 決定的なケースのみを採用し、除外ルールを維持する
 - [ ] P146-3: `cabal run quality-gate` と `cabal run -v0 run-cpython-test` を 0 failed で固定する
+- 進捗: raw triple-quoted 文字列と `except*` を解析可能にし、`run-cpython-test` のドライバがメソッド内 import をトップレベルへ混入しないよう修正した。allowlist は 52 件から 71 件へ拡張（`except*` 13 件、`test_long` 5 件、`test_utf8source` 1 件）。100 件以上への拡張は継続中。
 
 ## 現在のスコープ（P126: f-string 完全化）
 - [x] P126-1: `!r` / `!s` 変換フラグをサポートする

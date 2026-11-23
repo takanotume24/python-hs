@@ -185,6 +185,7 @@ library
     , PythonHS.Lexer.ScanOperatorTokenConfig
     , PythonHS.Lexer.ScanQuotedString
     , PythonHS.Lexer.ScanRawQuotedString
+    , PythonHS.Lexer.ScanRawTripleQuotedString
     , PythonHS.Lexer.ScanTokenStep
     , PythonHS.Lexer.ScanTokenStepConfig
     , PythonHS.Lexer.ScanTokenStepResult
@@ -800,6 +801,7 @@ test-suite python-hs-test
     , Test.VM.RunSourceVmPart39Spec
     , Test.VM.RunSourceVmPart40Spec
     , Test.VM.RunSourceVmPart41Spec
+    , Test.VM.RunSourceVmPart42Spec
     , Test.VM.RunInstructionsSpec
     , Test.VM.RunSourceVmAugAssignBitwiseSpec
     , Test.VM.RunSourceVmBlankLineSpec
